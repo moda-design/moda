@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import {
   attachScreenshotResult,
   captureAfterMutation,
+  pagesForEditResult,
   pagesForMarkupTarget,
 } from '../src/commands/mutationScreenshot.ts';
 import { MAX_SCREENSHOT_PAGES_PER_CALL, type ScreenshotResponse } from '../src/commands/screenshotCapture.ts';
@@ -45,6 +46,43 @@ describe('pagesForMarkupTarget', () => {
 
   test("the floating-node target 'canvas' has no single page — default capture", () => {
     expect(pagesForMarkupTarget('canvas')).toBeUndefined();
+  });
+});
+
+describe('pagesForEditResult', () => {
+  test('a non-empty changed_page_ids set captures exactly those pages', () => {
+    expect(pagesForEditResult({ committed: true, changed_page_ids: ['p_b', 'p_a'] })).toEqual(['p_b', 'p_a']);
+  });
+
+  test('an empty set (variable-only edit) falls back to the default capture', () => {
+    expect(pagesForEditResult({ committed: true, changed_page_ids: [] })).toBeUndefined();
+  });
+
+  test('an absent field (backend predating changed_page_ids) falls back to the default capture', () => {
+    expect(pagesForEditResult({ committed: true, page_ids: [] })).toBeUndefined();
+  });
+
+  test('non-string entries are dropped, and an all-junk array falls back', () => {
+    expect(pagesForEditResult({ changed_page_ids: ['p_a', 7, null] })).toEqual(['p_a']);
+    expect(pagesForEditResult({ changed_page_ids: [7, null] })).toBeUndefined();
+  });
+
+  test('a multi-page changed set rides the existing auto-batching past the server cap', async () => {
+    const server = clampingServer();
+    const dir = mkdtempSync(join(tmpdir(), 'moda-mutshot-'));
+    const pages = pagesForEditResult({ changed_page_ids: ['p_1', 'p_2', 'p_3', 'p_4', 'p_5'] });
+    const result = await captureAfterMutation({
+      call: server.call,
+      pages,
+      output: dir,
+      shotsDirPath: '/unused',
+      note: () => {},
+      alert: () => {},
+    });
+    expect(server.calls).toHaveLength(2);
+    expect(server.calls[0]).toEqual({ page_ids: ['p_1', 'p_2', 'p_3', 'p_4', 'p_5'] });
+    expect(result.block.truncated).toBe(true);
+    expect(result.written.map((p) => p.page_id)).toEqual(['p_1', 'p_2', 'p_3', 'p_4', 'p_5']);
   });
 });
 
