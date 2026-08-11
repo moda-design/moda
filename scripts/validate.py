@@ -41,11 +41,11 @@ SKILLS = ["moda-deck", "moda-one-pager", "moda-brand", "moda-edit"]
 EXPECTED_REFERENCES: dict[str, list[str]] = {
     "moda-deck": [
         "markup", "edit-code", "reading-and-verifying", "gotchas", "design-quality",
-        "brand", "export", "omni-and-media", "deck-design", "deck-playbooks", "charts",
+        "brand", "export", "omni-and-media", "deck-design", "deck-playbooks", "charts", "web",
     ],
     "moda-one-pager": [
         "markup", "edit-code", "reading-and-verifying", "gotchas", "design-quality",
-        "brand", "export", "omni-and-media", "document-design",
+        "brand", "export", "omni-and-media", "document-design", "web",
     ],
     "moda-brand": ["brand", "gotchas", "markup", "design-quality"],
     "moda-edit": ["edit-code", "reading-and-verifying", "gotchas", "markup", "design-quality", "brand"],

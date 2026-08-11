@@ -795,6 +795,34 @@
         "--quiet",
         "--timeout"
       ]
+    },
+    {
+      "name": "web read",
+      "description": "read a web page as clean markdown (metered)",
+      "flags": [
+        "--api-base",
+        "--json",
+        "--no-input",
+        "--no-retry",
+        "--org",
+        "--quiet",
+        "--timeout"
+      ]
+    },
+    {
+      "name": "web search",
+      "description": "web search (metered) — structured results: url, title, snippet",
+      "flags": [
+        "--api-base",
+        "--full-text",
+        "--json",
+        "--no-input",
+        "--no-retry",
+        "--org",
+        "--quiet",
+        "--results",
+        "--timeout"
+      ]
     }
   ]
 }

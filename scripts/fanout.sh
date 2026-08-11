@@ -17,9 +17,9 @@ fan() {
 }
 
 fan moda-deck markup edit-code reading-and-verifying gotchas design-quality \
-  brand export omni-and-media deck-design deck-playbooks charts
+  brand export omni-and-media deck-design deck-playbooks charts web
 fan moda-one-pager markup edit-code reading-and-verifying gotchas design-quality \
-  brand export omni-and-media document-design
+  brand export omni-and-media document-design web
 fan moda-brand brand gotchas markup design-quality
 fan moda-edit edit-code reading-and-verifying gotchas markup design-quality brand
 

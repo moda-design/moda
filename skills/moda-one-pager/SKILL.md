@@ -78,8 +78,10 @@ allowed-tools: Bash(moda:*), Read, Glob, Grep
 ## Workflow
 
 1. **Read the source** with your own tools (Read/Glob; your own research).
-   Settle scope per references/document-design.md: one page → info-dense
-   single page; multi-page → one cohesive system plus a page outline.
+   Content that needs live web facts: `moda web search` / `moda web read`
+   (metered) — see references/web.md. Settle scope per
+   references/document-design.md: one page → info-dense single page;
+   multi-page → one cohesive system plus a page outline.
 2. **Plan** the layout and compute the document type ladder
    (references/design-quality.md; 816×1056 → body ≈ 11px, floor 11px). A PDF
    is read up close — pack the page; icons, dividers, stat rows, and cards
@@ -107,5 +109,6 @@ allowed-tools: Bash(moda:*), Read, Glob, Grep
 | references/edit-code.md | targeted fixes via `moda canvas edit` |
 | references/reading-and-verifying.md | DSL reading, lint/screenshot loop |
 | references/brand.md | a brand kit exists |
+| references/web.md | content needs live web research |
 | references/export.md, references/omni-and-media.md | delivering; metered lanes |
 | references/gotchas.md | anything surprising |

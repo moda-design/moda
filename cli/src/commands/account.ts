@@ -78,13 +78,13 @@ export function registerAccount(program: Command): void {
           entitlements,
           model: {
             deterministic_lane: 'canvas authoring, reads, lint, screenshot, export — 0 metered credits on every plan',
-            metered_lanes: 'task.* (Omni) and media.* — cost class before, exact receipt after, in usage on every response',
+            metered_lanes: 'task.* (Omni), media.*, and web.* — cost class before, exact receipt after, in usage on every response',
           },
           meta: metaBlock({ requestId: response.requestId, durationMs: response.durationMs }),
         },
         human: (write) => {
           write('deterministic lane (authoring, read, lint, screenshot, export): 0 credits, every plan');
-          write('metered lanes (task.*, media.*): labeled, cost class before + receipt after');
+          write('metered lanes (task.*, media.*, web.*): labeled, cost class before + receipt after');
           if (Object.keys(entitlements).length > 0) write(`entitlements: ${JSON.stringify(entitlements)}`);
           else write('entitlement details: not reported by this server build');
         },

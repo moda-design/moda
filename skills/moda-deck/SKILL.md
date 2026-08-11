@@ -79,9 +79,11 @@ allowed-tools: Bash(moda:*), Read, Glob, Grep
 ## Workflow
 
 1. **Gather** with your own tools (Read/Glob/Grep over the named source; your
-   own research). Distill to a slide list first: title, agenda, one idea per
-   slide, 6–12 slides unless the user named a count. Data preservation rules
-   apply from here on (references/design-quality.md).
+   own research). Content that needs live web facts: `moda web search` /
+   `moda web read` (metered) — see references/web.md for when they beat your
+   harness's own browsing. Distill to a slide list first: title, agenda, one
+   idea per slide, 6–12 slides unless the user named a count. Data
+   preservation rules apply from here on (references/design-quality.md).
 2. **Read the design references before authoring**: references/deck-design.md
    (concept-first cover, layout bar), references/deck-playbooks.md when the
    deck matches a known type, references/markup.md before any markup, and
@@ -115,5 +117,6 @@ allowed-tools: Bash(moda:*), Read, Glob, Grep
 | references/edit-code.md | targeted fixes via `moda canvas edit` |
 | references/reading-and-verifying.md | DSL reading, lint/screenshot loop |
 | references/brand.md | a brand kit exists |
+| references/web.md | content needs live web research |
 | references/export.md, references/omni-and-media.md | delivering; metered lanes |
 | references/gotchas.md | anything surprising |

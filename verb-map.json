@@ -78,7 +78,9 @@
     "moda media generate-video",
     "moda media remove-background",
     "moda media upscale",
-    "moda media edit-image"
+    "moda media edit-image",
+    "moda web search",
+    "moda web read"
   ],
   "unresolved": {
     "upscale_video": "Video upscaling has no public API endpoint (recorded parity exception). The CLI verb exists but fails with a typed not_available error; skill text must not recommend it.",
