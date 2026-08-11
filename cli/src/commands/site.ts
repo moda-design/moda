@@ -213,6 +213,11 @@ function outcome(
   };
 }
 
+/** CLI-owned honesty field: is the page actually being served right now? (pending_review = no). */
+function isServing(website: Record<string, unknown>): boolean {
+  return website.is_published === true && str(website, 'review_status') !== 'pending_review';
+}
+
 function siteLine(website: Record<string, unknown>): string {
   const id = str(website, 'id') ?? '?';
   const name = str(website, 'name') ?? '(unnamed)';
@@ -284,7 +289,10 @@ export async function performSiteList(client: ApiClient, opts: SiteListOptions):
   });
   const root = asObject(response.body);
   const websites = Array.isArray(root.websites) ? root.websites.map(asObject) : [];
-  return outcome('site.list', root, response, (write) => {
+  // Same CLI-owned `serving` honesty the publish path carries — annotated per site (the server
+  // reports is_published: true + url even while a publish is held for review).
+  const annotated = websites.map((website) => ({ ...website, serving: isServing(website) }));
+  return outcome('site.list', { ...root, websites: annotated }, response, (write) => {
     const total = typeof root.total === 'number' ? root.total : websites.length;
     write(`site.list: ${websites.length} of ${total} site${total === 1 ? '' : 's'}`);
     for (const website of websites) write(siteLine(website));
@@ -296,7 +304,7 @@ export async function performSiteShow(client: ApiClient, siteRef: string): Promi
   const response = await client.request({ method: 'GET', path: endpoints.websiteShow(id) });
   const root = asObject(response.body);
   const website = asObject(root.website);
-  return outcome('site.show', root, response, (write) => {
+  return outcome('site.show', { ...root, serving: isServing(website) }, response, (write) => {
     write(siteLine(website));
     const review = str(website, 'review_status');
     // pending_review is already part of siteLine; name any other non-approved status explicitly.
@@ -355,6 +363,7 @@ export async function performSitePublish(
     );
   const root = asObject(response.body);
   const pendingReview = str(root, 'review_status') === 'pending_review';
+  // (isServing() is for <Website> shapes; the publish response carries is_live + review_status.)
   const base = outcome('site.publish', root, response, (write) => {
     const url = str(root, 'url') ?? '?';
     if (pendingReview) {

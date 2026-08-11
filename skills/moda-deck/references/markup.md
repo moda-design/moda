@@ -43,7 +43,7 @@ The parser dispatches all 23 elements below — including `<chart>`, `<path>`, `
 | `<background>` | fill (color/gradient/`shader(<type>)`/`image(url)`), src, type | native page background |
 | `<comment>` | x,y,node="@Name",thread="c1",page_id | non-node side effect: create/reply to comment threads; resolve via `moda canvas edit` code `update('c1',{resolved:true})` |
 | `<repeat count="N" as="i">` | count 0–1000, `{expression}` interpolation in any attr/text | nested repeats OK; expressions get `i`, `count`, `Math`, arithmetic/comparison/ternary/strings only |
-| `<generate>` | body = JS calling `emit(tag, attrs)` | full `Math`; `let/const`, braced `for` only (no `while`), if/else, arrows, array methods; `_content` key = text content; limits: **2,000 elements/block, 4,096 chars/block, 5,000 global element cap**; runtime errors keep partial results |
+| `<generate>` | body = JS calling `emit(tag, attrs)` | full `Math`; `let/const`, braced `for` only (no `while`), if/else, arrows, array methods; `_content` key = text content; limits: **2,000 elements/block, 16,384 chars/block, 5,000 global element cap**; runtime errors keep partial results |
 
 **Cannot be created via markup:** `<blend>`, `<container>` (internal node types). **Unsupported attributes:** `transform`, `clip-path`, `mask`, `clip-content`.
 
@@ -91,4 +91,4 @@ The parser dispatches all 23 elements below — including `<chart>`, `<path>`, `
 7. **Explicit line endpoints + `fill` sizing conflict → fill wins**, slope discarded (`line_fill_overrides_points`).
 8. **Text `fill` is aliased to `color`** (per-run color) — except gradient/`shader(…)` values, which become a whole-node fill override. Conic gradients are not supported on text.
 9. **HTML-format text must be XML-valid:** lowercase tags, quoted attrs, `<br/>` self-closed, explicit close tags. Disallowed tags (`div`, `h1`–`h6`, `table`, `img`, `script`, …) are stripped.
-10. **`<repeat>` max count 1000** (clamped + warning); **`<generate>` caps: 2,000 emits/block, 4,096 chars/block, no `while` loops**; expressions block eval/Function/import/require/assignment/DOM. Charts need the pipe-table header row (`category|value` or `x|y`; optional `series`).
+10. **`<repeat>` max count 1000** (clamped + warning); **`<generate>` caps: 2,000 emits/block, 16,384 chars/block, no `while` loops**; expressions block eval/Function/import/require/assignment/DOM. Charts need the pipe-table header row (`category|value` or `x|y`; optional `series`).

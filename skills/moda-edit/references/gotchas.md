@@ -13,7 +13,7 @@ Other minor divergences worth knowing: shrink-fit font sizes can land within a �
 ## Curated risk list
 
 - **The 100 ms synchronous budget is tight.** Heavy O(n²) loops over thousands of `nodes` snapshots trip an "execution timeout" and nothing applies. Batch across multiple `moda canvas edit` calls.
-- **Two different size caps — don't conflate them.** `moda canvas edit` code caps at **16,384 chars**. The markup `<generate>` block caps at **4,096 chars / 2,000 elements per block** (5,000 global). They are unrelated.
+- **One shared code-size cap: 16,384 chars** — for a `moda canvas edit` program and for each markup `<generate>` block alike (they run in the same sandbox). `<generate>` additionally caps at **2,000 emitted elements per block** (5,000 global).
 - **An exit-0 mutation can still be a no-op or need repair.** `warnings` entries with `severity: "error"`, plus `requires_repair` / `no_op_reason`, mean remediation is required even though the command exited 0. And `operation_counts.skipped > 0` means SOME ops were silently dropped (unresolved ids or hit limits) — check the skipped bucket.
 - **Any nonzero exit means NOTHING committed.** Fix the cause per the typed error's hint and retry; retrying is safe because a failed call made no changes (and mutations carry idempotency keys, so even a retried timeout cannot double-apply).
 - **Deletion is intentionally absent from edit code.** `remove()` throws. `moda canvas delete-items` is the only deletion path.

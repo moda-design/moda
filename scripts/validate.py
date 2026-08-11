@@ -45,18 +45,24 @@ EXPECTED_REFERENCES: dict[str, list[str]] = {
     ],
     "moda-one-pager": [
         "markup", "edit-code", "reading-and-verifying", "gotchas", "design-quality",
-        "brand", "export", "omni-and-media", "document-design", "web",
+        "brand", "export", "omni-and-media", "document-design", "web", "charts",
     ],
-    "moda-brand": ["brand", "gotchas", "markup", "design-quality"],
-    "moda-edit": ["edit-code", "reading-and-verifying", "gotchas", "markup", "design-quality", "brand"],
-    "moda-website": ["website", "brand", "web"],
+    "moda-brand": ["brand", "gotchas", "markup", "design-quality", "charts", "edit-code", "omni-and-media"],
+    "moda-edit": [
+        "edit-code", "reading-and-verifying", "gotchas", "markup", "design-quality", "brand",
+        "charts", "omni-and-media",
+    ],
+    "moda-website": [
+        "website", "brand", "web", "design-quality", "omni-and-media", "markup", "edit-code",
+        "gotchas", "charts", "reading-and-verifying",
+    ],
     "moda-social": [
         "social", "markup", "edit-code", "reading-and-verifying", "gotchas", "design-quality",
-        "brand", "export", "omni-and-media",
+        "brand", "export", "omni-and-media", "charts",
     ],
     "moda-diagram": [
         "diagram", "markup", "edit-code", "reading-and-verifying", "gotchas", "design-quality",
-        "brand", "export", "charts",
+        "brand", "export", "charts", "omni-and-media",
     ],
 }
 
@@ -313,6 +319,39 @@ def check_budgets() -> None:
             fail(path.relative_to(ROOT), f"reference over budget: {n} lines > 350")
 
 
+def check_payload_paths() -> None:
+    """Installers ship skill DIRECTORIES only (Claude/Codex/Cursor payloads = skills/<name>/).
+    Any .md path a skill's text references must therefore live inside that skill's own payload:
+    references/<name>.md (existence via check_links), a bare sibling reference name, or
+    SKILL.md itself. Repo-root pointers (INSTALL.md, docs/…, shared/…) do not survive
+    `npx skills add` and are banned. Also: every skills-shipping manifest must list every skill."""
+    for skill in SKILLS:
+        base = skill_dir(skill)
+        for path in [base / "SKILL.md", *sorted((base / "references").glob("*.md"))]:
+            if not path.exists():
+                continue
+            for m in re.finditer(r"[A-Za-z0-9_./-]*\.md\b", read(path)):
+                token = m.group(0)
+                if token in ("SKILL.md",):
+                    continue
+                if token.startswith("references/") and (base / token).exists():
+                    continue
+                if "/" not in token and (base / "references" / token).exists():
+                    continue
+                fail(path.relative_to(ROOT), f"references '{token}', which does not ship in this skill's payload")
+    for rel in [".codex-plugin/plugin.json", ".cursor-plugin/plugin.json"]:
+        path = ROOT / rel
+        if not path.exists():
+            continue
+        try:
+            shipped = set(json.loads(read(path)).get("skills", []))
+        except json.JSONDecodeError:
+            continue  # check_manifests reports the parse failure
+        missing = {f"skills/{s}" for s in SKILLS} - shipped
+        if missing:
+            fail(rel, f"manifest does not ship: {sorted(missing)}")
+
+
 def check_manifests() -> None:
     names = set()
     for rel in [".claude-plugin/marketplace.json", ".claude-plugin/plugin.json",
@@ -341,6 +380,7 @@ def main() -> int:
     check_verb_parity()
     check_markup_elements()
     check_budgets()
+    check_payload_paths()
     check_manifests()
     if findings:
         print(f"FAIL — {len(findings)} finding(s):")

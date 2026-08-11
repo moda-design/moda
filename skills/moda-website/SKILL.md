@@ -21,8 +21,10 @@ allowed-tools: Bash(moda:*), Read, Glob, Grep
    API reachability, and account entitlements in one call.
    - `moda` is not on PATH, the CLI is below this skill's compatibility floor,
      or doctor reports an update is required: STOP. Show the user the exact
-     pinned install/upgrade command doctor prints (or the one in this repo's
-     INSTALL.md when the CLI is missing entirely) and wait for them to run it.
+     pinned install/upgrade command doctor prints; when the CLI is missing
+     entirely, show this one verbatim (os: darwin | linux, arch: arm64 | x64):
+     `gh release download --repo moda-design/moda -p moda-<os>-<arch> -O ~/.local/bin/moda && chmod +x ~/.local/bin/moda`
+     Wait for the user to run it, then re-run doctor.
      Never install or update anything yourself, never pipe curl to sh, and
      never use sudo.
    - `authenticated: false`: tell the user to run `moda auth login` (opens the
@@ -99,9 +101,14 @@ the workflow and references/website.md governs instead.
 
 ## Workflow
 
-A site is one self-contained HTML page (v1 is static single-page) published
-to `https://<slug>.moda.page`. The site verbs are deterministic and free;
-only `moda web *` research and `moda media *` imagery are metered.
+A site is ONE self-contained HTML page (v1 is static single-page) published
+to `https://<slug>.moda.page`, and there is no screenshot/visual-QA verb on
+this surface. **Disclose both up front** the moment a request implies
+multiple pages/routes or rendered-preview checks: offer a single-page
+structure (anchor-linked sections) and review of the live URL instead —
+never let the limits surface as silent degradation mid-build. The site
+verbs are deterministic and free; only `moda web *` research and
+`moda media *` imagery are metered.
 
 1. **Gather** content with your own tools (Read/Glob/Grep; your own
    research). Live web facts: `moda web search` / `moda web read` (metered)

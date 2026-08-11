@@ -121,7 +121,10 @@ export async function performExport(
       source: 'api',
     });
   }
-  const outPath = resolveOutputPath(options.output, ref, format, inv);
+  // The server reports what was ACTUALLY delivered: multi-page png/jpeg arrive bundled as a
+  // zip, and the status body's `format` says so. Name the file and the envelope by that truth.
+  const deliveredFormat = str(final, 'format') ?? str(asObject(final.export), 'format') ?? format;
+  const outPath = resolveOutputPath(options.output, ref, deliveredFormat, options.pageNumber, inv);
   const bytes = await downloadArtifact(client, downloadUrl, inv);
   const toStdout = outPath === '-';
   if (toStdout) {
@@ -135,7 +138,8 @@ export async function performExport(
       ok: true,
       operation: 'canvas.export',
       task_id: exportId,
-      format,
+      requested_format: format,
+      delivered_format: deliveredFormat,
       output: toStdout ? '-' : outPath,
       bytes: bytes.byteLength,
       // Format truth the caller must not oversell (verified against the export pipeline).
@@ -143,7 +147,14 @@ export async function performExport(
       usage: final.usage ?? { class: 'deterministic', metered_credits: 0 },
       meta: metaBlock({ requestId: started.requestId }),
     },
-    human: (write) => write(`${format} -> ${toStdout ? '(stdout)' : outPath} (${bytes.byteLength} bytes)`),
+    human: (write) => {
+      if (deliveredFormat !== format) {
+        write(
+          `requested ${format}, delivered ${deliveredFormat} (multi-page raster exports bundle as a zip of images)`,
+        );
+      }
+      write(`${deliveredFormat} -> ${toStdout ? '(stdout)' : outPath} (${bytes.byteLength} bytes)`);
+    },
     exitCode: EXIT_OK,
     summaryToStderr: toStdout,
   };
@@ -180,10 +191,14 @@ async function pollExport(
     const status = exportStatusOf(body);
     if (downloadUrlOf(body) !== undefined || (status !== undefined && DONE.has(status))) return body;
     if (status !== undefined && FAILED.has(status)) {
+      // Terminal: the render failed on final content — an identical re-run fails identically.
+      // Honor a server-envelope retryable override when the status body carries one.
       throw new CliError({
         type: 'upstream_error',
         code: 'export_failed',
         message: `Export ${status}: ${str(body, 'error') ?? str(body, 'message') ?? 'no detail'}.`,
+        hint: 'do not retry — identical re-runs fail identically; deliver the share link + screenshots instead',
+        retryable: typeof body.retryable === 'boolean' ? body.retryable : false,
         source: 'api',
       });
     }
@@ -241,8 +256,15 @@ async function downloadArtifact(client: ApiClient, downloadUrl: string, inv: Inv
   return new Uint8Array(await response.arrayBuffer());
 }
 
-function resolveOutputPath(output: string | undefined, ref: string, format: string, inv: Invocation): string {
+function resolveOutputPath(
+  output: string | undefined,
+  ref: string,
+  format: string,
+  pageNumber: number | undefined,
+  inv: Invocation,
+): string {
   if (output !== undefined) return output;
   const dir = inv.context.outputDir.value ?? '.';
-  return join(dir, `${ref}.${format}`);
+  // Per-page exports carry the page number so a per-page loop cannot clobber its own files.
+  return join(dir, `${ref}${pageNumber !== undefined ? `.p${pageNumber}` : ''}.${format}`);
 }

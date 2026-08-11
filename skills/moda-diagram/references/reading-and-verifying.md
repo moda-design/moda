@@ -71,7 +71,7 @@ n8  group [background]      z:1 0,0 500x500 contains:{n1,n2,n3}
 moda canvas lint CANVAS_REF [--page PAGE_ID] [--json]
 ```
 
-Reports issues as `{type, severity: "error"|"warning"|"info", message, page, node}`. Checks: off-page/clipped nodes, text occluded by front layers, low text/background contrast, undersized logos. The lint verb itself exits 0 whenever the lint ran; findings never change a mutation's exit code (the mutation committed — exit 0 with `requires_repair: true` when error-severity findings ride its summary).
+Reports issues as `{type, severity: "error"|"warning"|"info", message, pageId, nodeId}` — in `--json` the array lives at `detail.issues`. Checks: off-page/clipped nodes, text occluded by front layers, low text/background contrast, undersized logos. The lint verb itself exits 0 whenever the lint ran; findings never change a mutation's exit code (the mutation committed — exit 0 with `requires_repair: true` when error-severity findings ride its summary).
 
 **The lint discipline (mandatory):**
 
@@ -115,7 +115,7 @@ Mutations attach nothing — no screenshot, no state echo. Verification is a loo
 | 2 | Invalid input (markup parse, edit program, flags) | no | fix input; retry safe |
 | 3 | Auth / missing scope | no | `moda auth login`; hint names the scope |
 | 4 | Not found | no | check the ref |
-| 5 | Conflict — canvas busy or `STALE_REVISION` | no | busy: the CLI already retried; back off or `moda task cancel`. Stale: `moda canvas read`, then re-apply |
+| 5 | Conflict — canvas busy, `STALE_REVISION`, or `canvas_crdt_state_corrupt` | no | busy: the CLI already retried — find the owning task (`moda task list --active`; newer servers also take `--canvas CANVAS_REF` to filter, older ones return the full list — match the canvas id) and wait or `moda task cancel`. Stale: `moda canvas read`, then re-apply. Corrupt: the canvas needs recovery — retrying cannot succeed; stop and tell the user |
 | 6 | Payment/quota/rate | no | surface the hint (top-up / wait) |
 | 7 | Server/transport | safe to retry | mutations carry idempotency keys — a re-run cannot double-apply |
 
