@@ -23,8 +23,8 @@ allowed-tools: Bash(moda:*), Read, Glob, Grep
      or doctor reports an update is required: STOP. Show the user the exact
      pinned install/upgrade command doctor prints (or the one in this repo's
      INSTALL.md when the CLI is missing entirely) and wait for them to run it.
-     Never install or update anything yourself, never pipe curl to sh, never
-     use sudo.
+     Never install or update anything yourself, never pipe curl to sh, and
+     never use sudo.
    - `authenticated: false`: tell the user to run `moda auth login` (opens the
      browser to mint a scoped key; the credential goes to the OS keychain — on
      headless machines use `moda auth login --paste`, or set `MODA_API_KEY`).

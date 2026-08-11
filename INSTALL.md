@@ -46,6 +46,6 @@ Start a new agent session and ask for something real — e.g.
 "make a one-pager from this README". The skills take it from there and end
 on a canvas link plus the exported file.
 
-Rules that hold everywhere: no `curl | sh`, no sudo, no silent installs —
+Rules that hold everywhere: never `curl | sh`, never sudo, never a silent install —
 a skill that finds the CLI missing or stale STOPS and shows you the pinned
 command above.
