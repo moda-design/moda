@@ -86,17 +86,17 @@ export async function performWebSearch(client: ApiClient, opts: WebSearchOptions
     ...(opts.results !== undefined ? { num_results: opts.results } : {}),
     ...(opts.fullText === true ? { include_text: true } : {}),
   };
-  // No idempotency parts: web verbs are reads over POST, and the binding body contract is
-  // exactly {query, num_results, include_text} (the client would inject idempotency_key).
+  // The contract accepts an optional in-body idempotency_key on both web verbs; the CLI omits
+  // it deliberately — these are reads over POST, and a retried search re-running is correct.
   const response = await client.request({ method: 'POST', path: endpoints.webSearch(), body: payload });
   const root = asObject(response.body);
   const results = Array.isArray(root.results) ? root.results.map(asObject) : [];
   return {
     body: {
       ok: true,
+      ...root,
       operation: 'web.search',
       metered: true,
-      ...root,
       meta: { ...asObject(root.meta), ...metaBlock({ requestId: response.requestId, durationMs: response.durationMs }) },
     },
     human: (write) => {
@@ -126,9 +126,9 @@ export async function performWebRead(client: ApiClient, url: string): Promise<Co
   return {
     body: {
       ok: true,
+      ...root,
       operation: 'web.read',
       metered: true,
-      ...root,
       meta: { ...asObject(root.meta), ...metaBlock({ requestId: response.requestId, durationMs: response.durationMs }) },
     },
     human: (write) => {

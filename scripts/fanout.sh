@@ -22,5 +22,6 @@ fan moda-one-pager markup edit-code reading-and-verifying gotchas design-quality
   brand export omni-and-media document-design web
 fan moda-brand brand gotchas markup design-quality
 fan moda-edit edit-code reading-and-verifying gotchas markup design-quality brand
+fan moda-website website brand web
 
 echo "fanout complete"

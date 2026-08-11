@@ -709,6 +709,104 @@
       ]
     },
     {
+      "name": "site create",
+      "description": "create a site from a single HTML page",
+      "flags": [
+        "--api-base",
+        "--file",
+        "--json",
+        "--no-input",
+        "--no-retry",
+        "--org",
+        "--quiet",
+        "--timeout",
+        "--title"
+      ]
+    },
+    {
+      "name": "site delete",
+      "description": "delete the site (takes down any live publish)",
+      "flags": [
+        "--api-base",
+        "--json",
+        "--no-input",
+        "--no-retry",
+        "--org",
+        "--quiet",
+        "--timeout"
+      ]
+    },
+    {
+      "name": "site list",
+      "description": "list the team's sites",
+      "flags": [
+        "--api-base",
+        "--json",
+        "--limit",
+        "--no-input",
+        "--no-retry",
+        "--offset",
+        "--org",
+        "--quiet",
+        "--timeout"
+      ]
+    },
+    {
+      "name": "site publish",
+      "description": "publish (or republish) to the public *.moda.page URL",
+      "flags": [
+        "--api-base",
+        "--json",
+        "--no-input",
+        "--no-retry",
+        "--org",
+        "--quiet",
+        "--slug",
+        "--timeout"
+      ]
+    },
+    {
+      "name": "site set-content",
+      "description": "replace the page HTML (the live site keeps serving the last publish until you republish)",
+      "flags": [
+        "--api-base",
+        "--file",
+        "--json",
+        "--no-input",
+        "--no-retry",
+        "--org",
+        "--quiet",
+        "--timeout",
+        "--title"
+      ]
+    },
+    {
+      "name": "site show",
+      "description": "site metadata, publish state, and live URL",
+      "flags": [
+        "--api-base",
+        "--json",
+        "--no-input",
+        "--no-retry",
+        "--org",
+        "--quiet",
+        "--timeout"
+      ]
+    },
+    {
+      "name": "site unpublish",
+      "description": "take the live site down",
+      "flags": [
+        "--api-base",
+        "--json",
+        "--no-input",
+        "--no-retry",
+        "--org",
+        "--quiet",
+        "--timeout"
+      ]
+    },
+    {
       "name": "task cancel",
       "description": "cancel a running task",
       "flags": [

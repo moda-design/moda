@@ -10,6 +10,7 @@ import { registerFileFacade, registerFileUpload } from './commands/file.ts';
 import { registerMedia } from './commands/media.ts';
 import { registerMeta } from './commands/meta.ts';
 import { registerOrg } from './commands/org.ts';
+import { registerSite } from './commands/site.ts';
 import { registerTask } from './commands/task.ts';
 import { registerWeb } from './commands/web.ts';
 import { EXIT_INVALID_INPUT, EXIT_SIGINT } from './output/exitCodes.ts';
@@ -36,6 +37,7 @@ export function buildProgram(): Command {
   registerAccount(program);
   registerMedia(program);
   registerWeb(program);
+  registerSite(program);
   return program;
 }
 

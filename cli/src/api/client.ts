@@ -9,7 +9,7 @@ import { API_VERSION_PIN, HEADER_CLI_VERSION } from './endpoints.ts';
 import { apiErrorFromResponse, transportError } from './errors.ts';
 import { deriveIdempotencyKey, type IdempotencyParts } from './idempotency.ts';
 
-export type HttpMethod = 'GET' | 'POST' | 'PATCH' | 'DELETE';
+export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 
 export interface RequestOptions {
   method: HttpMethod;
