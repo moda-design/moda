@@ -358,18 +358,19 @@ def check_payload_paths() -> None:
 
 
 def check_install_block() -> None:
-    """The README paste block's install sequence is EXTRACTED from step0's canonical pinned
-    block, never forked — each of step0's three backticked install lines must appear verbatim
-    in the README, so the two cannot drift."""
+    """The README paste block's install command is EXTRACTED from step0's canonical pinned
+    block, never forked. Canonical = the clean npm form; the private-registry wiring lives
+    only in the README's one-time box (deleted at public release), never in step0."""
     step0 = read(ROOT / "shared" / "step0.md")
     readme = read(ROOT / "README.md")
-    cmds = [m for m in re.findall(r"`([^`\n]+)`", step0)
-            if m.startswith(("gh release download", "grep moda-", "install -m 755"))]
-    if len(cmds) != 3:
-        fail("shared/step0.md", f"expected the 3-line pinned install sequence, found {len(cmds)}")
+    cmds = [m for m in re.findall(r"`([^`\n]+)`", step0) if m.startswith("npm i -g ")]
+    if len(cmds) != 1:
+        fail("shared/step0.md", f"expected exactly one pinned npm install command, found {len(cmds)}")
     for cmd in cmds:
         if cmd not in readme:
-            fail("README.md", f"install line diverges from step0's canonical block: '{cmd}'")
+            fail("README.md", f"install command diverges from step0's canonical block: '{cmd}'")
+    if "npm.pkg.github.com" in step0:
+        fail("shared/step0.md", "registry wiring belongs in the README's one-time box, not the canonical block")
 
 
 def check_manifests() -> None:

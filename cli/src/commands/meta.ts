@@ -72,7 +72,7 @@ export function registerMeta(program: Command): void {
       // channel instead of self-updating; the npm/brew channels always print their own command.
       const command =
         CLI_CHANNEL === 'npm'
-          ? 'npm install -g moda@latest'
+          ? 'npm i -g @moda-design/moda@latest'
           : CLI_CHANNEL === 'brew'
             ? 'brew upgrade moda'
             : pinnedInstallCommand();

@@ -6,6 +6,7 @@ on:
 
 permissions:
   contents: write
+  packages: write
 
 jobs:
   release:
@@ -40,3 +41,12 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: bun scripts/release.ts "${GITHUB_REF_NAME}"
+      - name: Publish npm packages to GitHub Packages
+        env:
+          NODE_AUTH_TOKEN: ${{ github.token }}
+        run: |
+          echo "@moda-design:registry=https://npm.pkg.github.com" > ~/.npmrc
+          echo "//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}" >> ~/.npmrc
+          for pkg in packages/cli-darwin-arm64 packages/cli-darwin-x64 packages/cli-linux-x64 packages/cli-linux-arm64 packages/moda; do
+            (cd "$pkg" && npm publish)
+          done

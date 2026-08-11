@@ -5,22 +5,17 @@
  */
 import { HEADER_CLI_LATEST, HEADER_CLI_MINIMUM } from './api/endpoints.ts';
 import { readUpdateStamp, writeUpdateStamp } from './config/state.ts';
-import { CLI_VERSION, platformArch } from './version.ts';
+import { CLI_VERSION } from './version.ts';
 
 export const RELEASES_REPO = 'moda-design/moda';
 
 /**
- * The platform-resolved form of the canonical checksummed install sequence (shared/step0.md +
- * the README paste block carry the placeholder form; validate.py pins those two together).
+ * The canonical install command (shared/step0.md + the README paste block carry the same clean
+ * form; validate.py pins them together). Private-registry wiring lives in the README's
+ * one-time box — a 401/registry failure here means that wiring is missing.
  */
 export function pinnedInstallCommand(): string {
-  const artifact = `moda-${platformArch()}`;
-  const check = process.platform === 'darwin' ? 'shasum -a 256 -c -' : 'sha256sum -c -';
-  return (
-    `gh release download --repo ${RELEASES_REPO} -p ${artifact} -p SHA256SUMS && ` +
-    `grep ${artifact} SHA256SUMS | ${check} && ` +
-    `install -m 755 ${artifact} ~/.local/bin/moda && rm ${artifact} SHA256SUMS`
-  );
+  return 'npm i -g @moda-design/moda';
 }
 
 /** Compare two semver-ish strings. Returns <0, 0, >0. Non-numeric tags compare as 0-padded. */

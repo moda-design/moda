@@ -21,11 +21,10 @@ allowed-tools: Bash(moda:*), Read
    - `moda` is not on PATH, the CLI is below this skill's compatibility floor,
      or doctor reports an update is required: STOP. Show the user the exact
      pinned install/upgrade command doctor prints; when the CLI is missing
-     entirely, show this sequence verbatim (os: darwin | linux, arch:
-     arm64 | x64; macOS checks with `shasum -a 256 -c` instead):
-     `gh release download --repo moda-design/moda -p moda-<os>-<arch> -p SHA256SUMS`
-     `grep moda-<os>-<arch> SHA256SUMS | sha256sum -c -`
-     `install -m 755 moda-<os>-<arch> ~/.local/bin/moda && rm moda-<os>-<arch> SHA256SUMS`
+     entirely, show this one verbatim:
+     `npm i -g @moda-design/moda`
+     If it fails with a 401 or registry error, registry auth is missing —
+     point the user at the one-time setup box in the repo README.
      Wait for the user to run it, then re-run doctor.
      Never install or update anything yourself, never pipe curl to sh, and
      never use sudo.

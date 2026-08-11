@@ -12,5 +12,8 @@
   ],
   "files": [
     "bin/moda"
-  ]
+  ],
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  }
 }

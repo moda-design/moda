@@ -8,16 +8,23 @@ the agent runs everything:
 ```
 Set up Moda for me so I can create designs, decks, and documents from here.
 
-1. Install the CLI (os: darwin | linux, arch: arm64 | x64; on macOS verify
-   with `shasum -a 256 -c` instead of `sha256sum -c`):
-   gh release download --repo moda-design/moda -p moda-<os>-<arch> -p SHA256SUMS
-   grep moda-<os>-<arch> SHA256SUMS | sha256sum -c -
-   install -m 755 moda-<os>-<arch> ~/.local/bin/moda && rm moda-<os>-<arch> SHA256SUMS
+1. Install the CLI: npm i -g @moda-design/moda
 2. Authenticate: run `moda auth login` and complete the sign-in in the
    browser it opens.
 3. Install the companion skills: run `npx skills add moda-design/moda`.
 4. Verify: run `moda doctor` and tell me when everything is ready.
 ```
+
+> **One-time setup while the repo is private — delete this box at public
+> release.** Run these yourself, once per machine (agents pasting the block
+> above on an already-wired machine just work; if step 1 fails with a 401 or
+> registry error, this wiring is what's missing):
+>
+> ```sh
+> gh auth refresh -s read:packages
+> npm config set @moda-design:registry https://npm.pkg.github.com
+> npm config set //npm.pkg.github.com/:_authToken "$(gh auth token)"
+> ```
 
 Per surface:
 
@@ -29,21 +36,24 @@ Per surface:
 - **claude.ai** — coming with the MCP connector: one copy-paste URL (see the
   roadmap).
 
-Private-dogfood caveat: until publish, steps 1 and 3 pull from this private
-repo, so the machine needs `gh` authenticated (`gh auth login`) with repo
-access — git uses those credentials for `npx skills add` too; at publish,
-step 1 becomes the npm one-liner.
+Private-dogfood caveat: `gh` must be authenticated with access to this repo
+(`gh auth login`) — the registry box, `npx skills add`, and the fallback
+below all ride those credentials. At public release the box disappears
+(the package moves to npmjs) and the paste block stays exactly as is.
 
-Skills that let any coding agent (Claude Code, Codex, Cursor, anything that
-reads SKILL.md and has a shell) design on [Moda](https://moda.app) through the
-`moda` CLI: real editable decks, one-page and multi-page PDFs with selectable
-text, social posts and static ads, diagrams and UI mockups, live websites
-hosted on `*.moda.page`, brand-true designs, and precise edits to existing
-canvases — all deliverables the user can open and polish.
+<details>
+<summary>Fallback: standalone binary (air-gapped / no npm)</summary>
 
-**Status: private dogfood.** Nothing here is published; installs ride team
-GitHub auth. See [INSTALL.md](INSTALL.md) (humans) and
-[INSTALL_FOR_AGENTS.md](INSTALL_FOR_AGENTS.md) (paste into an agent).
+os: darwin | linux, arch: arm64 | x64; on macOS verify with
+`shasum -a 256 -c` instead of `sha256sum -c`:
+
+```sh
+gh release download --repo moda-design/moda -p moda-<os>-<arch> -p SHA256SUMS
+grep moda-<os>-<arch> SHA256SUMS | sha256sum -c -
+install -m 755 moda-<os>-<arch> ~/.local/bin/moda && rm moda-<os>-<arch> SHA256SUMS
+```
+
+</details>
 
 ## The skills
 

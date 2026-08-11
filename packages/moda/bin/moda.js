@@ -8,7 +8,7 @@ try {
 } catch {
   console.error(
     `moda: platform binary ${pkg} is not installed.\n` +
-      `Reinstall with optional dependencies enabled (npm i moda), or download the ` +
+      `Reinstall with optional dependencies enabled (npm i -g @moda-design/moda), or download the ` +
       `standalone binary from GitHub Releases (moda-design/moda).`,
   );
   process.exit(1);
