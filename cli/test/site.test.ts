@@ -224,9 +224,32 @@ describe('site set-content (PUT /v1/websites/{id}/content)', () => {
     expect(lines.length).toBe(1);
   });
 
-  // NOTE: a set-content conflict case is deliberately absent — what (if anything) the contract
-  // returns for a concurrent-save conflict is an open backend question (publish sends no
-  // version); add the case when that answer lands.
+  test('--expected-version travels as expected_version (read-modify-write guard)', async () => {
+    const { base, calls } = serve(() =>
+      Response.json({ operation: 'websites.update_content', website: website({ version: 4 }) }),
+    );
+    await performSiteSetContent(client(base), SITE_ID, { html: '<html>v4</html>', expectedVersion: 3 });
+    expect(calls[0]?.body).toEqual({ html: '<html>v4</html>', expected_version: 3 });
+  });
+
+  test('409 website_version_conflict passes through with the re-read hint', async () => {
+    const { base } = serve(
+      () =>
+        new Response(
+          JSON.stringify({ error: { type: 'conflict', code: 'website_version_conflict', message: 'Version mismatch.' } }),
+          { status: 409, headers: { 'Content-Type': 'application/json' } },
+        ),
+    );
+    try {
+      await performSiteSetContent(client(base), SITE_ID, { html: '<html>x</html>', expectedVersion: 2 });
+      expect.unreachable();
+    } catch (err) {
+      const fields = (err as CliError).fields;
+      expect(fields.code).toBe('website_version_conflict');
+      expect(fields.type).toBe('conflict');
+      expect(fields.hint).toContain(`moda site show ${SITE_ID}`);
+    }
+  });
 });
 
 describe('site publish (POST /v1/websites/{id}/publish)', () => {
@@ -292,7 +315,7 @@ describe('site publish (POST /v1/websites/{id}/publish)', () => {
     }
   });
 
-  test('website_already_published passes through typed (409)', async () => {
+  test('website_already_published (concurrent first-publish race) carries the re-run guidance', async () => {
     const { base } = serve(
       () =>
         new Response(
@@ -306,7 +329,11 @@ describe('site publish (POST /v1/websites/{id}/publish)', () => {
       await performSitePublish(client(base), SITE_ID, undefined);
       expect.unreachable();
     } catch (err) {
-      expect((err as CliError).fields.code).toBe('website_already_published');
+      const fields = (err as CliError).fields;
+      expect(fields.code).toBe('website_already_published');
+      // Contract-settled semantics: another publish won the first-publish race; a re-run succeeds.
+      expect(fields.hint).toContain(`moda site publish ${SITE_ID}`);
+      expect(fields.hint).toContain('it will succeed');
     }
   });
 });

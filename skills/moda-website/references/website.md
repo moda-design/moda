@@ -28,7 +28,10 @@ moda site delete SITE_ID
   not a diff). It does NOT touch the live site: the published page keeps
   serving the last publish until you run `moda site publish` again — the
   response's `has_unpublished_changes` flags exactly this. The edit loop is
-  always save-then-republish.
+  always save-then-republish. For read-modify-write safety pass
+  `--expected-version N` (the `version` from your last `moda site show`); a
+  409 `website_version_conflict` means the site changed since your read —
+  re-read, re-apply, republish.
 - `publish` returns the live URL — print it prominently. `--slug` is a
   first-publish hint only (the final slug gets a random suffix; the hint is
   ignored on republish). A `slug_taken` / `slug_invalid` error means pick a
@@ -44,8 +47,10 @@ moda site delete SITE_ID
   shrink assets, re-host images in Moda), `free_publishing_disabled` (403 —
   the plan cannot publish: relay the hint, do not retry), quota codes
   (429 — publish has its own fair-use budget: wait, do not loop), and
-  `website_already_published` (409 — the site is already live; a content
-  update is save + republish, not a second first-publish).
+  `website_already_published` (409 — fires only when two concurrent FIRST
+  publishes race; another publish just won that race, so re-run publish and
+  it succeeds onto the winner's row. Republishing a live site is always
+  safe: same site, same slug, artifact rebuilt).
 - A 403 `team_access_denied` on a site means your key's team lacks edit
   rights on this site — it is NOT an auth failure; do not re-run
   `moda auth login`.

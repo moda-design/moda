@@ -771,6 +771,7 @@
       "description": "replace the page HTML (the live site keeps serving the last publish until you republish)",
       "flags": [
         "--api-base",
+        "--expected-version",
         "--file",
         "--json",
         "--no-input",

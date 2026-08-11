@@ -91,13 +91,22 @@ export function registerSite(program: Command): void {
       .command('set-content <site>')
       .description('replace the page HTML (the live site keeps serving the last publish until you republish)')
       .requiredOption('--file <path>', "the new page HTML file, or '-' for stdin")
-      .option('--title <title>', 'update the site title'),
+      .option('--title <title>', 'update the site title')
+      .option(
+        '--expected-version <n>',
+        'read-modify-write guard: the version from your last read; mismatch fails instead of overwriting',
+        parseVersion,
+      ),
   ).action(
     wrapAction(async (args, opts, cmd) => {
       const inv = buildInvocation(cmd);
       const { client } = await authedClient(inv, SITE_TIMEOUT_MS);
       const html = await readFileArg(opts.file as string);
-      return performSiteSetContent(client, args[0] as string, { html, title: opts.title as string | undefined });
+      return performSiteSetContent(client, args[0] as string, {
+        html,
+        title: opts.title as string | undefined,
+        expectedVersion: opts.expectedVersion as number | undefined,
+      });
     }),
   );
 
@@ -162,6 +171,14 @@ function parseCount(value: string): number {
   return parsed;
 }
 
+function parseVersion(value: string): number {
+  const parsed = Number.parseInt(value, 10);
+  if (!/^\d+$/.test(value.trim()) || parsed < 1) {
+    throw CliError.usage(`Invalid --expected-version value '${value}' — expected a positive integer.`);
+  }
+  return parsed;
+}
+
 function parseOffset(value: string): number {
   const parsed = Number.parseInt(value, 10);
   if (!/^\d+$/.test(value.trim()) || parsed < 0) {
@@ -218,6 +235,17 @@ function siteLine(website: Record<string, unknown>): string {
 export interface SiteContentInput {
   html: string;
   title?: string;
+  /** set-content only: PUT /content's optional expected_version read-modify-write guard. */
+  expectedVersion?: number;
+}
+
+/** Re-throw a typed error with an actionable hint for known site-lane codes (contract-settled). */
+function withSiteHint(err: unknown, hints: Record<string, string>): never {
+  if (err instanceof CliError && err.fields.hint === undefined) {
+    const hint = hints[err.fields.code];
+    if (hint !== undefined) throw new CliError({ ...err.fields, hint });
+  }
+  throw err;
 }
 
 export async function performSiteCreate(client: ApiClient, input: SiteContentInput): Promise<CommandOutcome> {
@@ -285,8 +313,19 @@ export async function performSiteSetContent(
 ): Promise<CommandOutcome> {
   const id = parseSiteId(siteRef);
   if (input.html.trim().length === 0) throw CliError.usage('The HTML page is empty.');
-  const payload = { html: input.html, ...(input.title !== undefined ? { title: input.title } : {}) };
-  const response = await client.request({ method: 'PUT', path: endpoints.websiteContent(id), body: payload });
+  const payload = {
+    html: input.html,
+    ...(input.title !== undefined ? { title: input.title } : {}),
+    ...(input.expectedVersion !== undefined ? { expected_version: input.expectedVersion } : {}),
+  };
+  const response = await client
+    .request({ method: 'PUT', path: endpoints.websiteContent(id), body: payload })
+    .catch((err: unknown) =>
+      withSiteHint(err, {
+        website_version_conflict:
+          `The site changed since your read — re-read (moda site show ${id}), re-apply, then republish.`,
+      }),
+    );
   const root = asObject(response.body);
   const website = asObject(root.website);
   return outcome('site.set-content', root, response, (write) => {
@@ -304,7 +343,16 @@ export async function performSitePublish(
 ): Promise<CommandOutcome> {
   const id = parseSiteId(siteId);
   const payload = slugPrefix !== undefined ? { slug_prefix: slugPrefix } : {};
-  const response = await client.request({ method: 'POST', path: endpoints.websitePublish(id), body: payload });
+  const response = await client
+    .request({ method: 'POST', path: endpoints.websitePublish(id), body: payload })
+    .catch((err: unknown) =>
+      withSiteHint(err, {
+        // Contract-settled: fires only when two concurrent FIRST publishes race; republish is
+        // safe by construction (same row, same slug, artifact rebuilt).
+        website_already_published:
+          `Another publish just won the first-publish race — re-run: moda site publish ${id} (it will succeed).`,
+      }),
+    );
   const root = asObject(response.body);
   const pendingReview = str(root, 'review_status') === 'pending_review';
   const base = outcome('site.publish', root, response, (write) => {
