@@ -142,7 +142,11 @@ export function registerMeta(program: Command): void {
       }
       return {
         body: { ok: true, operation: 'last-error', last_error: doc, meta: metaBlock() },
-        human: (write) => write(JSON.stringify(doc, null, 2)),
+        human: (write) => {
+          // Lead with WHEN it failed — an old timestamp tells the agent this is a stale failure.
+          if (typeof doc.exited_at === 'string') write(`recorded at: ${doc.exited_at}`);
+          write(JSON.stringify(doc, null, 2));
+        },
         exitCode: EXIT_OK,
       };
     }),

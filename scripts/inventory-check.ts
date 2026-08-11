@@ -47,7 +47,7 @@ console.error('inventory: in sync');
 // Every `--flag` token inside a `moda …` invocation in skill/shared/command text must exist in
 // the verb inventory (any verb) or the global flag set. Catches references teaching flags the
 // CLI does not have.
-import { readdirSync, statSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, statSync, readFileSync } from 'node:fs';
 
 const GLOBAL_FLAGS = new Set([
   '--json', '--pretty', '--quiet', '--no-input', '--no-retry', '--org', '--api-base', '--timeout',
@@ -67,7 +67,12 @@ function* walkMarkdown(dir: string): Generator<string> {
   }
 }
 
-/** moda-invocation text spans: inline backtick spans containing `moda `, plus fenced blocks with a moda line. */
+/**
+ * moda-invocation text spans: inline backtick spans containing `moda `, plus fenced blocks
+ * with a moda line. Deliberately heuristic: continuation lines of a wrapped command inside a
+ * fence are covered because the WHOLE fenced block is scanned once any line starts with moda;
+ * prose flags outside moda spans are ignored by construction.
+ */
 function modaSpans(text: string): string[] {
   const spans: string[] = [];
   for (const match of text.matchAll(/`([^`\n]+)`/g)) {
@@ -84,8 +89,15 @@ function modaSpans(text: string): string[] {
 const ghostFindings: string[] = [];
 for (const dir of ['skills', 'shared', 'commands']) {
   const full = join(ROOT, dir);
+  if (!existsSync(full)) continue;
   let files: string[] = [];
-  try { files = [...walkMarkdown(full)]; } catch { continue; }
+  try {
+    files = [...walkMarkdown(full)];
+  } catch (err) {
+    // An unreadable tree must FAIL the audit, not silently shrink its coverage.
+    console.error(`skill-text flag audit FAILED — cannot read ${dir}/: ${err instanceof Error ? err.message : err}`);
+    process.exit(1);
+  }
   for (const file of files) {
     const text = readFileSync(file, 'utf8');
     for (const span of modaSpans(text)) {

@@ -2,8 +2,9 @@
  * `$XDG_STATE_HOME/moda/` — non-config, non-secret state: per-canvas revision cache,
  * update-check stamp, screenshot default landing dir, credential-account index.
  */
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { chmodSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
+import { redactValue } from '../output/redact.ts';
 import { stateDir } from './paths.ts';
 
 function readJson<T>(path: string, fallback: T): T {
@@ -113,12 +114,30 @@ function lastErrorPath(env: NodeJS.ProcessEnv): string {
   return join(stateDir(env), 'last-error.json');
 }
 
-/** Persist the full --json error envelope of a nonzero exit. Best-effort — never throws. */
+/**
+ * Persist the --json error envelope of a nonzero exit. Best-effort — never throws. The
+ * envelope is REDACTED before it touches disk (signed URLs, moda_live_ keys) and the file is
+ * owner-only (0600): error bodies can quote request payloads and signed artifact URLs.
+ */
 export function persistLastError(doc: Record<string, unknown>, env: NodeJS.ProcessEnv = process.env): void {
   try {
-    writeJson(lastErrorPath(env), { ...doc, exited_at: new Date().toISOString() });
+    const path = lastErrorPath(env);
+    const redacted = redactValue({ ...doc, exited_at: new Date().toISOString() });
+    mkdirSync(dirname(path), { recursive: true });
+    writeFileSync(path, `${JSON.stringify(redacted, null, 2)}\n`, { encoding: 'utf8', mode: 0o600 });
+    // mode only applies on creation — enforce on pre-existing files too.
+    chmodSync(path, 0o600);
   } catch {
     // State-dir problems must not mask the real error.
+  }
+}
+
+/** Drop the recorded failure once a command succeeds — last-error always means the LAST run. */
+export function clearLastError(env: NodeJS.ProcessEnv = process.env): void {
+  try {
+    rmSync(lastErrorPath(env), { force: true });
+  } catch {
+    // Best-effort.
   }
 }
 

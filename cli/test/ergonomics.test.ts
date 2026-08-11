@@ -6,7 +6,16 @@ import { describe, expect, test } from 'bun:test';
 import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
-import { persistLastError, readLastError, readTaskStart, recordTaskStart, recordTaskStatus } from '../src/config/state.ts';
+import { statSync, readFileSync, writeFileSync } from 'node:fs';
+import {
+  clearLastError,
+  persistLastError,
+  readLastError,
+  readTaskStart,
+  recordTaskStart,
+  recordTaskStatus,
+} from '../src/config/state.ts';
+import { detectStartReplay } from '../src/commands/task.ts';
 import { passthroughOutcome } from '../src/commands/canvasShared.ts';
 import type { Invocation } from '../src/commands/runtime.ts';
 
@@ -73,6 +82,95 @@ describe('last-error persistence', () => {
     expect(code).not.toBe(0);
     const body = JSON.parse(stdout) as Record<string, unknown>;
     expect((body.error as Record<string, unknown>).code).toBe('no_last_error');
+  });
+});
+
+describe('last-error security (review blocking finding)', () => {
+  test('signed-URL + moda_live_ key envelope lands REDACTED on disk with mode 0600', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'moda-lasterr-sec-'));
+    const env = { MODA_STATE_DIR: dir };
+    persistLastError(
+      {
+        ok: false,
+        error: {
+          type: 'authentication',
+          code: 'bad_key',
+          message: 'key moda_live_deadbeef4321aa rejected',
+          details: { artifact: 'https://cdn.example.com/file.png?Signature=SUPERSECRETSIG&x=1' },
+        },
+      },
+      env,
+    );
+    const raw = readFileSync(join(dir, 'last-error.json'), 'utf8');
+    expect(raw).not.toContain('moda_live_deadbeef4321aa');
+    expect(raw).not.toContain('SUPERSECRETSIG');
+    expect(raw).toContain('[REDACTED]');
+    expect(statSync(join(dir, 'last-error.json')).mode & 0o777).toBe(0o600);
+  });
+
+  test('a pre-existing world-readable file is chmodded down on the next persist', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'moda-lasterr-chmod-'));
+    const env = { MODA_STATE_DIR: dir };
+    writeFileSync(join(dir, 'last-error.json'), '{}', { mode: 0o644 });
+    persistLastError({ ok: false, error: { type: 'x', code: 'y', message: 'z' } }, env);
+    expect(statSync(join(dir, 'last-error.json')).mode & 0o777).toBe(0o600);
+  });
+
+  test('clearLastError removes the record (zero-exit path)', () => {
+    const env = { MODA_STATE_DIR: mkdtempSync(join(tmpdir(), 'moda-lasterr-clear-')) };
+    persistLastError({ ok: false, error: { type: 'x', code: 'y', message: 'z' } }, env);
+    expect(readLastError(env)).toBeDefined();
+    clearLastError(env);
+    expect(readLastError(env)).toBeUndefined();
+  });
+});
+
+describe('detectStartReplay (skew-safe replay claims)', () => {
+  const NOW = Date.parse('2026-08-11T12:00:00Z');
+
+  test('ledger match is a confident claim and never re-records', () => {
+    const verdict = detectStartReplay({
+      taskId: 'task_1',
+      fresh: false,
+      prior: { task_id: 'task_1', started_at: 'x', last_status: 'failed' },
+      localNowMs: NOW,
+    });
+    expect(verdict.replayed).toBe(true);
+    expect(verdict.note).toContain('last seen failed');
+    expect(verdict.record).toBe(false);
+  });
+
+  test('skewed-ahead LOCAL clock alone never claims replay — hedged note only', () => {
+    // Local clock 60s ahead of the server: created_at appears 60s in the past. No server time.
+    const verdict = detectStartReplay({
+      taskId: 'task_2',
+      fresh: false,
+      createdAtMs: NOW - 60_000,
+      localNowMs: NOW,
+    });
+    expect(verdict.replayed).toBe(false);
+    expect(verdict.note).toContain('possible replay');
+    expect(verdict.note).not.toContain('pass --fresh');
+  });
+
+  test('server Date header is the trusted reference: predate → confident claim', () => {
+    const verdict = detectStartReplay({
+      taskId: 'task_3',
+      fresh: false,
+      createdAtMs: NOW - 60_000,
+      serverNowMs: NOW,
+      localNowMs: NOW + 3_600_000, // local clock wildly ahead — irrelevant
+    });
+    expect(verdict.replayed).toBe(true);
+    expect(verdict.note).toContain('pass --fresh');
+  });
+
+  test('fresh starts are NEVER recorded (salted keys would evict the real ledger)', () => {
+    const verdict = detectStartReplay({ taskId: 'task_4', fresh: true, localNowMs: NOW });
+    expect(verdict.replayed).toBe(false);
+    expect(verdict.record).toBe(false);
+    const normal = detectStartReplay({ taskId: 'task_5', fresh: false, localNowMs: NOW });
+    expect(normal.record).toBe(true);
   });
 });
 

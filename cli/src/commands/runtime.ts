@@ -9,7 +9,7 @@ import { resolveContext, type EffectiveContext } from '../config/context.ts';
 import { emitError, emitOutcome, note, type CommandOutcome, type EmitOptions } from '../output/emit.ts';
 import { exitCodeForError, EXIT_INTERNAL } from '../output/exitCodes.ts';
 import { requireCredential, type ResolvedCredential } from '../auth/credentials.ts';
-import { persistLastError } from '../config/state.ts';
+import { clearLastError, persistLastError } from '../config/state.ts';
 import { emitUpdateNotice } from '../update.ts';
 
 export interface GlobalFlags {
@@ -136,6 +136,8 @@ export function wrapAction(handler: ActionHandler): (...cliArgs: unknown[]) => P
       const outcome = await handler(positionals, opts, cmd);
       emitOutcome(outcome, { ...emitOpts, summaryToStderr: outcome.summaryToStderr === true });
       if (!flags.quiet) emitUpdateNotice(process.env);
+      // A zero exit clears the recorded failure — `moda last-error` always means the LAST run.
+      if (outcome.exitCode === 0 && cmd.name() !== 'last-error') clearLastError();
       process.exit(outcome.exitCode);
     } catch (err) {
       const fields = err instanceof CliError ? err.fields : CliError.internal(describeUnknown(err)).fields;

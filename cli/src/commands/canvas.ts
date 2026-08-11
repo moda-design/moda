@@ -1,5 +1,5 @@
 /** `moda canvas` — the deterministic authoring core (cli.md §9) plus lifecycle reuse verbs. */
-import type { Command } from 'commander';
+import { Option, type Command } from 'commander';
 import type { ApiClient } from '../api/client.ts';
 import { endpoints } from '../api/endpoints.ts';
 import { asObject, str } from '../api/types.ts';
@@ -78,7 +78,9 @@ async function canvasSummary(client: ApiClient, inv: Invocation, ref: string): P
   try {
     response = await client.request({ method: 'GET', path: endpoints.canvasStateSummary(ref) });
   } catch (err) {
-    if (err instanceof CliError && err.fields.type === 'not_found') {
+    // Only a BARE route 404 (no server error envelope → code http_404) means the endpoint is
+    // missing. An envelope'd not_found is a real missing canvas — pass it through untouched.
+    if (err instanceof CliError && err.fields.code === 'http_404') {
       throw new CliError({
         ...err.fields,
         message: 'The summary endpoint is not available on this server yet.',
@@ -334,7 +336,10 @@ export function registerCanvas(program: Command): void {
       .command('read <canvas>')
       .description('authoring DSL state snapshot + revision token')
       .option('--page <page_id>', 'limit to one page')
-      .option('--summary', 'cheap structure summary instead of the DSL: pages, names, node counts, revision'),
+      // Hidden until the studio summary endpoint ships — the flag fails typed with a steer today.
+      .addOption(
+        new Option('--summary', 'cheap structure summary instead of the DSL: pages, names, node counts, revision').hideHelp(),
+      ),
   ).action(
     wrapAction(async (args, opts, cmd) => {
       const inv = buildInvocation(cmd);

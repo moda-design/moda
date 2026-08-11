@@ -5,7 +5,7 @@ import { endpoints } from '../api/endpoints.ts';
 import { deriveIdempotencyKey } from '../api/idempotency.ts';
 import { asObject, str } from '../api/types.ts';
 import { CliError } from '../cliError.ts';
-import { readTaskStart, recordTaskStart, recordTaskStatus } from '../config/state.ts';
+import { readTaskStart, recordTaskStart, recordTaskStatus, type TaskStartEntry } from '../config/state.ts';
 import { EXIT_OK } from '../output/exitCodes.ts';
 import { parseRef } from '../refs.ts';
 import { addGlobalFlags, authedClient, buildInvocation, metaBlock, wrapAction, type Invocation } from './runtime.ts';
@@ -83,22 +83,19 @@ export function registerTask(program: Command): void {
       const taskId = str(startBody, 'id') ?? str(startBody, 'task_id') ?? str(asObject(startBody.task), 'id');
       let replayedLocally = false;
       if (taskId !== undefined) {
-        if (priorStart !== undefined && priorStart.task_id === taskId) {
-          replayedLocally = true;
-          inv.note(
-            `(replayed — an identical start already ran as task ${taskId}` +
-              `${priorStart.last_status !== undefined ? `, last seen ${priorStart.last_status}` : ''}; ` +
-              'pass --fresh for a new attempt)',
-          );
-        } else {
-          const createdAt = Date.parse(str(startBody, 'created_at') ?? '');
-          if (Number.isFinite(createdAt) && createdAt < callStartedAt - 30_000) {
-            replayedLocally = true;
-            inv.note(
-              `(task ${taskId} predates this call — an earlier identical start was replayed; ` +
-                'pass --fresh for a new attempt)',
-            );
-          }
+        const createdAtMs = Date.parse(str(startBody, 'created_at') ?? '');
+        const serverNowMs = Date.parse(started.headers.get('date') ?? '');
+        const verdict = detectStartReplay({
+          taskId,
+          fresh: opts.fresh === true,
+          prior: priorStart,
+          createdAtMs: Number.isFinite(createdAtMs) ? createdAtMs : undefined,
+          serverNowMs: Number.isFinite(serverNowMs) ? serverNowMs : undefined,
+          localNowMs: callStartedAt,
+        });
+        replayedLocally = verdict.replayed;
+        if (verdict.note !== undefined) inv.note(verdict.note);
+        if (verdict.record) {
           recordTaskStart(derivedKey, { task_id: taskId, started_at: new Date().toISOString() }, inv.env);
         }
       }
@@ -220,6 +217,65 @@ export function registerTask(program: Command): void {
       return passthroughOutcome('task.cancel', response, inv);
     }),
   );
+}
+
+export interface StartReplayVerdict {
+  /** Confident replay CLAIM — ledger evidence or a server-clock (skew-free) predate. */
+  replayed: boolean;
+  /** Stderr line to emit: the claim, or the hedged possible-replay note. */
+  note?: string;
+  /** Record this start in the ledger? Never under --fresh: a salted key can never match again,
+   *  and recording salted keys would evict the real entries (50-entry cap). */
+  record: boolean;
+}
+
+/**
+ * CLI-side replay detection for task.start (the server sends no replayed flag). The replay
+ * CLAIM requires trustworthy evidence: a ledger match, or created_at predating the SERVER
+ * Date-header time. The local clock alone is never trusted — a skewed-ahead client clock would
+ * otherwise brand every start a replay and steer agents to --fresh, a real double charge on a
+ * metered lane — so without server time the pure clock signal degrades to a hedged note.
+ */
+export function detectStartReplay(input: {
+  taskId: string;
+  fresh: boolean;
+  prior?: TaskStartEntry;
+  createdAtMs?: number;
+  serverNowMs?: number;
+  localNowMs: number;
+}): StartReplayVerdict {
+  const record = !input.fresh;
+  if (input.prior !== undefined && input.prior.task_id === input.taskId) {
+    return {
+      replayed: true,
+      note:
+        `(replayed — an identical start already ran as task ${input.taskId}` +
+        `${input.prior.last_status !== undefined ? `, last seen ${input.prior.last_status}` : ''}; ` +
+        'pass --fresh for a new attempt)',
+      record: false,
+    };
+  }
+  if (input.createdAtMs !== undefined) {
+    if (input.serverNowMs !== undefined) {
+      if (input.createdAtMs < input.serverNowMs - 30_000) {
+        return {
+          replayed: true,
+          note:
+            `(task ${input.taskId} predates this call — an earlier identical start was replayed; ` +
+            'pass --fresh for a new attempt)',
+          record,
+        };
+      }
+    } else if (input.createdAtMs < input.localNowMs - 30_000) {
+      const seconds = Math.round((input.localNowMs - input.createdAtMs) / 1000);
+      return {
+        replayed: false,
+        note: `(task ${input.taskId} predates this call by ${seconds}s — possible replay of an earlier identical start)`,
+        record,
+      };
+    }
+  }
+  return { replayed: false, record };
 }
 
 function taskStatusOf(body: Record<string, unknown>): string | undefined {
