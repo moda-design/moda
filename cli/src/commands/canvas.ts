@@ -272,6 +272,7 @@ export function registerCanvas(program: Command): void {
         body: typeof opts.page === 'string' ? { page_ids: [opts.page] } : {},
       });
       const root = asObject(response.body);
+      cacheFromResponse(ref, root, inv.env); // lint is a read lane — its token is pinnable
       return {
         body: {
           ok: true,

@@ -4,10 +4,21 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { CliError } from '../src/cliError.ts';
 import { writeRevisionEntry, readRevisionEntry } from '../src/config/state.ts';
-import { cacheFromResponse, chooseRevision, parseSize } from '../src/commands/canvasShared.ts';
+import { cacheFromResponse, chooseRevision, mutationOutcome, parseSize } from '../src/commands/canvasShared.ts';
+import type { Invocation } from '../src/commands/runtime.ts';
 
 function tempEnv(): NodeJS.ProcessEnv {
   return { MODA_STATE_DIR: mkdtempSync(join(tmpdir(), 'moda-canvas-')) };
+}
+
+function fakeInvocation(env: NodeJS.ProcessEnv): Invocation {
+  return {
+    flags: { json: true, quiet: false, noInput: true },
+    context: { apiBase: { value: 'https://api.example', source: 'default' }, org: { source: 'default' } },
+    env,
+    emitOpts: { json: true, quiet: false },
+    note: () => {},
+  } as unknown as Invocation;
 }
 
 describe('chooseRevision', () => {
@@ -46,6 +57,62 @@ describe('cacheFromResponse', () => {
     const env = tempEnv();
     cacheFromResponse('cvs_A', { committed: true }, env);
     expect(readRevisionEntry('cvs_A', env)).toBeUndefined();
+  });
+});
+
+describe('revision pin-cache lanes (rulings §15: reads only, mutation tokens are advisory)', () => {
+  test('a mutation response never populates the cache, even when it carries a revision', () => {
+    const env = tempEnv();
+    const outcome = mutationOutcome('canvas.edit', 'cvs_A', fakeInvocation(env), {
+      body: { revision: 'crdt-advisory', canvas: { id: 'cvs_RET' }, committed: true },
+      durationMs: 10,
+    });
+    expect(readRevisionEntry('cvs_A', env)).toBeUndefined();
+    expect(readRevisionEntry('cvs_RET', env)).toBeUndefined();
+    // The advisory token is still DISPLAYED on the response document and human line.
+    expect((outcome.body as Record<string, unknown>).revision).toBe('crdt-advisory');
+    const lines: string[] = [];
+    outcome.human?.((line) => lines.push(line));
+    expect(lines.join('\n')).toContain('crdt-advisory');
+  });
+
+  test('a mutation does not overwrite an existing read-sourced pin', () => {
+    const env = tempEnv();
+    cacheFromResponse('cvs_A', { revision: 'crdt-from-read' }, env, '# p_a\n n1 rect');
+    mutationOutcome('canvas.edit', 'cvs_A', fakeInvocation(env), {
+      body: { revision: 'crdt-advisory-newer' },
+      durationMs: 10,
+    });
+    expect(readRevisionEntry('cvs_A', env)?.revision).toBe('crdt-from-read');
+  });
+
+  test('append-mode markup after a mutation with no intervening read sends NO expected_revision', () => {
+    const env = tempEnv();
+    // A mutation happened (advisory token in the response) but no read ever cached a pin.
+    mutationOutcome('canvas.create_from_markup', 'cvs_A', fakeInvocation(env), {
+      body: { revision: 'crdt-advisory' },
+      durationMs: 10,
+    });
+    // append-mode markup: revision not required — must fall through to none, not the advisory token.
+    expect(chooseRevision('cvs_A', undefined, false, env)).toEqual({ source: 'none' });
+  });
+
+  test('explicit --revision still passes through after a mutation', () => {
+    const env = tempEnv();
+    mutationOutcome('canvas.edit', 'cvs_A', fakeInvocation(env), { body: { revision: 'crdt-advisory' }, durationMs: 1 });
+    expect(chooseRevision('cvs_A', 'crdt-explicit', false, env)).toEqual({
+      expectedRevision: 'crdt-explicit',
+      source: 'flag',
+    });
+  });
+
+  test('a read populates the cache and the next append-mode mutation pins from it', () => {
+    const env = tempEnv();
+    cacheFromResponse('cvs_A', { revision: 'crdt-read-1' }, env, '# p_a\n n1 rect');
+    expect(chooseRevision('cvs_A', undefined, false, env)).toEqual({
+      expectedRevision: 'crdt-read-1',
+      source: 'cache',
+    });
   });
 });
 

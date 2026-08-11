@@ -124,9 +124,9 @@ describe('@integration deterministic core', () => {
     const read0 = await moda(['canvas', 'read', canvasRef as string]);
     const pinned = read0.json.revision as string;
     const stdin = '<content><text>idempotent-once</text></content>';
-    // Pin the revision explicitly: a successful mutation updates the CLI's cached revision, so an
-    // UN-pinned re-run derives a fresh key on purpose (same edit against a NEW revision). The
-    // replay contract is per-key: identical (command, canvas, expected_revision, body) → replay.
+    // Pin the revision explicitly so both runs share one idempotency key regardless of cache state.
+    // (Mutations never update the CLI's revision cache — only reads do — so the pin is the fence.)
+    // The replay contract is per-key: identical (command, canvas, expected_revision, body) → replay.
     const first = await moda(
       ['canvas', 'markup', canvasRef as string, '--file', '-', '--page', pageId as string, '--revision', pinned],
       { stdin },

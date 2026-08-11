@@ -85,7 +85,13 @@ export function warnStaleShortIds(ref: string, submitted: string[], inv: Invocat
   }
 }
 
-/** Cache the revision (and short-id set when DSL text is available) after reads and mutations. */
+/**
+ * Cache the revision (and short-id set when DSL text is available) from a READ-lane response
+ * (canvas read/state, lint). Mutation responses must NEVER feed this cache: their `revision`
+ * is advisory only — trailing CRDT chunks of the same write can land after the response, so
+ * the only pinnable tokens come from reads (rulings §15). Mutation handlers may display the
+ * advisory token but must not call this.
+ */
 export function cacheFromResponse(ref: string, body: unknown, env: NodeJS.ProcessEnv, dslText?: string): void {
   const root = asObject(body);
   const revision = str(root, 'revision');
@@ -103,15 +109,14 @@ export function cacheFromResponse(ref: string, body: unknown, env: NodeJS.Proces
   }
 }
 
-/** Shape a mutation response into the §3 output contract document. */
+/** Shape a mutation response into the §3 output contract document. Never caches the advisory revision. */
 export function mutationOutcome(
   operation: string,
-  ref: string,
-  inv: Invocation,
+  _ref: string,
+  _inv: Invocation,
   response: { body: unknown; requestId?: string; durationMs: number },
 ): CommandOutcome {
   const root = asObject(response.body);
-  cacheFromResponse(ref, root, inv.env);
   const body: Record<string, unknown> = {
     ok: true,
     operation,
@@ -125,7 +130,7 @@ export function mutationOutcome(
     human: (write) => {
       const revision = str(root, 'revision');
       write(
-        `${operation}: committed${revision !== undefined ? ` (revision ${revision})` : ''}` +
+        `${operation}: committed${revision !== undefined ? ` (advisory revision ${revision} — pin only from reads)` : ''}` +
           (typeof counts.applied === 'number' ? ` — applied ${counts.applied}/${counts.queued ?? '?'}` : '') +
           (typeof counts.skipped === 'number' && counts.skipped > 0 ? `, skipped ${counts.skipped}` : ''),
       );

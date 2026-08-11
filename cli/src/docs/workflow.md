@@ -22,7 +22,9 @@ re-run: mutations carry idempotency keys).
 
 Concurrency: any collaborator (browser tab, Omni, another CLI) may write between your calls.
 The revision token is the fence — writes pinned to a stale revision fail loudly before any
-mutation. Busy canvases are retried automatically (5s/15s/30s), then exit 5.
+mutation. Pinnable tokens come only from reads (`moda canvas read` / `moda canvas lint`); the
+`revision` on a mutation response is advisory — never pin it. Busy canvases are retried
+automatically (5s/15s/30s), then exit 5.
 
 Resources:
 
