@@ -126,7 +126,7 @@
     },
     {
       "name": "brand show",
-      "description": "verbose model-safe kit: palette, fonts, logo refs — never signed URLs",
+      "description": "verbose kit: palette, fonts, logos (durable file_ ids + signed URLs)",
       "flags": [
         "--api-base",
         "--json",
@@ -169,12 +169,10 @@
     },
     {
       "name": "canvas create",
-      "description": "create a canvas",
+      "description": "create a canvas (brand application is client-side: read the kit, author with its tokens)",
       "flags": [
         "--api-base",
-        "--brand",
         "--category",
-        "--folder",
         "--json",
         "--name",
         "--no-input",
@@ -295,11 +293,9 @@
       "description": "authoring DSL state snapshot + revision token",
       "flags": [
         "--api-base",
-        "--detail",
         "--json",
         "--no-input",
         "--no-retry",
-        "--node",
         "--org",
         "--page",
         "--quiet",
@@ -461,7 +457,7 @@
         "--no-wait",
         "--org",
         "--output",
-        "--pages",
+        "--page",
         "--pixel-ratio",
         "--quiet",
         "--timeout"
@@ -469,7 +465,7 @@
     },
     {
       "name": "file download",
-      "description": "download file bytes",
+      "description": "download file bytes — not available (no public drive endpoint)",
       "flags": [
         "--api-base",
         "--json",
@@ -483,10 +479,9 @@
     },
     {
       "name": "file list",
-      "description": "list drive files",
+      "description": "list drive files — not available (no public drive endpoint)",
       "flags": [
         "--api-base",
-        "--folder",
         "--json",
         "--no-input",
         "--no-retry",
@@ -497,10 +492,12 @@
     },
     {
       "name": "file search",
-      "description": "search drive files",
+      "description": "search team assets (durable file_ ids + URLs, usable in markup and media inputs)",
       "flags": [
         "--api-base",
         "--json",
+        "--kind",
+        "--limit",
         "--no-input",
         "--no-retry",
         "--org",
@@ -510,7 +507,7 @@
     },
     {
       "name": "file show",
-      "description": "file metadata",
+      "description": "file metadata — not available (no public drive endpoint)",
       "flags": [
         "--api-base",
         "--json",
@@ -523,10 +520,9 @@
     },
     {
       "name": "file upload",
-      "description": "upload files; returns durable file_ refs usable in markup image(...) fills",
+      "description": "upload files; returns durable file_ refs usable in markup image fills and media inputs",
       "flags": [
         "--api-base",
-        "--folder",
         "--from-url",
         "--json",
         "--no-input",
@@ -538,7 +534,7 @@
     },
     {
       "name": "folder create",
-      "description": "create a folder",
+      "description": "create a folder — not available",
       "flags": [
         "--api-base",
         "--json",
@@ -551,7 +547,7 @@
     },
     {
       "name": "folder list",
-      "description": "list folders",
+      "description": "list folders — not available",
       "flags": [
         "--api-base",
         "--json",
@@ -563,8 +559,8 @@
       ]
     },
     {
-      "name": "media generate-image",
-      "description": "generate an image (metered)",
+      "name": "media edit-image",
+      "description": "generative image edit (metered) — the same primitive with required source images",
       "flags": [
         "--api-base",
         "--json",
@@ -575,13 +571,34 @@
         "--output",
         "--prompt",
         "--quiet",
+        "--reference",
+        "--source",
+        "--timeout"
+      ]
+    },
+    {
+      "name": "media generate-image",
+      "description": "generate an image (metered)",
+      "flags": [
+        "--api-base",
+        "--aspect-ratio",
+        "--json",
+        "--model",
+        "--no-input",
+        "--no-retry",
+        "--org",
+        "--output",
+        "--prompt",
+        "--quiet",
+        "--reference",
         "--size",
+        "--source",
         "--timeout"
       ]
     },
     {
       "name": "media generate-video",
-      "description": "generate a video (metered)",
+      "description": "generate a video (metered; the provider render runs within this call)",
       "flags": [
         "--api-base",
         "--image",
@@ -611,9 +628,10 @@
     },
     {
       "name": "media remove-background",
-      "description": "remove an image background (metered)",
+      "description": "remove an image background (metered); result is a new transparent PNG",
       "flags": [
         "--api-base",
+        "--high-quality",
         "--json",
         "--no-input",
         "--no-retry",
@@ -625,30 +643,28 @@
     },
     {
       "name": "media upscale",
-      "description": "upscale an image (metered); accepts a file_ ref or a local path (auto-uploads)",
+      "description": "upscale an image 2x or 4x (metered); accepts a file_ ref, URL, or local path",
       "flags": [
         "--api-base",
         "--json",
-        "--model",
         "--no-input",
         "--no-retry",
         "--org",
         "--output",
         "--quiet",
+        "--scale",
         "--timeout"
       ]
     },
     {
       "name": "media upscale-video",
-      "description": "upscale a video (metered)",
+      "description": "upscale a video — not available: the public media lane has no upscale-video endpoint",
       "flags": [
         "--api-base",
         "--json",
-        "--model",
         "--no-input",
         "--no-retry",
         "--org",
-        "--output",
         "--quiet",
         "--timeout"
       ]

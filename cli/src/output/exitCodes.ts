@@ -20,6 +20,12 @@ export const EXIT_SIGINT = 130;
 /**
  * Codes that mean "payment/quota" regardless of their ErrorType, per cli.md §4.1 row 6
  * (billing precheck, plan caps). `entitlement_required` stays exit 3 (permission row).
+ *
+ * NOTE: the live backend surfaces billing refusals as **HTTP 402 with code
+ * `invalid_request`** (tasks/media routers raise HTTPException(402); the public app's
+ * status→code map has no 402 entry, so the generic 4xx fallback code applies). The
+ * status check below is therefore the primary quota signal; these codes are kept for
+ * any future typed billing codes.
  */
 const QUOTA_CODES: ReadonlySet<string> = new Set([
   'payment_required',
@@ -52,6 +58,9 @@ export function exitCodeForError(err: CliErrorFields): number {
     if (err.type === 'internal_error') return EXIT_INTERNAL;
     return TYPE_TABLE[err.type] ?? EXIT_INTERNAL;
   }
+  // HTTP 402 Payment Required is the billing-refusal status on the live backend
+  // (code arrives as the generic `invalid_request`) — key on the status, not the code.
+  if (err.status === 402) return EXIT_QUOTA;
   if (QUOTA_CODES.has(err.code)) return EXIT_QUOTA;
   return TYPE_TABLE[err.type] ?? EXIT_INTERNAL;
 }

@@ -1,8 +1,15 @@
-/** `moda file` — uploads (existing REST) and the read-only files/folders facade. */
-import { mkdirSync, statSync, writeFileSync } from 'node:fs';
-import { basename, dirname } from 'node:path';
+/**
+ * `moda file` — uploads (existing REST) and asset search.
+ *
+ * Parity exception (recorded): the prototype backend has NO /v1/files or /v1/folders drive
+ * endpoints. What exists: POST /v1/uploads, POST /v1/uploads/from-url, and GET /v1/assets/search
+ * (Canvas Actions resource verb returning durable `file_` ids + proxy URLs). `file search` rides
+ * assets/search; `file list|show|download` and the `folder` verbs fail with a typed
+ * `not_available` error instead of dialing 404-bound paths.
+ */
+import { statSync } from 'node:fs';
+import { basename } from 'node:path';
 import type { Command } from 'commander';
-import { parseRef } from '../refs.ts';
 import { endpoints } from '../api/endpoints.ts';
 import { asObject, str } from '../api/types.ts';
 import { CliError } from '../cliError.ts';
@@ -11,14 +18,24 @@ import { addGlobalFlags, authedClient, buildInvocation, metaBlock, wrapAction } 
 
 const UPLOAD_TIMEOUT_MS = 300_000;
 
+/** The typed drive-facade refusal: name the parity exception and the working alternatives. */
+function driveNotAvailable(verb: string): CliError {
+  return new CliError({
+    type: 'unprocessable',
+    code: 'not_available',
+    message: `'moda ${verb}' has no public API endpoint — the files/folders drive facade is a recorded parity exception in the prototype.`,
+    hint: 'Available today: moda file upload, moda file upload --from-url, moda file search (team asset search).',
+    source: 'local',
+  });
+}
+
 export function registerFileUpload(program: Command): void {
-  const file = program.command('file').description('Moda files: upload local files, browse the drive');
+  const file = program.command('file').description('Moda files: upload local files, search team assets');
 
   addGlobalFlags(
     file
       .command('upload [paths...]')
-      .description('upload files; returns durable file_ refs usable in markup image(...) fills')
-      .option('--folder <folder_id>', 'destination folder')
+      .description('upload files; returns durable file_ refs usable in markup image fills and media inputs')
       .option('--from-url <url>', 'ingest from a URL instead of a local path'),
   ).action(
     wrapAction(async (args, opts, cmd) => {
@@ -31,10 +48,11 @@ export function registerFileUpload(program: Command): void {
       const uploads: Record<string, unknown>[] = [];
 
       if (fromUrl !== undefined) {
+        // Server contract: UploadFromUrlRequest {source_url, filename?}.
         const response = await client.request({
           method: 'POST',
           path: endpoints.uploadFromUrl(),
-          body: { url: fromUrl, ...(typeof opts.folder === 'string' ? { folder_id: opts.folder } : {}) },
+          body: { source_url: fromUrl },
         });
         uploads.push(shapeUpload(asObject(response.body), fromUrl));
       }
@@ -50,7 +68,6 @@ export function registerFileUpload(program: Command): void {
         const form = new FormData();
         // Bun.file streams from disk — files are never buffered wholesale in memory.
         form.append('file', Bun.file(path), basename(path));
-        if (typeof opts.folder === 'string') form.append('folder_id', opts.folder);
         const response = await client.request({ method: 'POST', path: endpoints.uploads(), formData: form });
         uploads.push({ ...shapeUpload(asObject(response.body), path), bytes: size });
         inv.note(`uploaded ${path} (${size} bytes)`);
@@ -60,8 +77,7 @@ export function registerFileUpload(program: Command): void {
         body: { ok: true, operation: 'file.upload', uploads, meta: metaBlock() },
         human: (write) => {
           for (const upload of uploads) {
-            write(`${String(upload.source)} → ${String(upload.file_id ?? upload.id ?? '?')}` +
-              (upload.markup_ref !== undefined ? ` (markup ref: ${String(upload.markup_ref)})` : ''));
+            write(`${String(upload.source)} → ${String(upload.file_id ?? upload.id ?? '?')}`);
           }
         },
         exitCode: EXIT_OK,
@@ -75,128 +91,91 @@ export function registerFileFacade(program: Command): void {
 
   addGlobalFlags(
     file
-      .command('list')
-      .description('list drive files')
-      .option('--folder <folder_id>', 'limit to a folder'),
+      .command('search <query>')
+      .description('search team assets (durable file_ ids + URLs, usable in markup and media inputs)')
+      .option('--kind <kind>', 'icon | photo (default photo)', 'photo')
+      .option('--limit <n>', 'max results (1-50)', (v: string) => Number.parseInt(v, 10)),
   ).action(
-    wrapAction(async (_args, opts, cmd) => {
+    wrapAction(async (args, opts, cmd) => {
       const inv = buildInvocation(cmd);
+      const kind = opts.kind as string;
+      if (kind !== 'icon' && kind !== 'photo') {
+        throw CliError.usage(`Invalid --kind '${kind}' — expected icon or photo.`);
+      }
       const { client } = await authedClient(inv, 30_000);
+      // Server contract: GET /v1/assets/search?q=&kind=&limit= → {query, kind, assets, has_good_matches}.
       const response = await client.request({
         method: 'GET',
-        path: endpoints.fileList(),
-        query: { folder_id: opts.folder as string | undefined },
+        path: endpoints.assetsSearch(),
+        query: {
+          q: args[0] as string,
+          kind,
+          ...(typeof opts.limit === 'number' ? { limit: String(opts.limit) } : {}),
+        },
       });
-      return facadeOutcome('file.list', response);
+      const root = asObject(response.body);
+      const assets = Array.isArray(root.assets) ? root.assets.map(asObject) : [];
+      return {
+        body: {
+          ok: true,
+          operation: 'file.search',
+          ...root,
+          meta: { ...asObject(root.meta), ...metaBlock({ requestId: response.requestId, durationMs: response.durationMs }) },
+        },
+        human: (write) => {
+          for (const asset of assets) {
+            write(`${str(asset, 'id') ?? '?'}  ${str(asset, 'name') ?? ''}`);
+          }
+          if (assets.length === 0) write('no matching assets');
+        },
+        exitCode: EXIT_OK,
+      };
     }),
   );
 
-  addGlobalFlags(file.command('search <query>').description('search drive files')).action(
-    wrapAction(async (args, _opts, cmd) => {
-      const inv = buildInvocation(cmd);
-      const { client } = await authedClient(inv, 30_000);
-      const response = await client.request({
-        method: 'GET',
-        path: endpoints.fileSearch(),
-        query: { q: args[0] as string },
-      });
-      return facadeOutcome('file.search', response);
+  addGlobalFlags(file.command('list').description('list drive files — not available (no public drive endpoint)')).action(
+    wrapAction(async () => {
+      throw driveNotAvailable('file list');
     }),
   );
 
-  addGlobalFlags(file.command('show <file_id>').description('file metadata')).action(
-    wrapAction(async (args, _opts, cmd) => {
-      const inv = buildInvocation(cmd);
-      const { client } = await authedClient(inv, 30_000);
-      const ref = parseRef(args[0] as string, 'file').ref;
-      const response = await client.request({ method: 'GET', path: endpoints.fileShow(ref) });
-      return facadeOutcome('file.show', response);
+  addGlobalFlags(file.command('show <file_id>').description('file metadata — not available (no public drive endpoint)')).action(
+    wrapAction(async () => {
+      throw driveNotAvailable('file show');
     }),
   );
 
   addGlobalFlags(
     file
       .command('download <file_id>')
-      .description('download file bytes')
-      .requiredOption('-o, --output <path>', "output path ('-' streams to stdout, JSON summary moves to stderr)"),
+      .description('download file bytes — not available (no public drive endpoint)')
+      .option('-o, --output <path>', 'output path'),
   ).action(
-    wrapAction(async (args, opts, cmd) => {
-      const inv = buildInvocation(cmd);
-      const { client } = await authedClient(inv, UPLOAD_TIMEOUT_MS);
-      const ref = parseRef(args[0] as string, 'file').ref;
-      const response = await client.request({ method: 'GET', path: endpoints.fileDownload(ref), raw: true });
-      const bytes = response.bytes ?? new Uint8Array();
-      const outPath = opts.output as string;
-      const toStdout = outPath === '-';
-      if (toStdout) {
-        process.stdout.write(bytes);
-      } else {
-        mkdirSync(dirname(outPath), { recursive: true });
-        writeFileSync(outPath, bytes);
-      }
-      return {
-        body: {
-          ok: true,
-          operation: 'file.download',
-          file_id: ref,
-          output: toStdout ? '-' : outPath,
-          bytes: bytes.byteLength,
-          meta: metaBlock({ requestId: response.requestId, durationMs: response.durationMs }),
-        },
-        human: (write) => write(`${ref} → ${toStdout ? '(stdout)' : outPath} (${bytes.byteLength} bytes)`),
-        exitCode: EXIT_OK,
-        summaryToStderr: toStdout,
-      };
+    wrapAction(async () => {
+      throw driveNotAvailable('file download');
     }),
   );
 
-  const folder = program.command('folder').description('drive folders');
+  const folder = program.command('folder').description('drive folders — not available (no public drive endpoints)');
 
-  addGlobalFlags(folder.command('list').description('list folders')).action(
-    wrapAction(async (_args, _opts, cmd) => {
-      const inv = buildInvocation(cmd);
-      const { client } = await authedClient(inv, 30_000);
-      const response = await client.request({ method: 'GET', path: endpoints.folderList() });
-      return facadeOutcome('folder.list', response);
+  addGlobalFlags(folder.command('list').description('list folders — not available')).action(
+    wrapAction(async () => {
+      throw driveNotAvailable('folder list');
     }),
   );
 
-  addGlobalFlags(folder.command('create <name>').description('create a folder')).action(
-    wrapAction(async (args, _opts, cmd) => {
-      const inv = buildInvocation(cmd);
-      const { client } = await authedClient(inv, 30_000);
-      const response = await client.request({
-        method: 'POST',
-        path: endpoints.folderCreate(),
-        body: { name: args[0] as string },
-      });
-      return facadeOutcome('folder.create', response);
+  addGlobalFlags(folder.command('create <name>').description('create a folder — not available')).action(
+    wrapAction(async () => {
+      throw driveNotAvailable('folder create');
     }),
   );
 }
 
-function facadeOutcome(
-  operation: string,
-  response: { body: unknown; requestId?: string; durationMs: number },
-): { body: Record<string, unknown>; exitCode: number } {
-  const root = asObject(response.body);
-  return {
-    body: {
-      ok: true,
-      operation,
-      ...(Array.isArray(response.body) ? { items: response.body } : root),
-      meta: { ...asObject(root.meta), ...metaBlock({ requestId: response.requestId, durationMs: response.durationMs }) },
-    },
-    exitCode: EXIT_OK,
-  };
-}
-
+/** Server contract: FileUploadResponse {id (file_...), url, filename, mime_type, size_bytes, was_duplicate}. */
 function shapeUpload(body: Record<string, unknown>, source: string): Record<string, unknown> {
-  const fileObj = asObject(body.file);
   return {
     source,
-    file_id: str(body, 'file_id') ?? str(fileObj, 'id') ?? str(body, 'id'),
-    markup_ref: str(body, 'markup_ref') ?? str(body, 'short_ref') ?? str(fileObj, 'short_ref'),
+    file_id: str(body, 'id') ?? str(body, 'file_id'),
     ...body,
   };
 }

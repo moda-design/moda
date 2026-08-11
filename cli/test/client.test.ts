@@ -167,10 +167,42 @@ describe('headers', () => {
     expect(second['idempotency-key']).toBe(first['idempotency-key']);
   });
 
+  test('injects the derived idempotency_key into the JSON body (the server reads it from the body)', async () => {
+    let seenBody: Record<string, unknown> = {};
+    const { base } = serve(async (req) => {
+      seenBody = (await req.json()) as Record<string, unknown>;
+      return Response.json({ ok: true });
+    });
+    await client(base).request({
+      method: 'POST',
+      path: '/v1/x',
+      body: { a: 1 },
+      idempotency: { command: 'canvas edit', canvas: 'cvs_X', expectedRevision: 'crdt-1', payload: '{"a":1}' },
+    });
+    expect(seenBody.a).toBe(1);
+    expect(String(seenBody.idempotency_key)).toMatch(/^ik_[0-9a-f]{64}$/);
+  });
+
+  test('Retry-After response header lands on the error as retryAfterS (canvas_busy contract)', async () => {
+    const { base } = serve(
+      () =>
+        new Response(JSON.stringify({ error: { type: 'conflict', code: 'canvas_active_job', message: 'busy' } }), {
+          status: 409,
+          headers: { 'Retry-After': '10', 'Content-Type': 'application/json' },
+        }),
+    );
+    try {
+      await client(base).request({ method: 'GET', path: '/v1/x' });
+      expect.unreachable();
+    } catch (err) {
+      expect((err as CliError).fields.retryAfterS).toBe(10);
+    }
+  });
+
   test('records CLI version headers off responses', async () => {
     const stateDir = `/tmp/moda-client-headers-${Date.now()}`;
     const { base } = serve(() =>
-      Response.json({ ok: true }, { headers: { 'X-Moda-CLI-Latest': '3.2.1', 'X-Moda-CLI-Minimum-Supported': '0.0.5' } }),
+      Response.json({ ok: true }, { headers: { 'Moda-Cli-Latest-Version': '3.2.1', 'Moda-Cli-Minimum-Version': '0.0.5' } }),
     );
     const c = new ApiClient({ apiBase: base, env: { MODA_STATE_DIR: stateDir } });
     await c.request({ method: 'GET', path: '/v1/x' });

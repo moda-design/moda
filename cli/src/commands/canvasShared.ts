@@ -14,10 +14,11 @@ import { metaBlock, type Invocation } from './runtime.ts';
 export async function resolveCanvasRef(input: string, client: ApiClient): Promise<string> {
   const parsed = parseRef(input, 'canvas');
   if (parsed.shareToken === undefined) return parsed.ref;
+  // Server contract: ResolveShareLinkRequest {url} — accepts a share URL or a bare token.
   const response = await client.request({
     method: 'POST',
     path: endpoints.shareLinkResolve(),
-    body: { token: parsed.shareToken },
+    body: { url: parsed.shareToken },
     timeoutMs: 30_000,
   });
   const root = asObject(response.body);

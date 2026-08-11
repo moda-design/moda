@@ -33,23 +33,21 @@ export function registerCanvas(program: Command): void {
   addGlobalFlags(
     canvas
       .command('create')
-      .description('create a canvas')
+      .description('create a canvas (brand application is client-side: read the kit, author with its tokens)')
       .requiredOption('--name <name>', 'canvas name')
-      .option('--brand <brand>', 'brand kit ref')
       .option('--size <WxH>', 'page size, e.g. 1920x1080')
       .option('--pages <n>', 'initial page count', (v: string) => Number.parseInt(v, 10))
-      .option('--folder <folder>', 'destination folder id')
       .option('--category <category>', 'canvas category (drives export defaults and multi-page semantics)'),
   ).action(
     wrapAction(async (_args, opts, cmd) => {
       const inv = buildInvocation(cmd);
       const { client } = await authedClient(inv, MUTATION_TIMEOUT_MS);
+      // Server contract: CanvasCreateRequest {name, width, height, page_count, category?}.
+      const size = typeof opts.size === 'string' ? parseSize(opts.size) : undefined;
       const payload = {
         name: opts.name as string,
-        ...(typeof opts.brand === 'string' ? { brand_id: opts.brand } : {}),
-        ...(typeof opts.size === 'string' ? { size: parseSize(opts.size) } : {}),
-        ...(typeof opts.pages === 'number' ? { pages: opts.pages } : {}),
-        ...(typeof opts.folder === 'string' ? { folder_id: opts.folder } : {}),
+        ...(size !== undefined ? { width: size.width, height: size.height } : {}),
+        ...(typeof opts.pages === 'number' ? { page_count: opts.pages } : {}),
         ...(typeof opts.category === 'string' ? { category: opts.category } : {}),
       };
       const response = await client.request({
@@ -80,9 +78,11 @@ export function registerCanvas(program: Command): void {
       const { client } = await authedClient(inv, MUTATION_TIMEOUT_MS);
       const ref = await resolveCanvasRef(args[0] as string, client);
       const revision = chooseRevision(ref, opts.revision as string | undefined, false, inv.env);
+      // Server contract: CanvasPagesRequest {pages: int | per-page configs, width?, height?, expected_revision?}.
+      const size = typeof opts.size === 'string' ? parseSize(opts.size) : undefined;
       const payload = {
-        count: opts.count as number,
-        ...(typeof opts.size === 'string' ? { size: parseSize(opts.size) } : {}),
+        pages: opts.count as number,
+        ...(size !== undefined ? { width: size.width, height: size.height } : {}),
         ...(revision.expectedRevision !== undefined ? { expected_revision: revision.expectedRevision } : {}),
       };
       const response = await client.request({
@@ -107,7 +107,7 @@ export function registerCanvas(program: Command): void {
       .command('markup <canvas>')
       .description('apply XML markup to a page (append or atomic full-page replace)')
       .requiredOption('--file <path>', "markup file, or '-' for stdin")
-      .option('--page <page_id>', 'target page (short id or "canvas" for floating nodes)')
+      .requiredOption('--page <page_id>', 'target page (short id or "canvas" for floating nodes)')
       .option('--mode <mode>', 'append | replace', 'append')
       .option('--revision <token>', 'expected revision (required for --mode replace)'),
   ).action(
@@ -121,10 +121,11 @@ export function registerCanvas(program: Command): void {
       const { client } = await authedClient(inv, MUTATION_TIMEOUT_MS);
       const ref = await resolveCanvasRef(args[0] as string, client);
       const revision = chooseRevision(ref, opts.revision as string | undefined, mode === 'replace', inv.env);
+      // Server contract: CanvasMarkupRequest {page_id (required), markup, mode, expected_revision?}.
       const payload = {
+        page_id: opts.page as string,
         markup,
         mode: mode === 'replace' ? 'replace_page_nodes' : 'append',
-        ...(typeof opts.page === 'string' ? { page_id: opts.page } : {}),
         ...(revision.expectedRevision !== undefined ? { expected_revision: revision.expectedRevision } : {}),
       };
       const response = await client.request({
@@ -198,7 +199,8 @@ export function registerCanvas(program: Command): void {
       const ref = await resolveCanvasRef(refArg as string, client);
       const revision = chooseRevision(ref, opts.revision as string | undefined, true, inv.env);
       warnStaleShortIds(ref, nodeIds.filter((id) => /^(n\d+|p_[a-z0-9]+|img\d+)$/.test(id)), inv);
-      const payload = { node_ids: nodeIds, expected_revision: revision.expectedRevision };
+      // Server contract: CanvasDeleteItemsRequest {ids, expected_revision}.
+      const payload = { ids: nodeIds, expected_revision: revision.expectedRevision };
       const response = await client.request({
         method: 'POST',
         path: endpoints.canvasDeleteItems(ref),
@@ -220,22 +222,17 @@ export function registerCanvas(program: Command): void {
     canvas
       .command('read <canvas>')
       .description('authoring DSL state snapshot + revision token')
-      .option('--page <page_id>', 'limit to one page')
-      .option('--node <node_id>', 'limit to one node')
-      .option('--detail <level>', 'detail level (server-defined)'),
+      .option('--page <page_id>', 'limit to one page'),
   ).action(
     wrapAction(async (args, opts, cmd) => {
       const inv = buildInvocation(cmd);
       const { client } = await authedClient(inv, READ_TIMEOUT_MS);
       const ref = await resolveCanvasRef(args[0] as string, client);
+      // Server contract: GET .../state?page_id= — the only query param the endpoint accepts.
       const response = await client.request({
         method: 'GET',
         path: endpoints.canvasState(ref),
-        query: {
-          page: opts.page as string | undefined,
-          node: opts.node as string | undefined,
-          detail: opts.detail as string | undefined,
-        },
+        query: { page_id: opts.page as string | undefined },
       });
       const root = asObject(response.body);
       const dsl = str(root, 'state') ?? str(root, 'dsl') ?? '';
@@ -267,10 +264,11 @@ export function registerCanvas(program: Command): void {
       const inv = buildInvocation(cmd);
       const { client } = await authedClient(inv, READ_TIMEOUT_MS);
       const ref = await resolveCanvasRef(args[0] as string, client);
+      // Server contract: CanvasLintRequest {page_ids?: string[]}.
       const response = await client.request({
         method: 'POST',
         path: endpoints.canvasLint(ref),
-        body: typeof opts.page === 'string' ? { page_id: opts.page } : {},
+        body: typeof opts.page === 'string' ? { page_ids: [opts.page] } : {},
       });
       const root = asObject(response.body);
       return {
@@ -413,10 +411,11 @@ export function registerCanvas(program: Command): void {
       const inv = buildInvocation(cmd);
       const { client } = await authedClient(inv, READ_TIMEOUT_MS);
       const ref = await resolveCanvasRef(args[0] as string, client);
+      // Server contract: MakeCanvasPublicRequest {permission: 'view'|'view_remix'} (default view_remix).
       const response = await client.request({
         method: 'POST',
         path: endpoints.canvasShare(ref),
-        body: opts.remix === true ? { remix: true } : {},
+        body: { permission: opts.remix === true ? 'view_remix' : 'view' },
       });
       const root = asObject(response.body);
       const url = str(root, 'share_url') ?? str(root, 'url');

@@ -11,19 +11,28 @@ interface WireErrorEnvelope {
   details?: Record<string, unknown>;
 }
 
-export function apiErrorFromResponse(status: number, body: unknown, requestId: string | undefined): CliError {
+export function apiErrorFromResponse(
+  status: number,
+  body: unknown,
+  requestId: string | undefined,
+  /** Parsed `Retry-After` response header, seconds (canvas_busy/canvas_active_job send the header, not retry_after_ms). */
+  retryAfterHeaderS?: number,
+): CliError {
   const envelope = extractEnvelope(body);
   const retryAfterMs = envelope?.retry_after_ms;
   const type = envelope?.type ?? defaultTypeForStatus(status);
+  const code = envelope?.code ?? `http_${status}`;
   return new CliError({
     type,
-    code: envelope?.code ?? `http_${status}`,
+    code,
     message: envelope?.message ?? `API request failed with HTTP ${status}.`,
     source: 'api',
+    // 426 cli_update_required is the server's contract floor — always name the fix.
+    hint: status === 426 || code === 'cli_update_required' ? 'Run: moda update' : undefined,
     docUrl: envelope?.doc_url,
     requestId: envelope?.request_id ?? requestId,
     retryable: type === 'rate_limited' || type === 'conflict' || status >= 500,
-    retryAfterS: retryAfterMs !== undefined ? Math.ceil(retryAfterMs / 1000) : undefined,
+    retryAfterS: retryAfterMs !== undefined ? Math.ceil(retryAfterMs / 1000) : retryAfterHeaderS,
     details: envelope?.details,
     status,
   });

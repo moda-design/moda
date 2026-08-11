@@ -31,7 +31,7 @@ export function compareVersions(a: string, b: string): number {
   return bPre - aPre;
 }
 
-/** Record `X-Moda-CLI-Latest` / `X-Moda-CLI-Minimum-Supported` off an API response. */
+/** Record `Moda-Cli-Latest-Version` / `Moda-Cli-Minimum-Version` off an API response. */
 export function recordVersionHeaders(headers: Headers, env: NodeJS.ProcessEnv = process.env): void {
   const latest = headers.get(HEADER_CLI_LATEST);
   const minimum = headers.get(HEADER_CLI_MINIMUM);

@@ -1,6 +1,10 @@
 /**
  * `moda media` — raw metered media operations (cli.md §11, Option A grammar). Always labeled
  * `metered: true`; model is an explicit parameter (frontend selector choices, `media models`).
+ *
+ * Server contracts: backend/app/api/public/routers/media.py — inputs are `file_` ids or
+ * http(s) URLs (`img_*` agent refs are rejected); image verbs return `results[]`, single-artifact
+ * verbs return `result`; every response carries the metered usage receipt.
  */
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
@@ -13,6 +17,7 @@ import { CliError } from '../cliError.ts';
 import { EXIT_OK } from '../output/exitCodes.ts';
 import type { CommandOutcome } from '../output/emit.ts';
 import { addGlobalFlags, authedClient, buildInvocation, metaBlock, wrapAction, type Invocation } from './runtime.ts';
+import { parseSize } from './canvasShared.ts';
 
 const MEDIA_TIMEOUT_MS = 600_000;
 
@@ -23,18 +28,27 @@ export function registerMedia(program: Command): void {
     media
       .command('generate-image')
       .description('generate an image (metered)')
-      .requiredOption('--prompt <prompt>', 'generation prompt')
+      .requiredOption('--prompt <prompt>', 'generation prompt (sent to the model verbatim)')
       .requiredOption('--model <model>', 'model id (see: moda media models)')
-      .option('--size <WxH>', 'output size hint')
+      .option('--size <WxH>', 'output size, e.g. 1024x1024')
+      .option('--aspect-ratio <ratio>', 'aspect ratio, e.g. 16:9')
+      .option('--source <refs...>', 'images the prompt modifies/preserves: file_ refs, URLs, or local paths')
+      .option('--reference <refs...>', 'style/subject references: file_ refs, URLs, or local paths')
       .option('-o, --output <path>', 'download the artifact to a local file'),
   ).action(
     wrapAction(async (_args, opts, cmd) => {
       const inv = buildInvocation(cmd);
       const { client } = await authedClient(inv, MEDIA_TIMEOUT_MS);
+      const size = typeof opts.size === 'string' ? parseSize(opts.size) : undefined;
       const payload = {
         prompt: opts.prompt as string,
         model: opts.model as string,
-        ...(typeof opts.size === 'string' ? { size: opts.size } : {}),
+        ...(size !== undefined ? { width: size.width, height: size.height } : {}),
+        ...(typeof opts.aspectRatio === 'string' ? { aspect_ratio: opts.aspectRatio } : {}),
+        ...(Array.isArray(opts.source) ? { source_images: await mediaInputs(opts.source as string[], client) } : {}),
+        ...(Array.isArray(opts.reference)
+          ? { reference_images: await mediaInputs(opts.reference as string[], client) }
+          : {}),
       };
       return mediaCall(client, inv, 'media.generate_image', endpoints.mediaGenerateImage(), payload, opts.output as string | undefined);
     }),
@@ -42,11 +56,12 @@ export function registerMedia(program: Command): void {
 
   addGlobalFlags(
     media
-      .command('generate-video')
-      .description('generate a video (metered)')
-      .requiredOption('--prompt <prompt>', 'generation prompt')
+      .command('edit-image')
+      .description('generative image edit (metered) — the same primitive with required source images')
+      .requiredOption('--prompt <prompt>', 'edit instruction (sent to the model verbatim)')
       .requiredOption('--model <model>', 'model id (see: moda media models)')
-      .option('--image <file_id>', 'first-frame image ref')
+      .requiredOption('--source <refs...>', 'the image(s) to edit: file_ refs, URLs, or local paths')
+      .option('--reference <refs...>', 'style/subject references: file_ refs, URLs, or local paths')
       .option('-o, --output <path>', 'download the artifact to a local file'),
   ).action(
     wrapAction(async (_args, opts, cmd) => {
@@ -55,7 +70,31 @@ export function registerMedia(program: Command): void {
       const payload = {
         prompt: opts.prompt as string,
         model: opts.model as string,
-        ...(typeof opts.image === 'string' ? { image_file_id: opts.image } : {}),
+        source_images: await mediaInputs(opts.source as string[], client),
+        ...(Array.isArray(opts.reference)
+          ? { reference_images: await mediaInputs(opts.reference as string[], client) }
+          : {}),
+      };
+      return mediaCall(client, inv, 'media.edit_image', endpoints.mediaEditImage(), payload, opts.output as string | undefined);
+    }),
+  );
+
+  addGlobalFlags(
+    media
+      .command('generate-video')
+      .description('generate a video (metered; the provider render runs within this call)')
+      .requiredOption('--prompt <prompt>', 'generation prompt')
+      .requiredOption('--model <model>', 'model id (see: moda media models)')
+      .option('--image <ref>', 'first-frame image: file_ ref, URL, or local path')
+      .option('-o, --output <path>', 'download the artifact to a local file'),
+  ).action(
+    wrapAction(async (_args, opts, cmd) => {
+      const inv = buildInvocation(cmd);
+      const { client } = await authedClient(inv, MEDIA_TIMEOUT_MS);
+      const payload = {
+        prompt: opts.prompt as string,
+        model: opts.model as string,
+        ...(typeof opts.image === 'string' ? { start_image: await mediaInput(opts.image, client) } : {}),
       };
       return mediaCall(client, inv, 'media.generate_video', endpoints.mediaGenerateVideo(), payload, opts.output as string | undefined);
     }),
@@ -64,15 +103,15 @@ export function registerMedia(program: Command): void {
   addGlobalFlags(
     media
       .command('upscale <ref_or_path>')
-      .description('upscale an image (metered); accepts a file_ ref or a local path (auto-uploads)')
-      .option('--model <model>', 'model id')
+      .description('upscale an image 2x or 4x (metered); accepts a file_ ref, URL, or local path')
+      .option('--scale <n>', 'upscale factor: 2 or 4', (v: string) => Number.parseInt(v, 10))
       .option('-o, --output <path>', 'download the artifact to a local file'),
   ).action(
     wrapAction(async (args, opts, cmd) => {
       const inv = buildInvocation(cmd);
       const { client } = await authedClient(inv, MEDIA_TIMEOUT_MS);
-      const fileId = await refOrUpload(args[0] as string, client);
-      const payload = { file_id: fileId, ...(typeof opts.model === 'string' ? { model: opts.model } : {}) };
+      const image = await mediaInput(args[0] as string, client);
+      const payload = { image, ...(typeof opts.scale === 'number' ? { scale: opts.scale } : {}) };
       return mediaCall(client, inv, 'media.upscale', endpoints.mediaUpscale(), payload, opts.output as string | undefined);
     }),
   );
@@ -80,30 +119,32 @@ export function registerMedia(program: Command): void {
   addGlobalFlags(
     media
       .command('upscale-video <ref_or_path>')
-      .description('upscale a video (metered)')
-      .option('--model <model>', 'model id')
-      .option('-o, --output <path>', 'download the artifact to a local file'),
+      .description('upscale a video — not available: the public media lane has no upscale-video endpoint'),
   ).action(
-    wrapAction(async (args, opts, cmd) => {
-      const inv = buildInvocation(cmd);
-      const { client } = await authedClient(inv, MEDIA_TIMEOUT_MS);
-      const fileId = await refOrUpload(args[0] as string, client);
-      const payload = { file_id: fileId, ...(typeof opts.model === 'string' ? { model: opts.model } : {}) };
-      return mediaCall(client, inv, 'media.upscale_video', endpoints.mediaUpscaleVideo(), payload, opts.output as string | undefined);
+    wrapAction(async () => {
+      throw new CliError({
+        type: 'unprocessable',
+        code: 'not_available',
+        message: 'Video upscaling has no public API endpoint — a recorded parity exception in the prototype.',
+        hint: 'Upscale video in the Moda app; image upscaling is available: moda media upscale.',
+        source: 'local',
+      });
     }),
   );
 
   addGlobalFlags(
     media
       .command('remove-background <ref_or_path>')
-      .description('remove an image background (metered)')
+      .description('remove an image background (metered); result is a new transparent PNG')
+      .option('--high-quality', 'use the high-quality matting model')
       .option('-o, --output <path>', 'download the artifact to a local file'),
   ).action(
     wrapAction(async (args, opts, cmd) => {
       const inv = buildInvocation(cmd);
       const { client } = await authedClient(inv, MEDIA_TIMEOUT_MS);
-      const fileId = await refOrUpload(args[0] as string, client);
-      return mediaCall(client, inv, 'media.remove_background', endpoints.mediaRemoveBackground(), { file_id: fileId }, opts.output as string | undefined);
+      const image = await mediaInput(args[0] as string, client);
+      const payload = { image, ...(opts.highQuality === true ? { high_quality: true } : {}) };
+      return mediaCall(client, inv, 'media.remove_background', endpoints.mediaRemoveBackground(), payload, opts.output as string | undefined);
     }),
   );
 
@@ -126,21 +167,31 @@ export function registerMedia(program: Command): void {
   );
 }
 
-/** Accept a `file_` ref directly, or a local path (uploaded first so the media lane sees a ref). */
-async function refOrUpload(input: string, client: ApiClient): Promise<string> {
+/**
+ * Resolve one media input to what the server accepts: a `file_` ref or an http(s) URL
+ * pass through; a local path is uploaded first so the media lane sees a durable ref.
+ */
+async function mediaInput(input: string, client: ApiClient): Promise<string> {
   if (/^file_[0-9A-Za-z]+$/.test(input)) return input;
+  if (input.startsWith('http://') || input.startsWith('https://')) return input;
   if (!existsSync(input)) {
-    throw CliError.usage(`'${input}' is neither a file_ ref nor an existing local path.`);
+    throw CliError.usage(`'${input}' is not a file_ ref, an http(s) URL, or an existing local path.`);
   }
   const form = new FormData();
   form.append('file', Bun.file(input), input.split('/').at(-1) ?? 'upload');
   const response = await client.request({ method: 'POST', path: endpoints.uploads(), formData: form, timeoutMs: 300_000 });
   const body = asObject(response.body);
-  const fileId = str(body, 'file_id') ?? str(asObject(body.file), 'id') ?? str(body, 'id');
+  const fileId = str(body, 'id') ?? str(body, 'file_id') ?? str(asObject(body.file), 'id');
   if (fileId === undefined) {
     throw new CliError({ type: 'upstream_error', code: 'upload_failed', message: 'Upload returned no file id.', source: 'api' });
   }
   return fileId;
+}
+
+async function mediaInputs(inputs: string[], client: ApiClient): Promise<string[]> {
+  const resolved: string[] = [];
+  for (const input of inputs) resolved.push(await mediaInput(input, client));
+  return resolved;
 }
 
 async function mediaCall(
@@ -158,8 +209,12 @@ async function mediaCall(
     idempotency: { command: operation, canvas: '', expectedRevision: undefined, payload: JSON.stringify(payload) },
   });
   const root = asObject(response.body);
+  // Image verbs return `results[]`; video/upscale/remove-background return `result`.
+  const results = Array.isArray(root.results) ? root.results.map(asObject) : [];
+  const single = asObject(root.result);
+  const first = results[0] ?? single;
+  const artifactUrl = str(first, 'url');
   let downloaded: string | undefined;
-  const artifactUrl = str(root, 'download_url') ?? str(root, 'artifact_url') ?? str(asObject(root.artifact), 'url');
   if (output !== undefined && artifactUrl !== undefined) {
     const bare = await fetch(artifactUrl, { signal: AbortSignal.timeout(120_000) });
     if (bare.ok) {
@@ -181,8 +236,13 @@ async function mediaCall(
     },
     human: (write) => {
       const usage = asObject(root.usage);
-      const fileId = str(root, 'file_id') ?? str(asObject(root.file), 'id');
-      write(`${operation}: done${fileId !== undefined ? ` — ${fileId}` : ''} (metered_credits: ${usage.metered_credits ?? '?'})`);
+      const ids = (results.length > 0 ? results : [single])
+        .map((r) => str(r, 'id'))
+        .filter((id): id is string => id !== undefined);
+      write(
+        `${operation}: done${ids.length > 0 ? ` — ${ids.join(', ')}` : ''}` +
+          ` (metered${typeof usage.model === 'string' ? `, model: ${usage.model}` : ''})`,
+      );
       if (downloaded !== undefined) write(`artifact → ${downloaded}`);
     },
     exitCode: EXIT_OK,

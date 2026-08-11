@@ -103,7 +103,13 @@ export class ApiClient {
       }
 
       const errBody = await this.parseJson(response).catch(() => undefined);
-      const error = apiErrorFromResponse(response.status, errBody, requestId);
+      const headerRetryMs = this.retryAfterMs(response.headers, undefined);
+      const error = apiErrorFromResponse(
+        response.status,
+        errBody,
+        requestId,
+        headerRetryMs !== undefined ? Math.ceil(headerRetryMs / 1000) : undefined,
+      );
 
       // 5xx — transport-class retry (safe: mutations carry idempotency keys).
       if (response.status >= 500 && transportAttempt < transportBudget) {
@@ -156,13 +162,22 @@ export class ApiClient {
       Accept: op.raw === true ? '*/*' : 'application/json',
     };
     if (this.opts.apiKey !== undefined) headers.Authorization = `Bearer ${this.opts.apiKey}`;
-    if (op.idempotency !== undefined) headers['Idempotency-Key'] = deriveIdempotencyKey(op.idempotency);
+    let body = op.body;
+    if (op.idempotency !== undefined) {
+      const key = deriveIdempotencyKey(op.idempotency);
+      // The server reads `idempotency_key` from the JSON body (Canvas Actions mutation
+      // requests and StartTaskRequest); the header is kept as a transport-level hint.
+      headers['Idempotency-Key'] = key;
+      if (body !== null && typeof body === 'object' && !Array.isArray(body)) {
+        body = { ...(body as Record<string, unknown>), idempotency_key: key };
+      }
+    }
     const init: RequestInit = { method: op.method, headers, signal: AbortSignal.timeout(timeoutMs) };
     if (op.formData !== undefined) {
       init.body = op.formData;
-    } else if (op.body !== undefined) {
+    } else if (body !== undefined) {
       headers['Content-Type'] = 'application/json';
-      init.body = JSON.stringify(op.body);
+      init.body = JSON.stringify(body);
     }
     return init;
   }

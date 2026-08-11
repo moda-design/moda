@@ -20,7 +20,7 @@ revision token (`moda canvas read` first, or `--revision`).
 - Layout: `<row>`, `<column>`, `<layers>`, `<group clip="true">` (first child is the mask).
 - `<text>`: `font-size`, `color`, `text-align`, `format="markdown|html"` for rich text.
 - `<image src="…">` or `<image icon="search query">`; `fit="cover|contain"`. Images are
-  pattern fills — use `image(REF)` fills with the short refs `moda file upload` returns.
+  pattern fills — use `image(REF)` fills with the durable `file_…` ids `moda file upload` returns.
 - Generated: `<chart>` (pipe-delimited `<data>` block), `<qr>`, `<latex>`, `<map>`.
 - `<background fill="…">` — native page background (colors, gradients, `shader(...)`).
 - `<table>` — HTML `<tr>/<td>/<th>`; zebra via `background-colors`; headers via `<th>`.

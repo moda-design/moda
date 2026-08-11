@@ -12,8 +12,14 @@ import { performExport } from './export.ts';
 
 const START_TIMEOUT_MS = 60_000;
 const WAIT_BUDGET_MS = 30 * 60 * 1000;
-const TERMINAL = new Set(['completed', 'succeeded', 'done', 'failed', 'error', 'cancelled']);
-const FAILED = new Set(['failed', 'error', 'cancelled']);
+// Server taxonomy (PublicTaskStatus): queued | running | succeeded | failed | canceled | expired.
+const TERMINAL = new Set(['succeeded', 'failed', 'canceled', 'expired']);
+const FAILED = new Set(['failed', 'canceled', 'expired']);
+
+/** FormatInput.category enum on StartTaskRequest; anything else travels as a free-text label. */
+const FORMAT_CATEGORIES = new Set([
+  'slides', 'social', 'carousel', 'pdf', 'diagram', 'ui', 'animation', 'prints', 'web-ads', 'other',
+]);
 
 export function registerTask(program: Command): void {
   const task = program.command('task').description('Omni escalation lane — metered, labeled, explicit');
@@ -36,12 +42,19 @@ export function registerTask(program: Command): void {
       const inv = buildInvocation(cmd);
       const { client } = await authedClient(inv, START_TIMEOUT_MS);
       const canvasRef = typeof opts.canvas === 'string' ? await resolveCanvasRef(opts.canvas, client) : undefined;
+      // Server contract (StartTaskRequest): brand_kit_id, attachments ({file_id, role}),
+      // format as a FormatInput object. `role: 'asset'` = place the file in the design.
+      const format = typeof opts.format === 'string' ? opts.format : undefined;
       const payload = {
         prompt: opts.prompt as string,
         ...(canvasRef !== undefined ? { canvas_id: canvasRef } : {}),
-        ...(Array.isArray(opts.files) ? { file_ids: opts.files as string[] } : {}),
-        ...(typeof opts.brand === 'string' ? { brand_id: parseRef(opts.brand, 'brand_kit').ref } : {}),
-        ...(typeof opts.format === 'string' ? { format: opts.format } : {}),
+        ...(Array.isArray(opts.files)
+          ? { attachments: (opts.files as string[]).map((fileId) => ({ file_id: fileId, role: 'asset' })) }
+          : {}),
+        ...(typeof opts.brand === 'string' ? { brand_kit_id: parseRef(opts.brand, 'brand_kit').ref } : {}),
+        ...(format !== undefined
+          ? { format: FORMAT_CATEGORIES.has(format) ? { category: format } : { label: format } }
+          : {}),
         ...(typeof opts.callbackUrl === 'string' ? { callback_url: opts.callbackUrl } : {}),
       };
       const started = await client.request({
@@ -56,7 +69,8 @@ export function registerTask(program: Command): void {
         },
       });
       const startBody = asObject(started.body);
-      const taskId = str(startBody, 'task_id') ?? str(asObject(startBody.task), 'id') ?? str(startBody, 'id');
+      // Server contract: the response is the canonical Task envelope — `id` is the task_... id.
+      const taskId = str(startBody, 'id') ?? str(startBody, 'task_id') ?? str(asObject(startBody.task), 'id');
       const wantExport = typeof opts.export === 'string';
       const shouldWait = opts.wait === true || wantExport;
 
@@ -77,17 +91,18 @@ export function registerTask(program: Command): void {
       const finalBody = await waitForTask(client, taskId, inv);
       const status = taskStatusOf(finalBody);
       if (status !== undefined && FAILED.has(status)) {
+        const errorObj = asObject(finalBody.error);
         throw new CliError({
           type: 'upstream_error',
           code: 'task_failed',
-          message: `Task ${taskId} ${status}: ${str(finalBody, 'message') ?? 'no detail'}.`,
+          message: `Task ${taskId} ${status}: ${str(errorObj, 'message') ?? str(finalBody, 'message') ?? 'no detail'}.`,
           source: 'api',
         });
       }
 
       if (wantExport) {
         const exportCanvas =
-          str(asObject(finalBody.canvas), 'id') ?? str(finalBody, 'canvas_id') ?? canvasRef;
+          str(asObject(finalBody.result), 'canvas_id') ?? str(finalBody, 'canvas_id') ?? canvasRef;
         if (exportCanvas === undefined) {
           throw new CliError({
             type: 'unprocessable',
@@ -146,10 +161,11 @@ export function registerTask(program: Command): void {
     wrapAction(async (_args, opts, cmd) => {
       const inv = buildInvocation(cmd);
       const { client } = await authedClient(inv, START_TIMEOUT_MS);
+      // Server contract: GET /v1/tasks?status=... (single status filter; 'running' ≈ active).
       const response = await client.request({
         method: 'GET',
         path: endpoints.taskList(),
-        query: opts.active === true ? { active: 'true' } : undefined,
+        query: opts.active === true ? { status: 'running' } : undefined,
       });
       return passthroughOutcome('task.list', response, inv);
     }),
@@ -177,7 +193,11 @@ async function waitForTask(client: ApiClient, taskId: string, inv: Invocation): 
     const response = await client.request({ method: 'GET', path: endpoints.taskShow(taskId), timeoutMs: 30_000 });
     const body = asObject(response.body);
     const status = taskStatusOf(body);
-    const progress = str(body, 'progress') ?? str(body, 'phase');
+    // TaskProgress is {percent, step}; render whichever is present.
+    const progressObj = asObject(body.progress);
+    const step = str(progressObj, 'step');
+    const percent = progressObj.percent;
+    const progress = step ?? (typeof percent === 'number' ? `${percent}%` : undefined);
     inv.note(`task ${taskId}: ${status ?? 'running'}${progress !== undefined ? ` — ${progress}` : ''}`);
     if (status !== undefined && TERMINAL.has(status)) return body;
     if (Date.now() > deadline) {
@@ -189,9 +209,9 @@ async function waitForTask(client: ApiClient, taskId: string, inv: Invocation): 
         source: 'transport',
       });
     }
-    // Server-paced backoff: honor a retry hint when present, otherwise ramp to 10s.
-    const hint = asObject(body).retry_after_s;
-    const sleepMs = typeof hint === 'number' ? hint * 1000 : waitMs;
+    // Server-paced backoff: honor the Task envelope's retry_after_ms hint, otherwise ramp to 10s.
+    const hint = asObject(body).retry_after_ms;
+    const sleepMs = typeof hint === 'number' ? hint : waitMs;
     await new Promise((resolve) => setTimeout(resolve, sleepMs));
     waitMs = Math.min(waitMs * 1.5, 10_000);
   }

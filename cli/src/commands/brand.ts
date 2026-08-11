@@ -41,13 +41,14 @@ export function registerBrand(program: Command): void {
   );
 
   addGlobalFlags(
-    brand.command('show <brand>').description('verbose model-safe kit: palette, fonts, logo refs — never signed URLs'),
+    brand.command('show <brand>').description('verbose kit: palette, fonts, logos (durable file_ ids + signed URLs)'),
   ).action(
     wrapAction(async (args, _opts, cmd) => {
       const inv = buildInvocation(cmd);
       const { client } = await authedClient(inv, READ_TIMEOUT_MS);
       const ref = parseRef(args[0] as string, 'brand_kit').ref;
-      const response = await client.request({ method: 'GET', path: endpoints.brandShow(ref), query: { verbose: 'true' } });
+      // Server contract: GET /v1/brand-kits/{ref} (gated verbose read) — no query params.
+      const response = await client.request({ method: 'GET', path: endpoints.brandShow(ref) });
       return passthroughOutcome('brand.show', response, inv);
     }),
   );
@@ -88,7 +89,7 @@ export function registerBrand(program: Command): void {
       const inv = buildInvocation(cmd);
       const { client } = await authedClient(inv, READ_TIMEOUT_MS);
       const ref = parseRef(args[0] as string, 'brand_kit').ref;
-      const response = await client.request({ method: 'GET', path: endpoints.brandShow(ref), query: { verbose: 'true' } });
+      const response = await client.request({ method: 'GET', path: endpoints.brandShow(ref) });
       const outPath = opts.output as string;
       mkdirSync(dirname(outPath), { recursive: true });
       writeFileSync(outPath, `${JSON.stringify(response.body, null, 2)}\n`, 'utf8');

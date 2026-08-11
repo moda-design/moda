@@ -25,7 +25,11 @@ export function strArray(obj: JsonObject, key: string): string[] {
   return Array.isArray(v) ? v.filter((s): s is string => typeof s === 'string') : [];
 }
 
-/** Working whoami shape (seam-plan endpoint; identity/org/plan/scopes + entitlement summary). */
+/**
+ * GET /v1/whoami shape (backend/app/api/public/routers/canvas_actions.py::whoami):
+ * `{user: {id, email}, team: {id, uuid, name}, organization: {id, uuid} | null,
+ *   plan, scopes, api_key_id, entitlements}`.
+ */
 export interface Whoami {
   userId?: string;
   email?: string;
@@ -39,12 +43,14 @@ export interface Whoami {
 export function parseWhoami(body: unknown): Whoami {
   const root = asObject(body);
   const user = asObject(root.user);
-  const org = asObject(root.org);
+  const team = asObject(root.team);
+  const organization = asObject(root.organization);
   return {
     userId: str(user, 'id') ?? str(root, 'user_id'),
     email: str(user, 'email') ?? str(root, 'email'),
-    orgId: str(org, 'id') ?? str(root, 'org_id'),
-    orgName: str(org, 'name') ?? str(root, 'org_name'),
+    orgId: str(organization, 'id') ?? str(team, 'id') ?? str(root, 'org_id'),
+    // The org record carries no display name on this endpoint; the team name is the human label.
+    orgName: str(team, 'name') ?? str(root, 'org_name'),
     plan: str(root, 'plan'),
     scopes: strArray(root, 'scopes'),
     raw: root,

@@ -22,10 +22,10 @@ export function registerExport(program: Command): void {
       .description('export a canvas (pdf|pptx|png|jpeg); polls transparently and downloads to -o')
       .requiredOption('--format <format>', 'pdf | pptx | png | jpeg')
       .option('-o, --output <path>', 'output path (default <canvas>.<ext> in the output dir)')
-      .option('--pages <ranges>', 'page selection, e.g. 1-3,5')
+      .option('--page <n>', 'single 1-indexed page to export (omit for all pages; multi-page png/jpeg arrive as a zip)', (v: string) => Number.parseInt(v, 10))
       .option('--pixel-ratio <n>', 'pixel ratio 1-4 (raster formats)', (v: string) => Number.parseInt(v, 10))
-      .option('--flatten', 'degrade PDF to raster')
-      .option('--no-wait', 'do not poll; print the export id and exit 0'),
+      .option('--flatten', 'PDF only: degrade to raster (default is a selectable vector PDF)')
+      .option('--no-wait', 'do not poll; print the export task id and exit 0'),
   ).action(
     wrapAction(async (args, opts, cmd) => {
       const inv = buildInvocation(cmd);
@@ -34,7 +34,7 @@ export function registerExport(program: Command): void {
       return performExport(client, inv, ref, {
         format: (opts.format as string).toLowerCase(),
         output: opts.output as string | undefined,
-        pages: opts.pages as string | undefined,
+        pageNumber: opts.page as number | undefined,
         pixelRatio: opts.pixelRatio as number | undefined,
         flatten: opts.flatten === true,
         wait: opts.wait !== false,
@@ -46,7 +46,8 @@ export function registerExport(program: Command): void {
 export interface ExportOptions {
   format: string;
   output?: string;
-  pages?: string;
+  /** Single 1-indexed page; the server has no range selection. */
+  pageNumber?: number;
   pixelRatio?: number;
   flatten?: boolean;
   wait: boolean;
@@ -72,27 +73,31 @@ export async function performExport(
   if (!SUPPORTED_FORMATS.has(format)) {
     throw CliError.usage(`Unsupported --format '${format}'.`, 'Supported: pdf, pptx, png, jpeg.');
   }
+  // Server contract: POST /v1/canvases/{id}/export takes QUERY params (format, page_number,
+  // pixel_ratio, flatten, wait), not a JSON body. flatten defaults to True server-side, so
+  // pass it explicitly — the CLI default is a selectable vector PDF.
   const started = await client.request({
     method: 'POST',
     path: endpoints.canvasExport(ref),
-    body: {
+    query: {
       format,
-      ...(options.pages !== undefined ? { pages: options.pages } : {}),
-      ...(options.pixelRatio !== undefined ? { pixel_ratio: options.pixelRatio } : {}),
-      ...(options.flatten === true ? { flatten: true } : {}),
+      ...(options.pageNumber !== undefined ? { page_number: String(options.pageNumber) } : {}),
+      ...(options.pixelRatio !== undefined ? { pixel_ratio: String(options.pixelRatio) } : {}),
+      flatten: options.flatten === true ? 'true' : 'false',
+      wait: options.wait ? 'true' : 'false',
     },
     timeoutMs: 120_000,
   });
   const startBody = asObject(started.body);
-  const exportId = str(startBody, 'export_id') ?? str(asObject(startBody.export), 'id') ?? str(startBody, 'id');
+  const exportId = str(startBody, 'task_id') ?? str(asObject(startBody.export), 'id') ?? str(startBody, 'id');
 
   if (!options.wait) {
     return {
       body: {
         ok: true,
         operation: 'canvas.export',
-        export_id: exportId,
-        status: exportStatusOf(startBody) ?? 'pending',
+        task_id: exportId,
+        status: exportStatusOf(startBody) ?? 'in_progress',
         usage: startBody.usage ?? { class: 'deterministic', metered_credits: 0 },
         meta: metaBlock({ requestId: started.requestId, durationMs: started.durationMs }),
       },
@@ -124,7 +129,7 @@ export async function performExport(
     body: {
       ok: true,
       operation: 'canvas.export',
-      export_id: exportId,
+      task_id: exportId,
       format,
       output: toStdout ? '-' : outPath,
       bytes: bytes.byteLength,
@@ -151,8 +156,9 @@ function downloadUrlOf(body: Record<string, unknown>): string | undefined {
   );
 }
 
-const DONE = new Set(['completed', 'succeeded', 'done', 'ready']);
-const FAILED = new Set(['failed', 'error', 'cancelled']);
+// Server statuses: export → 'completed' | 'in_progress'; export-status → 'queued' | 'running' | 'completed' | 'failed'.
+const DONE = new Set(['completed']);
+const FAILED = new Set(['failed']);
 
 async function pollExport(
   client: ApiClient,
@@ -170,7 +176,15 @@ async function pollExport(
       throw new CliError({
         type: 'upstream_error',
         code: 'export_failed',
-        message: `Export ${status}: ${str(body, 'message') ?? 'no detail'}.`,
+        message: `Export ${status}: ${str(body, 'error') ?? str(body, 'message') ?? 'no detail'}.`,
+        source: 'api',
+      });
+    }
+    if (exportId === undefined) {
+      throw new CliError({
+        type: 'upstream_error',
+        code: 'export_failed',
+        message: 'Export is in progress but the server returned no task_id to poll.',
         source: 'api',
       });
     }
@@ -179,16 +193,18 @@ async function pollExport(
         type: 'upstream_error',
         code: 'export_timeout',
         message: 'Export did not finish within the polling budget.',
-        hint: exportId !== undefined ? `Check later: export id ${exportId}` : undefined,
+        hint: `Check later: export task id ${exportId}`,
         source: 'transport',
       });
     }
-    await new Promise((resolve) => setTimeout(resolve, 1_500));
+    // Server contract: GET .../export-status?task_id=... (task_id is required).
+    const hint = body.retry_after_seconds;
+    await new Promise((resolve) => setTimeout(resolve, typeof hint === 'number' ? hint * 1000 : 1_500));
     inv.note('export: polling…');
     const polled = await client.request({
       method: 'GET',
       path: endpoints.canvasExportStatus(ref),
-      query: exportId !== undefined ? { export_id: exportId } : undefined,
+      query: { task_id: exportId },
       timeoutMs: 30_000,
     });
     body = asObject(polled.body);

@@ -22,7 +22,7 @@ describe('version comparison', () => {
 describe('version headers + stderr notice discipline (cli.md §14)', () => {
   test('records headers off responses and reports update availability', () => {
     const env = tempEnv();
-    const headers = new Headers({ 'X-Moda-CLI-Latest': '9.9.9', 'X-Moda-CLI-Minimum-Supported': '0.0.1' });
+    const headers = new Headers({ 'Moda-Cli-Latest-Version': '9.9.9', 'Moda-Cli-Minimum-Version': '0.0.1' });
     recordVersionHeaders(headers, env);
     const stamp = readUpdateStamp(env);
     expect(stamp.latest).toBe('9.9.9');

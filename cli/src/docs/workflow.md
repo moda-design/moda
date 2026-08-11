@@ -3,8 +3,9 @@
 The deterministic loop (unmetered; `usage.metered_credits: 0` on every response):
 
 1. `moda doctor --json` — step 0: connectivity, auth, version range.
-2. `moda canvas create --name "…" [--brand bk_…] [--category …]`
-3. `moda canvas markup CVS --file - < page.xml` — author content (see `moda docs markup`).
+2. `moda canvas create --name "…" [--size WxH] [--category …]` (brand application is
+   client-side: `moda brand show` the kit and author with its tokens).
+3. `moda canvas markup CVS --page p_… --file - < page.xml` — author content (see `moda docs markup`).
 4. `moda canvas read CVS` — DSL snapshot + revision token + short ids.
 5. `moda canvas screenshot CVS -o preview.png` — inspect with your host's image viewing.
 6. `moda canvas edit CVS --file fix.js` — corrective edits (see `moda docs edit`).
@@ -26,7 +27,8 @@ mutation. Busy canvases are retried automatically (5s/15s/30s), then exit 5.
 Resources:
 
 - Brand: `moda brand show bk_… --json` → author markup with its colors/fonts/logo refs.
-- Files: `moda file upload photo.png` → use the returned ref in `image(REF)` fills.
+- Files: `moda file upload photo.png` → use the returned `file_…` ref in `image(REF)` fills
+  and media inputs; `moda file search QUERY` finds existing team assets.
 - Metered lanes (always labeled, never hidden): `moda task start --prompt "…"` (Omni
-  escalation) and `moda media generate-image --prompt "…" --model …`. Both report a cost
-  class before and an exact receipt after (`usage.metered_credits`).
+  escalation) and `moda media generate-image --prompt "…" --model …`. Both are labeled
+  `usage.class: "metered"`; exact credits are enriched asynchronously on your account usage.

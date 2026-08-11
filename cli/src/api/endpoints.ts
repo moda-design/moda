@@ -7,10 +7,10 @@
 /** Calendar pin for the public API (`Moda-Version` header, backend/app/api/public/versioning.py). */
 export const API_VERSION_PIN = '2026-05-01';
 
-/** CLI version headers on every Canvas Actions response (working names — seam plan owns them). */
-export const HEADER_CLI_LATEST = 'X-Moda-CLI-Latest';
-export const HEADER_CLI_MINIMUM = 'X-Moda-CLI-Minimum-Supported';
-/** Request header the server keys the below-minimum contract-floor error on. */
+/** CLI version headers on every response (backend/app/api/public/versioning.py CLI_*_HEADER). */
+export const HEADER_CLI_LATEST = 'Moda-Cli-Latest-Version';
+export const HEADER_CLI_MINIMUM = 'Moda-Cli-Minimum-Version';
+/** Request header the server keys the below-minimum contract-floor error on (426 cli_update_required). */
 export const HEADER_CLI_VERSION = 'Moda-Cli-Version';
 
 const enc = encodeURIComponent;
@@ -46,13 +46,9 @@ export const endpoints = {
   uploads: () => '/v1/uploads',
   uploadFromUrl: () => '/v1/uploads/from-url',
 
-  // Files/folders facade (NEW lane)
-  fileList: () => '/v1/files',
-  fileSearch: () => '/v1/files/search',
-  fileShow: (ref: string) => `/v1/files/${enc(ref)}`,
-  fileDownload: (ref: string) => `/v1/files/${enc(ref)}/download`,
-  folderList: () => '/v1/folders',
-  folderCreate: () => '/v1/folders',
+  // Asset search (Canvas Actions resource verb — the only drive read that exists today;
+  // /v1/files and /v1/folders were NOT built in the prototype: a recorded parity exception)
+  assetsSearch: () => '/v1/assets/search',
 
   // Brand kits
   brandList: () => '/v1/brand-kits',
@@ -67,9 +63,9 @@ export const endpoints = {
 
   // Media (NEW metered lane)
   mediaGenerateImage: () => '/v1/media/generate-image',
+  mediaEditImage: () => '/v1/media/edit-image',
   mediaGenerateVideo: () => '/v1/media/generate-video',
   mediaUpscale: () => '/v1/media/upscale',
-  mediaUpscaleVideo: () => '/v1/media/upscale-video',
   mediaRemoveBackground: () => '/v1/media/remove-background',
   mediaModels: () => '/v1/media/models',
 
