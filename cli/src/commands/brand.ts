@@ -104,7 +104,7 @@ export function registerBrand(program: Command): void {
   addGlobalFlags(
     brand
       .command('create')
-      .description('extract a brand kit (metered brand-kit lane — reports a receipt)')
+      .description('extract a brand kit from a website (deterministic — no credits)')
       .option('--url <url>', 'extract from a website')
       .option('--fig <path>', 'import from a .fig file (not yet available in the prototype)'),
   ).action(

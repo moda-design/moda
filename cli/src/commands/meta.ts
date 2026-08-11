@@ -220,6 +220,8 @@ async function runDoctor(inv: DoctorInvocation) {
     const who = parseWhoami(response.body);
     checks.identity = { email: who.email, org: who.orgId, org_name: who.orgName, plan: who.plan };
     checks.scopes = who.scopes;
+    // Step-0's entitlement gate reads these: whoami delivers them, so doctor must surface them.
+    checks.entitlements = who.raw.entitlements ?? {};
   } catch (err) {
     if (err instanceof CliError && err.fields.source === 'api') {
       connectivity = true;
@@ -272,6 +274,10 @@ async function runDoctor(inv: DoctorInvocation) {
       write(`credential: ${String(checks.credential_source)}${authenticated ? ' (valid)' : ''}`);
       if (!authenticated) write('not authenticated — run: moda auth login');
       write(`keychain: ${backend.name}`);
+      const entitlements = checks.entitlements;
+      if (entitlements !== undefined && typeof entitlements === 'object' && Object.keys(entitlements as object).length > 0) {
+        write(`entitlements: ${JSON.stringify(entitlements)}`);
+      }
       if (belowMinimum) write(`CLI ${CLI_VERSION} is below the minimum supported version — run: moda update`);
       else if (available !== undefined) write(`update available: ${available.latest} — run: moda update`);
       write(`install/update (pinned): ${pinnedInstallCommand()}`);

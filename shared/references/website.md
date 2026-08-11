@@ -5,8 +5,11 @@ deterministic and unmetered. This is a design surface: design quality matters,
 not just valid HTML.
 
 **v1 is static single-page sites**: one HTML document in, served as the site.
-No extra routes, no server code, no logins, no databases — offer supported
-embeds and links instead, and say plainly when something is out of scope.
+No extra routes, no server code, no logins, no databases — and **no
+screenshot/visual-QA verb on this surface**. Say BOTH up front when a request
+implies multiple pages or rendered-preview checks: offer supported embeds,
+anchor-linked sections, and live-URL review instead, and say plainly when
+something is out of scope — before building, not after.
 
 ## Verbs
 

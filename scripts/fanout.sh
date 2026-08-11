@@ -19,13 +19,13 @@ fan() {
 fan moda-deck markup edit-code reading-and-verifying gotchas design-quality \
   brand export omni-and-media deck-design deck-playbooks charts web
 fan moda-one-pager markup edit-code reading-and-verifying gotchas design-quality \
-  brand export omni-and-media document-design web
-fan moda-brand brand gotchas markup design-quality
-fan moda-edit edit-code reading-and-verifying gotchas markup design-quality brand
-fan moda-website website brand web
+  brand export omni-and-media document-design web charts
+fan moda-brand brand gotchas markup design-quality charts edit-code omni-and-media
+fan moda-edit edit-code reading-and-verifying gotchas markup design-quality brand charts omni-and-media
+fan moda-website website brand web design-quality omni-and-media markup edit-code gotchas charts reading-and-verifying
 fan moda-social social markup edit-code reading-and-verifying gotchas design-quality \
-  brand export omni-and-media
+  brand export omni-and-media charts
 fan moda-diagram diagram markup edit-code reading-and-verifying gotchas design-quality \
-  brand export charts
+  brand export charts omni-and-media
 
 echo "fanout complete"

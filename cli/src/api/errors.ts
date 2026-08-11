@@ -12,11 +12,16 @@ interface WireErrorEnvelope {
 }
 
 /**
- * 5xx codes that are terminal content failures, not server faults — retrying re-runs (and on
- * metered lanes re-bills) work that will fail the same way. 502 web_read_failed: the target
- * page could not be fetched (DNS, page error, timeout at the target).
+ * Codes that are terminal regardless of HTTP status — retrying re-runs (and on metered lanes
+ * re-bills) work that will fail identically. web_read_failed (502): the target page could not
+ * be fetched. canvas_crdt_state_corrupt (409): the canvas document itself needs recovery.
  */
-const NON_RETRYABLE_5XX_CODES = new Set(['web_read_failed']);
+const NON_RETRYABLE_CODES = new Set(['web_read_failed', 'canvas_crdt_state_corrupt']);
+
+/** Code-specific hints the server envelope does not carry itself. */
+const CODE_HINTS: Record<string, string> = {
+  canvas_crdt_state_corrupt: 'canvas needs recovery — retrying cannot succeed',
+};
 
 export function apiErrorFromResponse(
   status: number,
@@ -35,11 +40,11 @@ export function apiErrorFromResponse(
     message: envelope?.message ?? `API request failed with HTTP ${status}.`,
     source: 'api',
     // 426 cli_update_required is the server's contract floor — always name the fix.
-    hint: status === 426 || code === 'cli_update_required' ? 'Run: moda update' : undefined,
+    hint: status === 426 || code === 'cli_update_required' ? 'Run: moda update' : CODE_HINTS[code],
     docUrl: envelope?.doc_url,
     requestId: envelope?.request_id ?? requestId,
     retryable:
-      (type === 'rate_limited' || type === 'conflict' || status >= 500) && !NON_RETRYABLE_5XX_CODES.has(code),
+      (type === 'rate_limited' || type === 'conflict' || status >= 500) && !NON_RETRYABLE_CODES.has(code),
     retryAfterS: retryAfterMs !== undefined ? Math.ceil(retryAfterMs / 1000) : retryAfterHeaderS,
     details: envelope?.details,
     status,

@@ -167,10 +167,26 @@ describe('site list (GET /v1/websites)', () => {
     const outcome = await performSiteList(client(base), { limit: 2, offset: 4 });
     expect(calls[0]?.method).toBe('GET');
     expect(calls[0]?.search).toBe('?limit=2&offset=4');
+    const sites = (outcome.body as Record<string, unknown>).websites as Array<Record<string, unknown>>;
+    expect(sites[0]?.serving).toBe(true);
     const lines = humanLines(outcome);
     expect(lines[0]).toBe('site.list: 1 of 7 sites');
     expect(lines[1]).toContain('live at https://launch-x1.moda.page');
     expect(lines[1]).toContain('unpublished changes');
+  });
+
+  test('pending_review sites are annotated serving:false in list JSON', async () => {
+    const { base } = serve(() =>
+      Response.json({
+        websites: [website({ is_published: true, url: 'https://x.moda.page', review_status: 'pending_review' })],
+        total: 1,
+        limit: 25,
+        offset: 0,
+      }),
+    );
+    const outcome = await performSiteList(client(base), {});
+    const sites = (outcome.body as Record<string, unknown>).websites as Array<Record<string, unknown>>;
+    expect(sites[0]?.serving).toBe(false);
   });
 
   test('no flags → no query string', async () => {
@@ -189,6 +205,8 @@ describe('site show (GET /v1/websites/{id})', () => {
     );
     const outcome = await performSiteShow(client(base), SITE_ID);
     expect(calls[0]?.path).toBe(`/v1/websites/${SITE_ID}`);
+    // CLI-owned honesty field in the JSON too: published-but-held is NOT serving.
+    expect((outcome.body as Record<string, unknown>).serving).toBe(false);
     const lines = humanLines(outcome);
     expect(lines[0]).toContain('published (held for review) — https://launch-x1.moda.page goes live once approved');
     expect(lines[0]).not.toContain('live at');
@@ -200,8 +218,9 @@ describe('site show (GET /v1/websites/{id})', () => {
         website: website({ is_published: true, url: 'https://launch-x1.moda.page', review_status: 'approved' }),
       }),
     );
-    const lines = humanLines(await performSiteShow(client(base), SITE_ID));
-    expect(lines[0]).toContain('live at https://launch-x1.moda.page');
+    const outcome = await performSiteShow(client(base), SITE_ID);
+    expect((outcome.body as Record<string, unknown>).serving).toBe(true);
+    expect(humanLines(outcome)[0]).toContain('live at https://launch-x1.moda.page');
   });
 });
 

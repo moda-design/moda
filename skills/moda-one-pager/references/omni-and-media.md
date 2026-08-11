@@ -5,12 +5,17 @@ Everything in this document **spends Moda credits**. The rules are absolute: sta
 ## `moda media` — raw media operations (all metered)
 
 ```
-moda media generate-image --prompt "..." --model M [--output PATH]
-moda media edit-image --prompt "..." --model M --source FILE_REF|URL|PATH [--output PATH]
-moda media generate-video --prompt "..." --model M [--output PATH]
+moda media generate-image --prompt "..." --model M [--aspect-ratio R] [--resolution T]
+                          [--num-images N] [--model-params JSON] [--output PATH]
+moda media edit-image --prompt "..." --model M --source FILE_REF|URL|PATH [same knobs]
+moda media generate-video --prompt "..." --model M [--duration S] [--aspect-ratio R]
+                          [--resolution T] [--generate-audio] [--seed N]
+                          [--image REF] [--end-image REF] [--reference REFS...] [--output PATH]
 moda media remove-background FILE_REF|URL|PATH
 moda media upscale FILE_REF|URL|PATH [--scale 2|4]
 ```
+
+**`moda media models` is the capability source**: each model's supported aspect ratios, resolution tiers, durations, and extra `--model-params` come from it — read it before passing per-model knobs; never hardcode capabilities from memory.
 
 Video upscaling is not available on this surface — say so plainly if asked; the Moda app is the path.
 
@@ -18,7 +23,7 @@ Results return durable refs that feed markup `image(...)` fills and `src` attrib
 
 ### Choosing an image model
 
-`--model` is **required — there is no "auto"**. The authoritative model list, with each model's aspect ratios, resolutions, and controls, comes from the CLI itself (`moda media generate-image --help` / doctor output) — defer to it; never hardcode capabilities from memory. Strengths in one line each, to route the choice:
+`--model` is **required — there is no "auto"**. The authoritative model list, with each model's aspect ratios, resolutions, and controls, comes from the CLI itself (`moda media models`) — defer to it; never hardcode capabilities from memory. Strengths in one line each, to route the choice:
 
 - **NanoBanana 2** — fast, low-cost baseline; the default when nothing else is demanded.
 - **NanoBanana 2 Pro** — hi-res path for higher-fidelity output.
@@ -73,7 +78,7 @@ moda task status TASK_REF        moda task list [--active]        moda task canc
 
 - Every task is labeled metered: cost class before submission, exact usage receipt after. Tell the user before you start one.
 - `moda task start` is idempotent: an identical re-run replays the already-started task instead of spending again — within the server's idempotency window (the CLI says so when it detects the replay). A deliberate new attempt — e.g. after `task_failed` — takes `--fresh`.
-- Omit `--canvas` for net-new work — the task creates and designs its own canvas. Pass `--canvas` only when the job must land on an existing one; a running task **owns its canvas** (your writes exit 5 as busy until it finishes — the CLI already retried; back off or `moda task cancel`).
+- Omit `--canvas` for net-new work — the task creates and designs its own canvas. Pass `--canvas` only when the job must land on an existing one; a running task **owns its canvas** — your writes exit 5 as busy until it finishes, and the CLI already retried. Recovery: find the owner with `moda task list --active` (newer servers also accept `--canvas CANVAS_REF` to filter; on older servers match the canvas id in the listing), then wait or `moda task cancel`.
 - Pass `--brand` rather than restating colors/fonts/logos in the prompt — the resolved kit owns them. Put the slide/page count and format in the flags or the prompt explicitly.
 - A completed task returns a finished, already-exported result when `--export` was chained — don't re-export in a different verb unless you need another format.
 - Typed failures map to the standard exits: billing precheck and plan caps exit 6 with the cap in the message; a live run owning the canvas exits 5. Surface hints verbatim.

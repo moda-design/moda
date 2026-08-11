@@ -32,6 +32,9 @@ export function registerMedia(program: Command): void {
       .requiredOption('--model <model>', 'model id (see: moda media models)')
       .option('--size <WxH>', 'output size, e.g. 1024x1024')
       .option('--aspect-ratio <ratio>', 'aspect ratio, e.g. 16:9')
+      .option('--resolution <res>', "per-model resolution tier (see the model's capability line)")
+      .option('--num-images <n>', 'images per call, 1-4', parseNumImages)
+      .option('--model-params <json>', 'per-model extra params as a JSON object', parseModelParams)
       .option('--source <refs...>', 'images the prompt modifies/preserves: file_ refs, URLs, or local paths')
       .option('--reference <refs...>', 'style/subject references: file_ refs, URLs, or local paths')
       .option('-o, --output <path>', 'download the artifact to a local file'),
@@ -47,6 +50,9 @@ export function registerMedia(program: Command): void {
         model: opts.model as string,
         ...(size !== undefined ? { width: size.width, height: size.height } : {}),
         ...(typeof opts.aspectRatio === 'string' ? { aspect_ratio: opts.aspectRatio } : {}),
+        ...(typeof opts.resolution === 'string' ? { resolution: opts.resolution } : {}),
+        ...(typeof opts.numImages === 'number' ? { num_images: opts.numImages } : {}),
+        ...(opts.modelParams !== undefined ? { model_params: opts.modelParams } : {}),
         ...(Array.isArray(opts.source) ? { source_images: await mediaInputs(opts.source as string[], client) } : {}),
         ...(Array.isArray(opts.reference)
           ? { reference_images: await mediaInputs(opts.reference as string[], client) }
@@ -63,6 +69,9 @@ export function registerMedia(program: Command): void {
       .requiredOption('--prompt <prompt>', 'edit instruction (sent to the model verbatim)')
       .requiredOption('--model <model>', 'model id (see: moda media models)')
       .requiredOption('--source <refs...>', 'the image(s) to edit: file_ refs, URLs, or local paths')
+      .option('--resolution <res>', "per-model resolution tier (see the model's capability line)")
+      .option('--num-images <n>', 'images per call, 1-4', parseNumImages)
+      .option('--model-params <json>', 'per-model extra params as a JSON object', parseModelParams)
       .option('--reference <refs...>', 'style/subject references: file_ refs, URLs, or local paths')
       .option('-o, --output <path>', 'download the artifact to a local file'),
   ).action(
@@ -73,6 +82,9 @@ export function registerMedia(program: Command): void {
         prompt: opts.prompt as string,
         model: opts.model as string,
         source_images: await mediaInputs(opts.source as string[], client),
+        ...(typeof opts.resolution === 'string' ? { resolution: opts.resolution } : {}),
+        ...(typeof opts.numImages === 'number' ? { num_images: opts.numImages } : {}),
+        ...(opts.modelParams !== undefined ? { model_params: opts.modelParams } : {}),
         ...(Array.isArray(opts.reference)
           ? { reference_images: await mediaInputs(opts.reference as string[], client) }
           : {}),
@@ -88,6 +100,14 @@ export function registerMedia(program: Command): void {
       .requiredOption('--prompt <prompt>', 'generation prompt')
       .requiredOption('--model <model>', 'model id (see: moda media models)')
       .option('--image <ref>', 'first-frame image: file_ ref, URL, or local path')
+      .option('--end-image <ref>', 'last-frame image: file_ ref, URL, or local path')
+      .option('--reference <refs...>', 'reference images (reference-to-video models): file_ refs, URLs, or local paths')
+      .option('--duration <seconds>', 'clip duration — ALWAYS pass one; it is the dominant cost driver')
+      .option('--aspect-ratio <ratio>', 'aspect ratio, e.g. 16:9')
+      .option('--resolution <res>', "per-model resolution tier (see the model's capability line)")
+      .option('--generate-audio', 'generate native audio (models that support it)')
+      .option('--seed <n>', 'deterministic seed', (v: string) => Number.parseInt(v, 10))
+      .option('--model-params <json>', 'per-model extra params as a JSON object', parseModelParams)
       .option('-o, --output <path>', 'download the artifact to a local file'),
   ).action(
     wrapAction(async (_args, opts, cmd) => {
@@ -97,6 +117,20 @@ export function registerMedia(program: Command): void {
         prompt: opts.prompt as string,
         model: opts.model as string,
         ...(typeof opts.image === 'string' ? { start_image: await mediaInput(opts.image, client) } : {}),
+        ...(typeof opts.endImage === 'string' ? { end_image: await mediaInput(opts.endImage, client) } : {}),
+        ...(Array.isArray(opts.reference)
+          ? { reference_images: await mediaInputs(opts.reference as string[], client) }
+          : {}),
+        // Schema: duration_seconds is float|str — numeric strings travel as numbers, model
+        // enums like "8s" pass through verbatim for the server to resolve.
+        ...(typeof opts.duration === 'string'
+          ? { duration_seconds: Number.isFinite(Number(opts.duration)) ? Number(opts.duration) : opts.duration }
+          : {}),
+        ...(typeof opts.aspectRatio === 'string' ? { aspect_ratio: opts.aspectRatio } : {}),
+        ...(typeof opts.resolution === 'string' ? { resolution: opts.resolution } : {}),
+        ...(opts.generateAudio === true ? { generate_audio: true } : {}),
+        ...(typeof opts.seed === 'number' && Number.isFinite(opts.seed) ? { seed: opts.seed } : {}),
+        ...(opts.modelParams !== undefined ? { model_params: opts.modelParams } : {}),
       };
       return mediaCall(client, inv, 'media.generate_video', endpoints.mediaGenerateVideo(), payload, opts.output as string | undefined);
     }),
@@ -167,6 +201,24 @@ export function registerMedia(program: Command): void {
       };
     }),
   );
+}
+
+function parseNumImages(value: string): number {
+  const parsed = Number.parseInt(value, 10);
+  if (!/^\d+$/.test(value.trim()) || parsed < 1 || parsed > 4) {
+    throw CliError.usage(`Invalid --num-images value '${value}' — expected an integer between 1 and 4.`);
+  }
+  return parsed;
+}
+
+function parseModelParams(value: string): Record<string, unknown> {
+  try {
+    const parsed = JSON.parse(value) as unknown;
+    if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) throw new Error('not an object');
+    return parsed as Record<string, unknown>;
+  } catch {
+    throw CliError.usage(`Invalid --model-params '${value}' — expected a JSON object, e.g. '{"style":"photo"}'.`);
+  }
 }
 
 /**
@@ -245,6 +297,19 @@ async function mediaCall(
         `${operation}: done${ids.length > 0 ? ` — ${ids.join(', ')}` : ''}` +
           ` (metered${typeof usage.model === 'string' ? `, model: ${usage.model}` : ''})`,
       );
+      // Read-before-describe surface: snapping adjustments, warnings, and checkpoint resumes.
+      const adjustments = asObject(root.adjustments);
+      for (const [key, value] of Object.entries(adjustments)) {
+        write(`adjusted ${key}: ${typeof value === 'object' ? JSON.stringify(value) : String(value)}`);
+      }
+      const warnings = Array.isArray(root.warnings) ? root.warnings : [];
+      for (const warning of warnings) {
+        const obj = asObject(warning);
+        write(`warning: ${str(obj, 'message') ?? (typeof warning === 'string' ? warning : JSON.stringify(warning))}`);
+      }
+      if (root.resumed_provider_job === true) {
+        write('(resumed the existing provider render for this idempotency key — no duplicate charge)');
+      }
       if (downloaded !== undefined) write(`artifact → ${downloaded}`);
     },
     exitCode: EXIT_OK,
