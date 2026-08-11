@@ -17,8 +17,8 @@
 - The revise loop is explicit: mutate, then run `moda canvas screenshot`,
   `moda canvas read`, or `moda canvas lint` when you need to see the result.
   Mutations do not attach state; when a screenshot is your next step anyway,
-  pass `--screenshot PATH` on markup/edit/add-pages to get the capture files
-  in the same invocation. Canvas history is the recovery mechanism — never
+  pass `--screenshot PATH` on markup/edit to get the capture files in the
+  same invocation. Canvas history is the recovery mechanism — never
   rebuild a page to undo a bad edit.
 - Work in small batches: one section or slide per markup apply; lint once per
   finished section; screenshot at milestones only (it is the slowest verb).

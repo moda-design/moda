@@ -1,6 +1,6 @@
 /**
- * `--screenshot <path>` capture sugar on the mutation verbs (`canvas markup` / `canvas edit` /
- * `canvas add-pages`).
+ * `--screenshot <path>` capture sugar on the mutation verbs (`canvas markup` / `canvas edit`;
+ * add-pages deliberately has none — freshly appended pages are blank).
  *
  * After the mutation COMMITS, the CLI immediately runs the standalone screenshot capture for
  * the touched page(s) and writes the file(s) — one invocation instead of mutate-then-screenshot.
@@ -31,35 +31,6 @@ import {
  */
 export function pagesForMarkupTarget(page: string): string[] | undefined {
   return page === 'canvas' ? undefined : [page];
-}
-
-/**
- * Created-page ids reported by an add-pages mutation response. Tolerant of the live tool-host
- * camelCase shape (`createdPages[].pageId`) and snake_case contract drift (D2); undefined when
- * the response reports none — the capture then falls back to the default capture.
- */
-export function pagesFromMutationResponse(body: unknown): string[] | undefined {
-  const root = asObject(body);
-  for (const key of ['created_page_ids', 'page_ids']) {
-    const flat = root[key];
-    if (Array.isArray(flat)) {
-      const ids = flat.filter((v): v is string => typeof v === 'string');
-      if (ids.length > 0) return ids;
-    }
-  }
-  for (const key of ['createdPages', 'created_pages', 'pages']) {
-    const entries = root[key];
-    if (Array.isArray(entries)) {
-      const ids: string[] = [];
-      for (const entry of entries) {
-        const page = asObject(entry);
-        const id = str(page, 'pageId') ?? str(page, 'page_id') ?? str(page, 'id');
-        if (id !== undefined) ids.push(id);
-      }
-      if (ids.length > 0) return ids;
-    }
-  }
-  return undefined;
 }
 
 export interface MutationScreenshotResult {

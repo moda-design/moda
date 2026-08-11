@@ -14,7 +14,6 @@ import {
   attachScreenshotResult,
   captureAfterMutation,
   pagesForMarkupTarget,
-  pagesFromMutationResponse,
 } from './mutationScreenshot.ts';
 import { captureScreenshots, writeCaptureRun, writtenPageLine } from './screenshotCapture.ts';
 import {
@@ -111,8 +110,7 @@ export function registerCanvas(program: Command): void {
       .description('append pages to a canvas')
       .requiredOption('--count <n>', 'number of pages to add', (v: string) => Number.parseInt(v, 10))
       .option('--size <WxH>', 'page size override')
-      .option('--revision <token>', 'expected revision (advisory on appends)')
-      .option('--screenshot <path>', SCREENSHOT_FLAG_HELP),
+      .option('--revision <token>', 'expected revision (advisory on appends)'),
   ).action(
     wrapAction(async (args, opts, cmd) => {
       const inv = buildInvocation(cmd);
@@ -137,14 +135,8 @@ export function registerCanvas(program: Command): void {
           payload: JSON.stringify(payload),
         },
       });
-      return await maybeAttachScreenshot({
-        outcome: mutationOutcome('canvas.create_pages', ref, inv, response),
-        screenshot: opts.screenshot,
-        client,
-        ref,
-        pages: pagesFromMutationResponse(response.body),
-        inv,
-      });
+      // No --screenshot here: freshly appended pages are blank — nothing worth capturing.
+      return mutationOutcome('canvas.create_pages', ref, inv, response);
     }),
   );
 

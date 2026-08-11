@@ -6,7 +6,6 @@ import {
   attachScreenshotResult,
   captureAfterMutation,
   pagesForMarkupTarget,
-  pagesFromMutationResponse,
 } from '../src/commands/mutationScreenshot.ts';
 import { MAX_SCREENSHOT_PAGES_PER_CALL, type ScreenshotResponse } from '../src/commands/screenshotCapture.ts';
 import { EXIT_OK } from '../src/output/exitCodes.ts';
@@ -46,30 +45,6 @@ describe('pagesForMarkupTarget', () => {
 
   test("the floating-node target 'canvas' has no single page — default capture", () => {
     expect(pagesForMarkupTarget('canvas')).toBeUndefined();
-  });
-});
-
-describe('pagesFromMutationResponse (add-pages touched-page extraction)', () => {
-  test('live tool-host camelCase shape: createdPages[].pageId', () => {
-    expect(
-      pagesFromMutationResponse({ createdPages: [{ pageId: 'p_x', pageIndex: 1 }, { pageId: 'p_y', pageIndex: 2 }] }),
-    ).toEqual(['p_x', 'p_y']);
-  });
-
-  test('snake_case drift shapes: created_pages[].page_id and flat id arrays', () => {
-    expect(pagesFromMutationResponse({ created_pages: [{ page_id: 'p_x' }] })).toEqual(['p_x']);
-    expect(pagesFromMutationResponse({ created_page_ids: ['p_x', 'p_y'] })).toEqual(['p_x', 'p_y']);
-    expect(pagesFromMutationResponse({ page_ids: ['p_z'] })).toEqual(['p_z']);
-  });
-
-  test('flat arrays win over entry arrays, and non-strings are filtered', () => {
-    expect(pagesFromMutationResponse({ page_ids: ['p_a', 7], createdPages: [{ pageId: 'p_b' }] })).toEqual(['p_a']);
-  });
-
-  test('no page information → undefined (default capture)', () => {
-    expect(pagesFromMutationResponse({})).toBeUndefined();
-    expect(pagesFromMutationResponse({ page_ids: [] })).toBeUndefined();
-    expect(pagesFromMutationResponse(undefined)).toBeUndefined();
   });
 });
 

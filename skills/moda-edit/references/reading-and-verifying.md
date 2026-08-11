@@ -91,7 +91,7 @@ Renders pages to image files at `--output` (one file per page, extension from th
 - Per-page JSON data: `{ pageId, pageName?, width, height, pendingAssets?, failedAssets? }`.
 - **`pendingAssets` = still loading (NOT an error). `failedAssets` = transient renderer load failures** — common for freshly generated images. **NEVER regenerate, delete, or recreate an image because it appeared here.** Re-capture shortly.
 - Retryable render errors are typed (`render_failed` and friends): re-request the screenshot; canvas state is intact.
-- **Mutation verbs can fold the capture in:** `moda canvas markup` / `moda canvas edit` / `moda canvas add-pages` accept `--screenshot PATH` — the same capture runs immediately after the commit for the touched page(s) and the files land before the command returns (`screenshot: {ok, pages[]}` in `--json`). One command instead of two when a screenshot is your next step anyway; milestones-only still applies. A capture failure never changes the mutation's exit code — the mutation committed; retry with the standalone verb.
+- **Content mutations can fold the capture in:** `moda canvas markup` and `moda canvas edit` accept `--screenshot PATH` (add-pages has no capture — new pages are blank) — the same capture runs immediately after the commit for the touched page(s) and the files land before the command returns (`screenshot: {ok, pages[]}` in `--json`). One command instead of two when a screenshot is your next step anyway; milestones-only still applies. A capture failure never changes the mutation's exit code — the mutation committed; retry with the standalone verb.
 
 ## The explicit screenshot → review → edit loop
 

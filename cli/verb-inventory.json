@@ -163,7 +163,6 @@
         "--org",
         "--quiet",
         "--revision",
-        "--screenshot",
         "--size",
         "--timeout"
       ]
