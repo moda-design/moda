@@ -114,7 +114,7 @@ function check(name: string, condition: boolean, detail?: string): void {
   check('doctor ok + authenticated', body.ok === true && body.authenticated === true);
   check('doctor credential_source env', checks.credential_source === 'env');
   check('doctor scopes reported', Array.isArray(checks.scopes) && (checks.scopes as string[]).includes('canvases:write'));
-  check('doctor pinned install command', String(body.install_command).startsWith('gh release download --repo moda-design/moda'));
+  check('doctor pinned install command', String(body.install_command) === 'npm i -g @moda-design/moda');
   const version = checks.version as Record<string, unknown>;
   check('doctor version range recorded', version.latest === '0.1.0' && version.minimum_supported === '0.0.1');
 }
