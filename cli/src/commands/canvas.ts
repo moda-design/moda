@@ -451,6 +451,38 @@ export function registerCanvas(program: Command): void {
       };
     }),
   );
+
+  addGlobalFlags(
+    canvas
+      .command('delete <canvas>')
+      .description('delete a canvas (destructive — requires --yes under --json/--no-input)')
+      .option('--yes', 'confirm deletion'),
+  ).action(
+    wrapAction(async (args, opts, cmd) => {
+      const inv = buildInvocation(cmd);
+      if (inv.flags.noInput && opts.yes !== true) {
+        throw CliError.usage(
+          'Deleting a canvas requires --yes under --json/--no-input.',
+          'Destructive verbs need the host approval step (cli.md §9).',
+        );
+      }
+      const { client } = await authedClient(inv, READ_TIMEOUT_MS);
+      const ref = await resolveCanvasRef(args[0] as string, client);
+      const response = await client.request({ method: 'DELETE', path: endpoints.canvasDelete(ref) });
+      const root = asObject(response.body);
+      return {
+        body: {
+          ok: true,
+          operation: 'canvas.delete',
+          canvas_id: ref,
+          ...root,
+          meta: { ...asObject(root.meta), ...metaBlock({ requestId: response.requestId, durationMs: response.durationMs }) },
+        },
+        human: (write) => write(`deleted ${ref}`),
+        exitCode: EXIT_OK,
+      };
+    }),
+  );
 }
 
 interface WrittenPage {

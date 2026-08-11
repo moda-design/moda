@@ -3,6 +3,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import type { Command } from 'commander';
 import type { ApiClient } from '../api/client.ts';
+import type { CommandOutcome } from '../output/emit.ts';
 import { endpoints } from '../api/endpoints.ts';
 import { asObject, str } from '../api/types.ts';
 import { CliError } from '../cliError.ts';
@@ -28,86 +29,112 @@ export function registerExport(program: Command): void {
   ).action(
     wrapAction(async (args, opts, cmd) => {
       const inv = buildInvocation(cmd);
-      const format = (opts.format as string).toLowerCase();
-      if (ANIMATION_FORMATS.has(format)) {
-        throw new CliError({
-          type: 'unprocessable',
-          code: 'unsupported_export',
-          message: `Animation export (${format}) has no server lane yet.`,
-          hint: 'Export gif/mp4/webp from the Moda app; supported here: pdf, pptx, png, jpeg.',
-          source: 'local',
-        });
-      }
-      if (!SUPPORTED_FORMATS.has(format)) {
-        throw CliError.usage(`Unsupported --format '${format}'.`, 'Supported: pdf, pptx, png, jpeg.');
-      }
       const { client } = await authedClient(inv, EXPORT_BUDGET_MS);
       const ref = await resolveCanvasRef(args[0] as string, client);
-      const started = await client.request({
-        method: 'POST',
-        path: endpoints.canvasExport(ref),
-        body: {
-          format,
-          ...(typeof opts.pages === 'string' ? { pages: opts.pages } : {}),
-          ...(typeof opts.pixelRatio === 'number' ? { pixel_ratio: opts.pixelRatio } : {}),
-          ...(opts.flatten === true ? { flatten: true } : {}),
-        },
-        timeoutMs: 120_000,
+      return performExport(client, inv, ref, {
+        format: (opts.format as string).toLowerCase(),
+        output: opts.output as string | undefined,
+        pages: opts.pages as string | undefined,
+        pixelRatio: opts.pixelRatio as number | undefined,
+        flatten: opts.flatten === true,
+        wait: opts.wait !== false,
       });
-      const startBody = asObject(started.body);
-      const exportId = str(startBody, 'export_id') ?? str(asObject(startBody.export), 'id') ?? str(startBody, 'id');
-
-      if (opts.wait === false) {
-        return {
-          body: {
-            ok: true,
-            operation: 'canvas.export',
-            export_id: exportId,
-            status: exportStatusOf(startBody) ?? 'pending',
-            usage: startBody.usage ?? { class: 'deterministic', metered_credits: 0 },
-            meta: metaBlock({ requestId: started.requestId, durationMs: started.durationMs }),
-          },
-          human: (write) => write(`export started: ${exportId ?? '(id unknown)'}`),
-          exitCode: EXIT_OK,
-        };
-      }
-
-      const final = await pollExport(client, ref, exportId, startBody, inv);
-      const downloadUrl = downloadUrlOf(final);
-      if (downloadUrl === undefined) {
-        throw new CliError({
-          type: 'upstream_error',
-          code: 'export_failed',
-          message: 'Export finished without a downloadable artifact.',
-          source: 'api',
-        });
-      }
-      const outPath = resolveOutputPath(opts.output as string | undefined, ref, format, inv);
-      const bytes = await downloadArtifact(client, downloadUrl, inv);
-      const toStdout = outPath === '-';
-      if (toStdout) {
-        process.stdout.write(bytes);
-      } else {
-        mkdirSync(dirname(outPath), { recursive: true });
-        writeFileSync(outPath, bytes);
-      }
-      return {
-        body: {
-          ok: true,
-          operation: 'canvas.export',
-          export_id: exportId,
-          format,
-          output: toStdout ? '-' : outPath,
-          bytes: bytes.byteLength,
-          usage: final.usage ?? { class: 'deterministic', metered_credits: 0 },
-          meta: metaBlock({ requestId: started.requestId }),
-        },
-        human: (write) => write(`${format} → ${toStdout ? '(stdout)' : outPath} (${bytes.byteLength} bytes)`),
-        exitCode: EXIT_OK,
-        summaryToStderr: toStdout,
-      };
     }),
   );
+}
+
+export interface ExportOptions {
+  format: string;
+  output?: string;
+  pages?: string;
+  pixelRatio?: number;
+  flatten?: boolean;
+  wait: boolean;
+}
+
+/** Start-poll-download an export. Shared by `moda export` and `moda task start --export`. */
+export async function performExport(
+  client: ApiClient,
+  inv: Invocation,
+  ref: string,
+  options: ExportOptions,
+): Promise<CommandOutcome> {
+  const format = options.format;
+  if (ANIMATION_FORMATS.has(format)) {
+    throw new CliError({
+      type: 'unprocessable',
+      code: 'unsupported_export',
+      message: `Animation export (${format}) has no server lane yet.`,
+      hint: 'Export gif/mp4/webp from the Moda app; supported here: pdf, pptx, png, jpeg.',
+      source: 'local',
+    });
+  }
+  if (!SUPPORTED_FORMATS.has(format)) {
+    throw CliError.usage(`Unsupported --format '${format}'.`, 'Supported: pdf, pptx, png, jpeg.');
+  }
+  const started = await client.request({
+    method: 'POST',
+    path: endpoints.canvasExport(ref),
+    body: {
+      format,
+      ...(options.pages !== undefined ? { pages: options.pages } : {}),
+      ...(options.pixelRatio !== undefined ? { pixel_ratio: options.pixelRatio } : {}),
+      ...(options.flatten === true ? { flatten: true } : {}),
+    },
+    timeoutMs: 120_000,
+  });
+  const startBody = asObject(started.body);
+  const exportId = str(startBody, 'export_id') ?? str(asObject(startBody.export), 'id') ?? str(startBody, 'id');
+
+  if (!options.wait) {
+    return {
+      body: {
+        ok: true,
+        operation: 'canvas.export',
+        export_id: exportId,
+        status: exportStatusOf(startBody) ?? 'pending',
+        usage: startBody.usage ?? { class: 'deterministic', metered_credits: 0 },
+        meta: metaBlock({ requestId: started.requestId, durationMs: started.durationMs }),
+      },
+      human: (write) => write(`export started: ${exportId ?? '(id unknown)'}`),
+      exitCode: EXIT_OK,
+    };
+  }
+
+  const final = await pollExport(client, ref, exportId, startBody, inv);
+  const downloadUrl = downloadUrlOf(final);
+  if (downloadUrl === undefined) {
+    throw new CliError({
+      type: 'upstream_error',
+      code: 'export_failed',
+      message: 'Export finished without a downloadable artifact.',
+      source: 'api',
+    });
+  }
+  const outPath = resolveOutputPath(options.output, ref, format, inv);
+  const bytes = await downloadArtifact(client, downloadUrl, inv);
+  const toStdout = outPath === '-';
+  if (toStdout) {
+    process.stdout.write(bytes);
+  } else {
+    mkdirSync(dirname(outPath), { recursive: true });
+    writeFileSync(outPath, bytes);
+  }
+  return {
+    body: {
+      ok: true,
+      operation: 'canvas.export',
+      export_id: exportId,
+      format,
+      output: toStdout ? '-' : outPath,
+      bytes: bytes.byteLength,
+      usage: final.usage ?? { class: 'deterministic', metered_credits: 0 },
+      meta: metaBlock({ requestId: started.requestId }),
+    },
+    human: (write) => write(`${format} -> ${toStdout ? '(stdout)' : outPath} (${bytes.byteLength} bytes)`),
+    exitCode: EXIT_OK,
+    summaryToStderr: toStdout,
+  };
 }
 
 function exportStatusOf(body: Record<string, unknown>): string | undefined {

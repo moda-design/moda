@@ -10,6 +10,16 @@ import { EXIT_AUTH, EXIT_OK, EXIT_TRANSPORT } from '../output/exitCodes.ts';
 import { compareVersions, pinnedInstallCommand, RELEASES_REPO, updateAvailable } from '../update.ts';
 import { API_VERSION_PIN } from '../api/endpoints.ts';
 import { CLI_CHANNEL, CLI_VERSION, platformArch } from '../version.ts';
+// Embedded reference texts — compiled into the binary, no runtime file lookup.
+import markupDoc from '../docs/markup.md' with { type: 'text' };
+import editDoc from '../docs/edit.md' with { type: 'text' };
+import workflowDoc from '../docs/workflow.md' with { type: 'text' };
+
+const DOCS: Record<string, string> = {
+  markup: markupDoc,
+  edit: editDoc,
+  workflow: workflowDoc,
+};
 import { addGlobalFlags, anonymousClient, authedClient, buildInvocation, metaBlock, wrapAction } from './runtime.ts';
 
 export function registerMeta(program: Command): void {
@@ -47,6 +57,71 @@ export function registerMeta(program: Command): void {
     wrapAction(async (_args, _opts, cmd) => {
       const inv = buildInvocation(cmd);
       return runDoctor(inv);
+    }),
+  );
+
+  addGlobalFlags(
+    program
+      .command('update')
+      .description('update the CLI (dogfood: prints the pinned gh release download command; never silent)'),
+  ).action(
+    wrapAction(async (_args, _opts, cmd) => {
+      const inv = buildInvocation(cmd);
+      const available = updateAvailable(inv.env);
+      // Ruling 13: while the repo is private, `moda update` PRINTS the pinned command on every
+      // channel instead of self-updating; the npm/brew channels always print their own command.
+      const command =
+        CLI_CHANNEL === 'npm'
+          ? 'npm install -g moda@latest'
+          : CLI_CHANNEL === 'brew'
+            ? 'brew upgrade moda'
+            : pinnedInstallCommand();
+      return {
+        body: {
+          ok: true,
+          operation: 'update',
+          channel: CLI_CHANNEL,
+          current: CLI_VERSION,
+          update_available: available !== undefined ? available.latest : false,
+          command,
+          self_update: false,
+          meta: metaBlock(),
+        },
+        human: (write) => {
+          if (available !== undefined) write(`moda ${available.latest} is available (current: ${CLI_VERSION}).`);
+          else write(`no newer version recorded (current: ${CLI_VERSION}).`);
+          write('Update with:');
+          write(`  ${command}`);
+        },
+        exitCode: EXIT_OK,
+      };
+    }),
+  );
+
+  program
+    .command('completion <shell>')
+    .description('print a shell completion script (bash | zsh | fish)')
+    .action((shell: string, _opts: Record<string, unknown>, cmd: Command) => {
+      const program_ = cmd.parent as Command;
+      const script = renderCompletion(shell, program_);
+      process.stdout.write(script);
+      process.exit(0);
+    });
+
+  addGlobalFlags(
+    program.command('docs [topic]').description('print offline reference texts (markup | edit | workflow)'),
+  ).action(
+    wrapAction(async (args, _opts, _cmd) => {
+      const topic = args[0] ?? 'workflow';
+      const text = DOCS[topic];
+      if (text === undefined) {
+        throw CliError.usage(`Unknown docs topic '${topic}'.`, `Topics: ${Object.keys(DOCS).sort().join(', ')}.`);
+      }
+      return {
+        body: { ok: true, operation: 'docs', topic, text, meta: metaBlock() },
+        human: (write) => write(text),
+        exitCode: EXIT_OK,
+      };
     }),
   );
 
@@ -176,4 +251,70 @@ async function runDoctor(inv: DoctorInvocation) {
     },
     exitCode,
   };
+}
+
+// --- Shell completion (minimal two-level generator over the commander tree) ---
+
+function topLevelNames(program: Command): string[] {
+  return program.commands.filter((c) => !c.name().startsWith('__')).map((c) => c.name());
+}
+
+function subNames(program: Command, name: string): string[] {
+  const found = program.commands.find((c) => c.name() === name);
+  return found === undefined ? [] : found.commands.filter((c) => !c.name().startsWith('__')).map((c) => c.name());
+}
+
+function renderCompletion(shell: string, program: Command): string {
+  const tops = topLevelNames(program);
+  const subs = Object.fromEntries(tops.map((t) => [t, subNames(program, t)]));
+  if (shell === 'bash') {
+    const cases = tops
+      .filter((t) => (subs[t] ?? []).length > 0)
+      .map((t) => `    ${t}) COMPREPLY=($(compgen -W "${(subs[t] ?? []).join(' ')}" -- "$cur")); return ;;`)
+      .join('\n');
+    return [
+      '_moda_completions() {',
+      '  local cur=${COMP_WORDS[COMP_CWORD]}',
+      '  local first=${COMP_WORDS[1]}',
+      '  if [ "$COMP_CWORD" -eq 1 ]; then',
+      `    COMPREPLY=($(compgen -W "${tops.join(' ')}" -- "$cur")); return`,
+      '  fi',
+      '  case "$first" in',
+      cases,
+      '  esac',
+      '}',
+      'complete -F _moda_completions moda',
+      '',
+    ].join('\n');
+  }
+  if (shell === 'zsh') {
+    const cases = tops
+      .filter((t) => (subs[t] ?? []).length > 0)
+      .map((t) => `    ${t}) _values 'subcommand' ${(subs[t] ?? []).map((s) => `'${s}'`).join(' ')} ;;`)
+      .join('\n');
+    return [
+      '#compdef moda',
+      '_moda() {',
+      '  if (( CURRENT == 2 )); then',
+      `    _values 'command' ${tops.map((t) => `'${t}'`).join(' ')}`,
+      '  else',
+      '  case "$words[2]" in',
+      cases,
+      '  esac',
+      '  fi',
+      '}',
+      '_moda "$@"',
+      '',
+    ].join('\n');
+  }
+  if (shell === 'fish') {
+    const lines = [`complete -c moda -f -n '__fish_use_subcommand' -a '${tops.join(' ')}'`];
+    for (const t of tops) {
+      const s = subs[t] ?? [];
+      if (s.length > 0) lines.push(`complete -c moda -f -n '__fish_seen_subcommand_from ${t}' -a '${s.join(' ')}'`);
+    }
+    return `${lines.join('\n')}\n`;
+  }
+  process.stderr.write(`moda: unknown shell '${shell}' — supported: bash, zsh, fish\n`);
+  process.exit(2);
 }

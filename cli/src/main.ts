@@ -1,12 +1,16 @@
 /** Entry: commander program assembly. */
 import { Command, CommanderError } from 'commander';
+import { registerAccount } from './commands/account.ts';
 import { registerAuth } from './commands/auth.ts';
+import { registerBrand } from './commands/brand.ts';
 import { registerCanvas } from './commands/canvas.ts';
 import { registerContext } from './commands/context.ts';
 import { registerExport } from './commands/export.ts';
-import { registerFileUpload } from './commands/file.ts';
+import { registerFileFacade, registerFileUpload } from './commands/file.ts';
+import { registerMedia } from './commands/media.ts';
 import { registerMeta } from './commands/meta.ts';
 import { registerOrg } from './commands/org.ts';
+import { registerTask } from './commands/task.ts';
 import { EXIT_INVALID_INPUT, EXIT_SIGINT } from './output/exitCodes.ts';
 import { CLI_VERSION } from './version.ts';
 
@@ -25,6 +29,11 @@ export function buildProgram(): Command {
   registerCanvas(program);
   registerExport(program);
   registerFileUpload(program);
+  registerFileFacade(program);
+  registerBrand(program);
+  registerTask(program);
+  registerAccount(program);
+  registerMedia(program);
   return program;
 }
 
