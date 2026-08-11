@@ -26,6 +26,6 @@ fan moda-website website brand web
 fan moda-social social markup edit-code reading-and-verifying gotchas design-quality \
   brand export omni-and-media
 fan moda-diagram diagram markup edit-code reading-and-verifying gotchas design-quality \
-  brand export
+  brand export charts
 
 echo "fanout complete"

@@ -56,7 +56,7 @@ EXPECTED_REFERENCES: dict[str, list[str]] = {
     ],
     "moda-diagram": [
         "diagram", "markup", "edit-code", "reading-and-verifying", "gotchas", "design-quality",
-        "brand", "export",
+        "brand", "export", "charts",
     ],
 }
 

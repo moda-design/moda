@@ -4,8 +4,9 @@ Social work is designed on a canvas at the platform's exact pixel size and
 delivered as raster exports: `moda export CANVAS_REF --format png -o out.png`
 (or `jpeg`), `--pixel-ratio 2` for crisp feed rendering. A multi-page canvas
 exported to png/jpeg arrives as a **zip of one image per page — that zip IS
-the carousel deliverable**. Single formats: pass `--page N` or keep the
-canvas single-page.
+the IG/TikTok carousel deliverable**. A **LinkedIn carousel is a document
+post: deliver ONE multi-page PDF** (`moda export --format pdf`), not a zip.
+Single formats: pass `--page N` or keep the canvas single-page.
 
 **No animation lane**: gif/mp4/webp export is a typed refusal on this
 surface. When the user asks for an animated ad or motion graphic, say
@@ -68,7 +69,8 @@ edge-to-edge — only text, logos, CTAs, and focal points must stay inside.
   slide 1 alone first, screenshot it, and prove the look before authoring
   the rest.
 - One stat per slide: numeral oversized in the accent, unit set smaller with
-  an inline `<span>`, source in a small footer. Arrows are real elements
+  an inline `<span>` (requires `format="html"` on the `<text>` node), source
+  in a small footer. Arrows are real elements
   (`<line … arrow-end="triangle"/>` or an icon), never a "→" glyph. Skip
   custom pagination dots — platforms draw their own.
 - **AI-slop defaults to avoid**: centered headline + subhead + pill button
@@ -119,6 +121,9 @@ depth: two stacked rectangles, the back one offset 6–8px at low opacity.
   that shapes can't rebuild: `moda media generate-image` with the reference
   attached (metered) for a clean background carrying its palette and
   texture, then compose on top. Copy over a photo always gets a scrim.
-- Resizing to another platform is destructive: duplicate the page as a
-  backup first (edit code `duplicate`, references/edit-code.md), then resize
-  and reposition every element — never let a composition squish.
+- Adapting a design to another platform size: there is **no page-resize
+  verb**. Add a page at the target size (`moda canvas add-pages CANVAS_REF
+  --count 1 --size WxH`), copy the elements over with edit code
+  `duplicate(ids, { destinationPageId })` (references/edit-code.md), then
+  reposition and re-scale each element by hand — never let a composition
+  squish, and re-check type against the ladder floor at the new size.

@@ -7,13 +7,17 @@ Route the user's request to the right Moda skill and follow it:
 
 - A deck, slides, presentation, pitch, QBR, board update, "turn this into
   slides" → use the **moda-deck** skill.
-- A one-pager, PDF, report (single OR multi-page), brief, handout, flyer,
-  poster, "make this look designed" → use the **moda-one-pager** skill.
+- A one-pager, PDF, report (single OR multi-page), infographic, brief,
+  handout, flyer, poster, or other print piece (menu, resume, certificate,
+  invitation, business card), "make this look designed" → use the
+  **moda-one-pager** skill.
 - A social post, carousel, story, TikTok/IG/LinkedIn creative, static ad,
   banner ad, or channel header/cover → use the **moda-social** skill
   (animated ads are refused honestly with a static offer).
-- A diagram, flowchart, org/architecture chart, 2x2 matrix, wireframe, or a
-  mockup of an app/site screen → use the **moda-diagram** skill.
+- A diagram, flowchart, org/architecture chart, 2x2 matrix, standalone data
+  chart, wireframe, or a mockup of an app/site screen → use the
+  **moda-diagram** skill (a diagram or chart destined for an existing
+  deck/document canvas stays with moda-deck / moda-one-pager / moda-edit).
 - A website, landing page, marketing site, portfolio, "put this on the web",
   or an existing moda.page site to change → use the **moda-website** skill
   (a printable/PDF one-pager stays with moda-one-pager).

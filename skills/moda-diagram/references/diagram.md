@@ -13,13 +13,17 @@ flow top-to-bottom or left-to-right unless asked otherwise. Detail that
 doesn't fit a box belongs in a caption outside the flow.
 
 - Draw links with `<connector>`, never hand-placed lines — connectors stay
-  anchored when a node moves. Full grammar in references/markup.md; the
-  load-bearing rules: `from`/`to` take `@Name:top|bottom|left|right` and
-  resolve only against nodes created in the SAME markup call (link to a
-  pre-existing node with `<line points="…" arrow-end="triangle"/>` instead);
-  `routing="straight|elbowed|curved"` (`elbowed` takes `corner-radius`);
-  labels via `text` + `text-position`; connectors do NOT work inside flex
-  containers — position connected nodes with absolute x/y.
+  anchored when a node moves, including across later incremental edits.
+  Full grammar in references/markup.md; the load-bearing rules: `from`/`to`
+  take `@Target:top|bottom|left|right`, and the target resolves in three
+  passes — a name from the SAME markup call, a direct node id, or a UNIQUE
+  node name already in the scene (take ids and names from `moda canvas
+  read`, and prefer ids when names repeat). Both endpoints must sit on the
+  same page, and within one call the target element must appear BEFORE the
+  connector that references it. `routing="straight|elbowed|curved"`
+  (`elbowed` takes `corner-radius`); labels via `text` + `text-position`;
+  connectors do NOT work inside flex containers — position connected nodes
+  with absolute x/y.
 - Color carries meaning: neutral for ordinary steps, green for success, red
   for failure, the accent for emphasis only — never on every node.
 - Node text is the type anchor; connector labels and captions step down.
@@ -37,6 +41,14 @@ doesn't fit a box belongs in a caption outside the flow.
              stroke="#f87171" dash="dashed" text="Invalid" text-position="0.5" font-size="14" color="#dc2626" />
 </content>
 ```
+
+## Standalone data charts
+
+A bar/line/pie/scatter graphic that stands alone rides `<chart>` — the
+parser does the math from a pipe-delimited data block; full grammar and
+data-honesty rules in references/charts.md. Give it its own right-sized
+canvas, title it, and export png. The 2×2 matrix below is the deliberate
+exception: shapes and text, not `<chart>`.
 
 ## 2×2 matrices (competitive landscape, quadrant chart)
 

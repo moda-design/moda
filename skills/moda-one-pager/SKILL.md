@@ -4,9 +4,10 @@ description: >-
   Design a one-pager, PDF report, handout, flyer, or printable
   document on Moda. Use when the user asks for a one-pager, single-page summary,
   PDF, report, brief, handout, fact sheet, leave-behind, or "make this
-  markdown/README look designed". Multi-page documents belong here too — a
-  12-page report, guide, whitepaper, or proposal — as do print pieces like
-  posters and flyers (slides go to moda-deck; social/banner graphics to
+  markdown/README look designed", or an infographic. Multi-page documents
+  belong here too — a 12-page report, guide, whitepaper, or proposal — as do
+  print pieces: posters, flyers, menus, resumes, certificates, invitations,
+  business cards (slides go to moda-deck; social/banner graphics to
   moda-social). Produces designed US-Letter (or A4) pages on
   a live Moda canvas and exports a real PDF with selectable text and hyperlinks.
   Requires the moda CLI and a Moda account (Step 0 checks both; it never

@@ -1,16 +1,17 @@
 ---
 name: moda-diagram
 description: >-
-  Design diagrams and interface mockups on Moda — three intents:
-  (1) diagrams and flowcharts (process, org chart, architecture, decision
-  tree, swimlane, workflow), (2) 2x2 matrices (competitive landscape,
-  quadrant chart, market map), and (3) static UI wireframes and app/site
-  screen mockups. Use when the user asks for any of those. Produces
-  anchored-connector diagrams and screen layouts on a live Moda canvas and
-  exports png or pdf. A mockup is a picture of an interface — for a live
-  hosted page use moda-website; a data chart inside a deck or document stays
-  with moda-deck or moda-one-pager. Requires the moda CLI and a Moda account
-  (Step 0 checks both; it never installs anything itself).
+  Design diagrams, charts, and interface mockups on Moda — three
+  intents: (1) diagrams and flowcharts (process, org chart, architecture,
+  decision tree, swimlane, workflow), (2) 2x2 matrices, quadrant charts,
+  market maps, and standalone data charts (bar/line/pie graphics), and
+  (3) static UI wireframes and app/site screen mockups. Use when the user
+  asks for any of those. Produces anchored-connector diagrams, charts, and
+  screen layouts on a live Moda canvas and exports png or pdf. A mockup is a
+  picture of an interface — for a live hosted page use moda-website; a
+  diagram or chart destined for an existing deck/document canvas stays with
+  moda-deck, moda-one-pager, or moda-edit. Requires the moda CLI and a Moda
+  account (Step 0 checks both; it never installs anything itself).
 argument-hint: "[what to diagram, or the screen to mock] [--size WxH] [--brand <kit>]"
 allowed-tools: Bash(moda:*), Read, Glob, Grep
 ---
@@ -89,14 +90,17 @@ allowed-tools: Bash(moda:*), Read, Glob, Grep
 2. **Read references/markup.md** (connector grammar, containers, path) and
    compute the type ladder per references/design-quality.md. Brand kit in
    play → `moda brand show` and use its palette for the accent semantics.
-3. **Create**: `moda canvas create --name "…" --size WxH --category
-   diagram` — size to the content (a 1600x1000 landscape suits most
+3. **Create**: `moda canvas create --name "…" --size WxH` with
+   `--category ui` for wireframes/mockups and `--category diagram`
+   otherwise — size to the content (a 1600x1000 landscape suits most
    diagrams; matrices often ride a 960x540 slide; UI mockups use the real
    viewport from references/diagram.md).
 4. **Author in small batches**, one section or lane per markup apply.
-   Connectors resolve only against nodes in the SAME apply — author a
-   connected cluster together. Read every result; repair before adding
-   more.
+   Connector targets resolve by same-call name, node id, or unique existing
+   name (take ids from `moda canvas read`), so later applies anchor to
+   earlier nodes — endpoints stay on one page, and within one apply a node
+   is defined BEFORE the connector that links it. Read every result; repair
+   before adding more.
 5. **Verify**: `moda canvas lint` (collisions and contrast findings matter
    most here), then `moda canvas screenshot` — check no connector crosses a
    node, no label collides, spacing is even, the flow reads at a glance.
@@ -109,6 +113,7 @@ allowed-tools: Bash(moda:*), Read, Glob, Grep
 | Doc | Load when |
 |---|---|
 | references/diagram.md | always — the three mode recipes |
+| references/charts.md | a standalone data chart |
 | references/markup.md | before writing any markup (connector grammar) |
 | references/design-quality.md | typography ladder, palette discipline |
 | references/brand.md | a brand kit exists |

@@ -95,8 +95,10 @@ allowed-tools: Bash(moda:*), Read, Glob, Grep
    before settling the direction (references/brand.md) — on social, brand
    colors and logo stay tight while headline type may lead.
 3. **Create** at the platform's exact size:
-   `moda canvas create --name "…" --size 1080x1350 --category social`
-   (sizes in references/social.md). Carousel: prove slide 1 alone first —
+   `moda canvas create --name "…" --size 1080x1350` with `--category
+   carousel` for carousels, `--category web-ads` for display/banner ads,
+   and `--category social` otherwise (sizes in references/social.md).
+   Carousel: prove slide 1 alone first —
    author it, screenshot it, fix it — then `moda canvas add-pages` for the
    rest and reuse the identical styles so the system cannot drift.
 4. **Author** one page or concept per markup apply. Imagery per the routing
@@ -108,8 +110,9 @@ allowed-tools: Bash(moda:*), Read, Glob, Grep
    type below the ladder floor, concepts that collapsed into one look.
 6. **Deliver**: `moda export CANVAS_REF --format png --pixel-ratio 2 -o
    <name>.png` (or jpeg); a multi-page canvas arrives as a zip of images —
-   that zip IS the carousel deliverable. Close per the UX rules: canvas
-   link + the exported file path(s).
+   that zip IS the IG/TikTok carousel deliverable. A LinkedIn carousel is a
+   document post: deliver ONE multi-page PDF instead (`moda export --format
+   pdf`). Close per the UX rules: canvas link + the exported file path(s).
 
 ## References
 
