@@ -20,7 +20,7 @@ export function buildProgram(): Command {
   const program = new Command('moda');
   program
     .description('Drive Moda as a deterministic artifact runtime — canvases, brand kits, uploads, exports')
-    .version(CLI_VERSION, '-V, --version-flag', 'print the CLI version')
+    .version(CLI_VERSION, '-V, --version', 'print the CLI version')
     .enablePositionalOptions()
     .exitOverride();
 

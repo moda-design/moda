@@ -9,6 +9,7 @@
         "--no-input",
         "--no-retry",
         "--org",
+        "--pretty",
         "--quiet",
         "--timeout"
       ]
@@ -22,6 +23,7 @@
         "--no-input",
         "--no-retry",
         "--org",
+        "--pretty",
         "--quiet",
         "--timeout"
       ]
@@ -37,6 +39,7 @@
         "--no-input",
         "--no-retry",
         "--org",
+        "--pretty",
         "--quiet",
         "--timeout"
       ]
@@ -51,6 +54,7 @@
         "--no-retry",
         "--org",
         "--paste",
+        "--pretty",
         "--quiet",
         "--scopes",
         "--timeout"
@@ -65,6 +69,7 @@
         "--no-input",
         "--no-retry",
         "--org",
+        "--pretty",
         "--quiet",
         "--timeout"
       ]
@@ -78,6 +83,7 @@
         "--no-input",
         "--no-retry",
         "--org",
+        "--pretty",
         "--quiet",
         "--timeout"
       ]
@@ -92,6 +98,7 @@
         "--no-input",
         "--no-retry",
         "--org",
+        "--pretty",
         "--quiet",
         "--timeout",
         "--url"
@@ -106,6 +113,7 @@
         "--no-input",
         "--no-retry",
         "--org",
+        "--pretty",
         "--quiet",
         "--timeout"
       ]
@@ -120,6 +128,7 @@
         "--no-retry",
         "--org",
         "--output",
+        "--pretty",
         "--quiet",
         "--timeout"
       ]
@@ -133,6 +142,7 @@
         "--no-input",
         "--no-retry",
         "--org",
+        "--pretty",
         "--quiet",
         "--timeout"
       ]
@@ -147,6 +157,7 @@
         "--no-input",
         "--no-retry",
         "--org",
+        "--pretty",
         "--quiet",
         "--timeout"
       ]
@@ -161,6 +172,7 @@
         "--no-input",
         "--no-retry",
         "--org",
+        "--pretty",
         "--quiet",
         "--revision",
         "--size",
@@ -179,6 +191,7 @@
         "--no-retry",
         "--org",
         "--pages",
+        "--pretty",
         "--quiet",
         "--size",
         "--timeout"
@@ -193,6 +206,7 @@
         "--no-input",
         "--no-retry",
         "--org",
+        "--pretty",
         "--quiet",
         "--timeout",
         "--yes"
@@ -207,6 +221,7 @@
         "--no-input",
         "--no-retry",
         "--org",
+        "--pretty",
         "--quiet",
         "--revision",
         "--timeout",
@@ -224,6 +239,7 @@
         "--no-retry",
         "--org",
         "--page",
+        "--pretty",
         "--quiet",
         "--revision",
         "--screenshot",
@@ -240,6 +256,7 @@
         "--no-retry",
         "--org",
         "--page",
+        "--pretty",
         "--quiet",
         "--timeout"
       ]
@@ -255,6 +272,7 @@
         "--no-input",
         "--no-retry",
         "--org",
+        "--pretty",
         "--quiet",
         "--timeout"
       ]
@@ -271,6 +289,7 @@
         "--no-retry",
         "--org",
         "--page",
+        "--pretty",
         "--quiet",
         "--revision",
         "--screenshot",
@@ -286,6 +305,7 @@
         "--no-input",
         "--no-retry",
         "--org",
+        "--pretty",
         "--quiet",
         "--timeout"
       ]
@@ -300,7 +320,9 @@
         "--no-retry",
         "--org",
         "--page",
+        "--pretty",
         "--quiet",
+        "--summary",
         "--timeout"
       ]
     },
@@ -313,6 +335,7 @@
         "--no-input",
         "--no-retry",
         "--org",
+        "--pretty",
         "--quiet",
         "--timeout"
       ]
@@ -329,6 +352,7 @@
         "--output",
         "--page",
         "--pixel-ratio",
+        "--pretty",
         "--quiet",
         "--timeout"
       ]
@@ -342,6 +366,7 @@
         "--no-input",
         "--no-retry",
         "--org",
+        "--pretty",
         "--quiet",
         "--timeout"
       ]
@@ -355,6 +380,7 @@
         "--no-input",
         "--no-retry",
         "--org",
+        "--pretty",
         "--quiet",
         "--remix",
         "--timeout"
@@ -369,6 +395,7 @@
         "--no-input",
         "--no-retry",
         "--org",
+        "--pretty",
         "--quiet",
         "--timeout",
         "--tokens"
@@ -389,6 +416,7 @@
         "--no-input",
         "--no-retry",
         "--org",
+        "--pretty",
         "--quiet",
         "--timeout"
       ]
@@ -403,6 +431,7 @@
         "--no-input",
         "--no-retry",
         "--org",
+        "--pretty",
         "--quiet",
         "--timeout"
       ]
@@ -416,6 +445,7 @@
         "--no-input",
         "--no-retry",
         "--org",
+        "--pretty",
         "--quiet",
         "--timeout"
       ]
@@ -429,6 +459,7 @@
         "--no-input",
         "--no-retry",
         "--org",
+        "--pretty",
         "--quiet",
         "--timeout"
       ]
@@ -442,6 +473,7 @@
         "--no-input",
         "--no-retry",
         "--org",
+        "--pretty",
         "--quiet",
         "--timeout"
       ]
@@ -461,6 +493,7 @@
         "--output",
         "--page",
         "--pixel-ratio",
+        "--pretty",
         "--quiet",
         "--timeout"
       ]
@@ -475,6 +508,7 @@
         "--no-retry",
         "--org",
         "--output",
+        "--pretty",
         "--quiet",
         "--timeout"
       ]
@@ -488,6 +522,7 @@
         "--no-input",
         "--no-retry",
         "--org",
+        "--pretty",
         "--quiet",
         "--timeout"
       ]
@@ -503,6 +538,7 @@
         "--no-input",
         "--no-retry",
         "--org",
+        "--pretty",
         "--quiet",
         "--timeout"
       ]
@@ -516,6 +552,7 @@
         "--no-input",
         "--no-retry",
         "--org",
+        "--pretty",
         "--quiet",
         "--timeout"
       ]
@@ -530,6 +567,7 @@
         "--no-input",
         "--no-retry",
         "--org",
+        "--pretty",
         "--quiet",
         "--timeout"
       ]
@@ -543,6 +581,7 @@
         "--no-input",
         "--no-retry",
         "--org",
+        "--pretty",
         "--quiet",
         "--timeout"
       ]
@@ -556,6 +595,21 @@
         "--no-input",
         "--no-retry",
         "--org",
+        "--pretty",
+        "--quiet",
+        "--timeout"
+      ]
+    },
+    {
+      "name": "last-error",
+      "description": "re-print the full error envelope of the last failed command (no re-run needed)",
+      "flags": [
+        "--api-base",
+        "--json",
+        "--no-input",
+        "--no-retry",
+        "--org",
+        "--pretty",
         "--quiet",
         "--timeout"
       ]
@@ -571,6 +625,7 @@
         "--no-retry",
         "--org",
         "--output",
+        "--pretty",
         "--prompt",
         "--quiet",
         "--reference",
@@ -590,6 +645,7 @@
         "--no-retry",
         "--org",
         "--output",
+        "--pretty",
         "--prompt",
         "--quiet",
         "--reference",
@@ -610,6 +666,7 @@
         "--no-retry",
         "--org",
         "--output",
+        "--pretty",
         "--prompt",
         "--quiet",
         "--timeout"
@@ -624,6 +681,7 @@
         "--no-input",
         "--no-retry",
         "--org",
+        "--pretty",
         "--quiet",
         "--timeout"
       ]
@@ -639,6 +697,7 @@
         "--no-retry",
         "--org",
         "--output",
+        "--pretty",
         "--quiet",
         "--timeout"
       ]
@@ -653,6 +712,7 @@
         "--no-retry",
         "--org",
         "--output",
+        "--pretty",
         "--quiet",
         "--scale",
         "--timeout"
@@ -667,6 +727,7 @@
         "--no-input",
         "--no-retry",
         "--org",
+        "--pretty",
         "--quiet",
         "--timeout"
       ]
@@ -680,6 +741,7 @@
         "--no-input",
         "--no-retry",
         "--org",
+        "--pretty",
         "--quiet",
         "--timeout"
       ]
@@ -693,6 +755,7 @@
         "--no-input",
         "--no-retry",
         "--org",
+        "--pretty",
         "--quiet",
         "--timeout"
       ]
@@ -706,6 +769,7 @@
         "--no-input",
         "--no-retry",
         "--org",
+        "--pretty",
         "--quiet",
         "--timeout"
       ]
@@ -720,6 +784,7 @@
         "--no-input",
         "--no-retry",
         "--org",
+        "--pretty",
         "--quiet",
         "--timeout",
         "--title"
@@ -734,6 +799,7 @@
         "--no-input",
         "--no-retry",
         "--org",
+        "--pretty",
         "--quiet",
         "--timeout",
         "--yes"
@@ -750,6 +816,7 @@
         "--no-retry",
         "--offset",
         "--org",
+        "--pretty",
         "--quiet",
         "--timeout"
       ]
@@ -763,6 +830,7 @@
         "--no-input",
         "--no-retry",
         "--org",
+        "--pretty",
         "--quiet",
         "--slug",
         "--timeout"
@@ -779,6 +847,7 @@
         "--no-input",
         "--no-retry",
         "--org",
+        "--pretty",
         "--quiet",
         "--timeout",
         "--title"
@@ -793,6 +862,7 @@
         "--no-input",
         "--no-retry",
         "--org",
+        "--pretty",
         "--quiet",
         "--timeout"
       ]
@@ -806,6 +876,7 @@
         "--no-input",
         "--no-retry",
         "--org",
+        "--pretty",
         "--quiet",
         "--timeout",
         "--yes"
@@ -820,6 +891,7 @@
         "--no-input",
         "--no-retry",
         "--org",
+        "--pretty",
         "--quiet",
         "--timeout"
       ]
@@ -834,6 +906,7 @@
         "--no-input",
         "--no-retry",
         "--org",
+        "--pretty",
         "--quiet",
         "--timeout"
       ]
@@ -849,11 +922,13 @@
         "--export",
         "--files",
         "--format",
+        "--fresh",
         "--json",
         "--no-input",
         "--no-retry",
         "--org",
         "--output",
+        "--pretty",
         "--prompt",
         "--quiet",
         "--timeout",
@@ -869,6 +944,7 @@
         "--no-input",
         "--no-retry",
         "--org",
+        "--pretty",
         "--quiet",
         "--timeout"
       ]
@@ -882,6 +958,7 @@
         "--no-input",
         "--no-retry",
         "--org",
+        "--pretty",
         "--quiet",
         "--timeout"
       ]
@@ -895,6 +972,7 @@
         "--no-input",
         "--no-retry",
         "--org",
+        "--pretty",
         "--quiet",
         "--timeout"
       ]
@@ -908,6 +986,7 @@
         "--no-input",
         "--no-retry",
         "--org",
+        "--pretty",
         "--quiet",
         "--timeout"
       ]
@@ -922,6 +1001,7 @@
         "--no-input",
         "--no-retry",
         "--org",
+        "--pretty",
         "--quiet",
         "--results",
         "--timeout"

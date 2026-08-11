@@ -31,12 +31,12 @@ export function parseSiteId(input: string): string {
   return trimmed;
 }
 
-/** Destructive-verb approval gate, mirroring `moda canvas delete` (cli.md §9). */
-export function requireYes(action: string, noInput: boolean, yes: boolean): void {
+/** Destructive-verb approval gate, mirroring `moda canvas delete`. */
+export function requireYes(action: string, noInput: boolean, yes: boolean, rerunCommand: string): void {
   if (noInput && !yes) {
     throw CliError.usage(
       `${action} requires --yes under --json/--no-input.`,
-      'Destructive verbs need the host approval step (cli.md §9).',
+      `If the host/user approved this action, re-run with --yes: ${rerunCommand} --yes`,
     );
   }
 }
@@ -142,7 +142,7 @@ export function registerSite(program: Command): void {
   ).action(
     wrapAction(async (args, opts, cmd) => {
       const inv = buildInvocation(cmd);
-      requireYes('Unpublishing a live site', inv.flags.noInput, opts.yes === true);
+      requireYes('Unpublishing a live site', inv.flags.noInput, opts.yes === true, `moda site unpublish ${args[0] as string}`);
       const { client } = await authedClient(inv, SITE_TIMEOUT_MS);
       return performSiteUnpublish(client, args[0] as string);
     }),
@@ -156,7 +156,7 @@ export function registerSite(program: Command): void {
   ).action(
     wrapAction(async (args, opts, cmd) => {
       const inv = buildInvocation(cmd);
-      requireYes('Deleting a site', inv.flags.noInput, opts.yes === true);
+      requireYes('Deleting a site', inv.flags.noInput, opts.yes === true, `moda site delete ${args[0] as string}`);
       const { client } = await authedClient(inv, SITE_TIMEOUT_MS);
       return performSiteDelete(client, args[0] as string);
     }),

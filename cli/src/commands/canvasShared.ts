@@ -171,19 +171,31 @@ export function mutationOutcome(
 }
 
 /** Wrap a read/list response as the standard output document. */
+/** Array field names the list/search lanes return their items under. */
+const LIST_ITEM_KEYS = ['items', 'canvases', 'results', 'tasks', 'files', 'brand_kits', 'websites'];
+
 export function passthroughOutcome(
   operation: string,
   response: { body: unknown; requestId?: string; durationMs: number },
   _inv: Invocation,
+  /** List-lane sugar: adds `returned: n` and, on zero results, the steering line in human output. */
+  listLane?: { emptyHint: string },
 ): CommandOutcome {
   const root = asObject(response.body);
+  const items = Array.isArray(response.body)
+    ? (response.body as unknown[])
+    : LIST_ITEM_KEYS.map((key) => root[key]).find(Array.isArray);
   return {
     body: {
       ok: true,
       operation,
       ...(Array.isArray(response.body) ? { items: response.body } : root),
+      ...(listLane !== undefined && Array.isArray(items) ? { returned: items.length } : {}),
       meta: { ...asObject(root.meta), ...metaBlock({ requestId: response.requestId, durationMs: response.durationMs }) },
     },
+    ...(listLane !== undefined && Array.isArray(items) && items.length === 0
+      ? { human: (write: (line: string) => void) => write(listLane.emptyHint) }
+      : {}),
     exitCode: EXIT_OK,
   };
 }

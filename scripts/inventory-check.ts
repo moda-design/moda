@@ -42,3 +42,65 @@ if (committed !== current) {
   process.exit(1);
 }
 console.error('inventory: in sync');
+
+// --- Skill-text flag audit (agent ergonomics item: the `--node` class of ghost flags) ---
+// Every `--flag` token inside a `moda …` invocation in skill/shared/command text must exist in
+// the verb inventory (any verb) or the global flag set. Catches references teaching flags the
+// CLI does not have.
+import { readdirSync, statSync, readFileSync } from 'node:fs';
+
+const GLOBAL_FLAGS = new Set([
+  '--json', '--pretty', '--quiet', '--no-input', '--no-retry', '--org', '--api-base', '--timeout',
+  '--help', '--version', '--yes',
+]);
+
+const inventoryFlags = new Set<string>(GLOBAL_FLAGS);
+for (const verb of JSON.parse(current).verbs as Array<{ flags: string[] }>) {
+  for (const flag of verb.flags) inventoryFlags.add(flag);
+}
+
+function* walkMarkdown(dir: string): Generator<string> {
+  for (const entry of readdirSync(dir)) {
+    const full = join(dir, entry);
+    if (statSync(full).isDirectory()) yield* walkMarkdown(full);
+    else if (entry.endsWith('.md')) yield full;
+  }
+}
+
+/** moda-invocation text spans: inline backtick spans containing `moda `, plus fenced blocks with a moda line. */
+function modaSpans(text: string): string[] {
+  const spans: string[] = [];
+  for (const match of text.matchAll(/`([^`\n]+)`/g)) {
+    if (/\bmoda\s/.test(match[1] as string)) spans.push(match[1] as string);
+  }
+  const fences = text.split(/^(?:```|~~~).*$/m);
+  for (let i = 1; i < fences.length; i += 2) {
+    const block = fences[i] as string;
+    if (/^\s*moda\s/m.test(block)) spans.push(block);
+  }
+  return spans;
+}
+
+const ghostFindings: string[] = [];
+for (const dir of ['skills', 'shared', 'commands']) {
+  const full = join(ROOT, dir);
+  let files: string[] = [];
+  try { files = [...walkMarkdown(full)]; } catch { continue; }
+  for (const file of files) {
+    const text = readFileSync(file, 'utf8');
+    for (const span of modaSpans(text)) {
+      for (const match of span.matchAll(/(--[a-z][a-z-]+)/g)) {
+        const flag = match[1] as string;
+        if (!inventoryFlags.has(flag)) {
+          ghostFindings.push(`${file.replace(`${ROOT}/`, '')}: flag ${flag} not in the verb inventory`);
+        }
+      }
+    }
+  }
+}
+if (ghostFindings.length > 0) {
+  console.error(`skill-text flag audit FAILED — ${ghostFindings.length} ghost flag reference(s):`);
+  for (const finding of [...new Set(ghostFindings)]) console.error(`  - ${finding}`);
+  process.exit(1);
+}
+console.error('skill-text flag audit: clean');

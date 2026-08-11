@@ -79,11 +79,14 @@ function parseCanvasUrl(input: string): ParsedRef {
     throw CliError.usage(`Cannot parse canvas URL '${input}'.`);
   }
   const segments = url.pathname.split('/').filter((s) => s.length > 0);
-  // /c/<ref> — canvas editor URL; ref may be a cvs_ id or a UUID.
-  if (segments.length >= 2 && segments[0] === 'c') {
+  // /c/<ref> and /canvas/<ref> — canvas editor URLs (any host); ref may be a cvs_ id or a UUID.
+  if (segments.length >= 2 && (segments[0] === 'c' || segments[0] === 'canvas')) {
     const candidate = segments[1] as string;
     if (UUID_RE.test(candidate) || WIRE_ID_RE.exec(candidate)?.[1] === 'cvs') return { kind: 'canvas', ref: candidate };
-    throw CliError.usage(`Canvas URL path '/c/${candidate}' does not contain a cvs_ id or UUID.`);
+    throw CliError.usage(
+      `Canvas URL path '/${segments[0]}/${candidate}' does not contain a cvs_ id or UUID.`,
+      'Pass the raw canvas id instead.',
+    );
   }
   // /s/<token> — share URL; resolved via POST /v1/share_links/resolve.
   if (segments.length >= 2 && segments[0] === 's') {
@@ -91,7 +94,7 @@ function parseCanvasUrl(input: string): ParsedRef {
   }
   throw CliError.usage(
     `Cannot extract a canvas from URL '${input}'.`,
-    'Expected a moda.app /c/<canvas> or /s/<share> URL.',
+    'Expected a /c/<canvas>, /canvas/<canvas>, or /s/<share> URL — or pass the raw canvas id.',
   );
 }
 

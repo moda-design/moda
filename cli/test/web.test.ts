@@ -91,7 +91,9 @@ describe('web search (POST /v1/web/search)', () => {
     expect(body.metered).toBe(true);
     expect(body.usage).toEqual(RECEIPT);
     const meta = body.meta as Record<string, unknown>;
-    expect(meta.cli_version).toBeDefined();
+    // Meta strip: versions live in `moda version`/doctor; duration_ms stays as the latency instrument.
+    expect(meta.cli_version).toBeUndefined();
+    expect(typeof meta.duration_ms).toBe('number');
     expect(outcome.exitCode).toBe(0);
   });
 

@@ -49,3 +49,23 @@ Resources:
 - Metered lanes (always labeled, never hidden): `moda task start --prompt "…"` (Omni
   escalation) and `moda media generate-image --prompt "…" --model …`. Both are labeled
   `usage.class: "metered"`; exact credits are enriched asynchronously on your account usage.
+
+## The --json envelope (versioned machine surface)
+
+`--json` emits exactly one compact JSON document on stdout (`--pretty` to
+pretty-print). These fields are a stability contract; server payload fields
+ride alongside them additively:
+
+- `ok` — whether the invocation succeeded. On failure the document is
+  `{ok: false, error: {type, code, message, hint?, doc_url?, request_id?,
+  retryable?, retry_after_s?, details?}, meta}` and the exit code is nonzero
+  (`moda last-error` re-prints the last failure's envelope).
+- `operation` — the CLI verb lane (e.g. "canvas.edit", "site.publish").
+- `meta.request_id` (server correlation) and `meta.duration_ms` (latency).
+  CLI/API versions are not repeated per-response — `moda version` owns them.
+- Metered lanes add `metered: true` + the `usage` receipt; keyed replays add
+  `replayed: true`.
+- Canvas mutations add `revision`, `warnings`, `operation_counts`, and
+  `requires_repair`; `--screenshot` adds `screenshot: {ok, pages[]}`.
+- List/search lanes add `returned` (count of items in this response).
+- `notes[]` carries format advisories (e.g. PDF hyperlink flattening).

@@ -10,6 +10,8 @@ import { redactString, redactValue } from './redact.ts';
 export interface EmitOptions {
   json: boolean;
   quiet: boolean;
+  /** Pretty-print --json output (compact is the default machine shape). */
+  pretty?: boolean;
   /** When true (binary payload on stdout via `-o -`), the JSON document moves to stderr. */
   summaryToStderr?: boolean;
 }
@@ -36,7 +38,8 @@ function writeStderr(text: string): void {
 
 export function emitOutcome(outcome: CommandOutcome, opts: EmitOptions): void {
   if (opts.json) {
-    const doc = `${JSON.stringify(redactValue(outcome.body), null, 2)}\n`;
+    // Compact by default — machine output for agents; --pretty is the human opt-in.
+    const doc = `${JSON.stringify(redactValue(outcome.body), null, opts.pretty === true ? 2 : undefined)}\n`;
     if (opts.summaryToStderr) writeStderr(doc);
     else writeStdout(doc);
     return;
@@ -73,7 +76,7 @@ export function errorBody(err: CliErrorFields): Record<string, unknown> {
 
 export function emitError(err: CliErrorFields, exitCode: number, opts: EmitOptions): void {
   if (opts.json) {
-    writeStdout(`${JSON.stringify(redactValue(errorBody(err)), null, 2)}\n`);
+    writeStdout(`${JSON.stringify(redactValue(errorBody(err)), null, opts.pretty === true ? 2 : undefined)}\n`);
     return;
   }
   const hint = err.hint ? `\n  hint: ${err.hint}` : '';
