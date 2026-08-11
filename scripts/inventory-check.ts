@@ -76,12 +76,14 @@ function* walkMarkdown(dir: string): Generator<string> {
 function modaSpans(text: string): string[] {
   const spans: string[] = [];
   for (const match of text.matchAll(/`([^`\n]+)`/g)) {
-    if (/\bmoda\s/.test(match[1] as string)) spans.push(match[1] as string);
+    // Require a verb after `moda` — bare mentions inside OTHER commands (e.g. the pinned
+    // `gh release download … -O ~/.local/bin/moda && chmod …` install line) are not CLI spans.
+    if (/\bmoda\s+[a-z]/.test(match[1] as string)) spans.push(match[1] as string);
   }
   const fences = text.split(/^(?:```|~~~).*$/m);
   for (let i = 1; i < fences.length; i += 2) {
     const block = fences[i] as string;
-    if (/^\s*moda\s/m.test(block)) spans.push(block);
+    if (/^\s*moda\s+[a-z]/m.test(block)) spans.push(block);
   }
   return spans;
 }
