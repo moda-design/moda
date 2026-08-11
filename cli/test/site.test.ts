@@ -101,19 +101,22 @@ describe('parseSiteId', () => {
 });
 
 describe('requireYes (destructive-verb gate, canvas delete parity)', () => {
-  test('--json/--no-input without --yes is a usage error naming --yes', () => {
+  test('--json/--no-input without --yes is a usage error whose hint is the exact re-run command', () => {
     try {
-      requireYes('Deleting a site', true, false);
+      requireYes('Deleting a site', true, false, `moda site delete ${SITE_ID}`);
       expect.unreachable();
     } catch (err) {
       expect((err as CliError).fields.code).toBe('usage');
       expect((err as CliError).fields.message).toContain('--yes');
+      expect((err as CliError).fields.hint).toBe(
+        `If the host/user approved this action, re-run with --yes: moda site delete ${SITE_ID} --yes`,
+      );
     }
   });
 
   test('--yes passes; interactive mode passes without --yes', () => {
-    expect(() => requireYes('Deleting a site', true, true)).not.toThrow();
-    expect(() => requireYes('Deleting a site', false, false)).not.toThrow();
+    expect(() => requireYes('Deleting a site', true, true, 'moda site delete x')).not.toThrow();
+    expect(() => requireYes('Deleting a site', false, false, 'moda site delete x')).not.toThrow();
   });
 });
 
@@ -129,7 +132,8 @@ describe('site create (POST /v1/websites)', () => {
     const body = outcome.body as Record<string, unknown>;
     expect(body.ok).toBe(true);
     expect(body.operation).toBe('site.create');
-    expect((body.meta as Record<string, unknown>).cli_version).toBeDefined();
+    expect((body.meta as Record<string, unknown>).cli_version).toBeUndefined();
+    expect(typeof (body.meta as Record<string, unknown>).duration_ms).toBe('number');
     const lines = humanLines(outcome);
     expect(lines[0]).toContain(SITE_ID);
     expect(lines[1]).toBe(`publish it: moda site publish ${SITE_ID}`);

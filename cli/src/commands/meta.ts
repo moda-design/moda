@@ -5,7 +5,7 @@ import { parseWhoami } from '../api/types.ts';
 import { resolveCredential, type ResolvedCredential } from '../auth/credentials.ts';
 import { selectKeychainBackend } from '../auth/keychain.ts';
 import { CliError } from '../cliError.ts';
-import { readUpdateStamp } from '../config/state.ts';
+import { readLastError, readUpdateStamp } from '../config/state.ts';
 import { EXIT_AUTH, EXIT_OK, EXIT_TRANSPORT } from '../output/exitCodes.ts';
 import { compareVersions, pinnedInstallCommand, RELEASES_REPO, updateAvailable } from '../update.ts';
 import { API_VERSION_PIN } from '../api/endpoints.ts';
@@ -125,6 +125,33 @@ export function registerMeta(program: Command): void {
     }),
   );
 
+  addGlobalFlags(
+    program
+      .command('last-error')
+      .description('re-print the full error envelope of the last failed command (no re-run needed)'),
+  ).action(
+    wrapAction(async (_args, _opts, _cmd) => {
+      const doc = readLastError();
+      if (doc === undefined) {
+        throw new CliError({
+          type: 'not_found',
+          code: 'no_last_error',
+          message: 'No failed command has been recorded yet.',
+          source: 'local',
+        });
+      }
+      return {
+        body: { ok: true, operation: 'last-error', last_error: doc, meta: metaBlock() },
+        human: (write) => {
+          // Lead with WHEN it failed — an old timestamp tells the agent this is a stale failure.
+          if (typeof doc.exited_at === 'string') write(`recorded at: ${doc.exited_at}`);
+          write(JSON.stringify(doc, null, 2));
+        },
+        exitCode: EXIT_OK,
+      };
+    }),
+  );
+
   // Hidden machine-readable verb inventory for skills CI parity (skills-and-distribution §3.5).
   program
     .command('__inventory', { hidden: true })
@@ -132,7 +159,7 @@ export function registerMeta(program: Command): void {
     .description('machine-readable verb inventory')
     .action(async (_opts: Record<string, unknown>, cmd: Command) => {
       const verbs = collectVerbs(cmd.parent as Command, '');
-      process.stdout.write(`${JSON.stringify({ verbs }, null, 2)}\n`);
+      process.stdout.write(`${JSON.stringify({ verbs })}\n`);
       process.exit(0);
     });
 }

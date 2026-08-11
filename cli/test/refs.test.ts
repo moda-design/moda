@@ -19,6 +19,20 @@ describe('parseRef', () => {
     expect(parseRef(`https://moda.app/c/${UUID}`, 'canvas').ref).toBe(UUID);
   });
 
+  test('/canvas/<ref> editor URLs parse on any host (cvs_ id and UUID)', () => {
+    expect(parseRef(`https://moda.app/canvas/${CVS}`, 'canvas').ref).toBe(CVS);
+    expect(parseRef(`https://app.moda.app/canvas/${UUID}`, 'canvas').ref).toBe(UUID);
+  });
+
+  test('unparseable canvas URLs hint the raw-id escape', () => {
+    try {
+      parseRef('https://moda.app/files/whatever', 'canvas');
+      expect.unreachable();
+    } catch (err) {
+      expect((err as CliError).fields.hint).toContain('pass the raw canvas id');
+    }
+  });
+
   test('share URL yields a share token for server-side resolution', () => {
     const parsed = parseRef('https://moda.app/s/abc123token', 'canvas');
     expect(parsed.shareToken).toBe('abc123token');

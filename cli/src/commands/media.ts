@@ -35,7 +35,9 @@ export function registerMedia(program: Command): void {
       .option('--source <refs...>', 'images the prompt modifies/preserves: file_ refs, URLs, or local paths')
       .option('--reference <refs...>', 'style/subject references: file_ refs, URLs, or local paths')
       .option('-o, --output <path>', 'download the artifact to a local file'),
-  ).action(
+  )
+    .addHelpText('after', '\nExample:\n  moda media generate-image --prompt "isometric city at dusk, warm light" --model MODEL -o city.png\n\nMetered. Not for: imagery the account already has (moda file search, brand\nkit assets via moda brand show) or icons (markup <image icon="query"/>) —\ngeneration is the LAST resort in the imagery routing order.\n')
+    .action(
     wrapAction(async (_args, opts, cmd) => {
       const inv = buildInvocation(cmd);
       const { client } = await authedClient(inv, MEDIA_TIMEOUT_MS);

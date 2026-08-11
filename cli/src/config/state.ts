@@ -2,8 +2,9 @@
  * `$XDG_STATE_HOME/moda/` — non-config, non-secret state: per-canvas revision cache,
  * update-check stamp, screenshot default landing dir, credential-account index.
  */
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { chmodSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
+import { redactValue } from '../output/redact.ts';
 import { stateDir } from './paths.ts';
 
 function readJson<T>(path: string, fallback: T): T {
@@ -105,4 +106,89 @@ export function removeAccountIndex(entry: AccountIndexEntry, env: NodeJS.Process
     accountsPath(env),
     readAccountIndex(env).filter((e) => !(e.host === entry.host && e.org === entry.org)),
   );
+}
+
+// --- Last error envelope (agent ergonomics: never re-run a failed write to see the error) ---
+
+function lastErrorPath(env: NodeJS.ProcessEnv): string {
+  return join(stateDir(env), 'last-error.json');
+}
+
+/**
+ * Persist the --json error envelope of a nonzero exit. Best-effort — never throws. The
+ * envelope is REDACTED before it touches disk (signed URLs, moda_live_ keys) and the file is
+ * owner-only (0600): error bodies can quote request payloads and signed artifact URLs.
+ */
+export function persistLastError(doc: Record<string, unknown>, env: NodeJS.ProcessEnv = process.env): void {
+  try {
+    const path = lastErrorPath(env);
+    const redacted = redactValue({ ...doc, exited_at: new Date().toISOString() });
+    mkdirSync(dirname(path), { recursive: true });
+    writeFileSync(path, `${JSON.stringify(redacted, null, 2)}\n`, { encoding: 'utf8', mode: 0o600 });
+    // mode only applies on creation — enforce on pre-existing files too.
+    chmodSync(path, 0o600);
+  } catch {
+    // State-dir problems must not mask the real error.
+  }
+}
+
+/** Drop the recorded failure once a command succeeds — last-error always means the LAST run. */
+export function clearLastError(env: NodeJS.ProcessEnv = process.env): void {
+  try {
+    rmSync(lastErrorPath(env), { force: true });
+  } catch {
+    // Best-effort.
+  }
+}
+
+export function readLastError(env: NodeJS.ProcessEnv = process.env): Record<string, unknown> | undefined {
+  const value = readJson<Record<string, unknown> | undefined>(lastErrorPath(env), undefined);
+  return value !== undefined && typeof value === 'object' ? value : undefined;
+}
+
+// --- Task-start replay ledger (the server sends no replayed flag on task.start) ---
+
+export interface TaskStartEntry {
+  task_id: string;
+  started_at: string;
+  /** Terminal status when observed by --wait / task status (failed | succeeded | ...). */
+  last_status?: string;
+}
+
+type TaskStartLedger = Record<string, TaskStartEntry>;
+
+const TASK_LEDGER_CAP = 50;
+
+function taskStartsPath(env: NodeJS.ProcessEnv): string {
+  return join(stateDir(env), 'task-starts.json');
+}
+
+export function readTaskStart(key: string, env: NodeJS.ProcessEnv = process.env): TaskStartEntry | undefined {
+  return readJson<TaskStartLedger>(taskStartsPath(env), {})[key];
+}
+
+export function recordTaskStart(key: string, entry: TaskStartEntry, env: NodeJS.ProcessEnv = process.env): void {
+  const ledger = readJson<TaskStartLedger>(taskStartsPath(env), {});
+  ledger[key] = entry;
+  const keys = Object.keys(ledger);
+  if (keys.length > TASK_LEDGER_CAP) {
+    keys
+      .sort((a, b) => (ledger[a]?.started_at ?? '').localeCompare(ledger[b]?.started_at ?? ''))
+      .slice(0, keys.length - TASK_LEDGER_CAP)
+      .forEach((k) => delete ledger[k]);
+  }
+  writeJson(taskStartsPath(env), ledger);
+}
+
+/** Note a task's terminal status on whichever ledger entry started it (best-effort). */
+export function recordTaskStatus(taskId: string, status: string, env: NodeJS.ProcessEnv = process.env): void {
+  const ledger = readJson<TaskStartLedger>(taskStartsPath(env), {});
+  let changed = false;
+  for (const entry of Object.values(ledger)) {
+    if (entry.task_id === taskId && entry.last_status !== status) {
+      entry.last_status = status;
+      changed = true;
+    }
+  }
+  if (changed) writeJson(taskStartsPath(env), ledger);
 }

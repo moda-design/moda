@@ -26,7 +26,12 @@ export function registerExport(program: Command): void {
       .option('--pixel-ratio <n>', 'pixel ratio 1-4 (raster formats)', (v: string) => Number.parseInt(v, 10))
       .option('--flatten', 'PDF only: degrade to raster (default is a selectable vector PDF)')
       .option('--no-wait', 'do not poll; print the export task id and exit 0'),
-  ).action(
+  )
+    .addHelpText(
+      'after',
+      '\nExamples:\n  moda export cvs_123 --format pptx -o deck.pptx\n  moda export cvs_123 --format png --pixel-ratio 2 -o post.png\n\nNot for: quick visual checks while designing (moda canvas screenshot).\nAnimated formats (gif/mp4/webp) have no lane here — say so instead of\nretrying. PDF flattens hyperlinks to text.\n',
+    )
+    .action(
     wrapAction(async (args, opts, cmd) => {
       const inv = buildInvocation(cmd);
       const { client } = await authedClient(inv, EXPORT_BUDGET_MS);
@@ -133,6 +138,8 @@ export async function performExport(
       format,
       output: toStdout ? '-' : outPath,
       bytes: bytes.byteLength,
+      // Format truth the caller must not oversell (verified against the export pipeline).
+      ...(format === 'pdf' ? { notes: ['hyperlinks are flattened to text in PDF output'] } : {}),
       usage: final.usage ?? { class: 'deterministic', metered_credits: 0 },
       meta: metaBlock({ requestId: started.requestId }),
     },

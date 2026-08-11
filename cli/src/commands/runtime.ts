@@ -9,12 +9,13 @@ import { resolveContext, type EffectiveContext } from '../config/context.ts';
 import { emitError, emitOutcome, note, type CommandOutcome, type EmitOptions } from '../output/emit.ts';
 import { exitCodeForError, EXIT_INTERNAL } from '../output/exitCodes.ts';
 import { requireCredential, type ResolvedCredential } from '../auth/credentials.ts';
+import { clearLastError, persistLastError } from '../config/state.ts';
 import { emitUpdateNotice } from '../update.ts';
-import { CLI_VERSION } from '../version.ts';
-import { API_VERSION_PIN } from '../api/endpoints.ts';
 
 export interface GlobalFlags {
   json: boolean;
+  /** --pretty: pretty-print --json output (compact is the default). */
+  pretty: boolean;
   quiet: boolean;
   noInput: boolean;
   noRetry: boolean;
@@ -27,7 +28,8 @@ export interface GlobalFlags {
 /** Attach the cli.md §2.1 global flags to a leaf command (usable at any position). */
 export function addGlobalFlags(cmd: Command): Command {
   return cmd
-    .option('--json', 'machine output: exactly one JSON document on stdout; implies --no-input')
+    .option('--json', 'machine output: exactly one compact JSON document on stdout; implies --no-input')
+    .option('--pretty', 'pretty-print the --json document')
     .option('--org <org>', 'override the configured org context for this invocation')
     .option('--api-base <url>', 'endpoint override (staging/dev)')
     .option('-q, --quiet', 'suppress non-essential stderr')
@@ -47,6 +49,7 @@ export function globalFlags(cmd: Command): GlobalFlags {
   const json = opts.json === true;
   return {
     json,
+    pretty: opts.pretty === true,
     quiet: opts.quiet === true,
     noInput: json || opts.input === false,
     noRetry: opts.retry === false,
@@ -68,7 +71,7 @@ export interface Invocation {
 export function buildInvocation(cmd: Command, env: NodeJS.ProcessEnv = process.env): Invocation {
   const flags = globalFlags(cmd);
   const context = resolveContext({ org: flags.org, apiBase: flags.apiBase }, env);
-  const emitOpts: EmitOptions = { json: flags.json, quiet: flags.quiet };
+  const emitOpts: EmitOptions = { json: flags.json, quiet: flags.quiet, pretty: flags.pretty };
   return { flags, context, env, emitOpts, note: (message) => note(message, { quiet: flags.quiet }) };
 }
 
@@ -104,13 +107,15 @@ export function anonymousClient(inv: Invocation, timeoutMsDefault?: number): Api
   });
 }
 
-/** Standard `meta` block on every --json document (cli.md §3). */
+/**
+ * Standard `meta` block on every --json document: request_id (server correlation — present on
+ * every wire-backed envelope) + duration_ms (the latency instrument). CLI/API versions are NOT
+ * repeated here — `moda version` / `moda doctor` own them.
+ */
 export function metaBlock(extra: { requestId?: string; durationMs?: number } = {}): Record<string, unknown> {
   return {
     ...(extra.requestId !== undefined ? { request_id: extra.requestId } : {}),
     ...(extra.durationMs !== undefined ? { duration_ms: extra.durationMs } : {}),
-    cli_version: CLI_VERSION,
-    api_version: API_VERSION_PIN,
   };
 }
 
@@ -126,17 +131,23 @@ export function wrapAction(handler: ActionHandler): (...cliArgs: unknown[]) => P
     const opts = (cliArgs.at(-2) ?? {}) as Record<string, unknown>;
     const positionals = cliArgs.slice(0, -2).flat().filter((a): a is string => typeof a === 'string');
     const flags = globalFlags(cmd);
-    const emitOpts: EmitOptions = { json: flags.json, quiet: flags.quiet };
+    const emitOpts: EmitOptions = { json: flags.json, quiet: flags.quiet, pretty: flags.pretty };
     try {
       const outcome = await handler(positionals, opts, cmd);
       emitOutcome(outcome, { ...emitOpts, summaryToStderr: outcome.summaryToStderr === true });
       if (!flags.quiet) emitUpdateNotice(process.env);
+      // A zero exit clears the recorded failure — `moda last-error` always means the LAST run.
+      if (outcome.exitCode === 0 && cmd.name() !== 'last-error') clearLastError();
       process.exit(outcome.exitCode);
     } catch (err) {
       const fields = err instanceof CliError ? err.fields : CliError.internal(describeUnknown(err)).fields;
       const exitCode = exitCodeForError(fields);
+      const doc = errorDoc(fields);
+      // Every nonzero exit leaves its full envelope behind: `moda last-error` re-prints it, so a
+      // failed WRITE never needs a re-run just to see what went wrong.
+      persistLastError(doc);
       if (flags.json) {
-        emitOutcome({ body: errorDoc(fields), exitCode }, emitOpts);
+        emitOutcome({ body: doc, exitCode }, emitOpts);
       } else {
         emitError(fields, exitCode, emitOpts);
       }

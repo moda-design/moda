@@ -120,13 +120,16 @@ export function registerFileFacade(program: Command): void {
           ok: true,
           operation: 'file.search',
           ...root,
+          returned: assets.length,
           meta: { ...asObject(root.meta), ...metaBlock({ requestId: response.requestId, durationMs: response.durationMs }) },
         },
         human: (write) => {
           for (const asset of assets) {
             write(`${str(asset, 'id') ?? '?'}  ${str(asset, 'name') ?? ''}`);
           }
-          if (assets.length === 0) write('no matching assets');
+          if (assets.length === 0) {
+            write(`no results for '${args[0] as string}' — broaden the query or switch --kind (icon | photo)`);
+          }
         },
         exitCode: EXIT_OK,
       };

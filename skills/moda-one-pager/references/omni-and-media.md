@@ -72,6 +72,7 @@ moda task status TASK_REF        moda task list [--active]        moda task canc
 ### Task-lane rules
 
 - Every task is labeled metered: cost class before submission, exact usage receipt after. Tell the user before you start one.
+- `moda task start` is idempotent: an identical re-run replays the already-started task instead of spending again — within the server's idempotency window (the CLI says so when it detects the replay). A deliberate new attempt — e.g. after `task_failed` — takes `--fresh`.
 - Omit `--canvas` for net-new work — the task creates and designs its own canvas. Pass `--canvas` only when the job must land on an existing one; a running task **owns its canvas** (your writes exit 5 as busy until it finishes — the CLI already retried; back off or `moda task cancel`).
 - Pass `--brand` rather than restating colors/fonts/logos in the prompt — the resolved kit owns them. Put the slide/page count and format in the flags or the prompt explicitly.
 - A completed task returns a finished, already-exported result when `--export` was chained — don't re-export in a different verb unless you need another format.

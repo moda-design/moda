@@ -1,5 +1,5 @@
 /** `moda canvas` — the deterministic authoring core (cli.md §9) plus lifecycle reuse verbs. */
-import type { Command } from 'commander';
+import { Option, type Command } from 'commander';
 import type { ApiClient } from '../api/client.ts';
 import { endpoints } from '../api/endpoints.ts';
 import { asObject, str } from '../api/types.ts';
@@ -65,6 +65,53 @@ async function maybeAttachScreenshot(input: {
   return attachScreenshotResult(input.outcome, result);
 }
 
+/** Full reads past this size get the stderr steer toward --page reads (harness response caps). */
+const LARGE_READ_STEER_BYTES = 64 * 1024;
+
+/**
+ * `canvas read --summary` — the cheap structure read. Contract (coordinated with studio):
+ * GET /v1/canvases/{ref}/summary → {pages: [{id, name, node_count}], revision, node_total}.
+ * Fails typed with a steer until the backend endpoint ships.
+ */
+async function canvasSummary(client: ApiClient, inv: Invocation, ref: string): Promise<CommandOutcome> {
+  let response;
+  try {
+    response = await client.request({ method: 'GET', path: endpoints.canvasStateSummary(ref) });
+  } catch (err) {
+    // Only a BARE route 404 (no server error envelope → code http_404) means the endpoint is
+    // missing. An envelope'd not_found is a real missing canvas — pass it through untouched.
+    if (err instanceof CliError && err.fields.code === 'http_404') {
+      throw new CliError({
+        ...err.fields,
+        message: 'The summary endpoint is not available on this server yet.',
+        hint: 'Use moda canvas show for the page list, or moda canvas read --page PAGE_ID for one page.',
+      });
+    }
+    throw err;
+  }
+  const root = asObject(response.body);
+  const pages = Array.isArray(root.pages) ? root.pages.map(asObject) : [];
+  return {
+    body: {
+      ok: true,
+      operation: 'canvas.summary',
+      ...root,
+      meta: { ...asObject(root.meta), ...metaBlock({ requestId: response.requestId, durationMs: response.durationMs }) },
+    },
+    human: (write) => {
+      const total = typeof root.node_total === 'number' ? ` — ${root.node_total} nodes` : '';
+      write(`${pages.length} page${pages.length === 1 ? '' : 's'}${total}`);
+      for (const page of pages) {
+        const count = typeof page.node_count === 'number' ? ` (${page.node_count} nodes)` : '';
+        write(`${str(page, 'id') ?? '?'}  ${str(page, 'name') ?? ''}${count}`);
+      }
+      const revision = str(root, 'revision');
+      if (revision !== undefined) write(`revision: ${revision}`);
+    },
+    exitCode: EXIT_OK,
+  };
+}
+
 export function registerCanvas(program: Command): void {
   const canvas = program.command('canvas').description('deterministic canvas authoring and lifecycle');
 
@@ -78,7 +125,9 @@ export function registerCanvas(program: Command): void {
       .option('--size <WxH>', 'page size, e.g. 1920x1080')
       .option('--pages <n>', 'initial page count', (v: string) => Number.parseInt(v, 10))
       .option('--category <category>', 'canvas category (drives export defaults and multi-page semantics)'),
-  ).action(
+  )
+    .addHelpText('after', '\nExamples:\n  moda canvas create --name "Q3 deck" --size 1920x1080 --pages 1 --category slides\n  moda canvas create --name "One-pager" --size 816x1056\n\nNot for: adding pages to an existing canvas (moda canvas add-pages), or\nreworking an existing design (moda canvas read, then markup/edit).\n')
+    .action(
     wrapAction(async (_args, opts, cmd) => {
       const inv = buildInvocation(cmd);
       const { client } = await authedClient(inv, MUTATION_TIMEOUT_MS);
@@ -152,7 +201,9 @@ export function registerCanvas(program: Command): void {
       .option('--mode <mode>', 'append | replace', 'append')
       .option('--revision <token>', 'expected revision (required for --mode replace)')
       .option('--screenshot <path>', SCREENSHOT_FLAG_HELP),
-  ).action(
+  )
+    .addHelpText('after', "\nExamples:\n  moda canvas markup cvs_123 --file slide.xml --page p_a\n  echo '<content><text>Hi</text></content>' | moda canvas markup cvs_123 --file - --page p_a\n\nNot for: surgical tweaks to existing nodes (moda canvas edit) or deleting\nnodes (moda canvas delete-items).\n")
+    .action(
     wrapAction(async (args, opts, cmd) => {
       const inv = buildInvocation(cmd);
       const mode = opts.mode as string;
@@ -200,7 +251,9 @@ export function registerCanvas(program: Command): void {
       .option('--page <page_id>', 'target page')
       .option('--revision <token>', 'expected revision (defaults to the cached last read; required)')
       .option('--screenshot <path>', SCREENSHOT_FLAG_HELP),
-  ).action(
+  )
+    .addHelpText('after', "\nExample:\n  moda canvas edit cvs_123 --file - <<'EOS'\n  update('n7', { color: '#0A66FF' });\n  EOS\n\nNot for: adding new content (moda canvas markup) or deleting nodes\n(remove() throws in edit code — use moda canvas delete-items).\n")
+    .action(
     wrapAction(async (args, opts, cmd) => {
       const inv = buildInvocation(cmd);
       const code = await readFileArg(opts.file as string);
@@ -252,7 +305,7 @@ export function registerCanvas(program: Command): void {
       if (nodeIds.length > 10 && inv.flags.noInput && opts.yes !== true) {
         throw CliError.usage(
           `Deleting ${nodeIds.length} nodes requires --yes under --json/--no-input.`,
-          'Destructive verbs need the host approval step (cli.md §9).',
+          `If the host/user approved this deletion, re-run with --yes: moda canvas delete-items ${refArg} ${nodeIds.join(' ')} --yes`,
         );
       }
       const { client } = await authedClient(inv, MUTATION_TIMEOUT_MS);
@@ -282,12 +335,17 @@ export function registerCanvas(program: Command): void {
     canvas
       .command('read <canvas>')
       .description('authoring DSL state snapshot + revision token')
-      .option('--page <page_id>', 'limit to one page'),
+      .option('--page <page_id>', 'limit to one page')
+      // Hidden until the studio summary endpoint ships — the flag fails typed with a steer today.
+      .addOption(
+        new Option('--summary', 'cheap structure summary instead of the DSL: pages, names, node counts, revision').hideHelp(),
+      ),
   ).action(
     wrapAction(async (args, opts, cmd) => {
       const inv = buildInvocation(cmd);
       const { client } = await authedClient(inv, READ_TIMEOUT_MS);
       const ref = await resolveCanvasRef(args[0] as string, client);
+      if (opts.summary === true) return await canvasSummary(client, inv, ref);
       // Server contract: GET .../state?page_id= — the only query param the endpoint accepts.
       const response = await client.request({
         method: 'GET',
@@ -297,6 +355,12 @@ export function registerCanvas(program: Command): void {
       const root = asObject(response.body);
       const dsl = str(root, 'state') ?? str(root, 'dsl') ?? '';
       cacheFromResponse(ref, root, inv.env, dsl);
+      if (opts.page === undefined && dsl.length > LARGE_READ_STEER_BYTES) {
+        inv.note(
+          `large canvas (${Math.round(dsl.length / 1024)} KB) — prefer --page reads; ` +
+            'full reads may exceed harness tool-response caps',
+        );
+      }
       return {
         body: {
           ok: true,
@@ -351,7 +415,9 @@ export function registerCanvas(program: Command): void {
       .option('--page <pages>', 'comma-separated page ids (requests past the server 3-per-call cap are auto-batched)')
       .option('--pixel-ratio <n>', 'pixel ratio 1-4', (v: string) => Number.parseInt(v, 10))
       .option('-o, --output <path>', 'output file (single page) or directory'),
-  ).action(
+  )
+    .addHelpText('after', '\nExamples:\n  moda canvas screenshot cvs_123 -o preview.jpg\n  moda canvas screenshot cvs_123 --page p_a,p_b -o shots/\n\nNot for: a check right after your own mutation (fold it in: --screenshot on\nmarkup/edit) or deliverable files (moda export). Milestones only — it is\nthe slowest verb.\n')
+    .action(
     wrapAction(async (args, opts, cmd) => {
       const inv = buildInvocation(cmd);
       const { client } = await authedClient(inv, SCREENSHOT_TIMEOUT_MS);
@@ -421,7 +487,9 @@ export function registerCanvas(program: Command): void {
           cursor: opts.cursor as string | undefined,
         },
       });
-      return passthroughOutcome('canvas.list', response, inv);
+      return passthroughOutcome('canvas.list', response, inv, {
+        emptyHint: 'no canvases — create one: moda canvas create',
+      });
     }),
   );
 
@@ -434,7 +502,9 @@ export function registerCanvas(program: Command): void {
         path: endpoints.canvasSearch(),
         query: { q: args[0] as string },
       });
-      return passthroughOutcome('canvas.search', response, inv);
+      return passthroughOutcome('canvas.search', response, inv, {
+        emptyHint: `no results for '${args[0] as string}' — broaden the query or try moda canvas list`,
+      });
     }),
   );
 
@@ -540,7 +610,7 @@ export function registerCanvas(program: Command): void {
       if (inv.flags.noInput && opts.yes !== true) {
         throw CliError.usage(
           'Deleting a canvas requires --yes under --json/--no-input.',
-          'Destructive verbs need the host approval step (cli.md §9).',
+          `If the host/user approved this deletion, re-run with --yes: moda canvas delete ${args[0] as string} --yes`,
         );
       }
       const { client } = await authedClient(inv, READ_TIMEOUT_MS);
