@@ -17,7 +17,6 @@
     "generate_video": "moda media generate-video",
     "remove_image_background": "moda media remove-background",
     "upscale_image": "moda media upscale",
-    "upscale_video": "moda media upscale-video",
     "upload_attachment": "moda file upload",
     "list_brand_kits": "moda brand list",
     "find_brand_kits": "moda brand list",
@@ -79,9 +78,10 @@
     "moda media generate-video",
     "moda media remove-background",
     "moda media upscale",
-    "moda media upscale-video"
+    "moda media edit-image"
   ],
   "unresolved": {
-    "asset_search": "Stock-asset search has no cli.md verb (parity gap #10 / flag F2). Launch text routes icons through markup `<image icon=\"...\">` (parser-native) and photos through upload / brand kit / generation; `moda file search` covers the user's own uploads. Revisit when the CLI grows an assets noun."
+    "upscale_video": "Video upscaling has no public API endpoint (recorded parity exception). The CLI verb exists but fails with a typed not_available error; skill text must not recommend it.",
+    "asset_search": "`moda file search` now rides GET /v1/assets/search (Canvas Actions resource verb): `--kind icon` searches the shared icon packs, `--kind photo` (default) the caller's own gallery, returning durable file_ ids usable in markup and media inputs. Markup `<image icon=\"...\">` remains the parser-native icon path. The broader files/folders drive facade (list/show/download, folders) has no public endpoints — those CLI verbs fail typed not_available."
   }
 }

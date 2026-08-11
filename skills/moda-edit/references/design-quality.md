@@ -92,7 +92,7 @@ The single most common failure is defaulting to **a gradient background, a coupl
 There is no dedicated image node — an image is a pattern fill on a shape. Source imagery in this order:
 
 1. **Brand kit assets first** (logos, product shots, brand imagery — `moda brand show`; refs, never re-hosted URLs).
-2. **The user's own uploads** — `moda file search QUERY` / `moda file list`; prefer a fitting upload over generating (cheaper, on-brand). Local files: `moda file upload PATH` → use the returned ref.
+2. **The user's own uploads and team assets** — `moda file search QUERY` (`--kind photo` is the default; `--kind icon` searches the shared icon packs); prefer a fitting existing asset over generating (cheaper, on-brand). Local files: `moda file upload PATH` → use the returned `file_…` ref.
 3. **Functional UI icons** — markup `<image icon="query"/>` (deterministic; for nav/status/bullets, not decoration or logos).
 4. **Generate** — `moda media generate-image` (metered; cost class first). Styled/thematic icons, logos, heroes, illustrations. See references/omni-and-media.md for model choice.
 

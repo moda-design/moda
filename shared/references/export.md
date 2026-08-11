@@ -1,7 +1,7 @@
 # `moda export` — deliverable files
 
 ```
-moda export CANVAS_REF --format pdf|pptx|png|jpeg [-o PATH] [--pages 1-3,5]
+moda export CANVAS_REF --format pdf|pptx|png|jpeg [-o PATH] [--page N]
             [--pixel-ratio 1..4] [--flatten] [--no-wait]
 ```
 
@@ -9,7 +9,7 @@ moda export CANVAS_REF --format pdf|pptx|png|jpeg [-o PATH] [--pages 1-3,5]
 - Export is deterministic-lane: **zero metered credits on every plan** (`usage.metered_credits: 0` on the response). Export rate is plan-quota enforced server-side; a throttle surfaces as a typed error with a retry hint.
 - The CLI polls transparently when the render exceeds the sync window — you just get the file. `--no-wait` prints the export task id and exits 0; check later with the same verb or hand the id to the user.
 - Downloads land at `-o` (default `<canvas-name>.<ext>` in the configured output dir). Print the final path in your reply.
-- `--pages` selects a subset (`1-3,5`); multi-page png/jpeg exports arrive as one file per page.
+- `--page N` exports a single 1-indexed page (there is no range selection); omit it for all pages. A multi-page png/jpeg export arrives as one `.zip` of per-page files.
 - **`--format gif|mp4|webp` is rejected with a typed error** — animation export has no server lane; the Moda app is the path. Say so plainly instead of retrying.
 
 Typical closes:

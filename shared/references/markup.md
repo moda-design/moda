@@ -48,7 +48,7 @@ The parser dispatches all 23 elements below — including `<chart>`, `<path>`, `
 
 ## Images and asset refs
 
-- A local file becomes canvas-usable through `moda file upload PATH`: the result returns a durable `file_…` reference **plus a short ref usable directly as `src`** in markup (`<image src="img1">` / `image(ref)` fills). From-URL images: `moda file upload --from-url URL`.
+- A local file becomes canvas-usable through `moda file upload PATH`: the result returns a durable `file_…` reference **usable directly as `src`** in markup (`<image src="file_…">` / `image(file_…)` fills — the server resolves `file_` refs before dispatch). From-URL images: `moda file upload --from-url URL`.
 - Refs are resolved server-side. Signed URLs are never part of the contract — never paste one into markup, and never retype a URL when you hold a ref.
 - Reuse refs exactly as they appear in your latest `moda canvas read` (`img1`, `img2`, …). A hallucinated ref produces an `image_load_failed` error-severity warning that drives `requires_repair`.
 - Functional UI icons (nav, status, bullets): `<image icon="search query"/>` — deterministic, no generation cost. Never use placeholder shapes or literal "[icon]" text.

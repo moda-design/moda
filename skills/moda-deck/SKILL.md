@@ -76,10 +76,9 @@ allowed-tools: Bash(moda:*), Read, Glob, Grep
    deck matches a known type, references/markup.md before any markup, and
    compute the type ladder for your canvas size per
    references/design-quality.md (1920×1080 → body ≈ 40px, floor 18px).
-3. **Create**: `moda canvas create --name "…" --size 1920x1080 --pages 1`
-   (pass `--brand` when a kit applies; pass `--category slides` if your CLI's
-   create supports it — otherwise the deck lands as a generic canvas, which
-   changes nothing about export fidelity), then
+3. **Create**: `moda canvas create --name "…" --size 1920x1080 --pages 1
+   --category slides` (brand application is client-side: `moda brand show`
+   the kit and author with its tokens — create takes no brand flag), then
    `moda canvas add-pages CANVAS_REF --count N` for the remaining slides.
 4. **Author per slide** with `moda canvas markup CANVAS_REF --file - --page P`
    in small batches — one slide per apply. Read every result: `requires_repair`

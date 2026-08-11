@@ -1,16 +1,18 @@
 # The metered lanes — media generation and the Omni escalation
 
-Everything in this document **spends Moda credits**. The rules are absolute: state the cost class to the user BEFORE each metered call, and surface the exact receipt (`usage.metered_credits` on the response) after. Metered verbs are never an invisible fallback — deterministic authoring stays free; these lanes are explicit choices.
+Everything in this document **spends Moda credits**. The rules are absolute: state the cost class to the user BEFORE each metered call, and surface the receipt (`usage.class: "metered"` on the response; exact credits are enriched asynchronously on account usage) after. Metered verbs are never an invisible fallback — deterministic authoring stays free; these lanes are explicit choices.
 
 ## `moda media` — raw media operations (all metered)
 
 ```
 moda media generate-image --prompt "..." --model M [--output PATH]
+moda media edit-image --prompt "..." --model M --source FILE_REF|URL|PATH [--output PATH]
 moda media generate-video --prompt "..." --model M [--output PATH]
-moda media remove-background FILE_REF|PATH
-moda media upscale FILE_REF|PATH
-moda media upscale-video FILE_REF|PATH
+moda media remove-background FILE_REF|URL|PATH
+moda media upscale FILE_REF|URL|PATH [--scale 2|4]
 ```
+
+Video upscaling is not available on this surface — say so plainly if asked; the Moda app is the path.
 
 Results return durable refs that feed markup `image(...)` fills and `src` attributes directly — never a raw URL.
 
