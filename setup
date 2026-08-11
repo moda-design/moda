@@ -1,0 +1,41 @@
+#!/bin/sh
+# moda skills drop for file-based harnesses (Codex and friends).
+# Copies skills/ into ~/.agents/skills/ and PRINTS the pinned CLI install command.
+# It NEVER installs, updates, or downloads the CLI itself — no curl|sh, no sudo, no silent
+# installs (skills-and-distribution discipline; ruling 13 pins the dogfood channel).
+set -eu
+
+REPO_DIR="$(cd "$(dirname "$0")" && pwd)"
+TARGET="${AGENTS_SKILLS_DIR:-$HOME/.agents/skills}"
+
+if [ -d "$REPO_DIR/skills" ]; then
+  mkdir -p "$TARGET"
+  for skill in "$REPO_DIR"/skills/*/; do
+    [ -d "$skill" ] || continue
+    name="$(basename "$skill")"
+    rm -rf "$TARGET/$name"
+    cp -R "$skill" "$TARGET/$name"
+    echo "installed skill: $name -> $TARGET/$name"
+  done
+else
+  echo "note: skills/ not present in this checkout yet (lands with the skills slice)."
+fi
+
+PLATFORM="$(uname -s | tr '[:upper:]' '[:lower:]')"
+ARCH="$(uname -m)"
+case "$ARCH" in
+  x86_64) ARCH=x64 ;;
+  aarch64|arm64) ARCH=arm64 ;;
+esac
+
+if command -v moda >/dev/null 2>&1; then
+  echo "moda CLI found: $(command -v moda)"
+else
+  echo ""
+  echo "The moda CLI is not installed. Install it yourself with the pinned command"
+  echo "(requires gh auth to the private moda-design/moda repo during dogfood):"
+  echo ""
+  echo "  gh release download --repo moda-design/moda -p moda-${PLATFORM}-${ARCH} -O ~/.local/bin/moda && chmod +x ~/.local/bin/moda"
+  echo ""
+  echo "This script never installs binaries on your behalf."
+fi

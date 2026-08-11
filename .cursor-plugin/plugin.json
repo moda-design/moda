@@ -1,0 +1,6 @@
+{
+  "name": "moda",
+  "version": "0.1.0",
+  "description": "Moda for Agents skills for Cursor.",
+  "skills_dir": "skills"
+}

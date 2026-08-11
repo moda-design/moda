@@ -1,0 +1,11 @@
+{
+  "cli": {
+    "version": "0.1.0",
+    "minimum_supported_by_skills": "0.1.0"
+  },
+  "skills": {
+    "version": "unreleased",
+    "compatible_cli_range": ">=0.1.0 <0.2.0"
+  },
+  "notes": "CLI and skill package version independently (skills-and-distribution §5). moda doctor checks the range; a stale CLI stops the skill with the pinned upgrade command. Stamped by the release workflow at publish; hand-maintained during dogfood."
+}

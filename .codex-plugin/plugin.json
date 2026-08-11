@@ -1,0 +1,6 @@
+{
+  "name": "moda",
+  "version": "0.1.0",
+  "description": "Moda for Agents skills for Codex — installed by ./setup into ~/.agents/skills/.",
+  "skills_dir": "skills"
+}

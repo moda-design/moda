@@ -1,0 +1,17 @@
+{
+  "name": "moda",
+  "owner": {
+    "name": "Moda Design"
+  },
+  "metadata": {
+    "description": "Moda for Agents — deterministic design authoring through the moda CLI",
+    "version": "0.1.0"
+  },
+  "plugins": [
+    {
+      "name": "moda",
+      "source": "./",
+      "description": "Skills and commands that drive Moda as a deterministic artifact runtime via the moda CLI"
+    }
+  ]
+}

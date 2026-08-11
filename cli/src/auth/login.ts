@@ -86,23 +86,30 @@ export function startLoginListener(state: string, timeoutMs: number): ListenerHa
       const receivedState = url.searchParams.get('state') ?? '';
       const key = url.searchParams.get('key') ?? '';
       if (!stateMatches(state, receivedState)) {
-        settle(() =>
-          rejectResult(
-            new CliError({
-              type: 'authentication',
-              code: 'state_mismatch',
-              message: 'Login callback state did not match — possible interference. Nothing was stored.',
-              hint: 'Re-run `moda auth login`.',
-              source: 'local',
-            }),
-          ),
+        // Reject on the next tick so the 400 response flushes to the browser before the
+        // process exits on the typed error.
+        setTimeout(
+          () =>
+            settle(() =>
+              rejectResult(
+                new CliError({
+                  type: 'authentication',
+                  code: 'state_mismatch',
+                  message: 'Login callback state did not match — possible interference. Nothing was stored.',
+                  hint: 'Re-run `moda auth login`.',
+                  source: 'local',
+                }),
+              ),
+            ),
+          100,
         );
         return new Response('State mismatch', { status: 400 });
       }
       if (key.length === 0) return new Response('Missing key', { status: 400 });
-      // Hold the key in memory only; respond, then shut down shortly after.
-      setTimeout(() => server.stop(true), 250);
-      settle(() => resolveResult({ key }));
+      // Hold the key in memory only. Resolve on a short delay so the success page flushes to
+      // the browser BEFORE the CLI proceeds (and possibly exits); force-stop shortly after.
+      setTimeout(() => settle(() => resolveResult({ key })), 150);
+      setTimeout(() => server.stop(true), 400);
       return new Response(SUCCESS_HTML, { status: 200, headers: { 'Content-Type': 'text/html; charset=utf-8' } });
     },
   });
@@ -133,7 +140,8 @@ export function startLoginListener(state: string, timeoutMs: number): ListenerHa
     result,
     close: () => {
       clearTimeout(timer);
-      server.stop(true);
+      // Graceful: let any in-flight response (the success page) finish flushing.
+      server.stop();
     },
   };
 }

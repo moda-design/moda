@@ -1,0 +1,16 @@
+{
+  "name": "@moda-design/cli-linux-arm64",
+  "version": "0.1.0",
+  "description": "moda CLI binary for linux-arm64. Installed automatically by the 'moda' wrapper package.",
+  "license": "UNLICENSED",
+  "repository": "github:moda-design/moda",
+  "os": [
+    "linux"
+  ],
+  "cpu": [
+    "arm64"
+  ],
+  "files": [
+    "bin/moda"
+  ]
+}

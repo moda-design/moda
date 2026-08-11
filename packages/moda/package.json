@@ -1,0 +1,16 @@
+{
+  "name": "moda",
+  "version": "0.1.0",
+  "description": "The moda CLI — drive Moda as a deterministic artifact runtime from any agent harness.",
+  "license": "UNLICENSED",
+  "repository": "github:moda-design/moda",
+  "bin": {
+    "moda": "bin/moda.js"
+  },
+  "optionalDependencies": {
+    "@moda-design/cli-darwin-arm64": "0.1.0",
+    "@moda-design/cli-darwin-x64": "0.1.0",
+    "@moda-design/cli-linux-x64": "0.1.0",
+    "@moda-design/cli-linux-arm64": "0.1.0"
+  }
+}

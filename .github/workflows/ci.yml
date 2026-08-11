@@ -24,10 +24,10 @@ jobs:
         run: bun test
       - name: Compile host binary
         run: bun scripts/build.ts --host
-        if: hashFiles('scripts/build.ts') != ''
+      - name: Stub-server proof (version, doctor, auth listener flow)
+        run: bun scripts/prove-stub.ts
       - name: Inventory parity
         run: bun scripts/inventory-check.ts
-        if: hashFiles('scripts/inventory-check.ts') != ''
 
   skills:
     runs-on: ubuntu-latest

@@ -1,0 +1,784 @@
+{
+  "verbs": [
+    {
+      "name": "account costs",
+      "description": "what is metered vs not — from the server entitlement summary, never hardcoded",
+      "flags": [
+        "--api-base",
+        "--json",
+        "--no-input",
+        "--no-retry",
+        "--org",
+        "--quiet",
+        "--timeout"
+      ]
+    },
+    {
+      "name": "account status",
+      "description": "plan, credits remaining/limit, org",
+      "flags": [
+        "--api-base",
+        "--json",
+        "--no-input",
+        "--no-retry",
+        "--org",
+        "--quiet",
+        "--timeout"
+      ]
+    },
+    {
+      "name": "account usage",
+      "description": "usage over time",
+      "flags": [
+        "--api-base",
+        "--by-operation",
+        "--days",
+        "--json",
+        "--no-input",
+        "--no-retry",
+        "--org",
+        "--quiet",
+        "--timeout"
+      ]
+    },
+    {
+      "name": "auth login",
+      "description": "log in via the browser key-mint flow; credentials go to the OS keychain",
+      "flags": [
+        "--api-base",
+        "--json",
+        "--no-input",
+        "--no-retry",
+        "--org",
+        "--paste",
+        "--quiet",
+        "--scopes",
+        "--timeout"
+      ]
+    },
+    {
+      "name": "auth logout",
+      "description": "delete the local credential (server revocation stays in the app)",
+      "flags": [
+        "--api-base",
+        "--json",
+        "--no-input",
+        "--no-retry",
+        "--org",
+        "--quiet",
+        "--timeout"
+      ]
+    },
+    {
+      "name": "auth status",
+      "description": "identity, org, plan, scopes — never the credential",
+      "flags": [
+        "--api-base",
+        "--json",
+        "--no-input",
+        "--no-retry",
+        "--org",
+        "--quiet",
+        "--timeout"
+      ]
+    },
+    {
+      "name": "brand create",
+      "description": "extract a brand kit (metered brand-kit lane — reports a receipt)",
+      "flags": [
+        "--api-base",
+        "--fig",
+        "--json",
+        "--no-input",
+        "--no-retry",
+        "--org",
+        "--quiet",
+        "--timeout",
+        "--url"
+      ]
+    },
+    {
+      "name": "brand list",
+      "description": "brand kits visible to this credential",
+      "flags": [
+        "--api-base",
+        "--json",
+        "--no-input",
+        "--no-retry",
+        "--org",
+        "--quiet",
+        "--timeout"
+      ]
+    },
+    {
+      "name": "brand pull",
+      "description": "write the verbose kit JSON to a local file",
+      "flags": [
+        "--api-base",
+        "--json",
+        "--no-input",
+        "--no-retry",
+        "--org",
+        "--output",
+        "--quiet",
+        "--timeout"
+      ]
+    },
+    {
+      "name": "brand show",
+      "description": "verbose model-safe kit: palette, fonts, logo refs — never signed URLs",
+      "flags": [
+        "--api-base",
+        "--json",
+        "--no-input",
+        "--no-retry",
+        "--org",
+        "--quiet",
+        "--timeout"
+      ]
+    },
+    {
+      "name": "brand use",
+      "description": "persist defaults.brand (config, or repo context with --local)",
+      "flags": [
+        "--api-base",
+        "--json",
+        "--local",
+        "--no-input",
+        "--no-retry",
+        "--org",
+        "--quiet",
+        "--timeout"
+      ]
+    },
+    {
+      "name": "canvas add-pages",
+      "description": "append pages to a canvas",
+      "flags": [
+        "--api-base",
+        "--count",
+        "--json",
+        "--no-input",
+        "--no-retry",
+        "--org",
+        "--quiet",
+        "--revision",
+        "--size",
+        "--timeout"
+      ]
+    },
+    {
+      "name": "canvas create",
+      "description": "create a canvas",
+      "flags": [
+        "--api-base",
+        "--brand",
+        "--category",
+        "--folder",
+        "--json",
+        "--name",
+        "--no-input",
+        "--no-retry",
+        "--org",
+        "--pages",
+        "--quiet",
+        "--size",
+        "--timeout"
+      ]
+    },
+    {
+      "name": "canvas delete",
+      "description": "delete a canvas (destructive — requires --yes under --json/--no-input)",
+      "flags": [
+        "--api-base",
+        "--json",
+        "--no-input",
+        "--no-retry",
+        "--org",
+        "--quiet",
+        "--timeout",
+        "--yes"
+      ]
+    },
+    {
+      "name": "canvas delete-items",
+      "description": "delete nodes by id (standalone by contract — remove() throws inside edit code)",
+      "flags": [
+        "--api-base",
+        "--json",
+        "--no-input",
+        "--no-retry",
+        "--org",
+        "--quiet",
+        "--revision",
+        "--timeout",
+        "--yes"
+      ]
+    },
+    {
+      "name": "canvas edit",
+      "description": "run a sandboxed JS edit batch against the canvas",
+      "flags": [
+        "--api-base",
+        "--file",
+        "--json",
+        "--no-input",
+        "--no-retry",
+        "--org",
+        "--page",
+        "--quiet",
+        "--revision",
+        "--timeout"
+      ]
+    },
+    {
+      "name": "canvas lint",
+      "description": "read-only design linter (exits 0 whenever the lint ran)",
+      "flags": [
+        "--api-base",
+        "--json",
+        "--no-input",
+        "--no-retry",
+        "--org",
+        "--page",
+        "--quiet",
+        "--timeout"
+      ]
+    },
+    {
+      "name": "canvas list",
+      "description": "list canvases (cursor pagination)",
+      "flags": [
+        "--api-base",
+        "--cursor",
+        "--json",
+        "--limit",
+        "--no-input",
+        "--no-retry",
+        "--org",
+        "--quiet",
+        "--timeout"
+      ]
+    },
+    {
+      "name": "canvas markup",
+      "description": "apply XML markup to a page (append or atomic full-page replace)",
+      "flags": [
+        "--api-base",
+        "--file",
+        "--json",
+        "--mode",
+        "--no-input",
+        "--no-retry",
+        "--org",
+        "--page",
+        "--quiet",
+        "--revision",
+        "--timeout"
+      ]
+    },
+    {
+      "name": "canvas open",
+      "description": "open the canvas in the browser (local)",
+      "flags": [
+        "--api-base",
+        "--json",
+        "--no-input",
+        "--no-retry",
+        "--org",
+        "--quiet",
+        "--timeout"
+      ]
+    },
+    {
+      "name": "canvas read",
+      "description": "authoring DSL state snapshot + revision token",
+      "flags": [
+        "--api-base",
+        "--detail",
+        "--json",
+        "--no-input",
+        "--no-retry",
+        "--node",
+        "--org",
+        "--page",
+        "--quiet",
+        "--timeout"
+      ]
+    },
+    {
+      "name": "canvas rename",
+      "description": "rename a canvas",
+      "flags": [
+        "--api-base",
+        "--json",
+        "--no-input",
+        "--no-retry",
+        "--org",
+        "--quiet",
+        "--timeout"
+      ]
+    },
+    {
+      "name": "canvas screenshot",
+      "description": "render pages to PNG files (the revise loop is explicit: mutate → screenshot → inspect)",
+      "flags": [
+        "--api-base",
+        "--json",
+        "--no-input",
+        "--no-retry",
+        "--org",
+        "--output",
+        "--page",
+        "--pixel-ratio",
+        "--quiet",
+        "--timeout"
+      ]
+    },
+    {
+      "name": "canvas search",
+      "description": "search canvases",
+      "flags": [
+        "--api-base",
+        "--json",
+        "--no-input",
+        "--no-retry",
+        "--org",
+        "--quiet",
+        "--timeout"
+      ]
+    },
+    {
+      "name": "canvas share",
+      "description": "create/print the share URL",
+      "flags": [
+        "--api-base",
+        "--json",
+        "--no-input",
+        "--no-retry",
+        "--org",
+        "--quiet",
+        "--remix",
+        "--timeout"
+      ]
+    },
+    {
+      "name": "canvas show",
+      "description": "canvas details + pages",
+      "flags": [
+        "--api-base",
+        "--json",
+        "--no-input",
+        "--no-retry",
+        "--org",
+        "--quiet",
+        "--timeout",
+        "--tokens"
+      ]
+    },
+    {
+      "name": "completion",
+      "description": "print a shell completion script (bash | zsh | fish)",
+      "flags": []
+    },
+    {
+      "name": "context clear",
+      "description": "clear one context key (or all keys) in the repo context",
+      "flags": [
+        "--api-base",
+        "--json",
+        "--local",
+        "--no-input",
+        "--no-retry",
+        "--org",
+        "--quiet",
+        "--timeout"
+      ]
+    },
+    {
+      "name": "context set",
+      "description": "set org/brand/canvas in .moda/context.json (or the gitignored local override)",
+      "flags": [
+        "--api-base",
+        "--json",
+        "--local",
+        "--no-input",
+        "--no-retry",
+        "--org",
+        "--quiet",
+        "--timeout"
+      ]
+    },
+    {
+      "name": "context show",
+      "description": "effective merged context and where each value came from",
+      "flags": [
+        "--api-base",
+        "--json",
+        "--no-input",
+        "--no-retry",
+        "--org",
+        "--quiet",
+        "--timeout"
+      ]
+    },
+    {
+      "name": "docs",
+      "description": "print offline reference texts (markup | edit | workflow)",
+      "flags": [
+        "--api-base",
+        "--json",
+        "--no-input",
+        "--no-retry",
+        "--org",
+        "--quiet",
+        "--timeout"
+      ]
+    },
+    {
+      "name": "doctor",
+      "description": "connectivity, credential validity, scopes, version range, keychain health",
+      "flags": [
+        "--api-base",
+        "--json",
+        "--no-input",
+        "--no-retry",
+        "--org",
+        "--quiet",
+        "--timeout"
+      ]
+    },
+    {
+      "name": "export",
+      "description": "export a canvas (pdf|pptx|png|jpeg); polls transparently and downloads to -o",
+      "flags": [
+        "--api-base",
+        "--flatten",
+        "--format",
+        "--json",
+        "--no-input",
+        "--no-retry",
+        "--no-wait",
+        "--org",
+        "--output",
+        "--pages",
+        "--pixel-ratio",
+        "--quiet",
+        "--timeout"
+      ]
+    },
+    {
+      "name": "file download",
+      "description": "download file bytes",
+      "flags": [
+        "--api-base",
+        "--json",
+        "--no-input",
+        "--no-retry",
+        "--org",
+        "--output",
+        "--quiet",
+        "--timeout"
+      ]
+    },
+    {
+      "name": "file list",
+      "description": "list drive files",
+      "flags": [
+        "--api-base",
+        "--folder",
+        "--json",
+        "--no-input",
+        "--no-retry",
+        "--org",
+        "--quiet",
+        "--timeout"
+      ]
+    },
+    {
+      "name": "file search",
+      "description": "search drive files",
+      "flags": [
+        "--api-base",
+        "--json",
+        "--no-input",
+        "--no-retry",
+        "--org",
+        "--quiet",
+        "--timeout"
+      ]
+    },
+    {
+      "name": "file show",
+      "description": "file metadata",
+      "flags": [
+        "--api-base",
+        "--json",
+        "--no-input",
+        "--no-retry",
+        "--org",
+        "--quiet",
+        "--timeout"
+      ]
+    },
+    {
+      "name": "file upload",
+      "description": "upload files; returns durable file_ refs usable in markup image(...) fills",
+      "flags": [
+        "--api-base",
+        "--folder",
+        "--from-url",
+        "--json",
+        "--no-input",
+        "--no-retry",
+        "--org",
+        "--quiet",
+        "--timeout"
+      ]
+    },
+    {
+      "name": "folder create",
+      "description": "create a folder",
+      "flags": [
+        "--api-base",
+        "--json",
+        "--no-input",
+        "--no-retry",
+        "--org",
+        "--quiet",
+        "--timeout"
+      ]
+    },
+    {
+      "name": "folder list",
+      "description": "list folders",
+      "flags": [
+        "--api-base",
+        "--json",
+        "--no-input",
+        "--no-retry",
+        "--org",
+        "--quiet",
+        "--timeout"
+      ]
+    },
+    {
+      "name": "media generate-image",
+      "description": "generate an image (metered)",
+      "flags": [
+        "--api-base",
+        "--json",
+        "--model",
+        "--no-input",
+        "--no-retry",
+        "--org",
+        "--output",
+        "--prompt",
+        "--quiet",
+        "--size",
+        "--timeout"
+      ]
+    },
+    {
+      "name": "media generate-video",
+      "description": "generate a video (metered)",
+      "flags": [
+        "--api-base",
+        "--image",
+        "--json",
+        "--model",
+        "--no-input",
+        "--no-retry",
+        "--org",
+        "--output",
+        "--prompt",
+        "--quiet",
+        "--timeout"
+      ]
+    },
+    {
+      "name": "media models",
+      "description": "available media models (the required --model values)",
+      "flags": [
+        "--api-base",
+        "--json",
+        "--no-input",
+        "--no-retry",
+        "--org",
+        "--quiet",
+        "--timeout"
+      ]
+    },
+    {
+      "name": "media remove-background",
+      "description": "remove an image background (metered)",
+      "flags": [
+        "--api-base",
+        "--json",
+        "--no-input",
+        "--no-retry",
+        "--org",
+        "--output",
+        "--quiet",
+        "--timeout"
+      ]
+    },
+    {
+      "name": "media upscale",
+      "description": "upscale an image (metered); accepts a file_ ref or a local path (auto-uploads)",
+      "flags": [
+        "--api-base",
+        "--json",
+        "--model",
+        "--no-input",
+        "--no-retry",
+        "--org",
+        "--output",
+        "--quiet",
+        "--timeout"
+      ]
+    },
+    {
+      "name": "media upscale-video",
+      "description": "upscale a video (metered)",
+      "flags": [
+        "--api-base",
+        "--json",
+        "--model",
+        "--no-input",
+        "--no-retry",
+        "--org",
+        "--output",
+        "--quiet",
+        "--timeout"
+      ]
+    },
+    {
+      "name": "org current",
+      "description": "the effective org context and its source",
+      "flags": [
+        "--api-base",
+        "--json",
+        "--no-input",
+        "--no-retry",
+        "--org",
+        "--quiet",
+        "--timeout"
+      ]
+    },
+    {
+      "name": "org list",
+      "description": "organizations this credential can act in",
+      "flags": [
+        "--api-base",
+        "--json",
+        "--no-input",
+        "--no-retry",
+        "--org",
+        "--quiet",
+        "--timeout"
+      ]
+    },
+    {
+      "name": "org use",
+      "description": "set the configured org context",
+      "flags": [
+        "--api-base",
+        "--json",
+        "--no-input",
+        "--no-retry",
+        "--org",
+        "--quiet",
+        "--timeout"
+      ]
+    },
+    {
+      "name": "task cancel",
+      "description": "cancel a running task",
+      "flags": [
+        "--api-base",
+        "--json",
+        "--no-input",
+        "--no-retry",
+        "--org",
+        "--quiet",
+        "--timeout"
+      ]
+    },
+    {
+      "name": "task list",
+      "description": "list tasks",
+      "flags": [
+        "--active",
+        "--api-base",
+        "--json",
+        "--no-input",
+        "--no-retry",
+        "--org",
+        "--quiet",
+        "--timeout"
+      ]
+    },
+    {
+      "name": "task start",
+      "description": "start an Omni task (spends Moda credits; cost class before, receipt after)",
+      "flags": [
+        "--api-base",
+        "--brand",
+        "--callback-url",
+        "--canvas",
+        "--export",
+        "--files",
+        "--format",
+        "--json",
+        "--no-input",
+        "--no-retry",
+        "--org",
+        "--output",
+        "--prompt",
+        "--quiet",
+        "--timeout",
+        "--wait"
+      ]
+    },
+    {
+      "name": "task status",
+      "description": "task status + usage receipt",
+      "flags": [
+        "--api-base",
+        "--json",
+        "--no-input",
+        "--no-retry",
+        "--org",
+        "--quiet",
+        "--timeout"
+      ]
+    },
+    {
+      "name": "update",
+      "description": "update the CLI (dogfood: prints the pinned gh release download command; never silent)",
+      "flags": [
+        "--api-base",
+        "--json",
+        "--no-input",
+        "--no-retry",
+        "--org",
+        "--quiet",
+        "--timeout"
+      ]
+    },
+    {
+      "name": "version",
+      "description": "CLI version, pinned API version, endpoint, install channel",
+      "flags": [
+        "--api-base",
+        "--json",
+        "--no-input",
+        "--no-retry",
+        "--org",
+        "--quiet",
+        "--timeout"
+      ]
+    }
+  ]
+}

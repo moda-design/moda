@@ -1,0 +1,10 @@
+{
+  "name": "moda",
+  "version": "0.1.0",
+  "description": "Drive Moda as a deterministic artifact runtime: decks, one-pagers, brand-true design, exports — through the moda CLI.",
+  "author": {
+    "name": "Moda Design"
+  },
+  "skills": "./skills/",
+  "commands": "./commands/"
+}
