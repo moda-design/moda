@@ -10,6 +10,7 @@ import { shotsDir } from '../config/state.ts';
 import { EXIT_OK } from '../output/exitCodes.ts';
 import { extractShortIds } from '../refs.ts';
 import { addGlobalFlags, authedClient, buildInvocation, metaBlock, wrapAction, type Invocation } from './runtime.ts';
+import { detectImageFormat, resolveScreenshotPath } from './screenshotFiles.ts';
 import {
   cacheFromResponse,
   chooseRevision,
@@ -505,17 +506,24 @@ function writeScreenshotPages(
     const pageId = str(page, 'page_id') ?? str(page, 'id');
     const comma = dataUrl.indexOf(',');
     const bytes = Buffer.from(comma >= 0 ? dataUrl.slice(comma + 1) : dataUrl, 'base64');
-    let path: string;
-    if (output !== undefined && pagesRaw.length === 1) {
-      path = output;
-    } else if (output !== undefined) {
-      path = join(output, `${pageId ?? `page-${index + 1}`}.png`);
-    } else {
-      path = join(shotsDir(ref, inv.env), `${stamp}-${pageId ?? index + 1}.png`);
-    }
-    mkdirSync(dirname(path), { recursive: true });
-    writeFileSync(path, bytes);
-    written.push({ page_id: pageId, path });
+    const dataUrlMime = comma >= 0 ? /^data:([^;,]+)/.exec(dataUrl)?.[1] : undefined;
+    const format = detectImageFormat({
+      bytes,
+      declaredFormat: str(page, 'format') ?? str(root, 'format'),
+      dataUrlMime,
+    });
+    const named = resolveScreenshotPath({
+      format,
+      explicitPath: output !== undefined && pagesRaw.length === 1 ? output : undefined,
+      stem:
+        output !== undefined
+          ? join(output, pageId ?? `page-${index + 1}`)
+          : join(shotsDir(ref, inv.env), `${stamp}-${pageId ?? index + 1}`),
+    });
+    if (named.warning !== undefined) inv.note(named.warning);
+    mkdirSync(dirname(named.path), { recursive: true });
+    writeFileSync(named.path, bytes);
+    written.push({ page_id: pageId, path: named.path });
   });
   return written;
 }
