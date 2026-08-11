@@ -1,22 +1,23 @@
 ---
-name: moda-one-pager
+name: moda-social
 description: >-
-  Design a one-pager, PDF report, handout, flyer, or printable
-  document on Moda. Use when the user asks for a one-pager, single-page summary,
-  PDF, report, brief, handout, fact sheet, leave-behind, or "make this
-  markdown/README look designed", or an infographic. Multi-page documents
-  belong here too — a 12-page report, guide, whitepaper, or proposal — as do
-  print pieces: posters, flyers, menus, resumes, certificates, invitations,
-  business cards (slides go to moda-deck; social/banner graphics to
-  moda-social). Produces designed US-Letter (or A4) pages on
-  a live Moda canvas and exports a real PDF with selectable text and hyperlinks.
-  Requires the moda CLI and a Moda account (Step 0 checks both; it never
-  installs anything itself).
-argument-hint: "[source file or topic] [--size letter|a4] [--pages N] [--brand <kit>]"
+  Design social media creative on Moda: organic posts, swipeable
+  carousels, story/reel covers, static social ads, display banner ads, and
+  profile banners/headers for Instagram, LinkedIn, TikTok, Facebook, X, and
+  YouTube. Use when the user asks for a social post, carousel, story, TikTok
+  or IG or LinkedIn creative, static ad, banner ad, ad campaign visuals, or a
+  channel header/cover. Produces platform-sized pages on a live Moda canvas
+  and exports png/jpeg (a multi-page carousel exports as a zip of images);
+  animated gif/mp4 ads are not available — the skill delivers the static
+  version and says so. For slide decks use moda-deck; for printable flyers,
+  posters, or PDFs use moda-one-pager; for a live hosted page use
+  moda-website. Requires the moda CLI and a Moda account (Step 0 checks both;
+  it never installs anything itself).
+argument-hint: "[platform + what the post/ad is about] [--brand <kit>] [--concepts N]"
 allowed-tools: Bash(moda:*), Read, Glob, Grep
 ---
 
-# moda-one-pager
+# moda-social
 
 ## Step 0 — doctor (always run first; skip nothing)
 
@@ -82,38 +83,46 @@ allowed-tools: Bash(moda:*), Read, Glob, Grep
 
 ## Workflow
 
-1. **Read the source** with your own tools (Read/Glob; your own research).
-   Content that needs live web facts: `moda web search` / `moda web read`
-   (metered) — see references/web.md. Settle scope per
-   references/document-design.md: one page → info-dense single page;
-   multi-page → one cohesive system plus a page outline.
-2. **Plan** the layout and compute the document type ladder
-   (references/design-quality.md; 816×1056 → body ≈ 11px, floor 11px). A PDF
-   is read up close — pack the page; icons, dividers, stat rows, and cards
-   carry structure. When a brand kit is in play, also LOOK at its assets
-   before settling the concept — references/brand.md "Look at the brand, not
-   just the tokens".
-3. **Create**: `moda canvas create --name "…" --size 816x1056` (A4: 794x1123;
-   `--pages N` for multi-page). Brand application is client-side — create
-   takes no brand flag: `moda brand show` the kit and author with its tokens.
-4. **Author** with `moda canvas markup CANVAS_REF --file -` — one page or
-   section per apply. Read every result; repair before building more.
-5. **Verify**: `moda canvas lint` (fix error-severity findings), then
-   `moda canvas screenshot` and review the PNG — vertical balance, dead
-   zones, clipped text.
-6. **Deliver**: `moda export CANVAS_REF --format pdf -o <name>.pdf`, then
-   close per the UX rules: canvas link + the PDF path.
+1. **Settle format and count**: platform, exact pixel size, single piece or
+   carousel, one concept (default) or N directions — from the request, then
+   read references/social.md for the size table, safe areas, and craft
+   rules BEFORE designing. An animated-ad ask: state plainly that gif/mp4
+   export is not available on this surface, deliver the static version, and
+   point to the Moda app for motion.
+2. **Read the design references**: references/markup.md before any markup;
+   the type ladder for the canvas size per references/design-quality.md.
+   When a brand kit is in play, `moda brand show` it and LOOK at its assets
+   before settling the direction (references/brand.md) — on social, brand
+   colors and logo stay tight while headline type may lead.
+3. **Create** at the platform's exact size:
+   `moda canvas create --name "…" --size 1080x1350` with `--category
+   carousel` for carousels, `--category web-ads` for display/banner ads,
+   and `--category social` otherwise (sizes in references/social.md).
+   Carousel: prove slide 1 alone first —
+   author it, screenshot it, fix it — then `moda canvas add-pages` for the
+   rest and reuse the identical styles so the system cannot drift.
+4. **Author** one page or concept per markup apply. Imagery per the routing
+   order in references/design-quality.md; `moda media generate-image` is
+   metered — surface the cost class first. Keep every essential element
+   inside the platform safe area (references/social.md).
+5. **Verify**: `moda canvas lint` per finished piece; `moda canvas
+   screenshot` and review with your own vision — safe-area collisions,
+   type below the ladder floor, concepts that collapsed into one look.
+6. **Deliver**: `moda export CANVAS_REF --format png --pixel-ratio 2 -o
+   <name>.png` (or jpeg); a multi-page canvas arrives as a zip of images —
+   that zip IS the IG/TikTok carousel deliverable. A LinkedIn carousel is a
+   document post: deliver ONE multi-page PDF instead (`moda export --format
+   pdf`). Close per the UX rules: canvas link + the exported file path(s).
 
 ## References
 
 | Doc | Load when |
 |---|---|
+| references/social.md | always — sizes, safe areas, craft |
 | references/markup.md | before writing any markup |
-| references/document-design.md | scope, density, page balance |
-| references/design-quality.md | typography ladder, imagery, recreate rules |
-| references/edit-code.md | targeted fixes via `moda canvas edit` |
-| references/reading-and-verifying.md | DSL reading, lint/screenshot loop |
+| references/design-quality.md | typography ladder, imagery, shaders |
 | references/brand.md | a brand kit exists |
-| references/web.md | content needs live web research |
+| references/edit-code.md | targeted fixes, page duplicate/resize |
+| references/reading-and-verifying.md | DSL reading, lint/screenshot loop |
 | references/export.md, references/omni-and-media.md | delivering; metered lanes |
 | references/gotchas.md | anything surprising |
