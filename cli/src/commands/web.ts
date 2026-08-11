@@ -43,7 +43,7 @@ export function registerWeb(program: Command): void {
       .command('search <query>')
       .description('web search (metered) — structured results: url, title, snippet')
       .option('--results <n>', `number of results, 1-${MAX_SEARCH_RESULTS} (default 5)`, parseResultsCount)
-      .option('--full-text', 'include extracted page text on each result (metered at the higher read class)'),
+      .option('--full-text', 'include extracted page text on each result (costs more than snippet-only)'),
   ).action(
     wrapAction(async (args, opts, cmd) => {
       const inv = buildInvocation(cmd);
