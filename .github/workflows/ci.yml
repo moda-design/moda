@@ -33,12 +33,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Validate skills (when present)
+      - name: Validate skills (frontmatter, shared-block + fanout byte-identity, banned names, verb parity)
+        run: MODA_CLI_STRICT=1 MODA_CLI_ROOT=. python3 scripts/validate.py
+      - name: Fanout drift check (fanout.sh output matches the committed copies)
         run: |
-          if [ -d skills ]; then
-            echo "skills/ present — running validation greps"
-            # Banned internal tool names / installer patterns (skills-and-distribution §3.4).
-            ! grep -RnE 'curl[^|]*\|\s*sh|sudo ' skills/ setup 2>/dev/null || (echo 'banned pattern found' && exit 1)
-          else
-            echo "skills/ not present yet — skipping"
-          fi
+          ./scripts/fanout.sh
+          git diff --exit-code -- skills/ || (echo 'fanned references drifted — run scripts/fanout.sh and commit' && exit 1)

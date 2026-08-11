@@ -61,6 +61,18 @@ export const endpoints = {
   taskCancel: (ref: string) => `/v1/tasks/${enc(ref)}/cancel`,
   taskList: () => '/v1/tasks',
 
+  // Web research (metered lane; provider-neutral by contract)
+  webSearch: () => '/v1/web/search',
+  webRead: () => '/v1/web/read',
+
+  // Websites (deterministic static-site lane — v1: single-page HTML sites on *.moda.page)
+  websiteList: () => '/v1/websites',
+  websiteCreate: () => '/v1/websites',
+  websiteShow: (id: string) => `/v1/websites/${enc(id)}`,
+  websiteContent: (id: string) => `/v1/websites/${enc(id)}/content`,
+  websitePublish: (id: string) => `/v1/websites/${enc(id)}/publish`,
+  websiteUnpublish: (id: string) => `/v1/websites/${enc(id)}/unpublish`,
+
   // Media (NEW metered lane)
   mediaGenerateImage: () => '/v1/media/generate-image',
   mediaEditImage: () => '/v1/media/edit-image',

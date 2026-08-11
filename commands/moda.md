@@ -1,5 +1,5 @@
 ---
-description: Design on Moda — routes to the right moda skill (deck, one-pager, brand, edit)
+description: Design on Moda — routes to the right moda skill (deck, one-pager, website, brand, edit)
 argument-hint: "[what you want made or changed]"
 ---
 
@@ -9,6 +9,9 @@ Route the user's request to the right Moda skill and follow it:
   slides" → use the **moda-deck** skill.
 - A one-pager, PDF, report, brief, handout, flyer, "make this look designed"
   → use the **moda-one-pager** skill.
+- A website, landing page, marketing site, portfolio, "put this on the web",
+  or an existing moda.page site to change → use the **moda-website** skill
+  (a printable/PDF one-pager stays with moda-one-pager).
 - Brand kits — list/show/create a kit, "use our brand", "match our site",
   audit a canvas against the brand → use the **moda-brand** skill.
 - A moda.app canvas URL / share link / `cvs_` id plus a change request →

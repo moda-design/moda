@@ -1,18 +1,19 @@
 ---
-name: moda-brand
+name: moda-website
 description: >-
-  Fetch, create, and apply Moda brand kits so every design is
-  on-brand. Use when the user says on-brand, brand kit, brand colors/fonts/logo,
-  "use our brand", "match our site", rebrand, or wants a brand kit created from
-  a website URL, or wants an existing canvas audited against the brand. Reads
-  kit palette/fonts/logos deterministically and hands them to the other moda
-  skills. Requires the moda CLI and a Moda account (Step 0 checks both; it
-  never installs anything itself).
-argument-hint: "[list|show <kit>|create --url <site>|apply <canvas> <kit>|check <canvas>]"
-allowed-tools: Bash(moda:*), Read
+  Build and publish a live website hosted on Moda. Use when the user
+  asks for a website, site, web page, landing page, marketing site, portfolio
+  site, homepage, coming-soon page, "put this on the web", or wants an existing
+  moda.page site updated or re-published. Produces a real hosted site at a
+  public *.moda.page URL that stays editable and re-publishable. For a
+  printable/PDF one-pager use moda-one-pager; for slides use moda-deck.
+  Requires the moda CLI and a Moda account (Step 0 checks both; it never
+  installs anything itself).
+argument-hint: "[what the site is for, or an existing site to change] [--brand <kit>]"
+allowed-tools: Bash(moda:*), Read, Glob, Grep
 ---
 
-# moda-brand
+# moda-website
 
 ## Step 0 — doctor (always run first; skip nothing)
 
@@ -76,32 +77,45 @@ allowed-tools: Bash(moda:*), Read
 - End every deliverable the same way: the canvas link ("open in Moda to
   fine-tune — everything stays editable") plus the export you produced.
 
+**Override for this skill:** it produces no canvas and no export — the
+deliverable is the live *.moda.page URL. The canvas/lint/screenshot/
+`requires_repair` rules above do not apply; the site-specific verify loop in
+the workflow and references/website.md governs instead.
+
 ## Workflow
 
-- **List / read**: `moda brand list`, then `moda brand show BRAND_REF --json`
-  — a model-safe summary: palette, font references, logo file references,
-  never signed URLs. `moda brand pull BRAND_REF --output brand.json` for the
-  full document; `moda brand use BRAND_REF` to persist a default.
-- **Apply** = author with kit tokens: markup `$variables` and kit palette
-  values, kit font families, logos by file reference — never re-typed hex
-  codes from memory; the kit owns colors. Full rules: references/brand.md.
-- **Check** (audit a canvas against the kit): `moda canvas read CANVAS_REF` +
-  `moda canvas lint` + token comparison against `moda brand show --json`,
-  reporting pass/fail per element — off-kit colors (with node ids and nearest
-  kit color), non-kit fonts, logo size/variant/contrast. Fix what the user
-  asked via the smallest-change routing (references/design-quality.md).
-- **Create**: `moda brand create --url https://…` — server-side extraction, a
-  METERED operation: state the cost class before running, surface the receipt
-  after.
-- **Escalate**: full brand-guide generation (a new identity, multiple
-  concepts) is creative work for the metered Omni lane — `moda task start`
-  (references/brand.md and the metered-lane rules in the UX block).
+A site is one self-contained HTML page (v1 is static single-page) published
+to `https://<slug>.moda.page`. The site verbs are deterministic and free;
+only `moda web *` research and `moda media *` imagery are metered.
+
+1. **Gather** content with your own tools (Read/Glob/Grep; your own
+   research). Live web facts: `moda web search` / `moda web read` (metered)
+   — references/web.md. For an existing site, `moda site list` +
+   `moda site show` first.
+2. **Read references/website.md before authoring** — structure, styling,
+   typography, and the library/embed allowlists (violations silently break
+   or fail the publish gate). When a brand kit is in play, `moda brand show`
+   it and LOOK at its assets before settling the direction
+   (references/brand.md); imagery must be Moda-hosted, never hotlinked.
+3. **Author the page locally**: write one complete, self-contained HTML
+   document (inline styles, mobile-first) to a file, reviewing it against
+   references/website.md as you go.
+4. **Create**: `moda site create --file page.html --title "…"` — note the
+   site id from the result. Nothing is public yet.
+5. **Publish**: `moda site publish SITE_ID [--slug hint]` — print the live
+   URL. If `review_status` is `pending_review`, tell the user the site is
+   published but held for review and goes live once approved — never present
+   it as already browsable.
+6. **Revise**: edit the local file, `moda site set-content SITE_ID --file
+   page.html`, then `moda site publish SITE_ID` again — saved content does
+   NOT go live until republished (`has_unpublished_changes` flags this).
+7. **Deliver**: end with the live *.moda.page URL ("stays editable —
+   re-publish after changes"). `moda site unpublish` takes it down if asked.
 
 ## References
 
 | Doc | Load when |
 |---|---|
-| references/brand.md | always — the apply/check/create contract |
-| references/markup.md | authoring with `$var` tokens and fills |
-| references/design-quality.md | imagery routing, typography, edit-vs-markup |
-| references/gotchas.md | anything surprising |
+| references/website.md | before authoring any page (always) |
+| references/brand.md | a brand kit exists |
+| references/web.md | content needs live web research |

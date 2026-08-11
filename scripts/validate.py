@@ -35,20 +35,21 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 
-SKILLS = ["moda-deck", "moda-one-pager", "moda-brand", "moda-edit"]
+SKILLS = ["moda-deck", "moda-one-pager", "moda-brand", "moda-edit", "moda-website"]
 
 # Must mirror scripts/fanout.sh.
 EXPECTED_REFERENCES: dict[str, list[str]] = {
     "moda-deck": [
         "markup", "edit-code", "reading-and-verifying", "gotchas", "design-quality",
-        "brand", "export", "omni-and-media", "deck-design", "deck-playbooks", "charts",
+        "brand", "export", "omni-and-media", "deck-design", "deck-playbooks", "charts", "web",
     ],
     "moda-one-pager": [
         "markup", "edit-code", "reading-and-verifying", "gotchas", "design-quality",
-        "brand", "export", "omni-and-media", "document-design",
+        "brand", "export", "omni-and-media", "document-design", "web",
     ],
     "moda-brand": ["brand", "gotchas", "markup", "design-quality"],
     "moda-edit": ["edit-code", "reading-and-verifying", "gotchas", "markup", "design-quality", "brand"],
+    "moda-website": ["website", "brand", "web"],
 }
 
 ALLOWED_TOOLS = {"Bash(moda:*)", "Read", "Glob", "Grep"}
@@ -72,10 +73,16 @@ BANNED_TOKENS = [
     "generate_image", "generate_video", "remove_image_background",
     "upscale_image", "upscale_video",
     "list_brand_kits", "find_brand_kits", "create_brand_kit",
+    "create_website", "open_website", "close_website", "screenshot_website",
+    "edit_website", "publish_website",
     "editWarnings", "requiresRepair", "noOpReason", "operationCounts",
     "moda auth token",
     "eager",
     "MCP",
+    # Web-research provider neutrality (founder-explicit): the research lane never names an
+    # underlying provider. ("exa" is unusable as a substring guard — it matches "example".)
+    "firecrawl",
+    "Firecrawl",
 ]
 
 # Patterns banned even in INSTALL/setup; a line containing "never" is a

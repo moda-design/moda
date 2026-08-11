@@ -66,9 +66,10 @@ allowed-tools: Bash(moda:*), Read, Glob, Grep
 - Never delete or regenerate an image because a screenshot report listed it
   under `failedAssets`/`pendingAssets` — that state is transient; re-capture.
 - Deterministic verbs are unmetered and report zero usage. `moda task start`
-  (Omni) and `moda media *` are metered: they print a cost class before
-  running and a receipt after. Surface the cost class to the user before
-  invoking a metered verb; never treat them as an invisible fallback.
+  (Omni), `moda media *`, and `moda web *` are metered: they print a cost
+  class before running and a receipt after. Surface the cost class to the
+  user before invoking a metered verb; never treat them as an invisible
+  fallback.
 - A cost class on a metered verb is a NOTIFICATION, not a permission request.
   In a non-interactive run, never end your turn on a question — state your
   assumption in one line and proceed.
@@ -79,9 +80,11 @@ allowed-tools: Bash(moda:*), Read, Glob, Grep
 ## Workflow
 
 1. **Gather** with your own tools (Read/Glob/Grep over the named source; your
-   own research). Distill to a slide list first: title, agenda, one idea per
-   slide, 6–12 slides unless the user named a count. Data preservation rules
-   apply from here on (references/design-quality.md).
+   own research). Content that needs live web facts: `moda web search` /
+   `moda web read` (metered) — see references/web.md for when they beat your
+   harness's own browsing. Distill to a slide list first: title, agenda, one
+   idea per slide, 6–12 slides unless the user named a count. Data
+   preservation rules apply from here on (references/design-quality.md).
 2. **Read the design references before authoring**: references/deck-design.md
    (concept-first cover, layout bar), references/deck-playbooks.md when the
    deck matches a known type, references/markup.md before any markup, and
@@ -115,5 +118,6 @@ allowed-tools: Bash(moda:*), Read, Glob, Grep
 | references/edit-code.md | targeted fixes via `moda canvas edit` |
 | references/reading-and-verifying.md | DSL reading, lint/screenshot loop |
 | references/brand.md | a brand kit exists |
+| references/web.md | content needs live web research |
 | references/export.md, references/omni-and-media.md | delivering; metered lanes |
 | references/gotchas.md | anything surprising |

@@ -11,6 +11,13 @@ interface WireErrorEnvelope {
   details?: Record<string, unknown>;
 }
 
+/**
+ * 5xx codes that are terminal content failures, not server faults — retrying re-runs (and on
+ * metered lanes re-bills) work that will fail the same way. 502 web_read_failed: the target
+ * page could not be fetched (DNS, page error, timeout at the target).
+ */
+const NON_RETRYABLE_5XX_CODES = new Set(['web_read_failed']);
+
 export function apiErrorFromResponse(
   status: number,
   body: unknown,
@@ -31,7 +38,8 @@ export function apiErrorFromResponse(
     hint: status === 426 || code === 'cli_update_required' ? 'Run: moda update' : undefined,
     docUrl: envelope?.doc_url,
     requestId: envelope?.request_id ?? requestId,
-    retryable: type === 'rate_limited' || type === 'conflict' || status >= 500,
+    retryable:
+      (type === 'rate_limited' || type === 'conflict' || status >= 500) && !NON_RETRYABLE_5XX_CODES.has(code),
     retryAfterS: retryAfterMs !== undefined ? Math.ceil(retryAfterMs / 1000) : retryAfterHeaderS,
     details: envelope?.details,
     status,
