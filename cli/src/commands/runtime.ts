@@ -119,6 +119,31 @@ export function metaBlock(extra: { requestId?: string; durationMs?: number } = {
   };
 }
 
+/**
+ * Semantic markers for the machine-readable verb schema (`moda describe` / `__inventory`).
+ * Tagged AT the registration site — the command definition is the single source of truth.
+ * `destructive` is not tagged: it is derived from the presence of a --yes gate.
+ */
+export interface VerbSemantics {
+  /** Changes server-side state. */
+  mutating?: boolean;
+  /** Spends Moda credits (cost class before, receipt after). */
+  metered?: boolean;
+  /** Returns/refreshes the pinnable revision token (the read lane writes pin against). */
+  read_lane?: boolean;
+}
+
+const verbSemanticsRegistry = new WeakMap<Command, VerbSemantics>();
+
+export function tagVerb(cmd: Command, semantics: VerbSemantics): Command {
+  verbSemanticsRegistry.set(cmd, semantics);
+  return cmd;
+}
+
+export function verbSemanticsOf(cmd: Command): VerbSemantics {
+  return verbSemanticsRegistry.get(cmd) ?? {};
+}
+
 type ActionHandler = (positionals: string[], opts: Record<string, unknown>, cmd: Command) => Promise<CommandOutcome>;
 
 /**

@@ -13,6 +13,7 @@ import { registerOrg } from './commands/org.ts';
 import { registerSite } from './commands/site.ts';
 import { registerTask } from './commands/task.ts';
 import { registerWeb } from './commands/web.ts';
+import { applyVerbSemantics } from './commands/verbSemantics.ts';
 import { EXIT_INVALID_INPUT, EXIT_SIGINT } from './output/exitCodes.ts';
 import { CLI_VERSION } from './version.ts';
 
@@ -38,6 +39,7 @@ export function buildProgram(): Command {
   registerMedia(program);
   registerWeb(program);
   registerSite(program);
+  applyVerbSemantics(program);
   return program;
 }
 

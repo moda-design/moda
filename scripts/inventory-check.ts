@@ -55,8 +55,8 @@ const GLOBAL_FLAGS = new Set([
 ]);
 
 const inventoryFlags = new Set<string>(GLOBAL_FLAGS);
-for (const verb of JSON.parse(current).verbs as Array<{ flags: string[] }>) {
-  for (const flag of verb.flags) inventoryFlags.add(flag);
+for (const verb of JSON.parse(current).verbs as Array<{ flags: Array<{ flag: string }> }>) {
+  for (const entry of verb.flags) inventoryFlags.add(entry.flag);
 }
 
 function* walkMarkdown(dir: string): Generator<string> {

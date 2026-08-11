@@ -9,6 +9,7 @@ import { shotsDir } from '../config/state.ts';
 import { alert, type CommandOutcome } from '../output/emit.ts';
 import { EXIT_OK } from '../output/exitCodes.ts';
 import { extractShortIds } from '../refs.ts';
+import { previewText, writeResultFile } from '../output/resultFile.ts';
 import { addGlobalFlags, authedClient, buildInvocation, metaBlock, wrapAction, type Invocation } from './runtime.ts';
 import {
   attachScreenshotResult,
@@ -336,6 +337,7 @@ export function registerCanvas(program: Command): void {
       .command('read <canvas>')
       .description('authoring DSL state snapshot + revision token')
       .option('--page <page_id>', 'limit to one page')
+      .option('--output <file>', 'write the full payload to a file; stdout gets a small summary + preview')
       // Hidden until the studio summary endpoint ships — the flag fails typed with a steer today.
       .addOption(
         new Option('--summary', 'cheap structure summary instead of the DSL: pages, names, node counts, revision').hideHelp(),
@@ -355,9 +357,35 @@ export function registerCanvas(program: Command): void {
       const root = asObject(response.body);
       const dsl = str(root, 'state') ?? str(root, 'dsl') ?? '';
       cacheFromResponse(ref, root, inv.env, dsl);
+      if (typeof opts.output === 'string') {
+        // Big-result routing: full payload to the file, bounded summary on stdout.
+        const written = writeResultFile(opts.output, {
+          ok: true,
+          operation: 'canvas.read',
+          ...root,
+        });
+        const pageIds = [...new Set(extractShortIds(dsl).filter((id) => id.startsWith('p_')))];
+        return {
+          body: {
+            ok: true,
+            operation: 'canvas.read',
+            revision: str(root, 'revision'),
+            ...written,
+            preview: { page_ids: pageIds, dsl_head: previewText(dsl) },
+            meta: { ...metaBlock({ requestId: response.requestId, durationMs: response.durationMs }) },
+          },
+          human: (write) => {
+            write(`full state → ${written.output} (${written.bytes} bytes; inspect with jq/grep)`);
+            if (pageIds.length > 0) write(`pages: ${pageIds.join(', ')}`);
+            const revision = str(root, 'revision');
+            if (revision !== undefined) write(`revision: ${revision}`);
+          },
+          exitCode: EXIT_OK,
+        };
+      }
       if (opts.page === undefined && dsl.length > LARGE_READ_STEER_BYTES) {
         inv.note(
-          `large canvas (${Math.round(dsl.length / 1024)} KB) — prefer --page reads; ` +
+          `large canvas (${Math.round(dsl.length / 1024)} KB) — prefer --page reads or --output FILE; ` +
             'full reads may exceed harness tool-response caps',
         );
       }

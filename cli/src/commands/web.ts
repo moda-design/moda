@@ -18,6 +18,7 @@ import { CliError } from '../cliError.ts';
 import { EXIT_OK } from '../output/exitCodes.ts';
 import type { CommandOutcome } from '../output/emit.ts';
 import { addGlobalFlags, authedClient, buildInvocation, metaBlock, wrapAction } from './runtime.ts';
+import { previewText, writeResultFile } from '../output/resultFile.ts';
 
 const WEB_TIMEOUT_MS = 120_000;
 
@@ -60,12 +61,15 @@ export function registerWeb(program: Command): void {
   addGlobalFlags(
     web
       .command('read <url>')
-      .description('read a web page as clean markdown (metered)'),
+      .description('read a web page as clean markdown (metered)')
+      .option('--output <file>', 'write the full payload to a file; stdout gets a small summary + preview'),
   ).action(
-    wrapAction(async (args, _opts, cmd) => {
+    wrapAction(async (args, opts, cmd) => {
       const inv = buildInvocation(cmd);
       const { client } = await authedClient(inv, WEB_TIMEOUT_MS);
-      const outcome = await performWebRead(client, args[0] as string);
+      const outcome = await performWebRead(client, args[0] as string, {
+        output: opts.output as string | undefined,
+      });
       return outcome;
     }),
   );
@@ -123,7 +127,12 @@ export async function performWebSearch(client: ApiClient, opts: WebSearchOptions
   };
 }
 
-export async function performWebRead(client: ApiClient, url: string): Promise<CommandOutcome> {
+export interface WebReadOptions {
+  /** Big-result routing: full payload to this file, bounded preview on stdout. */
+  output?: string;
+}
+
+export async function performWebRead(client: ApiClient, url: string, opts: WebReadOptions = {}): Promise<CommandOutcome> {
   const target = url.trim();
   if (!target.startsWith('http://') && !target.startsWith('https://')) {
     throw CliError.usage(`'${url}' is not an http(s) URL.`);
@@ -136,6 +145,31 @@ export async function performWebRead(client: ApiClient, url: string): Promise<Co
     idempotency: { command: 'web read', canvas: '', expectedRevision: undefined, payload: JSON.stringify(payload) },
   });
   const root = asObject(response.body);
+  if (opts.output !== undefined) {
+    const written = writeResultFile(opts.output, { ok: true, operation: 'web.read', metered: true, ...root });
+    const markdown = str(root, 'content_markdown') ?? '';
+    const links = Array.isArray(root.links) ? root.links.length : 0;
+    return {
+      body: {
+        ok: true,
+        operation: 'web.read',
+        metered: true,
+        url: str(root, 'url') ?? target,
+        ...(str(root, 'title') !== undefined ? { title: str(root, 'title') } : {}),
+        usage: root.usage,
+        ...written,
+        preview: { content_head: previewText(markdown), links_count: links },
+        meta: { ...metaBlock({ requestId: response.requestId, durationMs: response.durationMs }) },
+      },
+      human: (write) => {
+        const title = str(root, 'title');
+        write(`web.read: ${title !== undefined ? `"${title}" — ` : ''}${str(root, 'url') ?? target} (metered)`);
+        write(`full content → ${written.output} (${written.bytes} bytes, ${links} links; inspect with jq/grep)`);
+        if (markdown.length > 0) write(previewText(markdown));
+      },
+      exitCode: EXIT_OK,
+    };
+  }
   return {
     body: {
       ok: true,
