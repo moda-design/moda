@@ -226,6 +226,7 @@
         "--page",
         "--quiet",
         "--revision",
+        "--screenshot",
         "--timeout"
       ]
     },
@@ -272,6 +273,7 @@
         "--page",
         "--quiet",
         "--revision",
+        "--screenshot",
         "--timeout"
       ]
     },

@@ -116,6 +116,38 @@ export interface WrittenPage {
 }
 
 /**
+ * Decode and write every page of a capture run (all batched roots) with the single-call
+ * naming/mime logic — the shared writer behind `canvas screenshot` and the mutation verbs'
+ * `--screenshot` flag.
+ */
+export function writeCaptureRun(input: {
+  capture: CaptureRun;
+  /** `-o` / `--screenshot` value: output file (whole run yields one page) or directory. */
+  output?: string;
+  /** Default shots directory for this canvas (used when no output path is given). */
+  shotsDirPath: string;
+  note: (message: string) => void;
+}): WrittenPage[] {
+  const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+  const totalPages = input.capture.roots.reduce((n, root) => n + (Array.isArray(root.pages) ? root.pages.length : 0), 0);
+  let written: WrittenPage[] = [];
+  for (const root of input.capture.roots) {
+    written = written.concat(
+      writeScreenshotPages({
+        root,
+        output: input.output,
+        singleFile: totalPages === 1,
+        stamp,
+        shotsDirPath: input.shotsDirPath,
+        indexOffset: written.length,
+        note: input.note,
+      }),
+    );
+  }
+  return written;
+}
+
+/**
  * Decode and write one capture response's pages to disk. Naming and format detection are
  * per-response — each batched call's root carries its own declared `format` — so the batching
  * path reuses the exact single-call mime/naming logic (screenshotFiles.ts).

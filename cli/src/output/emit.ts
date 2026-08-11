@@ -87,3 +87,11 @@ export function note(message: string, opts: { quiet: boolean }): void {
   if (opts.quiet) return;
   writeStderr(`${redactString(message)}\n`);
 }
+
+/**
+ * Non-suppressible stderr line for failures that must never be silent — `--quiet` mutes
+ * progress notes, not committed-but-degraded outcomes (e.g. a post-mutation capture failure).
+ */
+export function alert(message: string): void {
+  writeStderr(`${redactString(message)}\n`);
+}

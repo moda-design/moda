@@ -1,7 +1,7 @@
 # moda canvas markup — XML markup reference (offline copy)
 
-`moda canvas markup CANVAS_REF --file page.xml [--page PAGE_ID] [--mode append|replace]`
-applies XML markup to a page. It is partial-success: elements that fail are skipped and
+`moda canvas markup CANVAS_REF --file page.xml [--page PAGE_ID] [--mode append|replace]
+[--screenshot out.jpg]` applies XML markup to a page. It is partial-success: elements that fail are skipped and
 reported; the mutation still commits (exit 0 with `requires_repair: true`). `--mode replace`
 is an atomic full-page rewrite — deletion happens only after a clean parse, and it requires a
 revision token (`moda canvas read` first, or `--revision`).
@@ -42,8 +42,10 @@ Caps: 5,000 elements per apply; 1,000 per `<repeat>`. Cannot author `<blend>`/`<
 ## Discipline
 
 1. Read first: `moda canvas read` returns the DSL with short ids (`n7`, `p_a`) + the revision.
-2. Mutate, then inspect: `moda canvas screenshot` / `moda canvas lint`. Mutations never
-   attach screenshots — the revise loop is explicit.
+2. Mutate, then inspect: `moda canvas screenshot` / `moda canvas lint`. The revise loop is
+   explicit — when a screenshot is your next step anyway, `--screenshot PATH` folds the
+   capture of the touched page into the same invocation (a capture failure never changes the
+   mutation's exit code).
 3. On `requires_repair: true`, read the warnings and author a corrective edit; do NOT re-run
    the same command.
 4. A hallucinated image ref produces an `image_load_failed` warning — refs come from reads,

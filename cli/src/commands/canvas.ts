@@ -1,14 +1,21 @@
 /** `moda canvas` — the deterministic authoring core (cli.md §9) plus lifecycle reuse verbs. */
 import type { Command } from 'commander';
+import type { ApiClient } from '../api/client.ts';
 import { endpoints } from '../api/endpoints.ts';
 import { asObject, str } from '../api/types.ts';
 import { resolveAppBase, openBrowser } from '../auth/login.ts';
 import { CliError } from '../cliError.ts';
 import { shotsDir } from '../config/state.ts';
+import { alert, type CommandOutcome } from '../output/emit.ts';
 import { EXIT_OK } from '../output/exitCodes.ts';
 import { extractShortIds } from '../refs.ts';
-import { addGlobalFlags, authedClient, buildInvocation, metaBlock, wrapAction } from './runtime.ts';
-import { captureScreenshots, writeScreenshotPages, writtenPageLine, type WrittenPage } from './screenshotCapture.ts';
+import { addGlobalFlags, authedClient, buildInvocation, metaBlock, wrapAction, type Invocation } from './runtime.ts';
+import {
+  attachScreenshotResult,
+  captureAfterMutation,
+  pagesForMarkupTarget,
+} from './mutationScreenshot.ts';
+import { captureScreenshots, writeCaptureRun, writtenPageLine } from './screenshotCapture.ts';
 import {
   cacheFromResponse,
   chooseRevision,
@@ -23,6 +30,40 @@ import {
 const MUTATION_TIMEOUT_MS = 120_000;
 const READ_TIMEOUT_MS = 60_000;
 const SCREENSHOT_TIMEOUT_MS = 180_000;
+
+const SCREENSHOT_FLAG_HELP =
+  'after the commit, capture the touched page(s) to this file/dir (same behavior as canvas screenshot -o)';
+
+/**
+ * `--screenshot` sugar on mutation verbs: when the flag is present, run the standalone capture
+ * for the touched page(s) right after the committed mutation and attach the result
+ * (mutationScreenshot.ts). A capture failure never changes the mutation's exit code.
+ */
+async function maybeAttachScreenshot(input: {
+  outcome: CommandOutcome;
+  screenshot: unknown;
+  client: ApiClient;
+  ref: string;
+  pages?: string[];
+  inv: Invocation;
+}): Promise<CommandOutcome> {
+  if (typeof input.screenshot !== 'string') return input.outcome;
+  const result = await captureAfterMutation({
+    call: async (body) =>
+      await input.client.request({
+        method: 'POST',
+        path: endpoints.canvasScreenshot(input.ref),
+        body,
+        timeoutMs: SCREENSHOT_TIMEOUT_MS,
+      }),
+    pages: input.pages,
+    output: input.screenshot,
+    shotsDirPath: shotsDir(input.ref, input.inv.env),
+    note: input.inv.note,
+    alert,
+  });
+  return attachScreenshotResult(input.outcome, result);
+}
 
 export function registerCanvas(program: Command): void {
   const canvas = program.command('canvas').description('deterministic canvas authoring and lifecycle');
@@ -95,6 +136,7 @@ export function registerCanvas(program: Command): void {
           payload: JSON.stringify(payload),
         },
       });
+      // No --screenshot here: freshly appended pages are blank — nothing worth capturing.
       return mutationOutcome('canvas.create_pages', ref, inv, response);
     }),
   );
@@ -108,7 +150,8 @@ export function registerCanvas(program: Command): void {
       .requiredOption('--file <path>', "markup file, or '-' for stdin")
       .requiredOption('--page <page_id>', 'target page (short id or "canvas" for floating nodes)')
       .option('--mode <mode>', 'append | replace', 'append')
-      .option('--revision <token>', 'expected revision (required for --mode replace)'),
+      .option('--revision <token>', 'expected revision (required for --mode replace)')
+      .option('--screenshot <path>', SCREENSHOT_FLAG_HELP),
   ).action(
     wrapAction(async (args, opts, cmd) => {
       const inv = buildInvocation(cmd);
@@ -138,7 +181,14 @@ export function registerCanvas(program: Command): void {
           payload: JSON.stringify(payload),
         },
       });
-      return mutationOutcome('canvas.create_from_markup', ref, inv, response);
+      return await maybeAttachScreenshot({
+        outcome: mutationOutcome('canvas.create_from_markup', ref, inv, response),
+        screenshot: opts.screenshot,
+        client,
+        ref,
+        pages: pagesForMarkupTarget(opts.page as string),
+        inv,
+      });
     }),
   );
 
@@ -148,7 +198,8 @@ export function registerCanvas(program: Command): void {
       .description('run a sandboxed JS edit batch against the canvas')
       .requiredOption('--file <path>', "edit program file, or '-' for stdin")
       .option('--page <page_id>', 'target page')
-      .option('--revision <token>', 'expected revision (defaults to the cached last read; required)'),
+      .option('--revision <token>', 'expected revision (defaults to the cached last read; required)')
+      .option('--screenshot <path>', SCREENSHOT_FLAG_HELP),
   ).action(
     wrapAction(async (args, opts, cmd) => {
       const inv = buildInvocation(cmd);
@@ -173,7 +224,17 @@ export function registerCanvas(program: Command): void {
           payload: JSON.stringify(payload),
         },
       });
-      return mutationOutcome('canvas.edit', ref, inv, response);
+      return await maybeAttachScreenshot({
+        outcome: mutationOutcome('canvas.edit', ref, inv, response),
+        screenshot: opts.screenshot,
+        client,
+        ref,
+        // Always the default capture: an edit program addresses ids canvas-wide, and --page only
+        // scopes the read-only snapshot — steering the capture by it would mislead when the edit
+        // landed elsewhere. (markup differs: its --page IS the destination.)
+        pages: undefined,
+        inv,
+      });
     }),
   );
 
@@ -308,23 +369,12 @@ export function registerCanvas(program: Command): void {
         pixelRatio: typeof opts.pixelRatio === 'number' ? opts.pixelRatio : undefined,
         note: inv.note,
       });
-      const stamp = new Date().toISOString().replace(/[:.]/g, '-');
-      const totalPages = capture.roots.reduce((n, root) => n + (Array.isArray(root.pages) ? root.pages.length : 0), 0);
-      const output = opts.output as string | undefined;
-      let written: WrittenPage[] = [];
-      for (const root of capture.roots) {
-        written = written.concat(
-          writeScreenshotPages({
-            root,
-            output,
-            singleFile: totalPages === 1,
-            stamp,
-            shotsDirPath: shotsDir(ref, inv.env),
-            indexOffset: written.length,
-            note: inv.note,
-          }),
-        );
-      }
+      const written = writeCaptureRun({
+        capture,
+        output: opts.output as string | undefined,
+        shotsDirPath: shotsDir(ref, inv.env),
+        note: inv.note,
+      });
       const firstRoot = capture.roots[0] ?? {};
       const { pages: _dropped, ...rest } = firstRoot;
       return {

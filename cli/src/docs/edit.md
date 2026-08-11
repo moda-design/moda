@@ -1,8 +1,11 @@
 # moda canvas edit — sandboxed JS edit reference (offline copy)
 
-`moda canvas edit CANVAS_REF --file edit.js [--page PAGE_ID]` runs one synchronous JS batch
-against the canvas. It requires a revision token (cached from your last `moda canvas read`, or
-`--revision`).
+`moda canvas edit CANVAS_REF --file edit.js [--page PAGE_ID] [--screenshot out.jpg]` runs one
+synchronous JS batch against the canvas. It requires a revision token (cached from your last
+`moda canvas read`, or `--revision`). `--screenshot PATH` captures the canvas's current page
+right after the commit — the same files `moda canvas screenshot -o PATH` would write, in one
+invocation. An edit program can land on any page and `--page` only scopes the read snapshot,
+so it never steers the capture; a capture failure never changes the edit's exit code.
 
 ## The sandbox
 

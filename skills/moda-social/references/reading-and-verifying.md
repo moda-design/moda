@@ -14,6 +14,7 @@ Returns the compact authoring DSL — the exact state the canvas contains — pl
 - The ids in the output are session-scoped short refs (`n7`, `p_a`, `img1`) valid across every other canvas verb. **This is the source of every id you pass.**
 - Every read refreshes the CLI's cached revision for the canvas. Writes pinned to a stale revision exit 5 with `STALE_REVISION` and commit nothing — the recovery is always: re-read, then re-apply. Another writer (the user in their open editor tab, a collaborator, a running task) advancing the canvas is normal, not an error.
 - Your read AGES while the user edits in their open tab. `STALE_REVISION` protects writes, not your mental model — reads are the only way you see their changes. Re-read at the start of each new request in a continuing session, and whenever the user says they changed something in the editor, before planning edits.
+- Don't re-read state you already hold. Within one authoring loop, the DSL from your last read stays valid until you or a collaborator mutate the canvas — work from it instead of re-reading before every call. Re-read at loop boundaries per the freshness rules above (after structural changes that mint fresh short ids, at the start of a new request, after user edits) — not between consecutive calls on unchanged state.
 
 ### How to read the DSL
 
@@ -90,6 +91,7 @@ Renders pages to image files at `--output` (one file per page, extension from th
 - Per-page JSON data: `{ pageId, pageName?, width, height, pendingAssets?, failedAssets? }`.
 - **`pendingAssets` = still loading (NOT an error). `failedAssets` = transient renderer load failures** — common for freshly generated images. **NEVER regenerate, delete, or recreate an image because it appeared here.** Re-capture shortly.
 - Retryable render errors are typed (`render_failed` and friends): re-request the screenshot; canvas state is intact.
+- **Content mutations can fold the capture in:** `moda canvas markup` and `moda canvas edit` accept `--screenshot PATH` (add-pages has no capture — new pages are blank) — the same capture runs immediately after the commit for the touched page(s) and the files land before the command returns (`screenshot: {ok, pages[]}` in `--json`). One command instead of two when a screenshot is your next step anyway; milestones-only still applies. A capture failure never changes the mutation's exit code — the mutation committed; retry with the standalone verb.
 
 ## The explicit screenshot → review → edit loop
 
