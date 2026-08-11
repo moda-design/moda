@@ -52,6 +52,10 @@ allowed-tools: Bash(moda:*), Read
   lint). Read the report and repair before building more. Any nonzero exit
   means nothing committed — it is safe to retry after following the typed
   error's hint (`STALE_REVISION` → re-read the canvas, then re-apply).
+- If the same typed error occurs twice on the same operation, STOP retrying
+  that operation. Report the error code, what you tried, and deliver
+  everything that succeeded (the canvas link and screenshots are the
+  deliverable; an export can be retried later).
 - The revise loop is explicit: mutate, then run `moda canvas screenshot`,
   `moda canvas read`, or `moda canvas lint` when you need to see the result.
   Mutations do not attach screenshots or state. Canvas history is the
@@ -64,6 +68,9 @@ allowed-tools: Bash(moda:*), Read
   (Omni) and `moda media *` are metered: they print a cost class before
   running and a receipt after. Surface the cost class to the user before
   invoking a metered verb; never treat them as an invisible fallback.
+- A cost class on a metered verb is a NOTIFICATION, not a permission request.
+  In a non-interactive run, never end your turn on a question — state your
+  assumption in one line and proceed.
 - Make content decisions yourself and state them; don't batch-ask questions.
 - End every deliverable the same way: the canvas link ("open in Moda to
   fine-tune — everything stays editable") plus the export you produced.
