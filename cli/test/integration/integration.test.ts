@@ -64,6 +64,7 @@ function itg(name: string, fn: () => Promise<void>, timeoutMs = 120_000): void {
 
 describe('@integration deterministic core', () => {
   let canvasRef: string | undefined;
+  let pageId: string | undefined;
 
   itg('scenario 1: create → markup append → read (rev A) → edit vs A → read (rev B ≠ A)', async () => {
     const created = await moda(['canvas', 'create', '--name', `cli-itg-${Date.now()}`]);
@@ -71,8 +72,9 @@ describe('@integration deterministic core', () => {
     const canvas = created.json.canvas as Record<string, unknown> | undefined;
     canvasRef = (canvas?.id as string | undefined) ?? (created.json.canvas_id as string | undefined);
     expect(canvasRef).toBeDefined();
+    pageId = (created.json.current_page_id as string | undefined) ?? 'p_a';
 
-    const markup = await moda(['canvas', 'markup', canvasRef as string, '--file', '-'], {
+    const markup = await moda(['canvas', 'markup', canvasRef as string, '--file', '-', '--page', pageId as string], {
       stdin: '<content><text>Integration hello</text></content>',
     });
     expect(markup.code).toBe(0);
@@ -97,7 +99,7 @@ describe('@integration deterministic core', () => {
     const read = await moda(['canvas', 'read', canvasRef as string]);
     const staleRevision = read.json.revision as string;
     // Winner writes (bumps the revision server-side).
-    const winner = await moda(['canvas', 'markup', canvasRef as string, '--file', '-'], {
+    const winner = await moda(['canvas', 'markup', canvasRef as string, '--file', '-', '--page', pageId as string], {
       stdin: '<content><text>winner</text></content>',
     });
     expect(winner.code).toBe(0);
@@ -119,13 +121,26 @@ describe('@integration deterministic core', () => {
 
   itg('scenario 3: idempotent replay — identical re-run does not double-apply', async () => {
     expect(canvasRef).toBeDefined();
-    await moda(['canvas', 'read', canvasRef as string]);
+    const read0 = await moda(['canvas', 'read', canvasRef as string]);
+    const pinned = read0.json.revision as string;
     const stdin = '<content><text>idempotent-once</text></content>';
-    const first = await moda(['canvas', 'markup', canvasRef as string, '--file', '-'], { stdin });
+    // Pin the revision explicitly: a successful mutation updates the CLI's cached revision, so an
+    // UN-pinned re-run derives a fresh key on purpose (same edit against a NEW revision). The
+    // replay contract is per-key: identical (command, canvas, expected_revision, body) → replay.
+    const first = await moda(
+      ['canvas', 'markup', canvasRef as string, '--file', '-', '--page', pageId as string, '--revision', pinned],
+      { stdin },
+    );
     expect(first.code).toBe(0);
-    // Identical command against the SAME revision cache state derives the same key → replay.
-    const replay = await moda(['canvas', 'markup', canvasRef as string, '--file', '-'], { stdin });
+    expect(first.json.replayed).toBeUndefined();
+    const replay = await moda(
+      ['canvas', 'markup', canvasRef as string, '--file', '-', '--page', pageId as string, '--revision', pinned],
+      { stdin },
+    );
     expect(replay.code).toBe(0);
+    // Idempotency check runs BEFORE the expected_revision check — the retry replays the stored
+    // result instead of failing stale, and nothing is applied twice.
+    expect(replay.json.replayed).toBe(true);
     const read = await moda(['canvas', 'read', canvasRef as string]);
     const occurrences = (read.json.state as string | undefined ?? read.stdout).split('idempotent-once').length - 1;
     expect(occurrences).toBe(1);
@@ -133,7 +148,7 @@ describe('@integration deterministic core', () => {
 
   itg('scenario 5: requires_repair — markup with a bad image ref exits 0 with the flag set', async () => {
     expect(canvasRef).toBeDefined();
-    const result = await moda(['canvas', 'markup', canvasRef as string, '--file', '-'], {
+    const result = await moda(['canvas', 'markup', canvasRef as string, '--file', '-', '--page', pageId as string], {
       stdin: '<content><rectangle fill="image(img999)" width="100" height="100"/></content>',
     });
     expect(result.code).toBe(0);
@@ -156,7 +171,7 @@ describe('@integration deterministic core', () => {
     const uploads = uploaded.json.uploads as Array<Record<string, unknown>>;
     const fileRef = (uploads[0]?.markup_ref ?? uploads[0]?.file_id) as string | undefined;
     expect(fileRef).toBeDefined();
-    const markup = await moda(['canvas', 'markup', canvasRef as string, '--file', '-'], {
+    const markup = await moda(['canvas', 'markup', canvasRef as string, '--file', '-', '--page', pageId as string], {
       stdin: `<content><rectangle fill="image(${fileRef})" width="200" height="200"/></content>`,
     });
     expect(markup.code).toBe(0);
