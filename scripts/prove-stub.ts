@@ -36,7 +36,8 @@ const stub = Bun.serve({
   port: 0,
   fetch(request: Request): Response {
     const url = new URL(request.url);
-    const headers = { 'X-Moda-CLI-Latest': '0.1.0', 'X-Moda-CLI-Minimum-Supported': '0.0.1', 'X-Request-ID': 'req_stub1' };
+    // Reconciled contract headers (cli/src/api/endpoints.ts HEADER_CLI_*).
+    const headers = { 'Moda-Cli-Latest-Version': '0.1.0', 'Moda-Cli-Minimum-Version': '0.0.1', 'X-Request-ID': 'req_stub1' };
     if (url.pathname === '/v1/whoami') {
       const auth = request.headers.get('Authorization');
       if (auth !== `Bearer ${STUB_KEY}`) {
@@ -45,10 +46,13 @@ const stub = Bun.serve({
           { status: 401, headers },
         );
       }
+      // Reconciled whoami shape (cli/src/api/types.ts parseWhoami): organization carries the
+      // org id, team carries the human display name.
       return Response.json(
         {
           user: { id: 'user_1', email: 'dev@moda.app' },
-          org: { id: 'org_STUB', name: 'Stub Org' },
+          organization: { id: 'org_STUB' },
+          team: { id: 'team_STUB', name: 'Stub Org' },
           plan: 'pro',
           scopes: ['canvases:read', 'canvases:write', 'designs:export', 'uploads:write'],
         },
