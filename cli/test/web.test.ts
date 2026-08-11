@@ -120,6 +120,17 @@ describe('web search (POST /v1/web/search)', () => {
     expect(calls[1]?.headers.get('Idempotency-Key')).toBe(calls[0]?.headers.get('Idempotency-Key') as string);
   });
 
+  test('keyed replay is announced as not re-billed (search and read)', async () => {
+    const { base } = serve((req) =>
+      new URL(req.url).pathname === '/v1/web/search'
+        ? Response.json({ results: [], usage: RECEIPT, replayed: true })
+        : Response.json({ url: 'https://example.com', content_markdown: '# x', usage: RECEIPT, replayed: true }),
+    );
+    const replayLine = '(replayed — served from a previous identical call, not re-billed)';
+    expect(humanLines(await performWebSearch(client(base), { query: 'q' }))[1]).toBe(replayLine);
+    expect(humanLines(await performWebRead(client(base), 'https://example.com'))[1]).toBe(replayLine);
+  });
+
   test('empty query is a local usage error — no request is made', async () => {
     const { base, calls } = serve(() => Response.json({ results: [] }));
     await expect(performWebSearch(client(base), { query: '   ' })).rejects.toThrow(CliError);

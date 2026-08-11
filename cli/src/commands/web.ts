@@ -106,6 +106,7 @@ export async function performWebSearch(client: ApiClient, opts: WebSearchOptions
     },
     human: (write) => {
       write(`web.search: ${results.length} result${results.length === 1 ? '' : 's'} for "${query}" (metered)`);
+      if (root.replayed === true) write('(replayed — served from a previous identical call, not re-billed)');
       results.forEach((result, index) => {
         const title = str(result, 'title') ?? '(untitled)';
         const url = str(result, 'url') ?? '';
@@ -146,6 +147,7 @@ export async function performWebRead(client: ApiClient, url: string): Promise<Co
     human: (write) => {
       const title = str(root, 'title');
       write(`web.read: ${title !== undefined ? `"${title}" — ` : ''}${str(root, 'url') ?? target} (metered)`);
+      if (root.replayed === true) write('(replayed — served from a previous identical call, not re-billed)');
       const markdown = str(root, 'content_markdown');
       if (markdown !== undefined && markdown.length > 0) write(markdown);
       else write('(page had no extractable content)');
