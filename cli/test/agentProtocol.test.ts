@@ -217,6 +217,84 @@ describe('--output big-result routing', () => {
     expect((JSON.parse(readFileSync(out, 'utf8')) as Record<string, unknown>).state).toBe(dsl);
   });
 
+  test('canvas read --summary: shipped envelope passthrough + the revision feeds the pin cache', async () => {
+    const { base } = serve((req) =>
+      new URL(req.url).pathname.endsWith('/state/summary')
+        ? Response.json({
+            operation: 'canvas.read_summary',
+            canvas: { id: 'cvs_01HZX9K2ABCDEFGHJKMNPQRSTV', uuid: '018f3c6e-1234-4abc-9def-00112233aabb' },
+            revision: 'rev_42',
+            name: 'Q3 deck',
+            pages: [
+              { id: 'p_a', name: 'Cover', node_count: 9 },
+              { id: 'p_b', name: 'Agenda', node_count: 14 },
+            ],
+            page_count: 2,
+            node_total: 23,
+            current_page_id: 'p_a',
+            usage: { class: 'deterministic', metered_credits: 0 },
+            editor_url: 'https://moda.app/c/cvs_01HZX9K2ABCDEFGHJKMNPQRSTV',
+          })
+        : Response.json({}),
+    );
+    const scratch = mkdtempSync(join(tmpdir(), 'moda-summary-'));
+    const proc = Bun.spawn(
+      ['bun', MAIN, 'canvas', 'read', 'cvs_01HZX9K2ABCDEFGHJKMNPQRSTV', '--summary', '--json'],
+      {
+        stdout: 'pipe',
+        stderr: 'pipe',
+        env: {
+          ...process.env,
+          MODA_NO_UPDATE_CHECK: '1',
+          MODA_API_BASE: base,
+          MODA_API_KEY: 'moda_live_testkey000000',
+          MODA_CONFIG_DIR: join(scratch, 'config'),
+          MODA_STATE_DIR: join(scratch, 'state'),
+        },
+      },
+    );
+    const [code, stdout] = await Promise.all([proc.exited, new Response(proc.stdout).text()]);
+    expect(code).toBe(0);
+    const body = JSON.parse(stdout) as Record<string, unknown>;
+    expect(body.operation).toBe('canvas.summary');
+    expect(body.page_count).toBe(2);
+    expect(body.node_total).toBe(23);
+    expect(body.current_page_id).toBe('p_a');
+    expect((body.pages as unknown[]).length).toBe(2);
+    expect(body.revision).toBe('rev_42');
+    // Read-lane proof: the summary's revision landed in the pin cache (keyed by ref AND uuid).
+    const revisions = JSON.parse(readFileSync(join(scratch, 'state', 'revisions.json'), 'utf8')) as Record<
+      string,
+      { revision: string }
+    >;
+    expect(revisions['cvs_01HZX9K2ABCDEFGHJKMNPQRSTV']?.revision).toBe('rev_42');
+  });
+
+  test('canvas read --summary on a pre-summary server fails typed with the steer', async () => {
+    const { base } = serve(() => new Response('not found', { status: 404 }));
+    const scratch = mkdtempSync(join(tmpdir(), 'moda-summary-404-'));
+    const proc = Bun.spawn(
+      ['bun', MAIN, 'canvas', 'read', 'cvs_01HZX9K2ABCDEFGHJKMNPQRSTV', '--summary', '--json'],
+      {
+        stdout: 'pipe',
+        stderr: 'pipe',
+        env: {
+          ...process.env,
+          MODA_NO_UPDATE_CHECK: '1',
+          MODA_API_BASE: base,
+          MODA_API_KEY: 'moda_live_testkey000000',
+          MODA_CONFIG_DIR: join(scratch, 'config'),
+          MODA_STATE_DIR: join(scratch, 'state'),
+        },
+      },
+    );
+    const [code, stdout] = await Promise.all([proc.exited, new Response(proc.stdout).text()]);
+    expect(code).not.toBe(0);
+    const body = JSON.parse(stdout) as Record<string, unknown>;
+    expect((body.error as Record<string, unknown>).message).toContain('predates the summary endpoint');
+    expect(String((body.error as Record<string, unknown>).hint)).toContain('moda canvas show');
+  });
+
   test('task list --output: returned count + first-N preview, full list on disk', async () => {
     const tasks = Array.from({ length: 7 }, (_, i) => ({ id: `task_${i}`, status: 'succeeded', big: 'z'.repeat(200) }));
     const { base } = serve(() => Response.json({ tasks }));

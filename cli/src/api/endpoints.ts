@@ -22,8 +22,7 @@ export const endpoints = {
   // Canvas Actions (authoring lane — the 8 extracted verbs + delete)
   canvasCreate: () => '/v1/canvases',
   canvasState: (ref: string) => `/v1/canvases/${enc(ref)}/state`,
-  // Contract agreed with studio; not yet live everywhere — the CLI fails typed until it lands.
-  canvasStateSummary: (ref: string) => `/v1/canvases/${enc(ref)}/summary`,
+  canvasStateSummary: (ref: string) => `/v1/canvases/${enc(ref)}/state/summary`,
   canvasMarkup: (ref: string) => `/v1/canvases/${enc(ref)}/markup`,
   canvasEdit: (ref: string) => `/v1/canvases/${enc(ref)}/edit`,
   canvasDeleteItems: (ref: string) => `/v1/canvases/${enc(ref)}/delete-items`,
