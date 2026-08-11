@@ -48,6 +48,8 @@ export async function captureAfterMutation(input: {
   output: string;
   shotsDirPath: string;
   note: (message: string) => void;
+  /** Non-suppressible stderr writer for the failure line — must survive --quiet (emit.ts alert). */
+  alert: (message: string) => void;
 }): Promise<MutationScreenshotResult> {
   try {
     const capture = await captureScreenshots({ call: input.call, pages: input.pages, note: input.note });
@@ -68,7 +70,7 @@ export async function captureAfterMutation(input: {
     };
   } catch (err) {
     const message = err instanceof CliError ? err.fields.message : err instanceof Error ? err.message : String(err);
-    input.note(`⚠ mutation committed, but the --screenshot capture failed: ${message} — re-run: moda canvas screenshot`);
+    input.alert(`⚠ mutation committed, but the --screenshot capture failed: ${message} — re-run: moda canvas screenshot`);
     return { block: { ok: false, error: message }, written: [] };
   }
 }

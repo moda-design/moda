@@ -59,6 +59,7 @@ describe('captureAfterMutation', () => {
       output: out,
       shotsDirPath: '/unused',
       note: () => {},
+      alert: () => {},
     });
     expect(server.calls).toEqual([{ page_ids: ['p_a'] }]);
     expect(result.block.ok).toBe(true);
@@ -79,6 +80,7 @@ describe('captureAfterMutation', () => {
       output: dir,
       shotsDirPath: '/unused',
       note: (m) => notes.push(m),
+      alert: () => {},
     });
     expect(server.calls).toHaveLength(2);
     expect(result.block.ok).toBe(true);
@@ -97,14 +99,20 @@ describe('captureAfterMutation', () => {
       output: out,
       shotsDirPath: '/unused',
       note: () => {},
+      alert: () => {},
     });
     expect(server.calls).toEqual([{}]);
     // One captured page → `-o` single-file semantics; extensionless paths gain the byte format.
     expect(result.written).toEqual([{ page_id: 'p_default', path: `${out}.jpg` }]);
   });
 
-  test('a capture failure never throws: ok:false block + loud stderr note, no files', async () => {
+  test('a capture failure never throws: ok:false block + non-suppressible failure line, no files', async () => {
+    // Two channels, exactly as wired in canvas.ts: `note` is the --quiet-suppressed progress
+    // channel; `alert` is the non-suppressible stderr writer. Under --quiet non-JSON, notes
+    // are dropped — the failure line must arrive on `alert` alone or the claim "surfaces on
+    // stderr" is false in that mode.
     const notes: string[] = [];
+    const alerts: string[] = [];
     const result = await captureAfterMutation({
       call: async () => {
         throw new Error('render_failed: renderer busy');
@@ -113,11 +121,14 @@ describe('captureAfterMutation', () => {
       output: '/unused/out.jpg',
       shotsDirPath: '/unused',
       note: (m) => notes.push(m),
+      alert: (m) => alerts.push(m),
     });
     expect(result.block).toEqual({ ok: false, error: 'render_failed: renderer busy' });
     expect(result.written).toEqual([]);
-    expect(notes.some((n) => n.includes('mutation committed, but the --screenshot capture failed'))).toBe(true);
-    expect(notes.some((n) => n.includes('re-run: moda canvas screenshot'))).toBe(true);
+    expect(alerts.some((n) => n.includes('mutation committed, but the --screenshot capture failed'))).toBe(true);
+    expect(alerts.some((n) => n.includes('re-run: moda canvas screenshot'))).toBe(true);
+    // The suppressed channel carries no part of the failure — quiet mode still hears it.
+    expect(notes.filter((n) => n.includes('capture failed'))).toEqual([]);
   });
 });
 

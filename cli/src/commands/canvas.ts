@@ -6,7 +6,7 @@ import { asObject, str } from '../api/types.ts';
 import { resolveAppBase, openBrowser } from '../auth/login.ts';
 import { CliError } from '../cliError.ts';
 import { shotsDir } from '../config/state.ts';
-import type { CommandOutcome } from '../output/emit.ts';
+import { alert, type CommandOutcome } from '../output/emit.ts';
 import { EXIT_OK } from '../output/exitCodes.ts';
 import { extractShortIds } from '../refs.ts';
 import { addGlobalFlags, authedClient, buildInvocation, metaBlock, wrapAction, type Invocation } from './runtime.ts';
@@ -60,6 +60,7 @@ async function maybeAttachScreenshot(input: {
     output: input.screenshot,
     shotsDirPath: shotsDir(input.ref, input.inv.env),
     note: input.inv.note,
+    alert,
   });
   return attachScreenshotResult(input.outcome, result);
 }
@@ -228,7 +229,10 @@ export function registerCanvas(program: Command): void {
         screenshot: opts.screenshot,
         client,
         ref,
-        pages: typeof opts.page === 'string' ? [opts.page] : undefined,
+        // Always the default capture: an edit program addresses ids canvas-wide, and --page only
+        // scopes the read-only snapshot — steering the capture by it would mislead when the edit
+        // landed elsewhere. (markup differs: its --page IS the destination.)
+        pages: undefined,
         inv,
       });
     }),
