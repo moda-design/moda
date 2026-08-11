@@ -116,6 +116,69 @@ describe('revision pin-cache lanes (rulings §15: reads only, mutation tokens ar
   });
 });
 
+describe('idempotent replay surfacing (server contract: replayed / reused_existing / note)', () => {
+  test('a replayed CREATE is loud: REUSED warning with the original created_at, server note, fields verbatim', () => {
+    const env = tempEnv();
+    const outcome = mutationOutcome('canvas.create', '', fakeInvocation(env), {
+      body: {
+        committed: true,
+        replayed: true,
+        reused_existing: true,
+        created_at: '2026-08-09T21:14:00+00:00',
+        note: 'REUSED EXISTING CANVAS — this call did NOT create a new canvas.',
+        canvas: { id: 'cvs_R' },
+        revision: 'crdt-orig',
+      },
+      requestId: 'req_1',
+      durationMs: 10,
+    });
+    // --json carries the server fields verbatim.
+    const body = outcome.body as Record<string, unknown>;
+    expect(body.replayed).toBe(true);
+    expect(body.reused_existing).toBe(true);
+    expect(body.created_at).toBe('2026-08-09T21:14:00+00:00');
+    expect(body.note).toBe('REUSED EXISTING CANVAS — this call did NOT create a new canvas.');
+    // Human output leads with the loud reuse warning.
+    const lines: string[] = [];
+    outcome.human?.((line) => lines.push(line));
+    expect(lines[0]).toBe(
+      '⚠ REUSED existing canvas (created 2026-08-09T21:14:00+00:00) — server replayed your idempotency key; ' +
+        'use a new name/key for a fresh canvas',
+    );
+    expect(lines[1]).toContain('REUSED EXISTING CANVAS');
+    expect(lines.join('\n')).toContain('replayed (stored result — not re-applied)');
+    expect(lines.join('\n')).not.toContain('canvas.create: committed');
+  });
+
+  test('a replayed MUTATION is loud: REPLAYED warning, no reuse phrasing, fields verbatim', () => {
+    const env = tempEnv();
+    const outcome = mutationOutcome('canvas.create_from_markup', 'cvs_A', fakeInvocation(env), {
+      body: { committed: true, replayed: true, revision: 'crdt-stored' },
+      durationMs: 5,
+    });
+    expect((outcome.body as Record<string, unknown>).replayed).toBe(true);
+    const lines: string[] = [];
+    outcome.human?.((line) => lines.push(line));
+    expect(lines[0]).toContain('⚠ REPLAYED');
+    expect(lines[0]).toContain('nothing was applied again');
+    expect(lines.join('\n')).not.toContain('REUSED existing canvas');
+    expect(lines.join('\n')).toContain('canvas.create_from_markup: replayed (stored result — not re-applied)');
+  });
+
+  test('a normal mutation stays quiet: no warning, committed line unchanged', () => {
+    const env = tempEnv();
+    const outcome = mutationOutcome('canvas.edit', 'cvs_A', fakeInvocation(env), {
+      body: { committed: true, revision: 'crdt-1' },
+      durationMs: 5,
+    });
+    expect((outcome.body as Record<string, unknown>).replayed).toBeUndefined();
+    const lines: string[] = [];
+    outcome.human?.((line) => lines.push(line));
+    expect(lines[0]).toBe('canvas.edit: committed (advisory revision crdt-1 — pin only from reads)');
+    expect(lines.join('\n')).not.toContain('⚠');
+  });
+});
+
 describe('parseSize', () => {
   test('parses WxH; rejects garbage', () => {
     expect(parseSize('1920x1080')).toEqual({ width: 1920, height: 1080 });

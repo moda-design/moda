@@ -109,7 +109,12 @@ export function cacheFromResponse(ref: string, body: unknown, env: NodeJS.Proces
   }
 }
 
-/** Shape a mutation response into the §3 output contract document. Never caches the advisory revision. */
+/**
+ * Shape a mutation response into the §3 output contract document. Never caches the advisory
+ * revision. Idempotent replays (`replayed: true`, and `reused_existing: true` + the original
+ * `created_at` + a steering `note` on a replayed create) are surfaced LOUDLY in human output;
+ * the --json document carries the server fields verbatim via the spread.
+ */
 export function mutationOutcome(
   operation: string,
   _ref: string,
@@ -125,12 +130,28 @@ export function mutationOutcome(
   };
   const requiresRepair = root.requires_repair === true;
   const counts = asObject(root.operation_counts);
+  const replayed = root.replayed === true;
   return {
     body,
     human: (write) => {
+      if (root.reused_existing === true) {
+        const createdAt = str(root, 'created_at');
+        write(
+          `⚠ REUSED existing canvas${createdAt !== undefined ? ` (created ${createdAt})` : ''} — server replayed ` +
+            'your idempotency key; use a new name/key for a fresh canvas',
+        );
+      } else if (replayed) {
+        write(
+          '⚠ REPLAYED — the server returned the stored result of an earlier identical call ' +
+            '(idempotency key match); nothing was applied again',
+        );
+      }
+      const serverNote = str(root, 'note');
+      if (serverNote !== undefined) write(`server note: ${serverNote}`);
       const revision = str(root, 'revision');
       write(
-        `${operation}: committed${revision !== undefined ? ` (advisory revision ${revision} — pin only from reads)` : ''}` +
+        `${operation}: ${replayed ? 'replayed (stored result — not re-applied)' : 'committed'}` +
+          `${revision !== undefined ? ` (advisory revision ${revision} — pin only from reads)` : ''}` +
           (typeof counts.applied === 'number' ? ` — applied ${counts.applied}/${counts.queued ?? '?'}` : '') +
           (typeof counts.skipped === 'number' && counts.skipped > 0 ? `, skipped ${counts.skipped}` : ''),
       );
