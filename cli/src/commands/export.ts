@@ -149,8 +149,13 @@ export async function performExport(
     },
     human: (write) => {
       if (deliveredFormat !== format) {
+        // With an explicit -o the filename keeps the user's name — say what the bytes really are.
+        const explicitTarget =
+          options.output !== undefined && !toStdout
+            ? ` — delivered ${deliveredFormat} → ${outPath} (the file is ${deliveredFormat} content despite its name)`
+            : '';
         write(
-          `requested ${format}, delivered ${deliveredFormat} (multi-page raster exports bundle as a zip of images)`,
+          `requested ${format}, delivered ${deliveredFormat} (multi-page raster exports bundle as a zip of images)${explicitTarget}`,
         );
       }
       write(`${deliveredFormat} -> ${toStdout ? '(stdout)' : outPath} (${bytes.byteLength} bytes)`);

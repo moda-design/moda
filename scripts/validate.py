@@ -325,14 +325,19 @@ def check_payload_paths() -> None:
     references/<name>.md (existence via check_links), a bare sibling reference name, or
     SKILL.md itself. Repo-root pointers (INSTALL.md, docs/…, shared/…) do not survive
     `npx skills add` and are banned. Also: every skills-shipping manifest must list every skill."""
+    # Regex self-check (negative case): an http(s) URL ending in .md must never be a candidate.
+    assert [m.group(1) for m in re.finditer(r"https?://\S+|([A-Za-z0-9_./-]*\.md\b)",
+            "see https://x.io/a.md and references/brand.md") if m.group(1)] == ["references/brand.md"]
     for skill in SKILLS:
         base = skill_dir(skill)
         for path in [base / "SKILL.md", *sorted((base / "references").glob("*.md"))]:
             if not path.exists():
                 continue
-            for m in re.finditer(r"[A-Za-z0-9_./-]*\.md\b", read(path)):
-                token = m.group(0)
-                if token in ("SKILL.md",):
+            # URLs are consumed by the first alternative so an http(s) link ending in .md can
+            # never register as a payload path; only group(1) matches are candidate tokens.
+            for m in re.finditer(r"https?://\S+|([A-Za-z0-9_./-]*\.md\b)", read(path)):
+                token = m.group(1)
+                if token is None or token in ("SKILL.md",):
                     continue
                 if token.startswith("references/") and (base / token).exists():
                     continue

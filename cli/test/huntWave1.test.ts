@@ -104,6 +104,28 @@ describe('export delivered-format truth (zip-as-png defect)', () => {
     expect(lines[0]).toContain('requested png, delivered zip');
   });
 
+  test('explicit -o keeps the given name but the mismatch line names the real content', async () => {
+    const { base } = serve((req) => {
+      const url = new URL(req.url);
+      if (url.pathname.endsWith('/export')) {
+        return Response.json({ task_id: 'exp_o', status: 'completed', format: 'zip', download_url: '/dl/exp_o' });
+      }
+      return new Response(new Uint8Array([0x50, 0x4b, 0x03, 0x04]), { status: 200 });
+    });
+    const outDir = mkdtempSync(join(tmpdir(), 'moda-export-named-'));
+    const named = join(outDir, 'post.png');
+    const outcome = await performExport(client(base), fakeInv(base, outDir), CVS, {
+      format: 'png',
+      output: named,
+      wait: true,
+    });
+    expect(String((outcome.body as Record<string, unknown>).output)).toBe(named);
+    const lines: string[] = [];
+    outcome.human?.((line) => lines.push(line));
+    expect(lines[0]).toContain(`delivered zip → ${named}`);
+    expect(lines[0]).toContain('despite its name');
+  });
+
   test('single-format export keeps the requested extension and formats agree', async () => {
     const { base } = serve((req) => {
       const url = new URL(req.url);

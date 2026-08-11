@@ -69,3 +69,5 @@ ride alongside them additively:
   `requires_repair`; `--screenshot` adds `screenshot: {ok, pages[]}`.
 - List/search lanes add `returned` (count of items in this response).
 - `notes[]` carries format advisories (e.g. PDF hyperlink flattening).
+- Export adds `requested_format` + `delivered_format` — what the file
+  actually is (multi-page raster exports deliver `zip`).
