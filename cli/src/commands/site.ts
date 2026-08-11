@@ -31,6 +31,16 @@ export function parseSiteId(input: string): string {
   return trimmed;
 }
 
+/** Destructive-verb approval gate, mirroring `moda canvas delete` (cli.md §9). */
+export function requireYes(action: string, noInput: boolean, yes: boolean): void {
+  if (noInput && !yes) {
+    throw CliError.usage(
+      `${action} requires --yes under --json/--no-input.`,
+      'Destructive verbs need the host approval step (cli.md §9).',
+    );
+  }
+}
+
 export function registerSite(program: Command): void {
   const site = program
     .command('site')
@@ -100,31 +110,46 @@ export function registerSite(program: Command): void {
     wrapAction(async (args, opts, cmd) => {
       const inv = buildInvocation(cmd);
       const { client } = await authedClient(inv, SITE_TIMEOUT_MS);
-      return performSitePublish(client, args[0] as string, opts.slug as string | undefined);
+      const id = parseSiteId(args[0] as string);
+      const slugPrefix = opts.slug as string | undefined;
+      if (slugPrefix !== undefined) {
+        // Free pre-check: the hint only applies to a first publish — warn instead of silently
+        // sending a hint the server will ignore on a site that already owns a slug.
+        const current = await client.request({ method: 'GET', path: endpoints.websiteShow(id) });
+        const existingSlug = str(asObject(asObject(current.body).website), 'slug');
+        if (existingSlug !== undefined && existingSlug.length > 0) {
+          inv.note(`--slug is a first-publish hint — this site already has slug '${existingSlug}'; the hint is ignored.`);
+        }
+      }
+      return performSitePublish(client, id, slugPrefix);
     }),
   );
 
-  addGlobalFlags(site.command('unpublish <site>').description('take the live site down')).action(
-    wrapAction(async (args, _opts, cmd) => {
+  addGlobalFlags(
+    site
+      .command('unpublish <site>')
+      .description('take the live site down (requires --yes under --json/--no-input)')
+      .option('--yes', 'confirm taking the live site down'),
+  ).action(
+    wrapAction(async (args, opts, cmd) => {
       const inv = buildInvocation(cmd);
+      requireYes('Unpublishing a live site', inv.flags.noInput, opts.yes === true);
       const { client } = await authedClient(inv, SITE_TIMEOUT_MS);
-      const id = parseSiteId(args[0] as string);
-      const response = await client.request({ method: 'POST', path: endpoints.websiteUnpublish(id), body: {} });
-      const root = asObject(response.body);
-      return outcome('site.unpublish', root, response, (write) => {
-        write(`site.unpublish: ${str(root, 'slug') ?? id} is no longer live`);
-      });
+      return performSiteUnpublish(client, args[0] as string);
     }),
   );
 
-  addGlobalFlags(site.command('delete <site>').description('delete the site (takes down any live publish)')).action(
-    wrapAction(async (args, _opts, cmd) => {
+  addGlobalFlags(
+    site
+      .command('delete <site>')
+      .description('delete the site — destructive; the slug enters cooldown (requires --yes under --json/--no-input)')
+      .option('--yes', 'confirm deletion'),
+  ).action(
+    wrapAction(async (args, opts, cmd) => {
       const inv = buildInvocation(cmd);
+      requireYes('Deleting a site', inv.flags.noInput, opts.yes === true);
       const { client } = await authedClient(inv, SITE_TIMEOUT_MS);
-      const id = parseSiteId(args[0] as string);
-      const response = await client.request({ method: 'DELETE', path: endpoints.websiteShow(id) });
-      const root = asObject(response.body);
-      return outcome('site.delete', root, response, (write) => write(`site.delete: ${id} deleted`));
+      return performSiteDelete(client, args[0] as string);
     }),
   );
 }
@@ -160,7 +185,8 @@ function outcome(
     body: {
       ok: true,
       // Spread first: the server envelope carries its own `operation` (e.g. websites.publish);
-      // the CLI's verb-lane name wins in CLI output.
+      // the CLI's verb-lane name wins in CLI output. (media.ts differs — it spreads root last,
+      // and its server operations already match the CLI names — deliberately left as is.)
       ...root,
       operation,
       meta: { ...asObject(root.meta), ...metaBlock({ requestId: response.requestId, durationMs: response.durationMs }) },
@@ -176,9 +202,16 @@ function siteLine(website: Record<string, unknown>): string {
   const url = str(website, 'url');
   const published = website.is_published === true;
   const stale = website.has_unpublished_changes === true;
-  const state = published
-    ? `live at ${url ?? '?'}${stale ? ' (unpublished changes — republish to update)' : ''}`
-    : 'not published';
+  const pendingReview = str(website, 'review_status') === 'pending_review';
+  let state: string;
+  if (!published) {
+    state = 'not published';
+  } else if (pendingReview) {
+    state = `published (held for review) — ${url ?? '?'} goes live once approved`;
+  } else {
+    state = `live at ${url ?? '?'}`;
+  }
+  if (published && stale) state += ' (unpublished changes — republish to update)';
   return `${id}  ${name} — ${state}`;
 }
 
@@ -202,6 +235,7 @@ export async function performSiteCreate(client: ApiClient, input: SiteContentInp
   return outcome('site.create', root, response, (write) => {
     const id = str(website, 'id') ?? '?';
     write(`site.create: ${id} — "${str(website, 'name') ?? ''}" (not published yet)`);
+    if (root.replayed === true) write('(replayed — this site already existed)');
     write(`publish it: moda site publish ${id}`);
   });
 }
@@ -237,7 +271,10 @@ export async function performSiteShow(client: ApiClient, siteRef: string): Promi
   return outcome('site.show', root, response, (write) => {
     write(siteLine(website));
     const review = str(website, 'review_status');
-    if (review !== undefined && review !== 'approved') write(`review_status: ${review}`);
+    // pending_review is already part of siteLine; name any other non-approved status explicitly.
+    if (review !== undefined && review !== 'approved' && review !== 'pending_review') {
+      write(`review_status: ${review}`);
+    }
   });
 }
 
@@ -262,16 +299,17 @@ export async function performSiteSetContent(
 
 export async function performSitePublish(
   client: ApiClient,
-  siteRef: string,
+  siteId: string,
   slugPrefix: string | undefined,
 ): Promise<CommandOutcome> {
-  const id = parseSiteId(siteRef);
+  const id = parseSiteId(siteId);
   const payload = slugPrefix !== undefined ? { slug_prefix: slugPrefix } : {};
   const response = await client.request({ method: 'POST', path: endpoints.websitePublish(id), body: payload });
   const root = asObject(response.body);
-  return outcome('site.publish', root, response, (write) => {
+  const pendingReview = str(root, 'review_status') === 'pending_review';
+  const base = outcome('site.publish', root, response, (write) => {
     const url = str(root, 'url') ?? '?';
-    if (str(root, 'review_status') === 'pending_review') {
+    if (pendingReview) {
       write(`site.publish: published, but held for review before serving — ${url} goes live once approved`);
     } else {
       write(`site.publish: live at ${url}`);
@@ -279,4 +317,25 @@ export async function performSitePublish(
     const warnings = Array.isArray(root.warnings) ? root.warnings.filter((w): w is string => typeof w === 'string') : [];
     for (const warning of warnings) write(`warning: ${warning}`);
   });
+  // The server reports is_live: true even when the publish is held for review. Rather than
+  // mutating the server body, add a CLI-owned `serving` field: true only when the page is
+  // actually being served right now.
+  base.body = { ...base.body, serving: root.is_live === true && !pendingReview };
+  return base;
+}
+
+export async function performSiteUnpublish(client: ApiClient, siteRef: string): Promise<CommandOutcome> {
+  const id = parseSiteId(siteRef);
+  const response = await client.request({ method: 'POST', path: endpoints.websiteUnpublish(id), body: {} });
+  const root = asObject(response.body);
+  return outcome('site.unpublish', root, response, (write) => {
+    write(`site.unpublish: ${str(root, 'slug') ?? id} is no longer live`);
+  });
+}
+
+export async function performSiteDelete(client: ApiClient, siteRef: string): Promise<CommandOutcome> {
+  const id = parseSiteId(siteRef);
+  const response = await client.request({ method: 'DELETE', path: endpoints.websiteShow(id) });
+  const root = asObject(response.body);
+  return outcome('site.delete', root, response, (write) => write(`site.delete: ${id} deleted`));
 }

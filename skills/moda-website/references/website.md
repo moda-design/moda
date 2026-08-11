@@ -37,8 +37,18 @@ moda site delete SITE_ID
   but held for review before it serves. Say so honestly: give the user the
   URL and tell them it goes live once approved — do not present it as
   already browsable, and do not loop waiting for approval.
-- `publish_rejected` (422) means the pre-publish content gate refused the
-  page — read the message, fix the flagged content, save, republish.
+- Publish-gate errors and what to do: `malicious_link` / `content_flagged`
+  (422 — the content gate refused the page: fix or remove the flagged
+  content, save, republish; never resubmit unchanged), `missing_homepage` /
+  `artifact_too_large` (400 — the page is malformed or over the 20MB limit:
+  shrink assets, re-host images in Moda), `free_publishing_disabled` (403 —
+  the plan cannot publish: relay the hint, do not retry), quota codes
+  (429 — publish has its own fair-use budget: wait, do not loop), and
+  `website_already_published` (409 — the site is already live; a content
+  update is save + republish, not a second first-publish).
+- A 403 `team_access_denied` on a site means your key's team lacks edit
+  rights on this site — it is NOT an auth failure; do not re-run
+  `moda auth login`.
 
 ## Authoring the page
 

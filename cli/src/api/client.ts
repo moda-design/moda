@@ -111,8 +111,10 @@ export class ApiClient {
         headerRetryMs !== undefined ? Math.ceil(headerRetryMs / 1000) : undefined,
       );
 
-      // 5xx — transport-class retry (safe: mutations carry idempotency keys).
-      if (response.status >= 500 && transportAttempt < transportBudget) {
+      // 5xx — transport-class retry (safe: mutations and metered verbs carry idempotency keys).
+      // Terminal 5xx codes (retryable: false from the envelope, e.g. web_read_failed) surface
+      // immediately: they are content failures that would fail identically on retry.
+      if (response.status >= 500 && error.fields.retryable === true && transportAttempt < transportBudget) {
         transportAttempt += 1;
         await sleep(250 * 2 ** transportAttempt + Math.random() * 250);
         continue;

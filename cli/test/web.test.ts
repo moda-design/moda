@@ -77,13 +77,14 @@ describe('parseResultsCount (--results validation)', () => {
 });
 
 describe('web search (POST /v1/web/search)', () => {
-  test('minimal call: query only — server defaults apply, nothing else is sent', async () => {
+  test('minimal call: query plus the injected idempotency_key — server defaults apply otherwise', async () => {
     const { base, calls } = serve(() =>
       Response.json({ results: [{ url: 'https://a.example', title: 'A', snippet: 'alpha' }], usage: RECEIPT }),
     );
     const outcome = await performWebSearch(client(base), { query: 'moda page hosting' });
     expect(calls[0]?.path).toBe('/v1/web/search');
-    expect(calls[0]?.body).toEqual({ query: 'moda page hosting' });
+    expect(calls[0]?.body.query).toBe('moda page hosting');
+    expect(Object.keys(calls[0]?.body ?? {}).sort()).toEqual(['idempotency_key', 'query']);
     const body = outcome.body as Record<string, unknown>;
     expect(body.ok).toBe(true);
     expect(body.operation).toBe('web.search');
@@ -97,14 +98,26 @@ describe('web search (POST /v1/web/search)', () => {
   test('--results and --full-text travel as num_results / include_text', async () => {
     const { base, calls } = serve(() => Response.json({ results: [], usage: RECEIPT }));
     await performWebSearch(client(base), { query: 'q', results: 10, fullText: true });
-    expect(calls[0]?.body).toEqual({ query: 'q', num_results: 10, include_text: true });
+    const body = calls[0]?.body ?? {};
+    expect(body.num_results).toBe(10);
+    expect(body.include_text).toBe(true);
+    expect(Object.keys(body).sort()).toEqual(['idempotency_key', 'include_text', 'num_results', 'query']);
   });
 
-  test('the wire body is exactly the binding contract — no idempotency_key injection', async () => {
-    const { base, calls } = serve(() => Response.json({ results: [], usage: RECEIPT }));
-    await performWebSearch(client(base), { query: 'q', results: 3 });
-    expect(Object.keys(calls[0]?.body ?? {}).sort()).toEqual(['num_results', 'query']);
-    expect(calls[0]?.headers.get('Idempotency-Key')).toBeNull();
+  test('a transport-retried metered POST replays the SAME idempotency key (no re-bill)', async () => {
+    const { base, calls } = serve(() =>
+      calls.length <= 1
+        ? new Response(
+            JSON.stringify({ error: { type: 'upstream_error', code: 'upstream_error', message: 'transient' } }),
+            { status: 503, headers: { 'Content-Type': 'application/json' } },
+          )
+        : Response.json({ results: [], usage: RECEIPT }),
+    );
+    await performWebSearch(client(base), { query: 'q' });
+    expect(calls.length).toBe(2);
+    expect(typeof calls[0]?.body.idempotency_key).toBe('string');
+    expect(calls[1]?.body.idempotency_key).toBe(calls[0]?.body.idempotency_key as string);
+    expect(calls[1]?.headers.get('Idempotency-Key')).toBe(calls[0]?.headers.get('Idempotency-Key') as string);
   });
 
   test('empty query is a local usage error — no request is made', async () => {
@@ -127,7 +140,8 @@ describe('web search (POST /v1/web/search)', () => {
     expect(lines[0]).toBe('web.search: 2 results for "q" (metered)');
     expect(lines[1]).toBe('1. Alpha — https://a.example (2026-08-01)');
     expect(lines[2]).toBe('   first hit');
-    expect(lines.join('\n')).toContain('full text captured');
+    // The hint must point at THIS response, never suggest a paid re-run.
+    expect(lines.join('\n')).toContain('full text captured in this response: 14 chars');
     expect(lines.join('\n')).not.toContain('full text here');
   });
 
@@ -168,7 +182,8 @@ describe('web read (POST /v1/web/read)', () => {
     );
     const outcome = await performWebRead(client(base), 'https://example.com/post');
     expect(calls[0]?.path).toBe('/v1/web/read');
-    expect(calls[0]?.body).toEqual({ url: 'https://example.com/post' });
+    expect(calls[0]?.body.url).toBe('https://example.com/post');
+    expect(Object.keys(calls[0]?.body ?? {}).sort()).toEqual(['idempotency_key', 'url']);
     const body = outcome.body as Record<string, unknown>;
     expect(body.operation).toBe('web.read');
     expect(body.metered).toBe(true);
@@ -194,22 +209,32 @@ describe('web read (POST /v1/web/read)', () => {
     expect(calls.length).toBe(0);
   });
 
-  test('unreadable-page typed error passes through (unprocessable lane)', async () => {
-    const { base } = serve(
+  test('502 web_read_failed is terminal: one request, no transport retry, retryable false', async () => {
+    const { base, calls } = serve(
       () =>
         new Response(
           JSON.stringify({
-            error: { type: 'unprocessable', code: 'unreadable_page', message: 'Could not extract content.' },
+            error: { type: 'upstream_error', code: 'web_read_failed', message: 'The page could not be fetched.' },
           }),
-          { status: 422, headers: { 'Content-Type': 'application/json' } },
+          { status: 502, headers: { 'Content-Type': 'application/json' } },
         ),
     );
     try {
       await performWebRead(client(base), 'https://example.com');
       expect.unreachable();
     } catch (err) {
-      expect((err as CliError).fields.code).toBe('unreadable_page');
-      expect((err as CliError).fields.type).toBe('unprocessable');
+      expect((err as CliError).fields.code).toBe('web_read_failed');
+      expect((err as CliError).fields.retryable).toBe(false);
     }
+    // Content failure, not a server fault — the client must not have burned transport retries.
+    expect(calls.length).toBe(1);
+  });
+
+  test('empty content_markdown gets a signal line instead of silence', async () => {
+    const { base } = serve(() =>
+      Response.json({ url: 'https://example.com', title: 'T', content_markdown: '', links: [], usage: RECEIPT }),
+    );
+    const lines = humanLines(await performWebRead(client(base), 'https://example.com'));
+    expect(lines[1]).toBe('(page had no extractable content)');
   });
 });

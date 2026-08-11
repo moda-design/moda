@@ -1,7 +1,8 @@
 /**
  * `moda site` unit lane: mock HTTP server + the exported perform* helpers, locking the settled
  * website contract — POST/GET /v1/websites, PUT .../content (no auto-republish), POST
- * .../publish (slug_prefix, review_status), POST .../unpublish, DELETE.
+ * .../publish (slug_prefix, review_status), POST .../unpublish, DELETE — plus the
+ * destructive-verb --yes gate.
  */
 import { afterEach, describe, expect, test } from 'bun:test';
 import { ApiClient } from '../src/api/client.ts';
@@ -9,10 +10,13 @@ import { CliError } from '../src/cliError.ts';
 import {
   parseSiteId,
   performSiteCreate,
+  performSiteDelete,
   performSiteList,
   performSitePublish,
   performSiteSetContent,
   performSiteShow,
+  performSiteUnpublish,
+  requireYes,
 } from '../src/commands/site.ts';
 
 const SITE_ID = '3f2b7a10-9c4d-4e8f-b1a2-5d6e7f809012';
@@ -96,6 +100,23 @@ describe('parseSiteId', () => {
   });
 });
 
+describe('requireYes (destructive-verb gate, canvas delete parity)', () => {
+  test('--json/--no-input without --yes is a usage error naming --yes', () => {
+    try {
+      requireYes('Deleting a site', true, false);
+      expect.unreachable();
+    } catch (err) {
+      expect((err as CliError).fields.code).toBe('usage');
+      expect((err as CliError).fields.message).toContain('--yes');
+    }
+  });
+
+  test('--yes passes; interactive mode passes without --yes', () => {
+    expect(() => requireYes('Deleting a site', true, true)).not.toThrow();
+    expect(() => requireYes('Deleting a site', false, false)).not.toThrow();
+  });
+});
+
 describe('site create (POST /v1/websites)', () => {
   test('sends {html, title} plus the injected idempotency_key; envelope + publish hint', async () => {
     const { base, calls } = serve(() => Response.json({ operation: 'websites.create', website: website() }));
@@ -112,6 +133,12 @@ describe('site create (POST /v1/websites)', () => {
     const lines = humanLines(outcome);
     expect(lines[0]).toContain(SITE_ID);
     expect(lines[1]).toBe(`publish it: moda site publish ${SITE_ID}`);
+  });
+
+  test('keyed replay is announced', async () => {
+    const { base } = serve(() => Response.json({ operation: 'websites.create', website: website(), replayed: true }));
+    const lines = humanLines(await performSiteCreate(client(base), { html: '<html>x</html>' }));
+    expect(lines[1]).toBe('(replayed — this site already existed)');
   });
 
   test('empty HTML is a local usage error — no request', async () => {
@@ -150,7 +177,7 @@ describe('site list (GET /v1/websites)', () => {
 });
 
 describe('site show (GET /v1/websites/{id})', () => {
-  test('fetches by UUID and surfaces a non-approved review status', async () => {
+  test('a pending_review site is never rendered as live', async () => {
     const { base, calls } = serve(() =>
       Response.json({
         website: website({ is_published: true, url: 'https://launch-x1.moda.page', review_status: 'pending_review' }),
@@ -159,8 +186,18 @@ describe('site show (GET /v1/websites/{id})', () => {
     const outcome = await performSiteShow(client(base), SITE_ID);
     expect(calls[0]?.path).toBe(`/v1/websites/${SITE_ID}`);
     const lines = humanLines(outcome);
-    expect(lines[0]).toContain('live at');
-    expect(lines[1]).toBe('review_status: pending_review');
+    expect(lines[0]).toContain('published (held for review) — https://launch-x1.moda.page goes live once approved');
+    expect(lines[0]).not.toContain('live at');
+  });
+
+  test('an approved live site renders as live', async () => {
+    const { base } = serve(() =>
+      Response.json({
+        website: website({ is_published: true, url: 'https://launch-x1.moda.page', review_status: 'approved' }),
+      }),
+    );
+    const lines = humanLines(await performSiteShow(client(base), SITE_ID));
+    expect(lines[0]).toContain('live at https://launch-x1.moda.page');
   });
 });
 
@@ -187,25 +224,13 @@ describe('site set-content (PUT /v1/websites/{id}/content)', () => {
     expect(lines.length).toBe(1);
   });
 
-  test('version conflict passes through typed (409 website_version_conflict)', async () => {
-    const { base } = serve(
-      () =>
-        new Response(
-          JSON.stringify({ error: { type: 'conflict', code: 'website_version_conflict', message: 'Stale base version.' } }),
-          { status: 409, headers: { 'Content-Type': 'application/json' } },
-        ),
-    );
-    try {
-      await performSiteSetContent(client(base), SITE_ID, { html: '<html>x</html>' });
-      expect.unreachable();
-    } catch (err) {
-      expect((err as CliError).fields.code).toBe('website_version_conflict');
-    }
-  });
+  // NOTE: a set-content conflict case is deliberately absent — what (if anything) the contract
+  // returns for a concurrent-save conflict is an open backend question (publish sends no
+  // version); add the case when that answer lands.
 });
 
 describe('site publish (POST /v1/websites/{id}/publish)', () => {
-  test('publishes with an empty body by default and prints the live URL prominently', async () => {
+  test('publishes with an empty body by default; prints the live URL; serving=true when approved', async () => {
     const { base, calls } = serve(() =>
       Response.json({
         operation: 'websites.publish',
@@ -223,10 +248,11 @@ describe('site publish (POST /v1/websites/{id}/publish)', () => {
     const body = outcome.body as Record<string, unknown>;
     expect(body.operation).toBe('site.publish');
     expect(body.url).toBe('https://launch-x1.moda.page');
+    expect(body.serving).toBe(true);
     expect(humanLines(outcome)[0]).toBe('site.publish: live at https://launch-x1.moda.page');
   });
 
-  test('--slug travels as slug_prefix; pending_review is stated honestly; warnings surface', async () => {
+  test('--slug travels as slug_prefix; pending_review stated honestly (serving=false); warnings surface', async () => {
     const { base, calls } = serve(() =>
       Response.json({
         operation: 'websites.publish',
@@ -238,28 +264,88 @@ describe('site publish (POST /v1/websites/{id}/publish)', () => {
         warnings: ['an embed origin was stripped'],
       }),
     );
-    const lines = humanLines(await performSitePublish(client(base), SITE_ID, 'launch'));
+    const outcome = await performSitePublish(client(base), SITE_ID, 'launch');
+    const lines = humanLines(outcome);
     expect(calls[0]?.body).toEqual({ slug_prefix: 'launch' });
+    expect((outcome.body as Record<string, unknown>).serving).toBe(false);
     expect(lines[0]).toBe(
       'site.publish: published, but held for review before serving — https://launch-x1.moda.page goes live once approved',
     );
     expect(lines[1]).toBe('warning: an embed origin was stripped');
   });
 
-  test('slug_taken passes through typed', async () => {
+  test('slug_taken is a 400 usage-class error, not retryable', async () => {
     const { base } = serve(
       () =>
-        new Response(JSON.stringify({ error: { type: 'conflict', code: 'slug_taken', message: 'Slug is taken.' } }), {
-          status: 409,
-          headers: { 'Content-Type': 'application/json' },
-        }),
+        new Response(
+          JSON.stringify({ error: { type: 'invalid_request', code: 'slug_taken', message: 'Slug is taken.' } }),
+          { status: 400, headers: { 'Content-Type': 'application/json' } },
+        ),
     );
     try {
       await performSitePublish(client(base), SITE_ID, 'launch');
       expect.unreachable();
     } catch (err) {
       expect((err as CliError).fields.code).toBe('slug_taken');
-      expect((err as CliError).fields.type).toBe('conflict');
+      expect((err as CliError).fields.type).toBe('invalid_request');
+      expect((err as CliError).fields.retryable).toBe(false);
     }
+  });
+
+  test('website_already_published passes through typed (409)', async () => {
+    const { base } = serve(
+      () =>
+        new Response(
+          JSON.stringify({
+            error: { type: 'conflict', code: 'website_already_published', message: 'Already published.' },
+          }),
+          { status: 409, headers: { 'Content-Type': 'application/json' } },
+        ),
+    );
+    try {
+      await performSitePublish(client(base), SITE_ID, undefined);
+      expect.unreachable();
+    } catch (err) {
+      expect((err as CliError).fields.code).toBe('website_already_published');
+    }
+  });
+});
+
+describe('site unpublish / delete', () => {
+  test('unpublish POSTs and reports the slug down', async () => {
+    const { base, calls } = serve(() =>
+      Response.json({ operation: 'websites.unpublish', is_live: false, slug: 'launch-x1', unpublished_at: '2026-08-11T02:00:00Z' }),
+    );
+    const outcome = await performSiteUnpublish(client(base), SITE_ID);
+    expect(calls[0]?.method).toBe('POST');
+    expect(calls[0]?.path).toBe(`/v1/websites/${SITE_ID}/unpublish`);
+    expect((outcome.body as Record<string, unknown>).operation).toBe('site.unpublish');
+    expect(humanLines(outcome)[0]).toBe('site.unpublish: launch-x1 is no longer live');
+  });
+
+  test('unpublish with no live site passes through typed (404 no_active_published_site)', async () => {
+    const { base } = serve(
+      () =>
+        new Response(
+          JSON.stringify({ error: { type: 'not_found', code: 'no_active_published_site', message: 'Nothing is live.' } }),
+          { status: 404, headers: { 'Content-Type': 'application/json' } },
+        ),
+    );
+    try {
+      await performSiteUnpublish(client(base), SITE_ID);
+      expect.unreachable();
+    } catch (err) {
+      expect((err as CliError).fields.code).toBe('no_active_published_site');
+      expect((err as CliError).fields.type).toBe('not_found');
+    }
+  });
+
+  test('delete sends DELETE and confirms', async () => {
+    const { base, calls } = serve(() => Response.json({ operation: 'websites.delete', deleted: true, id: SITE_ID }));
+    const outcome = await performSiteDelete(client(base), SITE_ID);
+    expect(calls[0]?.method).toBe('DELETE');
+    expect(calls[0]?.path).toBe(`/v1/websites/${SITE_ID}`);
+    expect((outcome.body as Record<string, unknown>).deleted).toBe(true);
+    expect(humanLines(outcome)[0]).toBe(`site.delete: ${SITE_ID} deleted`);
   });
 });

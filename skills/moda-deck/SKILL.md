@@ -66,9 +66,10 @@ allowed-tools: Bash(moda:*), Read, Glob, Grep
 - Never delete or regenerate an image because a screenshot report listed it
   under `failedAssets`/`pendingAssets` — that state is transient; re-capture.
 - Deterministic verbs are unmetered and report zero usage. `moda task start`
-  (Omni) and `moda media *` are metered: they print a cost class before
-  running and a receipt after. Surface the cost class to the user before
-  invoking a metered verb; never treat them as an invisible fallback.
+  (Omni), `moda media *`, and `moda web *` are metered: they print a cost
+  class before running and a receipt after. Surface the cost class to the
+  user before invoking a metered verb; never treat them as an invisible
+  fallback.
 - A cost class on a metered verb is a NOTIFICATION, not a permission request.
   In a non-interactive run, never end your turn on a question — state your
   assumption in one line and proceed.

@@ -86,9 +86,14 @@ export async function performWebSearch(client: ApiClient, opts: WebSearchOptions
     ...(opts.results !== undefined ? { num_results: opts.results } : {}),
     ...(opts.fullText === true ? { include_text: true } : {}),
   };
-  // The contract accepts an optional in-body idempotency_key on both web verbs; the CLI omits
-  // it deliberately — these are reads over POST, and a retried search re-running is correct.
-  const response = await client.request({ method: 'POST', path: endpoints.webSearch(), body: payload });
+  // Metered verb: carry the standard derived idempotency key (contract-supported in-body
+  // idempotency_key) so a transport-retried POST replays instead of re-billing.
+  const response = await client.request({
+    method: 'POST',
+    path: endpoints.webSearch(),
+    body: payload,
+    idempotency: { command: 'web search', canvas: '', expectedRevision: undefined, payload: JSON.stringify(payload) },
+  });
   const root = asObject(response.body);
   const results = Array.isArray(root.results) ? root.results.map(asObject) : [];
   return {
@@ -108,7 +113,9 @@ export async function performWebSearch(client: ApiClient, opts: WebSearchOptions
         write(`${index + 1}. ${title} — ${url}${published !== undefined ? ` (${published})` : ''}`);
         const snippet = str(result, 'snippet');
         if (snippet !== undefined && snippet.length > 0) write(`   ${snippet.replace(/\s+/g, ' ').trim()}`);
-        if (str(result, 'text') !== undefined) write('   [full text captured — read it with --json]');
+        // The text is already in THIS response's JSON body — never suggest a paid re-run.
+        const text = str(result, 'text');
+        if (text !== undefined) write(`   [full text captured in this response: ${text.length} chars]`);
       });
     },
     exitCode: EXIT_OK,
@@ -121,7 +128,12 @@ export async function performWebRead(client: ApiClient, url: string): Promise<Co
     throw CliError.usage(`'${url}' is not an http(s) URL.`);
   }
   const payload = { url: target };
-  const response = await client.request({ method: 'POST', path: endpoints.webRead(), body: payload });
+  const response = await client.request({
+    method: 'POST',
+    path: endpoints.webRead(),
+    body: payload,
+    idempotency: { command: 'web read', canvas: '', expectedRevision: undefined, payload: JSON.stringify(payload) },
+  });
   const root = asObject(response.body);
   return {
     body: {
@@ -135,7 +147,8 @@ export async function performWebRead(client: ApiClient, url: string): Promise<Co
       const title = str(root, 'title');
       write(`web.read: ${title !== undefined ? `"${title}" — ` : ''}${str(root, 'url') ?? target} (metered)`);
       const markdown = str(root, 'content_markdown');
-      if (markdown !== undefined) write(markdown);
+      if (markdown !== undefined && markdown.length > 0) write(markdown);
+      else write('(page had no extractable content)');
     },
     exitCode: EXIT_OK,
   };

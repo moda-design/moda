@@ -725,7 +725,7 @@
     },
     {
       "name": "site delete",
-      "description": "delete the site (takes down any live publish)",
+      "description": "delete the site — destructive; the slug enters cooldown (requires --yes under --json/--no-input)",
       "flags": [
         "--api-base",
         "--json",
@@ -733,7 +733,8 @@
         "--no-retry",
         "--org",
         "--quiet",
-        "--timeout"
+        "--timeout",
+        "--yes"
       ]
     },
     {
@@ -795,7 +796,7 @@
     },
     {
       "name": "site unpublish",
-      "description": "take the live site down",
+      "description": "take the live site down (requires --yes under --json/--no-input)",
       "flags": [
         "--api-base",
         "--json",
@@ -803,7 +804,8 @@
         "--no-retry",
         "--org",
         "--quiet",
-        "--timeout"
+        "--timeout",
+        "--yes"
       ]
     },
     {
