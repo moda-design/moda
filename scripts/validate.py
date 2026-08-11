@@ -357,6 +357,21 @@ def check_payload_paths() -> None:
             fail(rel, f"manifest does not ship: {sorted(missing)}")
 
 
+def check_install_block() -> None:
+    """The README paste block's install sequence is EXTRACTED from step0's canonical pinned
+    block, never forked — each of step0's three backticked install lines must appear verbatim
+    in the README, so the two cannot drift."""
+    step0 = read(ROOT / "shared" / "step0.md")
+    readme = read(ROOT / "README.md")
+    cmds = [m for m in re.findall(r"`([^`\n]+)`", step0)
+            if m.startswith(("gh release download", "grep moda-", "install -m 755"))]
+    if len(cmds) != 3:
+        fail("shared/step0.md", f"expected the 3-line pinned install sequence, found {len(cmds)}")
+    for cmd in cmds:
+        if cmd not in readme:
+            fail("README.md", f"install line diverges from step0's canonical block: '{cmd}'")
+
+
 def check_manifests() -> None:
     names = set()
     for rel in [".claude-plugin/marketplace.json", ".claude-plugin/plugin.json",
@@ -386,6 +401,7 @@ def main() -> int:
     check_markup_elements()
     check_budgets()
     check_payload_paths()
+    check_install_block()
     check_manifests()
     if findings:
         print(f"FAIL — {len(findings)} finding(s):")

@@ -9,10 +9,17 @@ import { CLI_VERSION, platformArch } from './version.ts';
 
 export const RELEASES_REPO = 'moda-design/moda';
 
+/**
+ * The platform-resolved form of the canonical checksummed install sequence (shared/step0.md +
+ * the README paste block carry the placeholder form; validate.py pins those two together).
+ */
 export function pinnedInstallCommand(): string {
+  const artifact = `moda-${platformArch()}`;
+  const check = process.platform === 'darwin' ? 'shasum -a 256 -c -' : 'sha256sum -c -';
   return (
-    `gh release download --repo ${RELEASES_REPO} -p moda-${platformArch()} -O ~/.local/bin/moda` +
-    ' && chmod +x ~/.local/bin/moda'
+    `gh release download --repo ${RELEASES_REPO} -p ${artifact} -p SHA256SUMS && ` +
+    `grep ${artifact} SHA256SUMS | ${check} && ` +
+    `install -m 755 ${artifact} ~/.local/bin/moda && rm ${artifact} SHA256SUMS`
   );
 }
 
