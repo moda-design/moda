@@ -1,6 +1,7 @@
 ---
 name: moda-brand
-description: Fetch, create, and apply Moda brand kits so every design is
+description: >-
+  Fetch, create, and apply Moda brand kits so every design is
   on-brand. Use when the user says on-brand, brand kit, brand colors/fonts/logo,
   "use our brand", "match our site", rebrand, or wants a brand kit created from
   a website URL, or wants an existing canvas audited against the brand. Reads

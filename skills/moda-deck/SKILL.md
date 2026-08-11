@@ -1,6 +1,6 @@
 ---
 name: moda-deck
-description:
+description: >-
   Create a real, editable slide deck on Moda from a brief, a document,
   or the current repo. Use when the user asks for a deck, slides, a presentation,
   pitch deck, keynote, QBR, board update, sales/client deck, launch deck, or

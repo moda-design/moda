@@ -1,6 +1,7 @@
 ---
 name: moda-one-pager
-description: Design a one-pager, PDF report, handout, flyer, or printable
+description: >-
+  Design a one-pager, PDF report, handout, flyer, or printable
   document on Moda. Use when the user asks for a one-pager, single-page summary,
   PDF, report, brief, handout, fact sheet, leave-behind, or "make this
   markdown/README look designed". Produces a designed US-Letter (or A4) page on

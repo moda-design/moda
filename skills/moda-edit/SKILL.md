@@ -1,6 +1,7 @@
 ---
 name: moda-edit
-description: Make precise edits to an existing Moda canvas from its URL or share
+description: >-
+  Make precise edits to an existing Moda canvas from its URL or share
   link — reword or restyle text, recolor, realign, resize, swap an image, add or
   delete a section, fix a slide someone touched in the editor. Use when the user
   pastes a moda.app canvas or share URL (or a cvs_ id) and asks for changes, or
