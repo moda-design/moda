@@ -1,6 +1,11 @@
 {
   "name": "moda",
   "version": "0.1.0",
-  "description": "Moda for Agents skills for Cursor.",
-  "skills_dir": "skills"
+  "description": "Design on Moda from your agent: editable decks, one-pager PDFs, brand kits, and precise canvas edits — native PPTX/PDF exports from a live, collaborative canvas.",
+  "skills": [
+    "skills/moda-deck",
+    "skills/moda-one-pager",
+    "skills/moda-brand",
+    "skills/moda-edit"
+  ]
 }

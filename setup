@@ -1,26 +1,52 @@
 #!/bin/sh
-# moda skills drop for file-based harnesses (Codex and friends).
-# Copies skills/ into ~/.agents/skills/ and PRINTS the pinned CLI install command.
-# It NEVER installs, updates, or downloads the CLI itself — no curl|sh, no sudo, no silent
-# installs (skills-and-distribution discipline; ruling 13 pins the dogfood channel).
+# Moda skills installer (private dogfood).
+# Copies the skill directories into the harness locations it can detect and
+# PRINTS the pinned moda-CLI install command. It never installs the CLI,
+# never pipes curl to sh, never uses sudo.
 set -eu
+cd "$(dirname "$0")"
 
-REPO_DIR="$(cd "$(dirname "$0")" && pwd)"
-TARGET="${AGENTS_SKILLS_DIR:-$HOME/.agents/skills}"
+SKILLS="moda-deck moda-one-pager moda-brand moda-edit"
+installed=""
 
-if [ -d "$REPO_DIR/skills" ]; then
-  mkdir -p "$TARGET"
-  for skill in "$REPO_DIR"/skills/*/; do
-    [ -d "$skill" ] || continue
-    name="$(basename "$skill")"
-    rm -rf "$TARGET/$name"
-    cp -R "$skill" "$TARGET/$name"
-    echo "installed skill: $name -> $TARGET/$name"
+copy_into() {
+  dest="$1"
+  mkdir -p "$dest"
+  for s in $SKILLS; do
+    rm -rf "$dest/$s"
+    cp -R "skills/$s" "$dest/$s"
   done
-else
-  echo "note: skills/ not present in this checkout yet (lands with the skills slice)."
+  installed="$installed $dest"
+}
+
+# Codex and other SKILL.md-native harnesses
+if [ -d "$HOME/.agents" ] || command -v codex >/dev/null 2>&1; then
+  copy_into "$HOME/.agents/skills"
 fi
 
+# Claude Code personal skills dir (plugin marketplace is the preferred path)
+if [ -d "$HOME/.claude" ]; then
+  copy_into "$HOME/.claude/skills"
+fi
+
+# Cursor
+if [ -d "$HOME/.cursor" ]; then
+  copy_into "$HOME/.cursor/skills"
+fi
+
+if [ -z "$installed" ]; then
+  copy_into "$HOME/.agents/skills"
+fi
+
+echo "Skills installed to:$installed"
+echo
+echo "Claude Code users: prefer the marketplace instead of this copy:"
+echo "  /plugin marketplace add moda-design/moda && /plugin install moda@moda"
+echo
+
+# Release artifacts are named moda-<platform>-<arch> with Node/Bun platform-arch
+# spelling (moda-linux-x64, moda-darwin-arm64, ...) plus a SHA256SUMS file —
+# see scripts/build.ts and scripts/release.ts. Map uname output accordingly.
 PLATFORM="$(uname -s | tr '[:upper:]' '[:lower:]')"
 ARCH="$(uname -m)"
 case "$ARCH" in
@@ -31,11 +57,11 @@ esac
 if command -v moda >/dev/null 2>&1; then
   echo "moda CLI found: $(command -v moda)"
 else
-  echo ""
-  echo "The moda CLI is not installed. Install it yourself with the pinned command"
+  echo "Now install the moda CLI yourself (this script never will). Pinned command"
   echo "(requires gh auth to the private moda-design/moda repo during dogfood):"
-  echo ""
+  echo
   echo "  gh release download --repo moda-design/moda -p moda-${PLATFORM}-${ARCH} -O ~/.local/bin/moda && chmod +x ~/.local/bin/moda"
-  echo ""
-  echo "This script never installs binaries on your behalf."
+  echo
+  echo "To verify checksums first, use the download flow in INSTALL.md section 2."
+  echo "Then run: moda doctor"
 fi

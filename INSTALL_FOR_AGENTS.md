@@ -1,40 +1,29 @@
-# Install Moda for Agents (dogfood variant)
+# Set yourself up to design with Moda (agent instructions — private dogfood)
 
-> Private-repo dogfood edition. The public variant (npm/brew install lines, served at
-> moda.app/agents.md) replaces this at publish. You need git/`gh` credentials that can read
-> `moda-design/moda`.
+You are an agent. Follow these steps exactly. You never install or update
+software yourself in this flow — where a step needs an install, you show the
+user the pinned command and WAIT for them to run it.
 
-## 1. Install the CLI (pinned command — never `curl | sh`, never sudo)
+1. **Detect your harness.**
+   - Claude Code → tell the user to run:
+     `/plugin marketplace add moda-design/moda` then `/plugin install moda@moda`
+   - Codex CLI / Cursor / other shell-capable harness → tell the user to run:
+     `npx skills add moda-design/moda`
+     (fallback: `git clone git@github.com:moda-design/moda && cd moda && ./setup`)
+   - No shell available → stop: the dogfood build is CLI-lane only. Tell the
+     user a hosted connector lane arrives at publish.
+   This repo is private — the commands rely on the user's own GitHub auth.
 
-```sh
-gh release download --repo moda-design/moda -p moda-$(uname -s | tr '[:upper:]' '[:lower:]')-$(uname -m | sed 's/x86_64/x64/; s/aarch64/arm64/') -O ~/.local/bin/moda && chmod +x ~/.local/bin/moda
-```
+2. **Check the CLI.** Run `moda doctor --json`.
+   - `moda` missing or below the compatibility floor: STOP and show the user
+     the pinned install command from INSTALL.md section 2 (verbatim). Wait
+     for "done", then re-run doctor. Never pipe curl to sh, never use sudo,
+     never install anything yourself.
+   - `authenticated: false`: tell the user to run `moda auth login`
+     (browser key mint; `--paste` on headless boxes). Wait, then re-check.
+     Never ask for, print, or handle keys.
 
-Verify: `moda version` then `moda doctor --json`.
-
-## 2. Install the skills
-
-- **Claude Code**: `/plugin marketplace add moda-design/moda` then `/plugin install moda@moda`.
-- **Codex / anything file-based**: `git clone git@github.com:moda-design/moda && cd moda && ./setup`
-  (drops `skills/` into `~/.agents/skills/`; prints — never runs — the CLI install command).
-
-## 3. Authenticate
-
-- Interactive: `moda auth login` (browser key-mint → localhost callback → OS keychain).
-- Headless/CI: set `MODA_API_KEY` (mint a scoped key in the Moda app). No verb ever prints a
-  credential.
-
-## 4. Smoke test
-
-```sh
-moda canvas create --name "hello" --json
-moda canvas markup <ref> --file - <<'XML'
-<content><text font-size="64">Hello from your agent</text></content>
-XML
-moda canvas screenshot <ref> -o hello.png
-moda canvas share <ref>
-```
-
-Notes: exit 0 always means the mutation committed (`requires_repair: true` = committed but
-needs a follow-up fix — never re-run the same command). `moda docs workflow` prints the full
-loop offline.
+3. **Finish with an artifact, not a config confirmation.** Make a one-pager
+   from whatever context is at hand (the current repo's README, a file the
+   user names) using the moda-one-pager skill, and end by printing the canvas
+   URL and the exported PDF path.
