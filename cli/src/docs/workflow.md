@@ -14,6 +14,21 @@ The deterministic loop (unmetered; `usage.metered_credits: 0` on every response)
    editable shapes in PPTX.
 9. `moda canvas share CVS` — the live collaborative URL.
 
+Screenshot sugar: the mutation verbs (`moda canvas markup` / `moda canvas edit` /
+`moda canvas add-pages`) accept `--screenshot PATH`. After the commit, the CLI immediately runs
+the standalone capture for the touched page(s) — the markup/edit `--page` target, or the pages
+add-pages created — and writes the file(s) exactly like `moda canvas screenshot -o PATH`
+(single page = file, several = directory; auto-batching included). One command instead of two
+when a screenshot is your next step anyway. Under `--json` the capture rides the mutation
+document as `screenshot: {ok, pages[], truncated?, capture_calls?}`. A capture failure never
+changes the mutation's exit code (the mutation committed): it surfaces on stderr and as
+`screenshot.ok: false` — re-run `moda canvas screenshot` to retry the capture alone.
+
+Reasoning effort: deterministic design authoring does not need maximum reasoning effort. If
+your harness exposes an effort/thinking control, moderate settings are usually sufficient for
+markup authoring and make the loop noticeably faster; screenshots remain the quality arbiter —
+judge results with your eyes on the rendered pixels, not with longer deliberation.
+
 Exit-code contract: exit 0 = the operation COMMITTED (including committed-but-imperfect,
 which sets `requires_repair: true` — author a follow-up fix, never re-run). Nonzero =
 did not commit: 2 invalid input, 3 auth/scope, 4 not found, 5 conflict (busy canvas /
