@@ -20,8 +20,9 @@ const SEMANTICS: Record<string, VerbSemantics> = {
   'canvas rename': { mutating: true },
   'canvas share': { mutating: true },
   'canvas delete': { mutating: true },
-  // The pinnable-revision read lane
+  // The pinnable-revision read lane (lint refreshes the cached revision too)
   'canvas read': { read_lane: true },
+  'canvas lint': { read_lane: true },
   // Files / brand
   'file upload': { mutating: true },
   'brand create': { mutating: true },
@@ -41,6 +42,49 @@ const SEMANTICS: Record<string, VerbSemantics> = {
   'web read': { metered: true },
   'task start': { metered: true, mutating: true },
   'task cancel': { mutating: true },
+  // Pure reads / local-state / meta verbs — explicitly classified as marker-free so that a
+  // NEWLY REGISTERED verb fails the build until someone classifies it (see the leaf sweep).
+  'account costs': {},
+  'account status': {},
+  'account usage': {},
+  'auth login': {},
+  'auth logout': {},
+  'auth status': {},
+  'brand list': {},
+  'brand pull': {},
+  'brand show': {},
+  'brand use': {},
+  'canvas list': {},
+  'canvas open': {},
+  'canvas screenshot': {},
+  'canvas search': {},
+  'canvas show': {},
+  'completion': {},
+  'context clear': {},
+  'context set': {},
+  'context show': {},
+  'describe': {},
+  'docs': {},
+  'doctor': {},
+  'export': {},
+  'file download': {},
+  'file list': {},
+  'file search': {},
+  'file show': {},
+  'folder create': {},
+  'folder list': {},
+  'last-error': {},
+  'media models': {},
+  'media upscale-video': {},
+  'org current': {},
+  'org list': {},
+  'org use': {},
+  'site list': {},
+  'site show': {},
+  'task list': {},
+  'task status': {},
+  'update': {},
+  'version': {},
 };
 
 function resolveCommand(program: Command, path: string): Command | undefined {
@@ -51,7 +95,23 @@ function resolveCommand(program: Command, path: string): Command | undefined {
   return current;
 }
 
-/** Apply the marker table onto the built program; throws on any entry that no longer resolves. */
+function leafPaths(program: Command, prefix: string): string[] {
+  const out: string[] = [];
+  for (const sub of program.commands) {
+    const name = sub.name();
+    if (name.startsWith('__')) continue;
+    const full = prefix.length > 0 ? `${prefix} ${name}` : name;
+    if (sub.commands.length > 0) out.push(...leafPaths(sub, full));
+    else out.push(full);
+  }
+  return out;
+}
+
+/**
+ * Apply the marker table onto the built program. Self-checking in BOTH directions: an entry
+ * naming a removed verb throws, and a registered leaf verb with no entry throws — a newly
+ * added verb fails the build until someone classifies it (explicit {} for a pure read).
+ */
 export function applyVerbSemantics(program: Command): void {
   for (const [path, semantics] of Object.entries(SEMANTICS)) {
     const cmd = resolveCommand(program, path);
@@ -59,5 +119,11 @@ export function applyVerbSemantics(program: Command): void {
       throw new Error(`verbSemantics: entry '${path}' matches no registered command — update the table`);
     }
     tagVerb(cmd, semantics);
+  }
+  const unclassified = leafPaths(program, '').filter((path) => !(path in SEMANTICS));
+  if (unclassified.length > 0) {
+    throw new Error(
+      `verbSemantics: unclassified verb(s): ${unclassified.join(', ')} — add table entries ({} for a pure read)`,
+    );
   }
 }

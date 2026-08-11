@@ -1225,7 +1225,7 @@
         "mutating": false,
         "destructive": false,
         "metered": false,
-        "read_lane": false
+        "read_lane": true
       }
     },
     {

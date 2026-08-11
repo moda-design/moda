@@ -73,6 +73,10 @@ ride alongside them additively:
   flags with type/required/default, and the semantic markers `mutating`,
   `destructive`, `metered`, `read_lane`); `moda describe <verb> --json`
   returns one verb in full. Part of this versioned surface.
+- Marker legend: the markers cover state change (`mutating`), credit spend
+  (`metered`), and irreversibility (`destructive`) only. `site publish`
+  additionally makes content publicly reachable — there is no separate
+  public-exposure marker (revisit if a second such verb appears).
 - Big-result routing: `--output FILE` on `canvas read`, `task list`, and
   `web read` writes the full payload to the file and shrinks the stdout
   envelope to summary fields + `output`/`bytes` + a bounded `preview`.

@@ -206,7 +206,11 @@ export function registerTask(program: Command): void {
       });
       if (typeof opts.output === 'string') {
         const root = asObject(response.body);
-        const tasks = (Array.isArray(response.body) ? (response.body as unknown[]) : (root.tasks as unknown[] | undefined)) ?? [];
+        const tasks = Array.isArray(response.body)
+          ? (response.body as unknown[])
+          : Array.isArray(root.tasks)
+            ? (root.tasks as unknown[])
+            : [];
         const written = writeResultFile(opts.output, { ok: true, operation: 'task.list', ...root });
         const preview = tasks.slice(0, PREVIEW_ITEMS).map((task) => {
           const obj = asObject(task);

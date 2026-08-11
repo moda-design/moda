@@ -7,6 +7,7 @@ import { mkdtempSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { ApiClient } from '../src/api/client.ts';
+import { CliError } from '../src/cliError.ts';
 import { performWebRead } from '../src/commands/web.ts';
 import { PREVIEW_CHARS } from '../src/output/resultFile.ts';
 
@@ -126,6 +127,72 @@ describe('--output big-result routing', () => {
     const onDisk = JSON.parse(readFileSync(out, 'utf8')) as Record<string, unknown>;
     expect(onDisk.content_markdown).toBe(markdown);
     expect((onDisk.usage as Record<string, unknown>).class).toBe('metered');
+  });
+
+  test('--output is NOT part of the idempotency key: identical reads replay regardless of path', async () => {
+    // Written down as a tested property: the derived key hashes only {url}, so a re-run after a
+    // local write failure replays the billed read at no extra charge.
+    const bodies: Array<Record<string, unknown>> = [];
+    const { base } = serve(async (req) => {
+      bodies.push((await req.json()) as Record<string, unknown>);
+      return Response.json({ url: 'https://example.com', content_markdown: 'x', links: [], usage: {} });
+    });
+    const client = new ApiClient({
+      apiBase: base,
+      apiKey: 'moda_live_testkey000000',
+      sleeper: async () => {},
+      env: { MODA_STATE_DIR: '/tmp/moda-proto-idem' },
+    });
+    const dir = mkdtempSync(join(tmpdir(), 'moda-proto-key-'));
+    await performWebRead(client, 'https://example.com', { output: join(dir, 'a.json') });
+    await performWebRead(client, 'https://example.com', { output: join(dir, 'b.json') });
+    await performWebRead(client, 'https://example.com');
+    expect(bodies[0]?.idempotency_key).toBeDefined();
+    expect(bodies[1]?.idempotency_key).toBe(bodies[0]?.idempotency_key as string);
+    expect(bodies[2]?.idempotency_key).toBe(bodies[0]?.idempotency_key as string);
+  });
+
+  test('--output files are redacted on disk (signed URLs, keys) — the PR#4 bug-class guard', async () => {
+    const { base } = serve(() =>
+      Response.json({
+        url: 'https://example.com',
+        content_markdown: 'key moda_live_deadbeef4321aa and https://cdn.example.com/a.png?Signature=TOPSECRET',
+        links: [],
+        usage: {},
+      }),
+    );
+    const client = new ApiClient({
+      apiBase: base,
+      apiKey: 'moda_live_testkey000000',
+      sleeper: async () => {},
+      env: { MODA_STATE_DIR: '/tmp/moda-proto-redact' },
+    });
+    const out = join(mkdtempSync(join(tmpdir(), 'moda-proto-redact-')), 'page.json');
+    await performWebRead(client, 'https://example.com', { output: out });
+    const raw = readFileSync(out, 'utf8');
+    expect(raw).not.toContain('moda_live_deadbeef4321aa');
+    expect(raw).not.toContain('TOPSECRET');
+    expect(raw).toContain('[REDACTED]');
+  });
+
+  test('an unwritable --output path fails in the io lane with the billed-replay hint', async () => {
+    const { base } = serve(() =>
+      Response.json({ url: 'https://example.com', content_markdown: 'x', links: [], usage: {} }),
+    );
+    const client = new ApiClient({
+      apiBase: base,
+      apiKey: 'moda_live_testkey000000',
+      sleeper: async () => {},
+      env: { MODA_STATE_DIR: '/tmp/moda-proto-io' },
+    });
+    try {
+      await performWebRead(client, 'https://example.com', { output: '/proc/1/nope/page.json' });
+      expect.unreachable();
+    } catch (err) {
+      const fields = (err as CliError).fields;
+      expect(fields.code).toBe('io_error');
+      expect(fields.hint).toContain('no extra charge');
+    }
   });
 
   test('canvas read --output: file parses, envelope carries revision + page preview, no DSL body', async () => {

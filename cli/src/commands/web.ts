@@ -146,7 +146,15 @@ export async function performWebRead(client: ApiClient, url: string, opts: WebRe
   });
   const root = asObject(response.body);
   if (opts.output !== undefined) {
-    const written = writeResultFile(opts.output, { ok: true, operation: 'web.read', metered: true, ...root });
+    const written = writeResultFile(
+      opts.output,
+      { ok: true, operation: 'web.read', metered: true, ...root },
+      {
+        failHint:
+          'Check the path and directory permissions — the read was billed, and re-running the identical ' +
+          'command replays it at no extra charge (the idempotency key covers only the URL, not --output).',
+      },
+    );
     const markdown = str(root, 'content_markdown') ?? '';
     const links = Array.isArray(root.links) ? root.links.length : 0;
     return {
