@@ -12,7 +12,7 @@ EOF
 ```
 
 - All operations go in ONE code payload; there is no second file.
-- `--screenshot PATH` captures the canvas's current page right after the commit — the same files as `moda canvas screenshot -o PATH`, in one invocation. An edit program can land on any page, and `--page` only scopes the read snapshot, so it never steers the capture; when the edit targeted another page, verify with the standalone `moda canvas screenshot`. A capture failure never changes the edit's exit code.
+- `--screenshot PATH` captures **every page the edit changed** right after the commit (the response's `changed_page_ids`; more than 3 pages auto-batches) — the same files as `moda canvas screenshot -o PATH`, in one invocation. An edit that changed no page (variable-only) falls back to the current page. `--page` only scopes the read snapshot and never steers the capture. A capture failure never changes the edit's exit code.
 - `--page` scopes only the read-only `nodes` snapshot to one page. It is NOT a destination.
 - **Ids:** reference nodes/pages by the **short ids** from your latest `moda canvas read` (e.g. `update('n7', …)`). The server resolves short refs to real ids for you. Real canvas ids you already hold also work (identity pass-through).
 - Writes accept `--revision` (defaulting to the CLI's cached last read). A write against a stale revision exits 5 with `STALE_REVISION` and commits nothing — re-read, then re-apply.
