@@ -36,6 +36,10 @@ allowed-tools: Bash(moda:*), Read, Glob, Grep
    credits (metered verbs spend them; deterministic authoring never does).
 3. Run `moda brand list`. If the account has at least one brand kit, on-brand
    is the default: read the kit before designing (see references/brand.md).
+   With several kits, use the one the listing marks as default unless the
+   user names another — never guess between clients' kits; ask if no default
+   exists and the choice is unclear. An explicit "no brand" from the user
+   wins over everything.
 
 ## UX rules
 
@@ -76,12 +80,16 @@ allowed-tools: Bash(moda:*), Read, Glob, Grep
    deck matches a known type, references/markup.md before any markup, and
    compute the type ladder for your canvas size per
    references/design-quality.md (1920×1080 → body ≈ 40px, floor 18px).
+   When a brand kit is in play, also LOOK at its assets before settling the
+   concept — references/brand.md "Look at the brand, not just the tokens".
 3. **Create**: `moda canvas create --name "…" --size 1920x1080 --pages 1
    --category slides` (brand application is client-side: `moda brand show`
    the kit and author with its tokens — create takes no brand flag), then
    `moda canvas add-pages CANVAS_REF --count N` for the remaining slides.
 4. **Author per slide** with `moda canvas markup CANVAS_REF --file - --page P`
-   in small batches — one slide per apply. Read every result: `requires_repair`
+   in small batches — one slide per apply (page short ids come from the
+   `add-pages` result or one `moda canvas read` — take them before the first
+   `--page` apply). Read every result: `requires_repair`
    or `operation_counts.skipped > 0` means fix before the next slide.
 5. **Verify**: `moda canvas lint` once per finished section (fix every
    error-severity finding); `moda canvas screenshot` at milestones and review

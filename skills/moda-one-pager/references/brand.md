@@ -13,14 +13,35 @@ moda brand create --url https://acme.com # extraction from a website — METERED
                                          # before, receipt after)
 ```
 
-`moda brand show --json` returns colors, font references, and logo **file references — never signed URLs**. Refs resolve server-side wherever you use them; never retype a URL or a hex you think you remember.
+`moda brand show --json` returns colors, fonts, and per-asset **two handles**: a durable `file_` reference and a signed, short-lived preview `url`. The `file_` ref is the only thing that ever goes into markup or media inputs — refs resolve server-side; never retype a URL or a hex you think you remember. The signed `url` is use-and-discard: download it to LOOK at the asset with your own vision, then discard it.
 
 ## Applying a kit (the deterministic lane)
 
 - **Colors:** the kit owns them. Use kit palette values (and canvas `$variables` seeded from them) — never re-type hex codes from memory. Prefer creating canvas variables for kit colors used in multiple places (`create('variable', …)` in edit code, then `$name` in markup) so a later brand change is one update.
 - **Fonts:** the kit's families are the font menu. There is no list-fonts verb — the kit (plus families already used on the canvas) defines what is safely available. Kit-listed fonts are loaded and safe to use as named; substitute only a font the kit explicitly marks unavailable, preferring its listed alternative.
+- **Voice:** the kit's `tagline`, `brand_values`, `brand_tone_of_voice`, and usage rules (all in `moda brand show --json`) govern copy. Read them before writing any headline or body text on a branded artifact — a visually on-brand deck with off-brand copy is still off-brand.
 - **Logos:** place by file reference from the kit (`<image src="ref" fit="contain"/>`), never re-hosted or retyped URLs. Check contrast against the background; kits often carry light/dark logo variants — pick the one that contrasts.
 - **Imagery:** kit assets outrank stock or generated imagery. Route per the order in references/design-quality.md.
+
+## Look at the brand, not just the tokens (mandatory for net-new design)
+
+Hex codes and font names don't tell you what the brand LOOKS like. Before the
+concept step of any net-new design that uses a kit — deck cover, one-pager,
+social — and before placing any logo:
+
+1. `moda brand pull BRAND_REF --output brand.json` and pull each logo group's
+   signed preview `url` (e.g. `jq '.brand_kit.logos'`).
+2. Download 2–3 of them (`curl -o /tmp/brand-logo-1.png "<url>"`) and VIEW the
+   files with your own vision. Note: mark vs wordmark, light/dark variants,
+   the logo's real colors, and the style of any brand imagery.
+3. Author with what you SAW: pick the variant that contrasts with your
+   background, and match imagery style to the kit's. Place assets by `file_`
+   ref only — the preview URLs never go into markup.
+
+Once per session per kit is enough. Skipping this is how wrong-logo-variant
+and off-brand-imagery output happens.
+
+Budget rule: `moda brand show --json` is the token read; use `pull` only when you need the preview URLs, extract the fields you need (`jq`), and never read the whole `brand.json` into context.
 
 ## Auditing a canvas against a kit ("check")
 

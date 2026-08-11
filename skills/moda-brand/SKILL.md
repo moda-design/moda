@@ -34,6 +34,10 @@ allowed-tools: Bash(moda:*), Read
    credits (metered verbs spend them; deterministic authoring never does).
 3. Run `moda brand list`. If the account has at least one brand kit, on-brand
    is the default: read the kit before designing (see references/brand.md).
+   With several kits, use the one the listing marks as default unless the
+   user names another — never guess between clients' kits; ask if no default
+   exists and the choice is unclear. An explicit "no brand" from the user
+   wins over everything.
 
 ## UX rules
 

@@ -35,6 +35,10 @@ allowed-tools: Bash(moda:*), Read
    credits (metered verbs spend them; deterministic authoring never does).
 3. Run `moda brand list`. If the account has at least one brand kit, on-brand
    is the default: read the kit before designing (see references/brand.md).
+   With several kits, use the one the listing marks as default unless the
+   user names another — never guess between clients' kits; ask if no default
+   exists and the choice is unclear. An explicit "no brand" from the user
+   wins over everything.
 
 ## UX rules
 
@@ -73,22 +77,31 @@ and repair before touching anything else. Any nonzero exit committed nothing;
 follow the typed hint. Never re-run a command that exited 0.
 
 1. `moda canvas read CANVAS_REF` (URL, share link, `cvs_` id, or UUID — all
-   resolve identically). This yields the DSL, the short ids, and the revision
-   token every write is checked against.
-2. **Smallest-change routing** (full rules: references/design-quality.md):
+   resolve identically; re-run it at the start of each new request in a
+   continuing session — the user may have edited in the app since your last
+   read). This yields the DSL, the short ids, and the revision token every
+   write is checked against.
+2. **Resolve the referent first.** In the Moda app the agent sees the user's
+   live selection; you see nothing. When the request says "this", "that
+   slide", or "the title", resolve it yourself: find the candidate in the DSL
+   from step 1, `moda canvas screenshot` the page when text alone is
+   ambiguous, and state the target you chose in your reply ("the headline on
+   slide 3"). Ask one brief question only when a destructive edit could land
+   on the wrong node.
+3. **Smallest-change routing** (full rules: references/design-quality.md):
    restyle / move / retext → `moda canvas edit` with a small code batch; new
    content → `moda canvas markup`; removal → `moda canvas delete-items`;
    full-page redo → `moda canvas markup --mode replace` (atomic). Preserve
    every source value verbatim — data preservation is non-negotiable.
-3. **Re-read after structural changes** before referencing new ids — created
+4. **Re-read after structural changes** before referencing new ids — created
    nodes get fresh short refs. A write against a stale revision exits 5 with
    `STALE_REVISION` and commits nothing: re-read, then re-apply. A busy canvas
    (running task) also exits 5 after built-in retries: back off or
    `moda task cancel`.
-4. **Verify**: `moda canvas lint` once when the edits are done (fix every
+5. **Verify**: `moda canvas lint` once when the edits are done (fix every
    error-severity finding, one confirm re-lint max), `moda canvas screenshot`
    the changed pages and review with your own vision.
-5. Close with the canvas URL; export only if the user asked for a file.
+6. Close with the canvas URL; export only if the user asked for a file.
 
 ## References
 

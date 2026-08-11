@@ -13,6 +13,7 @@ Returns the compact authoring DSL — the exact state the canvas contains — pl
 - `--page` returns just that one page's DSL (a byte-identical slice of the full serialization). Omit for the whole canvas.
 - The ids in the output are session-scoped short refs (`n7`, `p_a`, `img1`) valid across every other canvas verb. **This is the source of every id you pass.**
 - Every read refreshes the CLI's cached revision for the canvas. Writes pinned to a stale revision exit 5 with `STALE_REVISION` and commit nothing — the recovery is always: re-read, then re-apply. Another writer (the user in their open editor tab, a collaborator, a running task) advancing the canvas is normal, not an error.
+- Your read AGES while the user edits in their open tab. `STALE_REVISION` protects writes, not your mental model — reads are the only way you see their changes. Re-read at the start of each new request in a continuing session, and whenever the user says they changed something in the editor, before planning edits.
 
 ### How to read the DSL
 

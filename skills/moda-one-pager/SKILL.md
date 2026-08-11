@@ -34,6 +34,10 @@ allowed-tools: Bash(moda:*), Read, Glob, Grep
    credits (metered verbs spend them; deterministic authoring never does).
 3. Run `moda brand list`. If the account has at least one brand kit, on-brand
    is the default: read the kit before designing (see references/brand.md).
+   With several kits, use the one the listing marks as default unless the
+   user names another — never guess between clients' kits; ask if no default
+   exists and the choice is unclear. An explicit "no brand" from the user
+   wins over everything.
 
 ## UX rules
 
@@ -71,9 +75,12 @@ allowed-tools: Bash(moda:*), Read, Glob, Grep
 2. **Plan** the layout and compute the document type ladder
    (references/design-quality.md; 816×1056 → body ≈ 11px, floor 11px). A PDF
    is read up close — pack the page; icons, dividers, stat rows, and cards
-   carry structure.
+   carry structure. When a brand kit is in play, also LOOK at its assets
+   before settling the concept — references/brand.md "Look at the brand, not
+   just the tokens".
 3. **Create**: `moda canvas create --name "…" --size 816x1056` (A4: 794x1123;
-   pass `--brand` when a kit applies; `--pages N` for multi-page).
+   `--pages N` for multi-page). Brand application is client-side — create
+   takes no brand flag: `moda brand show` the kit and author with its tokens.
 4. **Author** with `moda canvas markup CANVAS_REF --file -` — one page or
    section per apply. Read every result; repair before building more.
 5. **Verify**: `moda canvas lint` (fix error-severity findings), then
