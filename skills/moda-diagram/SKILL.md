@@ -1,21 +1,21 @@
 ---
-name: moda-one-pager
+name: moda-diagram
 description: >-
-  Design a one-pager, PDF report, handout, flyer, or printable
-  document on Moda. Use when the user asks for a one-pager, single-page summary,
-  PDF, report, brief, handout, fact sheet, leave-behind, or "make this
-  markdown/README look designed". Multi-page documents belong here too — a
-  12-page report, guide, whitepaper, or proposal — as do print pieces like
-  posters and flyers (slides go to moda-deck; social/banner graphics to
-  moda-social). Produces designed US-Letter (or A4) pages on
-  a live Moda canvas and exports a real PDF with selectable text and hyperlinks.
-  Requires the moda CLI and a Moda account (Step 0 checks both; it never
-  installs anything itself).
-argument-hint: "[source file or topic] [--size letter|a4] [--pages N] [--brand <kit>]"
+  Design diagrams and interface mockups on Moda — three intents:
+  (1) diagrams and flowcharts (process, org chart, architecture, decision
+  tree, swimlane, workflow), (2) 2x2 matrices (competitive landscape,
+  quadrant chart, market map), and (3) static UI wireframes and app/site
+  screen mockups. Use when the user asks for any of those. Produces
+  anchored-connector diagrams and screen layouts on a live Moda canvas and
+  exports png or pdf. A mockup is a picture of an interface — for a live
+  hosted page use moda-website; a data chart inside a deck or document stays
+  with moda-deck or moda-one-pager. Requires the moda CLI and a Moda account
+  (Step 0 checks both; it never installs anything itself).
+argument-hint: "[what to diagram, or the screen to mock] [--size WxH] [--brand <kit>]"
 allowed-tools: Bash(moda:*), Read, Glob, Grep
 ---
 
-# moda-one-pager
+# moda-diagram
 
 ## Step 0 — doctor (always run first; skip nothing)
 
@@ -81,38 +81,38 @@ allowed-tools: Bash(moda:*), Read, Glob, Grep
 
 ## Workflow
 
-1. **Read the source** with your own tools (Read/Glob; your own research).
-   Content that needs live web facts: `moda web search` / `moda web read`
-   (metered) — see references/web.md. Settle scope per
-   references/document-design.md: one page → info-dense single page;
-   multi-page → one cohesive system plus a page outline.
-2. **Plan** the layout and compute the document type ladder
-   (references/design-quality.md; 816×1056 → body ≈ 11px, floor 11px). A PDF
-   is read up close — pack the page; icons, dividers, stat rows, and cards
-   carry structure. When a brand kit is in play, also LOOK at its assets
-   before settling the concept — references/brand.md "Look at the brand, not
-   just the tokens".
-3. **Create**: `moda canvas create --name "…" --size 816x1056` (A4: 794x1123;
-   `--pages N` for multi-page). Brand application is client-side — create
-   takes no brand flag: `moda brand show` the kit and author with its tokens.
-4. **Author** with `moda canvas markup CANVAS_REF --file -` — one page or
-   section per apply. Read every result; repair before building more.
-5. **Verify**: `moda canvas lint` (fix error-severity findings), then
-   `moda canvas screenshot` and review the PNG — vertical balance, dead
-   zones, clipped text.
-6. **Deliver**: `moda export CANVAS_REF --format pdf -o <name>.pdf`, then
-   close per the UX rules: canvas link + the PDF path.
+1. **Name the intent** — diagram/flowchart, 2x2 matrix, or UI
+   wireframe/mockup — and read references/diagram.md for that mode's recipe
+   BEFORE designing. Distill the content first: nodes and edges for a
+   diagram, axes and players for a matrix, viewport and sections for a
+   mockup. Fewer primitives, shorter labels.
+2. **Read references/markup.md** (connector grammar, containers, path) and
+   compute the type ladder per references/design-quality.md. Brand kit in
+   play → `moda brand show` and use its palette for the accent semantics.
+3. **Create**: `moda canvas create --name "…" --size WxH --category
+   diagram` — size to the content (a 1600x1000 landscape suits most
+   diagrams; matrices often ride a 960x540 slide; UI mockups use the real
+   viewport from references/diagram.md).
+4. **Author in small batches**, one section or lane per markup apply.
+   Connectors resolve only against nodes in the SAME apply — author a
+   connected cluster together. Read every result; repair before adding
+   more.
+5. **Verify**: `moda canvas lint` (collisions and contrast findings matter
+   most here), then `moda canvas screenshot` — check no connector crosses a
+   node, no label collides, spacing is even, the flow reads at a glance.
+6. **Deliver**: `moda export CANVAS_REF --format png --pixel-ratio 2 -o
+   <name>.png` (pdf when it's headed into a document), plus the canvas link
+   — diagrams get revised later more than any other format.
 
 ## References
 
 | Doc | Load when |
 |---|---|
-| references/markup.md | before writing any markup |
-| references/document-design.md | scope, density, page balance |
-| references/design-quality.md | typography ladder, imagery, recreate rules |
+| references/diagram.md | always — the three mode recipes |
+| references/markup.md | before writing any markup (connector grammar) |
+| references/design-quality.md | typography ladder, palette discipline |
+| references/brand.md | a brand kit exists |
 | references/edit-code.md | targeted fixes via `moda canvas edit` |
 | references/reading-and-verifying.md | DSL reading, lint/screenshot loop |
-| references/brand.md | a brand kit exists |
-| references/web.md | content needs live web research |
-| references/export.md, references/omni-and-media.md | delivering; metered lanes |
+| references/export.md | delivering png/pdf |
 | references/gotchas.md | anything surprising |

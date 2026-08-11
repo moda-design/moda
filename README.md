@@ -2,9 +2,10 @@
 
 Skills that let any coding agent (Claude Code, Codex, Cursor, anything that
 reads SKILL.md and has a shell) design on [Moda](https://moda.app) through the
-`moda` CLI: real editable decks, one-page PDFs with selectable text, live
-websites hosted on `*.moda.page`, brand-true designs, and precise edits to
-existing canvases — all deliverables the user can open and polish.
+`moda` CLI: real editable decks, one-page and multi-page PDFs with selectable
+text, social posts and static ads, diagrams and UI mockups, live websites
+hosted on `*.moda.page`, brand-true designs, and precise edits to existing
+canvases — all deliverables the user can open and polish.
 
 **Status: private dogfood.** Nothing here is published; installs ride team
 GitHub auth. See [INSTALL.md](INSTALL.md) (humans) and
@@ -15,7 +16,9 @@ GitHub auth. See [INSTALL.md](INSTALL.md) (humans) and
 | Skill | What it makes |
 |---|---|
 | `moda-deck` | Slide decks from a brief/doc/repo → native, editable PPTX |
-| `moda-one-pager` | One-pagers and PDF documents → text-layer PDF |
+| `moda-one-pager` | One-pagers, multi-page reports, and print pieces → text-layer PDF |
+| `moda-social` | Social posts, carousels, static ads, banners → png/jpeg (carousel = zip) |
+| `moda-diagram` | Flowcharts, 2×2 matrices, UI wireframes/mockups → png/pdf |
 | `moda-website` | Live websites → published to a public `*.moda.page` URL |
 | `moda-brand` | Brand-kit reads, creation, and canvas-vs-kit audits |
 | `moda-edit` | Precise edits to an existing canvas from its URL |
@@ -29,7 +32,7 @@ verify loop, metered verbs labeled with cost class and receipt).
 
 - `cli/` — TypeScript source of the `moda` CLI, compiled with Bun into
   per-platform standalone binaries (`bun scripts/build.ts`).
-- `skills/` — the five skills, each self-contained with its `references/`.
+- `skills/` — the seven skills, each self-contained with its `references/`.
 - `shared/` — the canonical authored copy of the shared blocks and
   references; `scripts/fanout.sh` fans them into the skills.
 - `commands/` — the `/moda` router command (Claude Code).
