@@ -62,10 +62,22 @@ allowed-tools: Bash(moda:*), Read, Glob, Grep
   deliverable; an export can be retried later).
 - The revise loop is explicit: mutate, then run `moda canvas screenshot`,
   `moda canvas read`, or `moda canvas lint` when you need to see the result.
-  Mutations do not attach screenshots or state. Canvas history is the
-  recovery mechanism — never rebuild a page to undo a bad edit.
+  Mutations do not attach state; when a screenshot is your next step anyway,
+  pass `--screenshot PATH` on markup/edit/add-pages to get the capture files
+  in the same invocation. Canvas history is the recovery mechanism — never
+  rebuild a page to undo a bad edit.
 - Work in small batches: one section or slide per markup apply; lint once per
   finished section; screenshot at milestones only (it is the slowest verb).
+- Run independent calls in parallel when your harness supports parallel tool
+  calls: reads of different resources (`moda brand show` + `moda file search`
+  + `moda account status` at session start) and screenshots of different
+  canvases can all fan out together. Mutations on the SAME canvas stay
+  serial — the per-canvas lock and revision discipline order writes.
+- Don't re-read state you already hold: the DSL from your last
+  `moda canvas read` stays valid until you or a collaborator mutate the
+  canvas. Re-read at loop boundaries (structural changes minting fresh ids, a
+  new request, the user edited in the app) — not between consecutive calls on
+  unchanged state.
 - Never delete or regenerate an image because a screenshot report listed it
   under `failedAssets`/`pendingAssets` — that state is transient; re-capture.
 - Deterministic verbs are unmetered and report zero usage. `moda task start`
