@@ -76,6 +76,10 @@ BANNED_TOKENS = [
     "moda auth token",
     "eager",
     "MCP",
+    # Web-research provider neutrality (founder-explicit): the research lane never names an
+    # underlying provider. ("exa" is unusable as a substring guard — it matches "example".)
+    "firecrawl",
+    "Firecrawl",
 ]
 
 # Patterns banned even in INSTALL/setup; a line containing "never" is a
