@@ -317,7 +317,7 @@
     },
     {
       "name": "canvas screenshot",
-      "description": "render pages to PNG files (the revise loop is explicit: mutate → screenshot → inspect)",
+      "description": "render pages to image files (the revise loop is explicit: mutate → screenshot → inspect)",
       "flags": [
         "--api-base",
         "--json",

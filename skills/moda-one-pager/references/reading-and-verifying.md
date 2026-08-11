@@ -81,12 +81,12 @@ Reports issues as `{type, severity: "error"|"warning"|"info", message, page, nod
 ## `moda canvas screenshot` — pixels
 
 ```
-moda canvas screenshot CANVAS_REF [--page P1,P2] [--pixel-ratio N] --output preview.png
+moda canvas screenshot CANVAS_REF [--page P1,P2] [--pixel-ratio N] --output preview.jpg
 ```
 
-Renders pages to PNG files at `--output` (one file per page; numbered when several). Read the files with your own vision — that is the point of the verb.
+Renders pages to image files at `--output` (one file per page, extension from the actual bytes — JPEG today). Read the files with your own vision — that is the point of the verb.
 
-- **Cap: 3 pages per call.** Extra pages are clamped, not rejected — the JSON notes the remaining ids to request next.
+- **Server cap: 3 pages per call — the CLI auto-batches.** Ask for as many pages as you need in one invocation; extra server calls happen for you. The clamp is surfaced on stderr and as `truncated: true` (plus the server's `clamp_note`) in `--json`; `pages[]` still lists every written file.
 - Per-page JSON data: `{ pageId, pageName?, width, height, pendingAssets?, failedAssets? }`.
 - **`pendingAssets` = still loading (NOT an error). `failedAssets` = transient renderer load failures** — common for freshly generated images. **NEVER regenerate, delete, or recreate an image because it appeared here.** Re-capture shortly.
 - Retryable render errors are typed (`render_failed` and friends): re-request the screenshot; canvas state is intact.

@@ -1,6 +1,4 @@
 /** `moda canvas` — the deterministic authoring core (cli.md §9) plus lifecycle reuse verbs. */
-import { mkdirSync, writeFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
 import type { Command } from 'commander';
 import { endpoints } from '../api/endpoints.ts';
 import { asObject, str } from '../api/types.ts';
@@ -9,8 +7,8 @@ import { CliError } from '../cliError.ts';
 import { shotsDir } from '../config/state.ts';
 import { EXIT_OK } from '../output/exitCodes.ts';
 import { extractShortIds } from '../refs.ts';
-import { addGlobalFlags, authedClient, buildInvocation, metaBlock, wrapAction, type Invocation } from './runtime.ts';
-import { detectImageFormat, resolveScreenshotPath } from './screenshotFiles.ts';
+import { addGlobalFlags, authedClient, buildInvocation, metaBlock, wrapAction } from './runtime.ts';
+import { captureScreenshots, writeScreenshotPages, writtenPageLine, type WrittenPage } from './screenshotCapture.ts';
 import {
   cacheFromResponse,
   chooseRevision,
@@ -288,8 +286,8 @@ export function registerCanvas(program: Command): void {
   addGlobalFlags(
     canvas
       .command('screenshot <canvas>')
-      .description('render pages to PNG files (the revise loop is explicit: mutate → screenshot → inspect)')
-      .option('--page <pages>', 'comma-separated page ids')
+      .description('render pages to image files (the revise loop is explicit: mutate → screenshot → inspect)')
+      .option('--page <pages>', 'comma-separated page ids (requests past the server 3-per-call cap are auto-batched)')
       .option('--pixel-ratio <n>', 'pixel ratio 1-4', (v: string) => Number.parseInt(v, 10))
       .option('-o, --output <path>', 'output file (single page) or directory'),
   ).action(
@@ -297,28 +295,56 @@ export function registerCanvas(program: Command): void {
       const inv = buildInvocation(cmd);
       const { client } = await authedClient(inv, SCREENSHOT_TIMEOUT_MS);
       const ref = await resolveCanvasRef(args[0] as string, client);
-      const pages = typeof opts.page === 'string' ? opts.page.split(',').map((p) => p.trim()) : undefined;
-      const response = await client.request({
-        method: 'POST',
-        path: endpoints.canvasScreenshot(ref),
-        body: {
-          ...(pages !== undefined ? { page_ids: pages } : {}),
-          ...(typeof opts.pixelRatio === 'number' ? { pixel_ratio: opts.pixelRatio } : {}),
-        },
+      const pages =
+        typeof opts.page === 'string'
+          ? (opts.page as string)
+              .split(',')
+              .map((p) => p.trim())
+              .filter((p) => p.length > 0)
+          : undefined;
+      const capture = await captureScreenshots({
+        call: async (body) => await client.request({ method: 'POST', path: endpoints.canvasScreenshot(ref), body }),
+        pages,
+        pixelRatio: typeof opts.pixelRatio === 'number' ? opts.pixelRatio : undefined,
+        note: inv.note,
       });
-      const root = asObject(response.body);
-      const written = writeScreenshotPages(root, ref, opts.output as string | undefined, inv);
-      const { pages: _dropped, ...rest } = root;
+      const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const totalPages = capture.roots.reduce((n, root) => n + (Array.isArray(root.pages) ? root.pages.length : 0), 0);
+      const output = opts.output as string | undefined;
+      let written: WrittenPage[] = [];
+      for (const root of capture.roots) {
+        written = written.concat(
+          writeScreenshotPages({
+            root,
+            output,
+            singleFile: totalPages === 1,
+            stamp,
+            shotsDirPath: shotsDir(ref, inv.env),
+            indexOffset: written.length,
+            note: inv.note,
+          }),
+        );
+      }
+      const firstRoot = capture.roots[0] ?? {};
+      const { pages: _dropped, ...rest } = firstRoot;
       return {
         body: {
           ok: true,
           operation: 'canvas.screenshot',
+          // First response's fields verbatim (incl. clamp_note); `truncated` marks that the
+          // server clamped the single-call request — the batched `pages` below still carry
+          // every requested page.
           ...rest,
+          ...(capture.truncated ? { truncated: true } : {}),
+          ...(capture.calls > 1 ? { capture_calls: capture.calls } : {}),
           pages: written,
-          meta: { ...asObject(root.meta), ...metaBlock({ requestId: response.requestId, durationMs: response.durationMs }) },
+          meta: {
+            ...asObject(firstRoot.meta),
+            ...metaBlock({ requestId: capture.requestId, durationMs: capture.durationMs }),
+          },
         },
         human: (write) => {
-          for (const page of written) write(`${page.page_id ?? '?'} → ${page.path}`);
+          for (const page of written) write(writtenPageLine(page));
         },
         exitCode: EXIT_OK,
       };
@@ -484,48 +510,5 @@ export function registerCanvas(program: Command): void {
       };
     }),
   );
-}
-
-interface WrittenPage {
-  page_id?: string;
-  path: string;
-}
-
-function writeScreenshotPages(
-  root: Record<string, unknown>,
-  ref: string,
-  output: string | undefined,
-  inv: Invocation,
-): WrittenPage[] {
-  const pagesRaw = Array.isArray(root.pages) ? root.pages : [];
-  const written: WrittenPage[] = [];
-  const stamp = new Date().toISOString().replace(/[:.]/g, '-');
-  pagesRaw.forEach((pageRaw, index) => {
-    const page = asObject(pageRaw);
-    const dataUrl = str(page, 'dataURL') ?? str(page, 'data_url');
-    if (dataUrl === undefined) return;
-    const pageId = str(page, 'page_id') ?? str(page, 'id');
-    const comma = dataUrl.indexOf(',');
-    const bytes = Buffer.from(comma >= 0 ? dataUrl.slice(comma + 1) : dataUrl, 'base64');
-    const dataUrlMime = comma >= 0 ? /^data:([^;,]+)/.exec(dataUrl)?.[1] : undefined;
-    const format = detectImageFormat({
-      bytes,
-      declaredFormat: str(page, 'format') ?? str(root, 'format'),
-      dataUrlMime,
-    });
-    const named = resolveScreenshotPath({
-      format,
-      explicitPath: output !== undefined && pagesRaw.length === 1 ? output : undefined,
-      stem:
-        output !== undefined
-          ? join(output, pageId ?? `page-${index + 1}`)
-          : join(shotsDir(ref, inv.env), `${stamp}-${pageId ?? index + 1}`),
-    });
-    if (named.warning !== undefined) inv.note(named.warning);
-    mkdirSync(dirname(named.path), { recursive: true });
-    writeFileSync(named.path, bytes);
-    written.push({ page_id: pageId, path: named.path });
-  });
-  return written;
 }
 
