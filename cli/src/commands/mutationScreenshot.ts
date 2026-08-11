@@ -13,7 +13,7 @@
  * changes the exit code. It is surfaced loudly on stderr and as `screenshot.ok: false` in the
  * --json document; the recovery is the standalone `moda canvas screenshot`.
  */
-import { asObject, str } from '../api/types.ts';
+import { asObject, str, strArray } from '../api/types.ts';
 import { CliError } from '../cliError.ts';
 import type { CommandOutcome } from '../output/emit.ts';
 import {
@@ -31,6 +31,18 @@ import {
  */
 export function pagesForMarkupTarget(page: string): string[] | undefined {
   return page === 'canvas' ? undefined : [page];
+}
+
+/**
+ * Pages a `canvas edit` actually CHANGED: the mutation response's `changed_page_ids` — the
+ * server-derived owning pages of every applied op (short p-refs / real ids, exactly what the
+ * screenshot verb accepts). Empty or absent — a variable-only edit, or a backend predating the
+ * field — falls back to the default capture (current page), same as `canvas screenshot` without
+ * `--page`.
+ */
+export function pagesForEditResult(body: unknown): string[] | undefined {
+  const ids = strArray(asObject(body), 'changed_page_ids');
+  return ids.length > 0 ? ids : undefined;
 }
 
 export interface MutationScreenshotResult {

@@ -13,6 +13,7 @@ import { addGlobalFlags, authedClient, buildInvocation, metaBlock, wrapAction, t
 import {
   attachScreenshotResult,
   captureAfterMutation,
+  pagesForEditResult,
   pagesForMarkupTarget,
 } from './mutationScreenshot.ts';
 import { captureScreenshots, writeCaptureRun, writtenPageLine } from './screenshotCapture.ts';
@@ -282,10 +283,11 @@ export function registerCanvas(program: Command): void {
         screenshot: opts.screenshot,
         client,
         ref,
-        // Always the default capture: an edit program addresses ids canvas-wide, and --page only
-        // scopes the read-only snapshot — steering the capture by it would mislead when the edit
-        // landed elsewhere. (markup differs: its --page IS the destination.)
-        pages: undefined,
+        // Capture every page the edit actually changed: the response's `changed_page_ids`
+        // (server-derived owning pages of applied ops; existing auto-batching covers >3).
+        // Empty/absent — variable-only edits, or a backend predating the field — falls back to
+        // the default capture. `--page` never steers it: it only scopes the read-only snapshot.
+        pages: pagesForEditResult(response.body),
         inv,
       });
     }),
