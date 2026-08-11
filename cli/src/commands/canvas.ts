@@ -1,5 +1,5 @@
 /** `moda canvas` — the deterministic authoring core (cli.md §9) plus lifecycle reuse verbs. */
-import { Option, type Command } from 'commander';
+import type { Command } from 'commander';
 import type { ApiClient } from '../api/client.ts';
 import { endpoints } from '../api/endpoints.ts';
 import { asObject, str } from '../api/types.ts';
@@ -71,9 +71,11 @@ async function maybeAttachScreenshot(input: {
 const LARGE_READ_STEER_BYTES = 64 * 1024;
 
 /**
- * `canvas read --summary` — the cheap structure read. Contract (coordinated with studio):
- * GET /v1/canvases/{ref}/summary → {pages: [{id, name, node_count}], revision, node_total}.
- * Fails typed with a steer until the backend endpoint ships.
+ * `canvas read --summary` — the cheap structure read. Shipped server contract:
+ * GET /v1/canvases/{ref}/state/summary → {operation: "canvas.read_summary", canvas: {id, uuid},
+ * revision, name, pages: [{id, name, node_count}], page_count, node_total, current_page_id,
+ * usage, editor_url}. It is a read-lane response: the revision is pinnable and refreshes the
+ * CLI's cache exactly like a full read. Older servers fail typed with a steer.
  */
 async function canvasSummary(client: ApiClient, inv: Invocation, ref: string): Promise<CommandOutcome> {
   let response;
@@ -81,34 +83,41 @@ async function canvasSummary(client: ApiClient, inv: Invocation, ref: string): P
     response = await client.request({ method: 'GET', path: endpoints.canvasStateSummary(ref) });
   } catch (err) {
     // Only a BARE route 404 (no server error envelope → code http_404) means the endpoint is
-    // missing. An envelope'd not_found is a real missing canvas — pass it through untouched.
+    // missing (a pre-summary server). An envelope'd not_found is a real missing canvas.
     if (err instanceof CliError && err.fields.code === 'http_404') {
       throw new CliError({
         ...err.fields,
-        message: 'The summary endpoint is not available on this server yet.',
+        message: 'This server predates the summary endpoint.',
         hint: 'Use moda canvas show for the page list, or moda canvas read --page PAGE_ID for one page.',
       });
     }
     throw err;
   }
   const root = asObject(response.body);
+  // Read lane: the summary's revision is pinnable — refresh the cache (no DSL: revision-only).
+  cacheFromResponse(ref, root, inv.env);
   const pages = Array.isArray(root.pages) ? root.pages.map(asObject) : [];
+  const currentPageId = str(root, 'current_page_id');
   return {
     body: {
       ok: true,
-      operation: 'canvas.summary',
       ...root,
+      operation: 'canvas.summary',
       meta: { ...asObject(root.meta), ...metaBlock({ requestId: response.requestId, durationMs: response.durationMs }) },
     },
     human: (write) => {
+      const name = str(root, 'name');
       const total = typeof root.node_total === 'number' ? ` — ${root.node_total} nodes` : '';
-      write(`${pages.length} page${pages.length === 1 ? '' : 's'}${total}`);
+      write(`${name !== undefined ? `${name}: ` : ''}${pages.length} page${pages.length === 1 ? '' : 's'}${total}`);
       for (const page of pages) {
+        const id = str(page, 'id') ?? '?';
         const count = typeof page.node_count === 'number' ? ` (${page.node_count} nodes)` : '';
-        write(`${str(page, 'id') ?? '?'}  ${str(page, 'name') ?? ''}${count}`);
+        write(`${id}${id === currentPageId ? '*' : ' '} ${str(page, 'name') ?? ''}${count}`);
       }
       const revision = str(root, 'revision');
       if (revision !== undefined) write(`revision: ${revision}`);
+      const editorUrl = str(root, 'editor_url');
+      if (editorUrl !== undefined) write(`editor: ${editorUrl}`);
     },
     exitCode: EXIT_OK,
   };
@@ -340,10 +349,7 @@ export function registerCanvas(program: Command): void {
       .description('authoring DSL state snapshot + revision token')
       .option('--page <page_id>', 'limit to one page')
       .option('--output <file>', 'write the full payload to a file; stdout gets a small summary + preview')
-      // Hidden until the studio summary endpoint ships — the flag fails typed with a steer today.
-      .addOption(
-        new Option('--summary', 'cheap structure summary instead of the DSL: pages, names, node counts, revision').hideHelp(),
-      ),
+      .option('--summary', 'cheap structure summary instead of the DSL: pages, names, node counts, revision'),
   ).action(
     wrapAction(async (args, opts, cmd) => {
       const inv = buildInvocation(cmd);
