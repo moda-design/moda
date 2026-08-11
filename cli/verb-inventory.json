@@ -3,1023 +3,4951 @@
     {
       "name": "account costs",
       "description": "what is metered vs not — from the server entitlement summary, never hardcoded",
+      "positionals": [],
       "flags": [
-        "--api-base",
-        "--json",
-        "--no-input",
-        "--no-retry",
-        "--org",
-        "--pretty",
-        "--quiet",
-        "--timeout"
-      ]
+        {
+          "flag": "--api-base",
+          "description": "endpoint override (staging/dev)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--json",
+          "description": "machine output: exactly one compact JSON document on stdout; implies --no-input",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-input",
+          "description": "fail instead of prompting (implied by --json)",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-retry",
+          "description": "disable the built-in busy/transport retry",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--org",
+          "description": "override the configured org context for this invocation",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--pretty",
+          "description": "pretty-print the --json document",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--quiet",
+          "description": "suppress non-essential stderr",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--timeout",
+          "description": "per-command ceiling override, seconds",
+          "takes_value": true,
+          "required": false
+        }
+      ],
+      "markers": {
+        "mutating": false,
+        "destructive": false,
+        "metered": false,
+        "read_lane": false
+      }
     },
     {
       "name": "account status",
       "description": "plan, credits remaining/limit, org",
+      "positionals": [],
       "flags": [
-        "--api-base",
-        "--json",
-        "--no-input",
-        "--no-retry",
-        "--org",
-        "--pretty",
-        "--quiet",
-        "--timeout"
-      ]
+        {
+          "flag": "--api-base",
+          "description": "endpoint override (staging/dev)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--json",
+          "description": "machine output: exactly one compact JSON document on stdout; implies --no-input",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-input",
+          "description": "fail instead of prompting (implied by --json)",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-retry",
+          "description": "disable the built-in busy/transport retry",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--org",
+          "description": "override the configured org context for this invocation",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--pretty",
+          "description": "pretty-print the --json document",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--quiet",
+          "description": "suppress non-essential stderr",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--timeout",
+          "description": "per-command ceiling override, seconds",
+          "takes_value": true,
+          "required": false
+        }
+      ],
+      "markers": {
+        "mutating": false,
+        "destructive": false,
+        "metered": false,
+        "read_lane": false
+      }
     },
     {
       "name": "account usage",
       "description": "usage over time",
+      "positionals": [],
       "flags": [
-        "--api-base",
-        "--by-operation",
-        "--days",
-        "--json",
-        "--no-input",
-        "--no-retry",
-        "--org",
-        "--pretty",
-        "--quiet",
-        "--timeout"
-      ]
+        {
+          "flag": "--api-base",
+          "description": "endpoint override (staging/dev)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--by-operation",
+          "description": "group by operation",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--days",
+          "description": "window in days",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--json",
+          "description": "machine output: exactly one compact JSON document on stdout; implies --no-input",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-input",
+          "description": "fail instead of prompting (implied by --json)",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-retry",
+          "description": "disable the built-in busy/transport retry",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--org",
+          "description": "override the configured org context for this invocation",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--pretty",
+          "description": "pretty-print the --json document",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--quiet",
+          "description": "suppress non-essential stderr",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--timeout",
+          "description": "per-command ceiling override, seconds",
+          "takes_value": true,
+          "required": false
+        }
+      ],
+      "markers": {
+        "mutating": false,
+        "destructive": false,
+        "metered": false,
+        "read_lane": false
+      }
     },
     {
       "name": "auth login",
       "description": "log in via the browser key-mint flow; credentials go to the OS keychain",
+      "positionals": [],
       "flags": [
-        "--api-base",
-        "--json",
-        "--no-input",
-        "--no-retry",
-        "--org",
-        "--paste",
-        "--pretty",
-        "--quiet",
-        "--scopes",
-        "--timeout"
-      ]
+        {
+          "flag": "--api-base",
+          "description": "endpoint override (staging/dev)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--json",
+          "description": "machine output: exactly one compact JSON document on stdout; implies --no-input",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-input",
+          "description": "fail instead of prompting (implied by --json)",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-retry",
+          "description": "disable the built-in busy/transport retry",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--org",
+          "description": "override the configured org context for this invocation",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--paste",
+          "description": "headless: print the mint URL and read the key from a hidden prompt",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--pretty",
+          "description": "pretty-print the --json document",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--quiet",
+          "description": "suppress non-essential stderr",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--scopes",
+          "description": "comma-separated scope list to request",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--timeout",
+          "description": "per-command ceiling override, seconds",
+          "takes_value": true,
+          "required": false
+        }
+      ],
+      "markers": {
+        "mutating": false,
+        "destructive": false,
+        "metered": false,
+        "read_lane": false
+      }
     },
     {
       "name": "auth logout",
       "description": "delete the local credential (server revocation stays in the app)",
+      "positionals": [],
       "flags": [
-        "--api-base",
-        "--json",
-        "--no-input",
-        "--no-retry",
-        "--org",
-        "--pretty",
-        "--quiet",
-        "--timeout"
-      ]
+        {
+          "flag": "--api-base",
+          "description": "endpoint override (staging/dev)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--json",
+          "description": "machine output: exactly one compact JSON document on stdout; implies --no-input",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-input",
+          "description": "fail instead of prompting (implied by --json)",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-retry",
+          "description": "disable the built-in busy/transport retry",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--org",
+          "description": "override the configured org context for this invocation",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--pretty",
+          "description": "pretty-print the --json document",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--quiet",
+          "description": "suppress non-essential stderr",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--timeout",
+          "description": "per-command ceiling override, seconds",
+          "takes_value": true,
+          "required": false
+        }
+      ],
+      "markers": {
+        "mutating": false,
+        "destructive": false,
+        "metered": false,
+        "read_lane": false
+      }
     },
     {
       "name": "auth status",
       "description": "identity, org, plan, scopes — never the credential",
+      "positionals": [],
       "flags": [
-        "--api-base",
-        "--json",
-        "--no-input",
-        "--no-retry",
-        "--org",
-        "--pretty",
-        "--quiet",
-        "--timeout"
-      ]
+        {
+          "flag": "--api-base",
+          "description": "endpoint override (staging/dev)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--json",
+          "description": "machine output: exactly one compact JSON document on stdout; implies --no-input",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-input",
+          "description": "fail instead of prompting (implied by --json)",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-retry",
+          "description": "disable the built-in busy/transport retry",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--org",
+          "description": "override the configured org context for this invocation",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--pretty",
+          "description": "pretty-print the --json document",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--quiet",
+          "description": "suppress non-essential stderr",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--timeout",
+          "description": "per-command ceiling override, seconds",
+          "takes_value": true,
+          "required": false
+        }
+      ],
+      "markers": {
+        "mutating": false,
+        "destructive": false,
+        "metered": false,
+        "read_lane": false
+      }
     },
     {
       "name": "brand create",
       "description": "extract a brand kit from a website (deterministic — no credits)",
+      "positionals": [],
       "flags": [
-        "--api-base",
-        "--fig",
-        "--json",
-        "--no-input",
-        "--no-retry",
-        "--org",
-        "--pretty",
-        "--quiet",
-        "--timeout",
-        "--url"
-      ]
+        {
+          "flag": "--api-base",
+          "description": "endpoint override (staging/dev)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--fig",
+          "description": "import from a .fig file (not yet available in the prototype)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--json",
+          "description": "machine output: exactly one compact JSON document on stdout; implies --no-input",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-input",
+          "description": "fail instead of prompting (implied by --json)",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-retry",
+          "description": "disable the built-in busy/transport retry",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--org",
+          "description": "override the configured org context for this invocation",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--pretty",
+          "description": "pretty-print the --json document",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--quiet",
+          "description": "suppress non-essential stderr",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--timeout",
+          "description": "per-command ceiling override, seconds",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--url",
+          "description": "extract from a website",
+          "takes_value": true,
+          "required": false
+        }
+      ],
+      "markers": {
+        "mutating": true,
+        "destructive": false,
+        "metered": false,
+        "read_lane": false
+      }
     },
     {
       "name": "brand list",
       "description": "brand kits visible to this credential",
+      "positionals": [],
       "flags": [
-        "--api-base",
-        "--json",
-        "--no-input",
-        "--no-retry",
-        "--org",
-        "--pretty",
-        "--quiet",
-        "--timeout"
-      ]
+        {
+          "flag": "--api-base",
+          "description": "endpoint override (staging/dev)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--json",
+          "description": "machine output: exactly one compact JSON document on stdout; implies --no-input",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-input",
+          "description": "fail instead of prompting (implied by --json)",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-retry",
+          "description": "disable the built-in busy/transport retry",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--org",
+          "description": "override the configured org context for this invocation",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--pretty",
+          "description": "pretty-print the --json document",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--quiet",
+          "description": "suppress non-essential stderr",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--timeout",
+          "description": "per-command ceiling override, seconds",
+          "takes_value": true,
+          "required": false
+        }
+      ],
+      "markers": {
+        "mutating": false,
+        "destructive": false,
+        "metered": false,
+        "read_lane": false
+      }
     },
     {
       "name": "brand pull",
       "description": "write the verbose kit JSON to a local file",
+      "positionals": [
+        {
+          "name": "brand",
+          "required": true,
+          "variadic": false
+        }
+      ],
       "flags": [
-        "--api-base",
-        "--json",
-        "--no-input",
-        "--no-retry",
-        "--org",
-        "--output",
-        "--pretty",
-        "--quiet",
-        "--timeout"
-      ]
+        {
+          "flag": "--api-base",
+          "description": "endpoint override (staging/dev)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--json",
+          "description": "machine output: exactly one compact JSON document on stdout; implies --no-input",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-input",
+          "description": "fail instead of prompting (implied by --json)",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-retry",
+          "description": "disable the built-in busy/transport retry",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--org",
+          "description": "override the configured org context for this invocation",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--output",
+          "description": "output path, e.g. brand.json",
+          "takes_value": true,
+          "required": true
+        },
+        {
+          "flag": "--pretty",
+          "description": "pretty-print the --json document",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--quiet",
+          "description": "suppress non-essential stderr",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--timeout",
+          "description": "per-command ceiling override, seconds",
+          "takes_value": true,
+          "required": false
+        }
+      ],
+      "markers": {
+        "mutating": false,
+        "destructive": false,
+        "metered": false,
+        "read_lane": false
+      }
     },
     {
       "name": "brand show",
       "description": "verbose kit: palette, fonts, logos (durable file_ ids + signed URLs)",
+      "positionals": [
+        {
+          "name": "brand",
+          "required": true,
+          "variadic": false
+        }
+      ],
       "flags": [
-        "--api-base",
-        "--json",
-        "--no-input",
-        "--no-retry",
-        "--org",
-        "--pretty",
-        "--quiet",
-        "--timeout"
-      ]
+        {
+          "flag": "--api-base",
+          "description": "endpoint override (staging/dev)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--json",
+          "description": "machine output: exactly one compact JSON document on stdout; implies --no-input",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-input",
+          "description": "fail instead of prompting (implied by --json)",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-retry",
+          "description": "disable the built-in busy/transport retry",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--org",
+          "description": "override the configured org context for this invocation",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--pretty",
+          "description": "pretty-print the --json document",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--quiet",
+          "description": "suppress non-essential stderr",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--timeout",
+          "description": "per-command ceiling override, seconds",
+          "takes_value": true,
+          "required": false
+        }
+      ],
+      "markers": {
+        "mutating": false,
+        "destructive": false,
+        "metered": false,
+        "read_lane": false
+      }
     },
     {
       "name": "brand use",
       "description": "persist defaults.brand (config, or repo context with --local)",
+      "positionals": [
+        {
+          "name": "brand",
+          "required": true,
+          "variadic": false
+        }
+      ],
       "flags": [
-        "--api-base",
-        "--json",
-        "--local",
-        "--no-input",
-        "--no-retry",
-        "--org",
-        "--pretty",
-        "--quiet",
-        "--timeout"
-      ]
+        {
+          "flag": "--api-base",
+          "description": "endpoint override (staging/dev)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--json",
+          "description": "machine output: exactly one compact JSON document on stdout; implies --no-input",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--local",
+          "description": "write the repo .moda/context.local.json instead of the user config",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-input",
+          "description": "fail instead of prompting (implied by --json)",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-retry",
+          "description": "disable the built-in busy/transport retry",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--org",
+          "description": "override the configured org context for this invocation",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--pretty",
+          "description": "pretty-print the --json document",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--quiet",
+          "description": "suppress non-essential stderr",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--timeout",
+          "description": "per-command ceiling override, seconds",
+          "takes_value": true,
+          "required": false
+        }
+      ],
+      "markers": {
+        "mutating": false,
+        "destructive": false,
+        "metered": false,
+        "read_lane": false
+      }
     },
     {
       "name": "canvas add-pages",
       "description": "append pages to a canvas",
+      "positionals": [
+        {
+          "name": "canvas",
+          "required": true,
+          "variadic": false
+        }
+      ],
       "flags": [
-        "--api-base",
-        "--count",
-        "--json",
-        "--no-input",
-        "--no-retry",
-        "--org",
-        "--pretty",
-        "--quiet",
-        "--revision",
-        "--size",
-        "--timeout"
-      ]
+        {
+          "flag": "--api-base",
+          "description": "endpoint override (staging/dev)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--count",
+          "description": "number of pages to add",
+          "takes_value": true,
+          "required": true
+        },
+        {
+          "flag": "--json",
+          "description": "machine output: exactly one compact JSON document on stdout; implies --no-input",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-input",
+          "description": "fail instead of prompting (implied by --json)",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-retry",
+          "description": "disable the built-in busy/transport retry",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--org",
+          "description": "override the configured org context for this invocation",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--pretty",
+          "description": "pretty-print the --json document",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--quiet",
+          "description": "suppress non-essential stderr",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--revision",
+          "description": "expected revision (advisory on appends)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--size",
+          "description": "page size override",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--timeout",
+          "description": "per-command ceiling override, seconds",
+          "takes_value": true,
+          "required": false
+        }
+      ],
+      "markers": {
+        "mutating": true,
+        "destructive": false,
+        "metered": false,
+        "read_lane": false
+      }
     },
     {
       "name": "canvas create",
       "description": "create a canvas (brand application is client-side: read the kit, author with its tokens)",
+      "positionals": [],
       "flags": [
-        "--api-base",
-        "--category",
-        "--json",
-        "--name",
-        "--no-input",
-        "--no-retry",
-        "--org",
-        "--pages",
-        "--pretty",
-        "--quiet",
-        "--size",
-        "--timeout"
-      ]
+        {
+          "flag": "--api-base",
+          "description": "endpoint override (staging/dev)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--category",
+          "description": "canvas category (drives export defaults and multi-page semantics)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--json",
+          "description": "machine output: exactly one compact JSON document on stdout; implies --no-input",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--name",
+          "description": "canvas name",
+          "takes_value": true,
+          "required": true
+        },
+        {
+          "flag": "--no-input",
+          "description": "fail instead of prompting (implied by --json)",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-retry",
+          "description": "disable the built-in busy/transport retry",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--org",
+          "description": "override the configured org context for this invocation",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--pages",
+          "description": "initial page count",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--pretty",
+          "description": "pretty-print the --json document",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--quiet",
+          "description": "suppress non-essential stderr",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--size",
+          "description": "page size, e.g. 1920x1080",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--timeout",
+          "description": "per-command ceiling override, seconds",
+          "takes_value": true,
+          "required": false
+        }
+      ],
+      "markers": {
+        "mutating": true,
+        "destructive": false,
+        "metered": false,
+        "read_lane": false
+      }
     },
     {
       "name": "canvas delete",
       "description": "delete a canvas (destructive — requires --yes under --json/--no-input)",
+      "positionals": [
+        {
+          "name": "canvas",
+          "required": true,
+          "variadic": false
+        }
+      ],
       "flags": [
-        "--api-base",
-        "--json",
-        "--no-input",
-        "--no-retry",
-        "--org",
-        "--pretty",
-        "--quiet",
-        "--timeout",
-        "--yes"
-      ]
+        {
+          "flag": "--api-base",
+          "description": "endpoint override (staging/dev)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--json",
+          "description": "machine output: exactly one compact JSON document on stdout; implies --no-input",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-input",
+          "description": "fail instead of prompting (implied by --json)",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-retry",
+          "description": "disable the built-in busy/transport retry",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--org",
+          "description": "override the configured org context for this invocation",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--pretty",
+          "description": "pretty-print the --json document",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--quiet",
+          "description": "suppress non-essential stderr",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--timeout",
+          "description": "per-command ceiling override, seconds",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--yes",
+          "description": "confirm deletion",
+          "takes_value": false,
+          "required": false
+        }
+      ],
+      "markers": {
+        "mutating": true,
+        "destructive": true,
+        "metered": false,
+        "read_lane": false
+      }
     },
     {
       "name": "canvas delete-items",
       "description": "delete nodes by id (standalone by contract — remove() throws inside edit code)",
+      "positionals": [
+        {
+          "name": "canvas",
+          "required": true,
+          "variadic": false
+        },
+        {
+          "name": "node_ids",
+          "required": true,
+          "variadic": true
+        }
+      ],
       "flags": [
-        "--api-base",
-        "--json",
-        "--no-input",
-        "--no-retry",
-        "--org",
-        "--pretty",
-        "--quiet",
-        "--revision",
-        "--timeout",
-        "--yes"
-      ]
+        {
+          "flag": "--api-base",
+          "description": "endpoint override (staging/dev)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--json",
+          "description": "machine output: exactly one compact JSON document on stdout; implies --no-input",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-input",
+          "description": "fail instead of prompting (implied by --json)",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-retry",
+          "description": "disable the built-in busy/transport retry",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--org",
+          "description": "override the configured org context for this invocation",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--pretty",
+          "description": "pretty-print the --json document",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--quiet",
+          "description": "suppress non-essential stderr",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--revision",
+          "description": "expected revision (defaults to the cached last read; required)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--timeout",
+          "description": "per-command ceiling override, seconds",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--yes",
+          "description": "confirm large deletions under --json/--no-input",
+          "takes_value": false,
+          "required": false
+        }
+      ],
+      "markers": {
+        "mutating": true,
+        "destructive": true,
+        "metered": false,
+        "read_lane": false
+      }
     },
     {
       "name": "canvas edit",
       "description": "run a sandboxed JS edit batch against the canvas",
+      "positionals": [
+        {
+          "name": "canvas",
+          "required": true,
+          "variadic": false
+        }
+      ],
       "flags": [
-        "--api-base",
-        "--file",
-        "--json",
-        "--no-input",
-        "--no-retry",
-        "--org",
-        "--page",
-        "--pretty",
-        "--quiet",
-        "--revision",
-        "--screenshot",
-        "--timeout"
-      ]
+        {
+          "flag": "--api-base",
+          "description": "endpoint override (staging/dev)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--file",
+          "description": "edit program file, or '-' for stdin",
+          "takes_value": true,
+          "required": true
+        },
+        {
+          "flag": "--json",
+          "description": "machine output: exactly one compact JSON document on stdout; implies --no-input",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-input",
+          "description": "fail instead of prompting (implied by --json)",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-retry",
+          "description": "disable the built-in busy/transport retry",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--org",
+          "description": "override the configured org context for this invocation",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--page",
+          "description": "target page",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--pretty",
+          "description": "pretty-print the --json document",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--quiet",
+          "description": "suppress non-essential stderr",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--revision",
+          "description": "expected revision (defaults to the cached last read; required)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--screenshot",
+          "description": "after the commit, capture the touched page(s) to this file/dir (same behavior as canvas screenshot -o)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--timeout",
+          "description": "per-command ceiling override, seconds",
+          "takes_value": true,
+          "required": false
+        }
+      ],
+      "markers": {
+        "mutating": true,
+        "destructive": false,
+        "metered": false,
+        "read_lane": false
+      }
     },
     {
       "name": "canvas lint",
       "description": "read-only design linter (exits 0 whenever the lint ran)",
+      "positionals": [
+        {
+          "name": "canvas",
+          "required": true,
+          "variadic": false
+        }
+      ],
       "flags": [
-        "--api-base",
-        "--json",
-        "--no-input",
-        "--no-retry",
-        "--org",
-        "--page",
-        "--pretty",
-        "--quiet",
-        "--timeout"
-      ]
+        {
+          "flag": "--api-base",
+          "description": "endpoint override (staging/dev)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--json",
+          "description": "machine output: exactly one compact JSON document on stdout; implies --no-input",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-input",
+          "description": "fail instead of prompting (implied by --json)",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-retry",
+          "description": "disable the built-in busy/transport retry",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--org",
+          "description": "override the configured org context for this invocation",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--page",
+          "description": "limit to one page",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--pretty",
+          "description": "pretty-print the --json document",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--quiet",
+          "description": "suppress non-essential stderr",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--timeout",
+          "description": "per-command ceiling override, seconds",
+          "takes_value": true,
+          "required": false
+        }
+      ],
+      "markers": {
+        "mutating": false,
+        "destructive": false,
+        "metered": false,
+        "read_lane": false
+      }
     },
     {
       "name": "canvas list",
       "description": "list canvases (cursor pagination)",
+      "positionals": [],
       "flags": [
-        "--api-base",
-        "--cursor",
-        "--json",
-        "--limit",
-        "--no-input",
-        "--no-retry",
-        "--org",
-        "--pretty",
-        "--quiet",
-        "--timeout"
-      ]
+        {
+          "flag": "--api-base",
+          "description": "endpoint override (staging/dev)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--cursor",
+          "description": "pagination cursor",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--json",
+          "description": "machine output: exactly one compact JSON document on stdout; implies --no-input",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--limit",
+          "description": "page size",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--no-input",
+          "description": "fail instead of prompting (implied by --json)",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-retry",
+          "description": "disable the built-in busy/transport retry",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--org",
+          "description": "override the configured org context for this invocation",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--pretty",
+          "description": "pretty-print the --json document",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--quiet",
+          "description": "suppress non-essential stderr",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--timeout",
+          "description": "per-command ceiling override, seconds",
+          "takes_value": true,
+          "required": false
+        }
+      ],
+      "markers": {
+        "mutating": false,
+        "destructive": false,
+        "metered": false,
+        "read_lane": false
+      }
     },
     {
       "name": "canvas markup",
       "description": "apply XML markup to a page (append or atomic full-page replace)",
+      "positionals": [
+        {
+          "name": "canvas",
+          "required": true,
+          "variadic": false
+        }
+      ],
       "flags": [
-        "--api-base",
-        "--file",
-        "--json",
-        "--mode",
-        "--no-input",
-        "--no-retry",
-        "--org",
-        "--page",
-        "--pretty",
-        "--quiet",
-        "--revision",
-        "--screenshot",
-        "--timeout"
-      ]
+        {
+          "flag": "--api-base",
+          "description": "endpoint override (staging/dev)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--file",
+          "description": "markup file, or '-' for stdin",
+          "takes_value": true,
+          "required": true
+        },
+        {
+          "flag": "--json",
+          "description": "machine output: exactly one compact JSON document on stdout; implies --no-input",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--mode",
+          "description": "append | replace",
+          "takes_value": true,
+          "required": false,
+          "default": "append"
+        },
+        {
+          "flag": "--no-input",
+          "description": "fail instead of prompting (implied by --json)",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-retry",
+          "description": "disable the built-in busy/transport retry",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--org",
+          "description": "override the configured org context for this invocation",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--page",
+          "description": "target page (short id or \"canvas\" for floating nodes)",
+          "takes_value": true,
+          "required": true
+        },
+        {
+          "flag": "--pretty",
+          "description": "pretty-print the --json document",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--quiet",
+          "description": "suppress non-essential stderr",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--revision",
+          "description": "expected revision (required for --mode replace)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--screenshot",
+          "description": "after the commit, capture the touched page(s) to this file/dir (same behavior as canvas screenshot -o)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--timeout",
+          "description": "per-command ceiling override, seconds",
+          "takes_value": true,
+          "required": false
+        }
+      ],
+      "markers": {
+        "mutating": true,
+        "destructive": false,
+        "metered": false,
+        "read_lane": false
+      }
     },
     {
       "name": "canvas open",
       "description": "open the canvas in the browser (local)",
+      "positionals": [
+        {
+          "name": "canvas",
+          "required": true,
+          "variadic": false
+        }
+      ],
       "flags": [
-        "--api-base",
-        "--json",
-        "--no-input",
-        "--no-retry",
-        "--org",
-        "--pretty",
-        "--quiet",
-        "--timeout"
-      ]
+        {
+          "flag": "--api-base",
+          "description": "endpoint override (staging/dev)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--json",
+          "description": "machine output: exactly one compact JSON document on stdout; implies --no-input",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-input",
+          "description": "fail instead of prompting (implied by --json)",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-retry",
+          "description": "disable the built-in busy/transport retry",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--org",
+          "description": "override the configured org context for this invocation",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--pretty",
+          "description": "pretty-print the --json document",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--quiet",
+          "description": "suppress non-essential stderr",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--timeout",
+          "description": "per-command ceiling override, seconds",
+          "takes_value": true,
+          "required": false
+        }
+      ],
+      "markers": {
+        "mutating": false,
+        "destructive": false,
+        "metered": false,
+        "read_lane": false
+      }
     },
     {
       "name": "canvas read",
       "description": "authoring DSL state snapshot + revision token",
+      "positionals": [
+        {
+          "name": "canvas",
+          "required": true,
+          "variadic": false
+        }
+      ],
       "flags": [
-        "--api-base",
-        "--json",
-        "--no-input",
-        "--no-retry",
-        "--org",
-        "--page",
-        "--pretty",
-        "--quiet",
-        "--summary",
-        "--timeout"
-      ]
+        {
+          "flag": "--api-base",
+          "description": "endpoint override (staging/dev)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--json",
+          "description": "machine output: exactly one compact JSON document on stdout; implies --no-input",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-input",
+          "description": "fail instead of prompting (implied by --json)",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-retry",
+          "description": "disable the built-in busy/transport retry",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--org",
+          "description": "override the configured org context for this invocation",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--output",
+          "description": "write the full payload to a file; stdout gets a small summary + preview",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--page",
+          "description": "limit to one page",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--pretty",
+          "description": "pretty-print the --json document",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--quiet",
+          "description": "suppress non-essential stderr",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--summary",
+          "description": "cheap structure summary instead of the DSL: pages, names, node counts, revision",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--timeout",
+          "description": "per-command ceiling override, seconds",
+          "takes_value": true,
+          "required": false
+        }
+      ],
+      "markers": {
+        "mutating": false,
+        "destructive": false,
+        "metered": false,
+        "read_lane": true
+      }
     },
     {
       "name": "canvas rename",
       "description": "rename a canvas",
+      "positionals": [
+        {
+          "name": "canvas",
+          "required": true,
+          "variadic": false
+        },
+        {
+          "name": "name",
+          "required": true,
+          "variadic": false
+        }
+      ],
       "flags": [
-        "--api-base",
-        "--json",
-        "--no-input",
-        "--no-retry",
-        "--org",
-        "--pretty",
-        "--quiet",
-        "--timeout"
-      ]
+        {
+          "flag": "--api-base",
+          "description": "endpoint override (staging/dev)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--json",
+          "description": "machine output: exactly one compact JSON document on stdout; implies --no-input",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-input",
+          "description": "fail instead of prompting (implied by --json)",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-retry",
+          "description": "disable the built-in busy/transport retry",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--org",
+          "description": "override the configured org context for this invocation",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--pretty",
+          "description": "pretty-print the --json document",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--quiet",
+          "description": "suppress non-essential stderr",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--timeout",
+          "description": "per-command ceiling override, seconds",
+          "takes_value": true,
+          "required": false
+        }
+      ],
+      "markers": {
+        "mutating": true,
+        "destructive": false,
+        "metered": false,
+        "read_lane": false
+      }
     },
     {
       "name": "canvas screenshot",
       "description": "render pages to image files (the revise loop is explicit: mutate → screenshot → inspect)",
+      "positionals": [
+        {
+          "name": "canvas",
+          "required": true,
+          "variadic": false
+        }
+      ],
       "flags": [
-        "--api-base",
-        "--json",
-        "--no-input",
-        "--no-retry",
-        "--org",
-        "--output",
-        "--page",
-        "--pixel-ratio",
-        "--pretty",
-        "--quiet",
-        "--timeout"
-      ]
+        {
+          "flag": "--api-base",
+          "description": "endpoint override (staging/dev)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--json",
+          "description": "machine output: exactly one compact JSON document on stdout; implies --no-input",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-input",
+          "description": "fail instead of prompting (implied by --json)",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-retry",
+          "description": "disable the built-in busy/transport retry",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--org",
+          "description": "override the configured org context for this invocation",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--output",
+          "description": "output file (single page) or directory",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--page",
+          "description": "comma-separated page ids (requests past the server 3-per-call cap are auto-batched)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--pixel-ratio",
+          "description": "pixel ratio 1-4",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--pretty",
+          "description": "pretty-print the --json document",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--quiet",
+          "description": "suppress non-essential stderr",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--timeout",
+          "description": "per-command ceiling override, seconds",
+          "takes_value": true,
+          "required": false
+        }
+      ],
+      "markers": {
+        "mutating": false,
+        "destructive": false,
+        "metered": false,
+        "read_lane": false
+      }
     },
     {
       "name": "canvas search",
       "description": "search canvases",
+      "positionals": [
+        {
+          "name": "query",
+          "required": true,
+          "variadic": false
+        }
+      ],
       "flags": [
-        "--api-base",
-        "--json",
-        "--no-input",
-        "--no-retry",
-        "--org",
-        "--pretty",
-        "--quiet",
-        "--timeout"
-      ]
+        {
+          "flag": "--api-base",
+          "description": "endpoint override (staging/dev)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--json",
+          "description": "machine output: exactly one compact JSON document on stdout; implies --no-input",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-input",
+          "description": "fail instead of prompting (implied by --json)",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-retry",
+          "description": "disable the built-in busy/transport retry",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--org",
+          "description": "override the configured org context for this invocation",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--pretty",
+          "description": "pretty-print the --json document",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--quiet",
+          "description": "suppress non-essential stderr",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--timeout",
+          "description": "per-command ceiling override, seconds",
+          "takes_value": true,
+          "required": false
+        }
+      ],
+      "markers": {
+        "mutating": false,
+        "destructive": false,
+        "metered": false,
+        "read_lane": false
+      }
     },
     {
       "name": "canvas share",
       "description": "create/print the share URL",
+      "positionals": [
+        {
+          "name": "canvas",
+          "required": true,
+          "variadic": false
+        }
+      ],
       "flags": [
-        "--api-base",
-        "--json",
-        "--no-input",
-        "--no-retry",
-        "--org",
-        "--pretty",
-        "--quiet",
-        "--remix",
-        "--timeout"
-      ]
+        {
+          "flag": "--api-base",
+          "description": "endpoint override (staging/dev)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--json",
+          "description": "machine output: exactly one compact JSON document on stdout; implies --no-input",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-input",
+          "description": "fail instead of prompting (implied by --json)",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-retry",
+          "description": "disable the built-in busy/transport retry",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--org",
+          "description": "override the configured org context for this invocation",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--pretty",
+          "description": "pretty-print the --json document",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--quiet",
+          "description": "suppress non-essential stderr",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--remix",
+          "description": "allow remixing",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--timeout",
+          "description": "per-command ceiling override, seconds",
+          "takes_value": true,
+          "required": false
+        }
+      ],
+      "markers": {
+        "mutating": true,
+        "destructive": false,
+        "metered": false,
+        "read_lane": false
+      }
     },
     {
       "name": "canvas show",
       "description": "canvas details + pages",
+      "positionals": [
+        {
+          "name": "canvas",
+          "required": true,
+          "variadic": false
+        }
+      ],
       "flags": [
-        "--api-base",
-        "--json",
-        "--no-input",
-        "--no-retry",
-        "--org",
-        "--pretty",
-        "--quiet",
-        "--timeout",
-        "--tokens"
-      ]
+        {
+          "flag": "--api-base",
+          "description": "endpoint override (staging/dev)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--json",
+          "description": "machine output: exactly one compact JSON document on stdout; implies --no-input",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-input",
+          "description": "fail instead of prompting (implied by --json)",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-retry",
+          "description": "disable the built-in busy/transport retry",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--org",
+          "description": "override the configured org context for this invocation",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--pretty",
+          "description": "pretty-print the --json document",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--quiet",
+          "description": "suppress non-essential stderr",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--timeout",
+          "description": "per-command ceiling override, seconds",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--tokens",
+          "description": "include design tokens",
+          "takes_value": false,
+          "required": false
+        }
+      ],
+      "markers": {
+        "mutating": false,
+        "destructive": false,
+        "metered": false,
+        "read_lane": false
+      }
     },
     {
       "name": "completion",
       "description": "print a shell completion script (bash | zsh | fish)",
-      "flags": []
+      "positionals": [
+        {
+          "name": "shell",
+          "required": true,
+          "variadic": false
+        }
+      ],
+      "flags": [],
+      "markers": {
+        "mutating": false,
+        "destructive": false,
+        "metered": false,
+        "read_lane": false
+      }
     },
     {
       "name": "context clear",
       "description": "clear one context key (or all keys) in the repo context",
+      "positionals": [
+        {
+          "name": "key",
+          "required": false,
+          "variadic": false
+        }
+      ],
       "flags": [
-        "--api-base",
-        "--json",
-        "--local",
-        "--no-input",
-        "--no-retry",
-        "--org",
-        "--pretty",
-        "--quiet",
-        "--timeout"
-      ]
+        {
+          "flag": "--api-base",
+          "description": "endpoint override (staging/dev)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--json",
+          "description": "machine output: exactly one compact JSON document on stdout; implies --no-input",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--local",
+          "description": "operate on .moda/context.local.json",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-input",
+          "description": "fail instead of prompting (implied by --json)",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-retry",
+          "description": "disable the built-in busy/transport retry",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--org",
+          "description": "override the configured org context for this invocation",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--pretty",
+          "description": "pretty-print the --json document",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--quiet",
+          "description": "suppress non-essential stderr",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--timeout",
+          "description": "per-command ceiling override, seconds",
+          "takes_value": true,
+          "required": false
+        }
+      ],
+      "markers": {
+        "mutating": false,
+        "destructive": false,
+        "metered": false,
+        "read_lane": false
+      }
     },
     {
       "name": "context set",
       "description": "set org/brand/canvas in .moda/context.json (or the gitignored local override)",
+      "positionals": [
+        {
+          "name": "key",
+          "required": true,
+          "variadic": false
+        },
+        {
+          "name": "value",
+          "required": true,
+          "variadic": false
+        }
+      ],
       "flags": [
-        "--api-base",
-        "--json",
-        "--local",
-        "--no-input",
-        "--no-retry",
-        "--org",
-        "--pretty",
-        "--quiet",
-        "--timeout"
-      ]
+        {
+          "flag": "--api-base",
+          "description": "endpoint override (staging/dev)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--json",
+          "description": "machine output: exactly one compact JSON document on stdout; implies --no-input",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--local",
+          "description": "write .moda/context.local.json and gitignore it",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-input",
+          "description": "fail instead of prompting (implied by --json)",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-retry",
+          "description": "disable the built-in busy/transport retry",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--org",
+          "description": "override the configured org context for this invocation",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--pretty",
+          "description": "pretty-print the --json document",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--quiet",
+          "description": "suppress non-essential stderr",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--timeout",
+          "description": "per-command ceiling override, seconds",
+          "takes_value": true,
+          "required": false
+        }
+      ],
+      "markers": {
+        "mutating": false,
+        "destructive": false,
+        "metered": false,
+        "read_lane": false
+      }
     },
     {
       "name": "context show",
       "description": "effective merged context and where each value came from",
+      "positionals": [],
       "flags": [
-        "--api-base",
-        "--json",
-        "--no-input",
-        "--no-retry",
-        "--org",
-        "--pretty",
-        "--quiet",
-        "--timeout"
-      ]
+        {
+          "flag": "--api-base",
+          "description": "endpoint override (staging/dev)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--json",
+          "description": "machine output: exactly one compact JSON document on stdout; implies --no-input",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-input",
+          "description": "fail instead of prompting (implied by --json)",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-retry",
+          "description": "disable the built-in busy/transport retry",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--org",
+          "description": "override the configured org context for this invocation",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--pretty",
+          "description": "pretty-print the --json document",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--quiet",
+          "description": "suppress non-essential stderr",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--timeout",
+          "description": "per-command ceiling override, seconds",
+          "takes_value": true,
+          "required": false
+        }
+      ],
+      "markers": {
+        "mutating": false,
+        "destructive": false,
+        "metered": false,
+        "read_lane": false
+      }
+    },
+    {
+      "name": "describe",
+      "description": "machine-readable verb schema — all verbs compact, or one verb in full (markers: mutating/destructive/metered/read_lane)",
+      "positionals": [
+        {
+          "name": "verb",
+          "required": false,
+          "variadic": true
+        }
+      ],
+      "flags": [
+        {
+          "flag": "--api-base",
+          "description": "endpoint override (staging/dev)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--json",
+          "description": "machine output: exactly one compact JSON document on stdout; implies --no-input",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-input",
+          "description": "fail instead of prompting (implied by --json)",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-retry",
+          "description": "disable the built-in busy/transport retry",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--org",
+          "description": "override the configured org context for this invocation",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--pretty",
+          "description": "pretty-print the --json document",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--quiet",
+          "description": "suppress non-essential stderr",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--timeout",
+          "description": "per-command ceiling override, seconds",
+          "takes_value": true,
+          "required": false
+        }
+      ],
+      "markers": {
+        "mutating": false,
+        "destructive": false,
+        "metered": false,
+        "read_lane": false
+      }
     },
     {
       "name": "docs",
       "description": "print offline reference texts (markup | edit | workflow)",
+      "positionals": [
+        {
+          "name": "topic",
+          "required": false,
+          "variadic": false
+        }
+      ],
       "flags": [
-        "--api-base",
-        "--json",
-        "--no-input",
-        "--no-retry",
-        "--org",
-        "--pretty",
-        "--quiet",
-        "--timeout"
-      ]
+        {
+          "flag": "--api-base",
+          "description": "endpoint override (staging/dev)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--json",
+          "description": "machine output: exactly one compact JSON document on stdout; implies --no-input",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-input",
+          "description": "fail instead of prompting (implied by --json)",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-retry",
+          "description": "disable the built-in busy/transport retry",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--org",
+          "description": "override the configured org context for this invocation",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--pretty",
+          "description": "pretty-print the --json document",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--quiet",
+          "description": "suppress non-essential stderr",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--timeout",
+          "description": "per-command ceiling override, seconds",
+          "takes_value": true,
+          "required": false
+        }
+      ],
+      "markers": {
+        "mutating": false,
+        "destructive": false,
+        "metered": false,
+        "read_lane": false
+      }
     },
     {
       "name": "doctor",
       "description": "connectivity, credential validity, scopes, version range, keychain health",
+      "positionals": [],
       "flags": [
-        "--api-base",
-        "--json",
-        "--no-input",
-        "--no-retry",
-        "--org",
-        "--pretty",
-        "--quiet",
-        "--timeout"
-      ]
+        {
+          "flag": "--api-base",
+          "description": "endpoint override (staging/dev)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--json",
+          "description": "machine output: exactly one compact JSON document on stdout; implies --no-input",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-input",
+          "description": "fail instead of prompting (implied by --json)",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-retry",
+          "description": "disable the built-in busy/transport retry",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--org",
+          "description": "override the configured org context for this invocation",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--pretty",
+          "description": "pretty-print the --json document",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--quiet",
+          "description": "suppress non-essential stderr",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--timeout",
+          "description": "per-command ceiling override, seconds",
+          "takes_value": true,
+          "required": false
+        }
+      ],
+      "markers": {
+        "mutating": false,
+        "destructive": false,
+        "metered": false,
+        "read_lane": false
+      }
     },
     {
       "name": "export",
       "description": "export a canvas (pdf|pptx|png|jpeg); polls transparently and downloads to -o",
+      "positionals": [
+        {
+          "name": "canvas",
+          "required": true,
+          "variadic": false
+        }
+      ],
       "flags": [
-        "--api-base",
-        "--flatten",
-        "--format",
-        "--json",
-        "--no-input",
-        "--no-retry",
-        "--no-wait",
-        "--org",
-        "--output",
-        "--page",
-        "--pixel-ratio",
-        "--pretty",
-        "--quiet",
-        "--timeout"
-      ]
+        {
+          "flag": "--api-base",
+          "description": "endpoint override (staging/dev)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--flatten",
+          "description": "PDF only: degrade to raster (default is a selectable vector PDF)",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--format",
+          "description": "pdf | pptx | png | jpeg",
+          "takes_value": true,
+          "required": true
+        },
+        {
+          "flag": "--json",
+          "description": "machine output: exactly one compact JSON document on stdout; implies --no-input",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-input",
+          "description": "fail instead of prompting (implied by --json)",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-retry",
+          "description": "disable the built-in busy/transport retry",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-wait",
+          "description": "do not poll; print the export task id and exit 0",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--org",
+          "description": "override the configured org context for this invocation",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--output",
+          "description": "output path (default <canvas>.<ext> in the output dir)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--page",
+          "description": "single 1-indexed page to export (omit for all pages; multi-page png/jpeg arrive as a zip)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--pixel-ratio",
+          "description": "pixel ratio 1-4 (raster formats)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--pretty",
+          "description": "pretty-print the --json document",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--quiet",
+          "description": "suppress non-essential stderr",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--timeout",
+          "description": "per-command ceiling override, seconds",
+          "takes_value": true,
+          "required": false
+        }
+      ],
+      "markers": {
+        "mutating": false,
+        "destructive": false,
+        "metered": false,
+        "read_lane": false
+      }
     },
     {
       "name": "file download",
       "description": "download file bytes — not available (no public drive endpoint)",
+      "positionals": [
+        {
+          "name": "file_id",
+          "required": true,
+          "variadic": false
+        }
+      ],
       "flags": [
-        "--api-base",
-        "--json",
-        "--no-input",
-        "--no-retry",
-        "--org",
-        "--output",
-        "--pretty",
-        "--quiet",
-        "--timeout"
-      ]
+        {
+          "flag": "--api-base",
+          "description": "endpoint override (staging/dev)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--json",
+          "description": "machine output: exactly one compact JSON document on stdout; implies --no-input",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-input",
+          "description": "fail instead of prompting (implied by --json)",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-retry",
+          "description": "disable the built-in busy/transport retry",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--org",
+          "description": "override the configured org context for this invocation",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--output",
+          "description": "output path",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--pretty",
+          "description": "pretty-print the --json document",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--quiet",
+          "description": "suppress non-essential stderr",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--timeout",
+          "description": "per-command ceiling override, seconds",
+          "takes_value": true,
+          "required": false
+        }
+      ],
+      "markers": {
+        "mutating": false,
+        "destructive": false,
+        "metered": false,
+        "read_lane": false
+      }
     },
     {
       "name": "file list",
       "description": "list drive files — not available (no public drive endpoint)",
+      "positionals": [],
       "flags": [
-        "--api-base",
-        "--json",
-        "--no-input",
-        "--no-retry",
-        "--org",
-        "--pretty",
-        "--quiet",
-        "--timeout"
-      ]
+        {
+          "flag": "--api-base",
+          "description": "endpoint override (staging/dev)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--json",
+          "description": "machine output: exactly one compact JSON document on stdout; implies --no-input",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-input",
+          "description": "fail instead of prompting (implied by --json)",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-retry",
+          "description": "disable the built-in busy/transport retry",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--org",
+          "description": "override the configured org context for this invocation",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--pretty",
+          "description": "pretty-print the --json document",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--quiet",
+          "description": "suppress non-essential stderr",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--timeout",
+          "description": "per-command ceiling override, seconds",
+          "takes_value": true,
+          "required": false
+        }
+      ],
+      "markers": {
+        "mutating": false,
+        "destructive": false,
+        "metered": false,
+        "read_lane": false
+      }
     },
     {
       "name": "file search",
       "description": "search team assets (durable file_ ids + URLs, usable in markup and media inputs)",
+      "positionals": [
+        {
+          "name": "query",
+          "required": true,
+          "variadic": false
+        }
+      ],
       "flags": [
-        "--api-base",
-        "--json",
-        "--kind",
-        "--limit",
-        "--no-input",
-        "--no-retry",
-        "--org",
-        "--pretty",
-        "--quiet",
-        "--timeout"
-      ]
+        {
+          "flag": "--api-base",
+          "description": "endpoint override (staging/dev)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--json",
+          "description": "machine output: exactly one compact JSON document on stdout; implies --no-input",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--kind",
+          "description": "icon | photo (default photo)",
+          "takes_value": true,
+          "required": false,
+          "default": "photo"
+        },
+        {
+          "flag": "--limit",
+          "description": "max results (1-50)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--no-input",
+          "description": "fail instead of prompting (implied by --json)",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-retry",
+          "description": "disable the built-in busy/transport retry",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--org",
+          "description": "override the configured org context for this invocation",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--pretty",
+          "description": "pretty-print the --json document",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--quiet",
+          "description": "suppress non-essential stderr",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--timeout",
+          "description": "per-command ceiling override, seconds",
+          "takes_value": true,
+          "required": false
+        }
+      ],
+      "markers": {
+        "mutating": false,
+        "destructive": false,
+        "metered": false,
+        "read_lane": false
+      }
     },
     {
       "name": "file show",
       "description": "file metadata — not available (no public drive endpoint)",
+      "positionals": [
+        {
+          "name": "file_id",
+          "required": true,
+          "variadic": false
+        }
+      ],
       "flags": [
-        "--api-base",
-        "--json",
-        "--no-input",
-        "--no-retry",
-        "--org",
-        "--pretty",
-        "--quiet",
-        "--timeout"
-      ]
+        {
+          "flag": "--api-base",
+          "description": "endpoint override (staging/dev)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--json",
+          "description": "machine output: exactly one compact JSON document on stdout; implies --no-input",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-input",
+          "description": "fail instead of prompting (implied by --json)",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-retry",
+          "description": "disable the built-in busy/transport retry",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--org",
+          "description": "override the configured org context for this invocation",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--pretty",
+          "description": "pretty-print the --json document",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--quiet",
+          "description": "suppress non-essential stderr",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--timeout",
+          "description": "per-command ceiling override, seconds",
+          "takes_value": true,
+          "required": false
+        }
+      ],
+      "markers": {
+        "mutating": false,
+        "destructive": false,
+        "metered": false,
+        "read_lane": false
+      }
     },
     {
       "name": "file upload",
       "description": "upload files; returns durable file_ refs usable in markup image fills and media inputs",
+      "positionals": [
+        {
+          "name": "paths",
+          "required": false,
+          "variadic": true
+        }
+      ],
       "flags": [
-        "--api-base",
-        "--from-url",
-        "--json",
-        "--no-input",
-        "--no-retry",
-        "--org",
-        "--pretty",
-        "--quiet",
-        "--timeout"
-      ]
+        {
+          "flag": "--api-base",
+          "description": "endpoint override (staging/dev)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--from-url",
+          "description": "ingest from a URL instead of a local path",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--json",
+          "description": "machine output: exactly one compact JSON document on stdout; implies --no-input",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-input",
+          "description": "fail instead of prompting (implied by --json)",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-retry",
+          "description": "disable the built-in busy/transport retry",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--org",
+          "description": "override the configured org context for this invocation",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--pretty",
+          "description": "pretty-print the --json document",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--quiet",
+          "description": "suppress non-essential stderr",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--timeout",
+          "description": "per-command ceiling override, seconds",
+          "takes_value": true,
+          "required": false
+        }
+      ],
+      "markers": {
+        "mutating": true,
+        "destructive": false,
+        "metered": false,
+        "read_lane": false
+      }
     },
     {
       "name": "folder create",
       "description": "create a folder — not available",
+      "positionals": [
+        {
+          "name": "name",
+          "required": true,
+          "variadic": false
+        }
+      ],
       "flags": [
-        "--api-base",
-        "--json",
-        "--no-input",
-        "--no-retry",
-        "--org",
-        "--pretty",
-        "--quiet",
-        "--timeout"
-      ]
+        {
+          "flag": "--api-base",
+          "description": "endpoint override (staging/dev)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--json",
+          "description": "machine output: exactly one compact JSON document on stdout; implies --no-input",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-input",
+          "description": "fail instead of prompting (implied by --json)",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-retry",
+          "description": "disable the built-in busy/transport retry",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--org",
+          "description": "override the configured org context for this invocation",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--pretty",
+          "description": "pretty-print the --json document",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--quiet",
+          "description": "suppress non-essential stderr",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--timeout",
+          "description": "per-command ceiling override, seconds",
+          "takes_value": true,
+          "required": false
+        }
+      ],
+      "markers": {
+        "mutating": false,
+        "destructive": false,
+        "metered": false,
+        "read_lane": false
+      }
     },
     {
       "name": "folder list",
       "description": "list folders — not available",
+      "positionals": [],
       "flags": [
-        "--api-base",
-        "--json",
-        "--no-input",
-        "--no-retry",
-        "--org",
-        "--pretty",
-        "--quiet",
-        "--timeout"
-      ]
+        {
+          "flag": "--api-base",
+          "description": "endpoint override (staging/dev)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--json",
+          "description": "machine output: exactly one compact JSON document on stdout; implies --no-input",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-input",
+          "description": "fail instead of prompting (implied by --json)",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-retry",
+          "description": "disable the built-in busy/transport retry",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--org",
+          "description": "override the configured org context for this invocation",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--pretty",
+          "description": "pretty-print the --json document",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--quiet",
+          "description": "suppress non-essential stderr",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--timeout",
+          "description": "per-command ceiling override, seconds",
+          "takes_value": true,
+          "required": false
+        }
+      ],
+      "markers": {
+        "mutating": false,
+        "destructive": false,
+        "metered": false,
+        "read_lane": false
+      }
     },
     {
       "name": "last-error",
       "description": "re-print the full error envelope of the last failed command (no re-run needed)",
+      "positionals": [],
       "flags": [
-        "--api-base",
-        "--json",
-        "--no-input",
-        "--no-retry",
-        "--org",
-        "--pretty",
-        "--quiet",
-        "--timeout"
-      ]
+        {
+          "flag": "--api-base",
+          "description": "endpoint override (staging/dev)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--json",
+          "description": "machine output: exactly one compact JSON document on stdout; implies --no-input",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-input",
+          "description": "fail instead of prompting (implied by --json)",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-retry",
+          "description": "disable the built-in busy/transport retry",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--org",
+          "description": "override the configured org context for this invocation",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--pretty",
+          "description": "pretty-print the --json document",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--quiet",
+          "description": "suppress non-essential stderr",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--timeout",
+          "description": "per-command ceiling override, seconds",
+          "takes_value": true,
+          "required": false
+        }
+      ],
+      "markers": {
+        "mutating": false,
+        "destructive": false,
+        "metered": false,
+        "read_lane": false
+      }
     },
     {
       "name": "media edit-image",
       "description": "generative image edit (metered) — the same primitive with required source images",
+      "positionals": [],
       "flags": [
-        "--api-base",
-        "--json",
-        "--model",
-        "--model-params",
-        "--no-input",
-        "--no-retry",
-        "--num-images",
-        "--org",
-        "--output",
-        "--pretty",
-        "--prompt",
-        "--quiet",
-        "--reference",
-        "--resolution",
-        "--source",
-        "--timeout"
-      ]
+        {
+          "flag": "--api-base",
+          "description": "endpoint override (staging/dev)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--json",
+          "description": "machine output: exactly one compact JSON document on stdout; implies --no-input",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--model",
+          "description": "model id (see: moda media models)",
+          "takes_value": true,
+          "required": true
+        },
+        {
+          "flag": "--model-params",
+          "description": "per-model extra params as a JSON object",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--no-input",
+          "description": "fail instead of prompting (implied by --json)",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-retry",
+          "description": "disable the built-in busy/transport retry",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--num-images",
+          "description": "images per call, 1-4",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--org",
+          "description": "override the configured org context for this invocation",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--output",
+          "description": "download the artifact to a local file",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--pretty",
+          "description": "pretty-print the --json document",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--prompt",
+          "description": "edit instruction (sent to the model verbatim)",
+          "takes_value": true,
+          "required": true
+        },
+        {
+          "flag": "--quiet",
+          "description": "suppress non-essential stderr",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--reference",
+          "description": "style/subject references: file_ refs, URLs, or local paths",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--resolution",
+          "description": "per-model resolution tier (see the model's capability line)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--source",
+          "description": "the image(s) to edit: file_ refs, URLs, or local paths",
+          "takes_value": true,
+          "required": true
+        },
+        {
+          "flag": "--timeout",
+          "description": "per-command ceiling override, seconds",
+          "takes_value": true,
+          "required": false
+        }
+      ],
+      "markers": {
+        "mutating": true,
+        "destructive": false,
+        "metered": true,
+        "read_lane": false
+      }
     },
     {
       "name": "media generate-image",
       "description": "generate an image (metered)",
+      "positionals": [],
       "flags": [
-        "--api-base",
-        "--aspect-ratio",
-        "--json",
-        "--model",
-        "--model-params",
-        "--no-input",
-        "--no-retry",
-        "--num-images",
-        "--org",
-        "--output",
-        "--pretty",
-        "--prompt",
-        "--quiet",
-        "--reference",
-        "--resolution",
-        "--size",
-        "--source",
-        "--timeout"
-      ]
+        {
+          "flag": "--api-base",
+          "description": "endpoint override (staging/dev)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--aspect-ratio",
+          "description": "aspect ratio, e.g. 16:9",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--json",
+          "description": "machine output: exactly one compact JSON document on stdout; implies --no-input",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--model",
+          "description": "model id (see: moda media models)",
+          "takes_value": true,
+          "required": true
+        },
+        {
+          "flag": "--model-params",
+          "description": "per-model extra params as a JSON object",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--no-input",
+          "description": "fail instead of prompting (implied by --json)",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-retry",
+          "description": "disable the built-in busy/transport retry",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--num-images",
+          "description": "images per call, 1-4",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--org",
+          "description": "override the configured org context for this invocation",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--output",
+          "description": "download the artifact to a local file",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--pretty",
+          "description": "pretty-print the --json document",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--prompt",
+          "description": "generation prompt (sent to the model verbatim)",
+          "takes_value": true,
+          "required": true
+        },
+        {
+          "flag": "--quiet",
+          "description": "suppress non-essential stderr",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--reference",
+          "description": "style/subject references: file_ refs, URLs, or local paths",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--resolution",
+          "description": "per-model resolution tier (see the model's capability line)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--size",
+          "description": "output size, e.g. 1024x1024",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--source",
+          "description": "images the prompt modifies/preserves: file_ refs, URLs, or local paths",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--timeout",
+          "description": "per-command ceiling override, seconds",
+          "takes_value": true,
+          "required": false
+        }
+      ],
+      "markers": {
+        "mutating": true,
+        "destructive": false,
+        "metered": true,
+        "read_lane": false
+      }
     },
     {
       "name": "media generate-video",
       "description": "generate a video (metered; the provider render runs within this call)",
+      "positionals": [],
       "flags": [
-        "--api-base",
-        "--aspect-ratio",
-        "--duration",
-        "--end-image",
-        "--generate-audio",
-        "--image",
-        "--json",
-        "--model",
-        "--model-params",
-        "--no-input",
-        "--no-retry",
-        "--org",
-        "--output",
-        "--pretty",
-        "--prompt",
-        "--quiet",
-        "--reference",
-        "--resolution",
-        "--seed",
-        "--timeout"
-      ]
+        {
+          "flag": "--api-base",
+          "description": "endpoint override (staging/dev)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--aspect-ratio",
+          "description": "aspect ratio, e.g. 16:9",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--duration",
+          "description": "clip duration — ALWAYS pass one; it is the dominant cost driver",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--end-image",
+          "description": "last-frame image: file_ ref, URL, or local path",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--generate-audio",
+          "description": "generate native audio (models that support it)",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--image",
+          "description": "first-frame image: file_ ref, URL, or local path",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--json",
+          "description": "machine output: exactly one compact JSON document on stdout; implies --no-input",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--model",
+          "description": "model id (see: moda media models)",
+          "takes_value": true,
+          "required": true
+        },
+        {
+          "flag": "--model-params",
+          "description": "per-model extra params as a JSON object",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--no-input",
+          "description": "fail instead of prompting (implied by --json)",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-retry",
+          "description": "disable the built-in busy/transport retry",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--org",
+          "description": "override the configured org context for this invocation",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--output",
+          "description": "download the artifact to a local file",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--pretty",
+          "description": "pretty-print the --json document",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--prompt",
+          "description": "generation prompt",
+          "takes_value": true,
+          "required": true
+        },
+        {
+          "flag": "--quiet",
+          "description": "suppress non-essential stderr",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--reference",
+          "description": "reference images (reference-to-video models): file_ refs, URLs, or local paths",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--resolution",
+          "description": "per-model resolution tier (see the model's capability line)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--seed",
+          "description": "deterministic seed",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--timeout",
+          "description": "per-command ceiling override, seconds",
+          "takes_value": true,
+          "required": false
+        }
+      ],
+      "markers": {
+        "mutating": true,
+        "destructive": false,
+        "metered": true,
+        "read_lane": false
+      }
     },
     {
       "name": "media models",
       "description": "available media models (the required --model values)",
+      "positionals": [],
       "flags": [
-        "--api-base",
-        "--json",
-        "--no-input",
-        "--no-retry",
-        "--org",
-        "--pretty",
-        "--quiet",
-        "--timeout"
-      ]
+        {
+          "flag": "--api-base",
+          "description": "endpoint override (staging/dev)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--json",
+          "description": "machine output: exactly one compact JSON document on stdout; implies --no-input",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-input",
+          "description": "fail instead of prompting (implied by --json)",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-retry",
+          "description": "disable the built-in busy/transport retry",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--org",
+          "description": "override the configured org context for this invocation",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--pretty",
+          "description": "pretty-print the --json document",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--quiet",
+          "description": "suppress non-essential stderr",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--timeout",
+          "description": "per-command ceiling override, seconds",
+          "takes_value": true,
+          "required": false
+        }
+      ],
+      "markers": {
+        "mutating": false,
+        "destructive": false,
+        "metered": false,
+        "read_lane": false
+      }
     },
     {
       "name": "media remove-background",
       "description": "remove an image background (metered); result is a new transparent PNG",
+      "positionals": [
+        {
+          "name": "ref_or_path",
+          "required": true,
+          "variadic": false
+        }
+      ],
       "flags": [
-        "--api-base",
-        "--high-quality",
-        "--json",
-        "--no-input",
-        "--no-retry",
-        "--org",
-        "--output",
-        "--pretty",
-        "--quiet",
-        "--timeout"
-      ]
+        {
+          "flag": "--api-base",
+          "description": "endpoint override (staging/dev)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--high-quality",
+          "description": "use the high-quality matting model",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--json",
+          "description": "machine output: exactly one compact JSON document on stdout; implies --no-input",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-input",
+          "description": "fail instead of prompting (implied by --json)",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-retry",
+          "description": "disable the built-in busy/transport retry",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--org",
+          "description": "override the configured org context for this invocation",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--output",
+          "description": "download the artifact to a local file",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--pretty",
+          "description": "pretty-print the --json document",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--quiet",
+          "description": "suppress non-essential stderr",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--timeout",
+          "description": "per-command ceiling override, seconds",
+          "takes_value": true,
+          "required": false
+        }
+      ],
+      "markers": {
+        "mutating": true,
+        "destructive": false,
+        "metered": true,
+        "read_lane": false
+      }
     },
     {
       "name": "media upscale",
       "description": "upscale an image 2x or 4x (metered); accepts a file_ ref, URL, or local path",
+      "positionals": [
+        {
+          "name": "ref_or_path",
+          "required": true,
+          "variadic": false
+        }
+      ],
       "flags": [
-        "--api-base",
-        "--json",
-        "--no-input",
-        "--no-retry",
-        "--org",
-        "--output",
-        "--pretty",
-        "--quiet",
-        "--scale",
-        "--timeout"
-      ]
+        {
+          "flag": "--api-base",
+          "description": "endpoint override (staging/dev)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--json",
+          "description": "machine output: exactly one compact JSON document on stdout; implies --no-input",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-input",
+          "description": "fail instead of prompting (implied by --json)",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-retry",
+          "description": "disable the built-in busy/transport retry",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--org",
+          "description": "override the configured org context for this invocation",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--output",
+          "description": "download the artifact to a local file",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--pretty",
+          "description": "pretty-print the --json document",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--quiet",
+          "description": "suppress non-essential stderr",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--scale",
+          "description": "upscale factor: 2 or 4",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--timeout",
+          "description": "per-command ceiling override, seconds",
+          "takes_value": true,
+          "required": false
+        }
+      ],
+      "markers": {
+        "mutating": true,
+        "destructive": false,
+        "metered": true,
+        "read_lane": false
+      }
     },
     {
       "name": "media upscale-video",
       "description": "upscale a video — not available: the public media lane has no upscale-video endpoint",
+      "positionals": [
+        {
+          "name": "ref_or_path",
+          "required": true,
+          "variadic": false
+        }
+      ],
       "flags": [
-        "--api-base",
-        "--json",
-        "--no-input",
-        "--no-retry",
-        "--org",
-        "--pretty",
-        "--quiet",
-        "--timeout"
-      ]
+        {
+          "flag": "--api-base",
+          "description": "endpoint override (staging/dev)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--json",
+          "description": "machine output: exactly one compact JSON document on stdout; implies --no-input",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-input",
+          "description": "fail instead of prompting (implied by --json)",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-retry",
+          "description": "disable the built-in busy/transport retry",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--org",
+          "description": "override the configured org context for this invocation",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--pretty",
+          "description": "pretty-print the --json document",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--quiet",
+          "description": "suppress non-essential stderr",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--timeout",
+          "description": "per-command ceiling override, seconds",
+          "takes_value": true,
+          "required": false
+        }
+      ],
+      "markers": {
+        "mutating": false,
+        "destructive": false,
+        "metered": false,
+        "read_lane": false
+      }
     },
     {
       "name": "org current",
       "description": "the effective org context and its source",
+      "positionals": [],
       "flags": [
-        "--api-base",
-        "--json",
-        "--no-input",
-        "--no-retry",
-        "--org",
-        "--pretty",
-        "--quiet",
-        "--timeout"
-      ]
+        {
+          "flag": "--api-base",
+          "description": "endpoint override (staging/dev)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--json",
+          "description": "machine output: exactly one compact JSON document on stdout; implies --no-input",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-input",
+          "description": "fail instead of prompting (implied by --json)",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-retry",
+          "description": "disable the built-in busy/transport retry",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--org",
+          "description": "override the configured org context for this invocation",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--pretty",
+          "description": "pretty-print the --json document",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--quiet",
+          "description": "suppress non-essential stderr",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--timeout",
+          "description": "per-command ceiling override, seconds",
+          "takes_value": true,
+          "required": false
+        }
+      ],
+      "markers": {
+        "mutating": false,
+        "destructive": false,
+        "metered": false,
+        "read_lane": false
+      }
     },
     {
       "name": "org list",
       "description": "organizations this credential can act in",
+      "positionals": [],
       "flags": [
-        "--api-base",
-        "--json",
-        "--no-input",
-        "--no-retry",
-        "--org",
-        "--pretty",
-        "--quiet",
-        "--timeout"
-      ]
+        {
+          "flag": "--api-base",
+          "description": "endpoint override (staging/dev)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--json",
+          "description": "machine output: exactly one compact JSON document on stdout; implies --no-input",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-input",
+          "description": "fail instead of prompting (implied by --json)",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-retry",
+          "description": "disable the built-in busy/transport retry",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--org",
+          "description": "override the configured org context for this invocation",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--pretty",
+          "description": "pretty-print the --json document",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--quiet",
+          "description": "suppress non-essential stderr",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--timeout",
+          "description": "per-command ceiling override, seconds",
+          "takes_value": true,
+          "required": false
+        }
+      ],
+      "markers": {
+        "mutating": false,
+        "destructive": false,
+        "metered": false,
+        "read_lane": false
+      }
     },
     {
       "name": "org use",
       "description": "set the configured org context",
+      "positionals": [
+        {
+          "name": "org",
+          "required": true,
+          "variadic": false
+        }
+      ],
       "flags": [
-        "--api-base",
-        "--json",
-        "--no-input",
-        "--no-retry",
-        "--org",
-        "--pretty",
-        "--quiet",
-        "--timeout"
-      ]
+        {
+          "flag": "--api-base",
+          "description": "endpoint override (staging/dev)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--json",
+          "description": "machine output: exactly one compact JSON document on stdout; implies --no-input",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-input",
+          "description": "fail instead of prompting (implied by --json)",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-retry",
+          "description": "disable the built-in busy/transport retry",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--org",
+          "description": "override the configured org context for this invocation",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--pretty",
+          "description": "pretty-print the --json document",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--quiet",
+          "description": "suppress non-essential stderr",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--timeout",
+          "description": "per-command ceiling override, seconds",
+          "takes_value": true,
+          "required": false
+        }
+      ],
+      "markers": {
+        "mutating": false,
+        "destructive": false,
+        "metered": false,
+        "read_lane": false
+      }
     },
     {
       "name": "site create",
       "description": "create a site from a single HTML page",
+      "positionals": [],
       "flags": [
-        "--api-base",
-        "--file",
-        "--json",
-        "--no-input",
-        "--no-retry",
-        "--org",
-        "--pretty",
-        "--quiet",
-        "--timeout",
-        "--title"
-      ]
+        {
+          "flag": "--api-base",
+          "description": "endpoint override (staging/dev)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--file",
+          "description": "the page HTML file, or '-' for stdin",
+          "takes_value": true,
+          "required": true
+        },
+        {
+          "flag": "--json",
+          "description": "machine output: exactly one compact JSON document on stdout; implies --no-input",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-input",
+          "description": "fail instead of prompting (implied by --json)",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-retry",
+          "description": "disable the built-in busy/transport retry",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--org",
+          "description": "override the configured org context for this invocation",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--pretty",
+          "description": "pretty-print the --json document",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--quiet",
+          "description": "suppress non-essential stderr",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--timeout",
+          "description": "per-command ceiling override, seconds",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--title",
+          "description": "site title",
+          "takes_value": true,
+          "required": false
+        }
+      ],
+      "markers": {
+        "mutating": true,
+        "destructive": false,
+        "metered": false,
+        "read_lane": false
+      }
     },
     {
       "name": "site delete",
       "description": "delete the site — destructive; the slug enters cooldown (requires --yes under --json/--no-input)",
+      "positionals": [
+        {
+          "name": "site",
+          "required": true,
+          "variadic": false
+        }
+      ],
       "flags": [
-        "--api-base",
-        "--json",
-        "--no-input",
-        "--no-retry",
-        "--org",
-        "--pretty",
-        "--quiet",
-        "--timeout",
-        "--yes"
-      ]
+        {
+          "flag": "--api-base",
+          "description": "endpoint override (staging/dev)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--json",
+          "description": "machine output: exactly one compact JSON document on stdout; implies --no-input",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-input",
+          "description": "fail instead of prompting (implied by --json)",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-retry",
+          "description": "disable the built-in busy/transport retry",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--org",
+          "description": "override the configured org context for this invocation",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--pretty",
+          "description": "pretty-print the --json document",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--quiet",
+          "description": "suppress non-essential stderr",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--timeout",
+          "description": "per-command ceiling override, seconds",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--yes",
+          "description": "confirm deletion",
+          "takes_value": false,
+          "required": false
+        }
+      ],
+      "markers": {
+        "mutating": true,
+        "destructive": true,
+        "metered": false,
+        "read_lane": false
+      }
     },
     {
       "name": "site list",
       "description": "list the team's sites",
+      "positionals": [],
       "flags": [
-        "--api-base",
-        "--json",
-        "--limit",
-        "--no-input",
-        "--no-retry",
-        "--offset",
-        "--org",
-        "--pretty",
-        "--quiet",
-        "--timeout"
-      ]
+        {
+          "flag": "--api-base",
+          "description": "endpoint override (staging/dev)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--json",
+          "description": "machine output: exactly one compact JSON document on stdout; implies --no-input",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--limit",
+          "description": "page size, 1-100 (default 25)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--no-input",
+          "description": "fail instead of prompting (implied by --json)",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-retry",
+          "description": "disable the built-in busy/transport retry",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--offset",
+          "description": "pagination offset",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--org",
+          "description": "override the configured org context for this invocation",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--pretty",
+          "description": "pretty-print the --json document",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--quiet",
+          "description": "suppress non-essential stderr",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--timeout",
+          "description": "per-command ceiling override, seconds",
+          "takes_value": true,
+          "required": false
+        }
+      ],
+      "markers": {
+        "mutating": false,
+        "destructive": false,
+        "metered": false,
+        "read_lane": false
+      }
     },
     {
       "name": "site publish",
       "description": "publish (or republish) to the public *.moda.page URL",
+      "positionals": [
+        {
+          "name": "site",
+          "required": true,
+          "variadic": false
+        }
+      ],
       "flags": [
-        "--api-base",
-        "--json",
-        "--no-input",
-        "--no-retry",
-        "--org",
-        "--pretty",
-        "--quiet",
-        "--slug",
-        "--timeout"
-      ]
+        {
+          "flag": "--api-base",
+          "description": "endpoint override (staging/dev)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--json",
+          "description": "machine output: exactly one compact JSON document on stdout; implies --no-input",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-input",
+          "description": "fail instead of prompting (implied by --json)",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-retry",
+          "description": "disable the built-in busy/transport retry",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--org",
+          "description": "override the configured org context for this invocation",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--pretty",
+          "description": "pretty-print the --json document",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--quiet",
+          "description": "suppress non-essential stderr",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--slug",
+          "description": "subdomain hint, first publish only (final slug gets a random suffix)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--timeout",
+          "description": "per-command ceiling override, seconds",
+          "takes_value": true,
+          "required": false
+        }
+      ],
+      "markers": {
+        "mutating": true,
+        "destructive": false,
+        "metered": false,
+        "read_lane": false
+      }
     },
     {
       "name": "site set-content",
       "description": "replace the page HTML (the live site keeps serving the last publish until you republish)",
+      "positionals": [
+        {
+          "name": "site",
+          "required": true,
+          "variadic": false
+        }
+      ],
       "flags": [
-        "--api-base",
-        "--expected-version",
-        "--file",
-        "--json",
-        "--no-input",
-        "--no-retry",
-        "--org",
-        "--pretty",
-        "--quiet",
-        "--timeout",
-        "--title"
-      ]
+        {
+          "flag": "--api-base",
+          "description": "endpoint override (staging/dev)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--expected-version",
+          "description": "read-modify-write guard: the version from your last read; mismatch fails instead of overwriting",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--file",
+          "description": "the new page HTML file, or '-' for stdin",
+          "takes_value": true,
+          "required": true
+        },
+        {
+          "flag": "--json",
+          "description": "machine output: exactly one compact JSON document on stdout; implies --no-input",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-input",
+          "description": "fail instead of prompting (implied by --json)",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-retry",
+          "description": "disable the built-in busy/transport retry",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--org",
+          "description": "override the configured org context for this invocation",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--pretty",
+          "description": "pretty-print the --json document",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--quiet",
+          "description": "suppress non-essential stderr",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--timeout",
+          "description": "per-command ceiling override, seconds",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--title",
+          "description": "update the site title",
+          "takes_value": true,
+          "required": false
+        }
+      ],
+      "markers": {
+        "mutating": true,
+        "destructive": false,
+        "metered": false,
+        "read_lane": false
+      }
     },
     {
       "name": "site show",
       "description": "site metadata, publish state, and live URL",
+      "positionals": [
+        {
+          "name": "site",
+          "required": true,
+          "variadic": false
+        }
+      ],
       "flags": [
-        "--api-base",
-        "--json",
-        "--no-input",
-        "--no-retry",
-        "--org",
-        "--pretty",
-        "--quiet",
-        "--timeout"
-      ]
+        {
+          "flag": "--api-base",
+          "description": "endpoint override (staging/dev)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--json",
+          "description": "machine output: exactly one compact JSON document on stdout; implies --no-input",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-input",
+          "description": "fail instead of prompting (implied by --json)",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-retry",
+          "description": "disable the built-in busy/transport retry",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--org",
+          "description": "override the configured org context for this invocation",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--pretty",
+          "description": "pretty-print the --json document",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--quiet",
+          "description": "suppress non-essential stderr",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--timeout",
+          "description": "per-command ceiling override, seconds",
+          "takes_value": true,
+          "required": false
+        }
+      ],
+      "markers": {
+        "mutating": false,
+        "destructive": false,
+        "metered": false,
+        "read_lane": false
+      }
     },
     {
       "name": "site unpublish",
       "description": "take the live site down (requires --yes under --json/--no-input)",
+      "positionals": [
+        {
+          "name": "site",
+          "required": true,
+          "variadic": false
+        }
+      ],
       "flags": [
-        "--api-base",
-        "--json",
-        "--no-input",
-        "--no-retry",
-        "--org",
-        "--pretty",
-        "--quiet",
-        "--timeout",
-        "--yes"
-      ]
+        {
+          "flag": "--api-base",
+          "description": "endpoint override (staging/dev)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--json",
+          "description": "machine output: exactly one compact JSON document on stdout; implies --no-input",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-input",
+          "description": "fail instead of prompting (implied by --json)",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-retry",
+          "description": "disable the built-in busy/transport retry",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--org",
+          "description": "override the configured org context for this invocation",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--pretty",
+          "description": "pretty-print the --json document",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--quiet",
+          "description": "suppress non-essential stderr",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--timeout",
+          "description": "per-command ceiling override, seconds",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--yes",
+          "description": "confirm taking the live site down",
+          "takes_value": false,
+          "required": false
+        }
+      ],
+      "markers": {
+        "mutating": true,
+        "destructive": true,
+        "metered": false,
+        "read_lane": false
+      }
     },
     {
       "name": "task cancel",
       "description": "cancel a running task",
+      "positionals": [
+        {
+          "name": "task",
+          "required": true,
+          "variadic": false
+        }
+      ],
       "flags": [
-        "--api-base",
-        "--json",
-        "--no-input",
-        "--no-retry",
-        "--org",
-        "--pretty",
-        "--quiet",
-        "--timeout"
-      ]
+        {
+          "flag": "--api-base",
+          "description": "endpoint override (staging/dev)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--json",
+          "description": "machine output: exactly one compact JSON document on stdout; implies --no-input",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-input",
+          "description": "fail instead of prompting (implied by --json)",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-retry",
+          "description": "disable the built-in busy/transport retry",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--org",
+          "description": "override the configured org context for this invocation",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--pretty",
+          "description": "pretty-print the --json document",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--quiet",
+          "description": "suppress non-essential stderr",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--timeout",
+          "description": "per-command ceiling override, seconds",
+          "takes_value": true,
+          "required": false
+        }
+      ],
+      "markers": {
+        "mutating": true,
+        "destructive": false,
+        "metered": false,
+        "read_lane": false
+      }
     },
     {
       "name": "task list",
       "description": "list tasks",
+      "positionals": [],
       "flags": [
-        "--active",
-        "--api-base",
-        "--json",
-        "--no-input",
-        "--no-retry",
-        "--org",
-        "--pretty",
-        "--quiet",
-        "--timeout"
-      ]
+        {
+          "flag": "--active",
+          "description": "only running tasks",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--api-base",
+          "description": "endpoint override (staging/dev)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--json",
+          "description": "machine output: exactly one compact JSON document on stdout; implies --no-input",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-input",
+          "description": "fail instead of prompting (implied by --json)",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-retry",
+          "description": "disable the built-in busy/transport retry",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--org",
+          "description": "override the configured org context for this invocation",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--output",
+          "description": "write the full payload to a file; stdout gets a small summary + preview",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--pretty",
+          "description": "pretty-print the --json document",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--quiet",
+          "description": "suppress non-essential stderr",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--timeout",
+          "description": "per-command ceiling override, seconds",
+          "takes_value": true,
+          "required": false
+        }
+      ],
+      "markers": {
+        "mutating": false,
+        "destructive": false,
+        "metered": false,
+        "read_lane": false
+      }
     },
     {
       "name": "task start",
       "description": "start an Omni task (spends Moda credits; cost class before, receipt after)",
+      "positionals": [],
       "flags": [
-        "--api-base",
-        "--brand",
-        "--callback-url",
-        "--canvas",
-        "--export",
-        "--files",
-        "--format",
-        "--fresh",
-        "--json",
-        "--no-input",
-        "--no-retry",
-        "--org",
-        "--output",
-        "--pretty",
-        "--prompt",
-        "--quiet",
-        "--timeout",
-        "--wait"
-      ]
+        {
+          "flag": "--api-base",
+          "description": "endpoint override (staging/dev)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--brand",
+          "description": "brand kit ref",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--callback-url",
+          "description": "CI callback (server-side validated)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--canvas",
+          "description": "target canvas",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--export",
+          "description": "chain an export on completion (implies --wait)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--files",
+          "description": "input file refs",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--format",
+          "description": "output format hint (slides | one-pager | social | …)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--fresh",
+          "description": "force a NEW task: salt the idempotency key instead of replaying an identical earlier start",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--json",
+          "description": "machine output: exactly one compact JSON document on stdout; implies --no-input",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-input",
+          "description": "fail instead of prompting (implied by --json)",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-retry",
+          "description": "disable the built-in busy/transport retry",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--org",
+          "description": "override the configured org context for this invocation",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--output",
+          "description": "output path for the chained export",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--pretty",
+          "description": "pretty-print the --json document",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--prompt",
+          "description": "the task prompt",
+          "takes_value": true,
+          "required": true
+        },
+        {
+          "flag": "--quiet",
+          "description": "suppress non-essential stderr",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--timeout",
+          "description": "per-command ceiling override, seconds",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--wait",
+          "description": "poll until the task completes, streaming progress to stderr",
+          "takes_value": false,
+          "required": false
+        }
+      ],
+      "markers": {
+        "mutating": true,
+        "destructive": false,
+        "metered": true,
+        "read_lane": false
+      }
     },
     {
       "name": "task status",
       "description": "task status + usage receipt",
+      "positionals": [
+        {
+          "name": "task",
+          "required": true,
+          "variadic": false
+        }
+      ],
       "flags": [
-        "--api-base",
-        "--json",
-        "--no-input",
-        "--no-retry",
-        "--org",
-        "--pretty",
-        "--quiet",
-        "--timeout"
-      ]
+        {
+          "flag": "--api-base",
+          "description": "endpoint override (staging/dev)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--json",
+          "description": "machine output: exactly one compact JSON document on stdout; implies --no-input",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-input",
+          "description": "fail instead of prompting (implied by --json)",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-retry",
+          "description": "disable the built-in busy/transport retry",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--org",
+          "description": "override the configured org context for this invocation",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--pretty",
+          "description": "pretty-print the --json document",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--quiet",
+          "description": "suppress non-essential stderr",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--timeout",
+          "description": "per-command ceiling override, seconds",
+          "takes_value": true,
+          "required": false
+        }
+      ],
+      "markers": {
+        "mutating": false,
+        "destructive": false,
+        "metered": false,
+        "read_lane": false
+      }
     },
     {
       "name": "update",
       "description": "update the CLI (dogfood: prints the pinned gh release download command; never silent)",
+      "positionals": [],
       "flags": [
-        "--api-base",
-        "--json",
-        "--no-input",
-        "--no-retry",
-        "--org",
-        "--pretty",
-        "--quiet",
-        "--timeout"
-      ]
+        {
+          "flag": "--api-base",
+          "description": "endpoint override (staging/dev)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--json",
+          "description": "machine output: exactly one compact JSON document on stdout; implies --no-input",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-input",
+          "description": "fail instead of prompting (implied by --json)",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-retry",
+          "description": "disable the built-in busy/transport retry",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--org",
+          "description": "override the configured org context for this invocation",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--pretty",
+          "description": "pretty-print the --json document",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--quiet",
+          "description": "suppress non-essential stderr",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--timeout",
+          "description": "per-command ceiling override, seconds",
+          "takes_value": true,
+          "required": false
+        }
+      ],
+      "markers": {
+        "mutating": false,
+        "destructive": false,
+        "metered": false,
+        "read_lane": false
+      }
     },
     {
       "name": "version",
       "description": "CLI version, pinned API version, endpoint, install channel",
+      "positionals": [],
       "flags": [
-        "--api-base",
-        "--json",
-        "--no-input",
-        "--no-retry",
-        "--org",
-        "--pretty",
-        "--quiet",
-        "--timeout"
-      ]
+        {
+          "flag": "--api-base",
+          "description": "endpoint override (staging/dev)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--json",
+          "description": "machine output: exactly one compact JSON document on stdout; implies --no-input",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-input",
+          "description": "fail instead of prompting (implied by --json)",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-retry",
+          "description": "disable the built-in busy/transport retry",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--org",
+          "description": "override the configured org context for this invocation",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--pretty",
+          "description": "pretty-print the --json document",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--quiet",
+          "description": "suppress non-essential stderr",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--timeout",
+          "description": "per-command ceiling override, seconds",
+          "takes_value": true,
+          "required": false
+        }
+      ],
+      "markers": {
+        "mutating": false,
+        "destructive": false,
+        "metered": false,
+        "read_lane": false
+      }
     },
     {
       "name": "web read",
       "description": "read a web page as clean markdown (metered)",
+      "positionals": [
+        {
+          "name": "url",
+          "required": true,
+          "variadic": false
+        }
+      ],
       "flags": [
-        "--api-base",
-        "--json",
-        "--no-input",
-        "--no-retry",
-        "--org",
-        "--pretty",
-        "--quiet",
-        "--timeout"
-      ]
+        {
+          "flag": "--api-base",
+          "description": "endpoint override (staging/dev)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--json",
+          "description": "machine output: exactly one compact JSON document on stdout; implies --no-input",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-input",
+          "description": "fail instead of prompting (implied by --json)",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-retry",
+          "description": "disable the built-in busy/transport retry",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--org",
+          "description": "override the configured org context for this invocation",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--output",
+          "description": "write the full payload to a file; stdout gets a small summary + preview",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--pretty",
+          "description": "pretty-print the --json document",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--quiet",
+          "description": "suppress non-essential stderr",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--timeout",
+          "description": "per-command ceiling override, seconds",
+          "takes_value": true,
+          "required": false
+        }
+      ],
+      "markers": {
+        "mutating": false,
+        "destructive": false,
+        "metered": true,
+        "read_lane": false
+      }
     },
     {
       "name": "web search",
       "description": "web search (metered) — structured results: url, title, snippet",
+      "positionals": [
+        {
+          "name": "query",
+          "required": true,
+          "variadic": false
+        }
+      ],
       "flags": [
-        "--api-base",
-        "--full-text",
-        "--json",
-        "--no-input",
-        "--no-retry",
-        "--org",
-        "--pretty",
-        "--quiet",
-        "--results",
-        "--timeout"
-      ]
+        {
+          "flag": "--api-base",
+          "description": "endpoint override (staging/dev)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--full-text",
+          "description": "include extracted page text on each result (costs more than snippet-only)",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--json",
+          "description": "machine output: exactly one compact JSON document on stdout; implies --no-input",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-input",
+          "description": "fail instead of prompting (implied by --json)",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-retry",
+          "description": "disable the built-in busy/transport retry",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--org",
+          "description": "override the configured org context for this invocation",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--pretty",
+          "description": "pretty-print the --json document",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--quiet",
+          "description": "suppress non-essential stderr",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--results",
+          "description": "number of results, 1-10 (default 5)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--timeout",
+          "description": "per-command ceiling override, seconds",
+          "takes_value": true,
+          "required": false
+        }
+      ],
+      "markers": {
+        "mutating": false,
+        "destructive": false,
+        "metered": true,
+        "read_lane": false
+      }
     }
   ]
 }

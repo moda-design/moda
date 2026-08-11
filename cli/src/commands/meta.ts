@@ -20,7 +20,7 @@ const DOCS: Record<string, string> = {
   edit: editDoc,
   workflow: workflowDoc,
 };
-import { addGlobalFlags, anonymousClient, authedClient, buildInvocation, metaBlock, wrapAction } from './runtime.ts';
+import { addGlobalFlags, anonymousClient, authedClient, buildInvocation, metaBlock, verbSemanticsOf, wrapAction } from './runtime.ts';
 
 export function registerMeta(program: Command): void {
   addGlobalFlags(program.command('version').description('CLI version, pinned API version, endpoint, install channel'))
@@ -152,6 +152,47 @@ export function registerMeta(program: Command): void {
     }),
   );
 
+  addGlobalFlags(
+    program
+      .command('describe [verb...]')
+      .description('machine-readable verb schema — all verbs compact, or one verb in full (markers: mutating/destructive/metered/read_lane)'),
+  ).action(
+    wrapAction(async (args, _opts, cmd) => {
+      const verbs = collectVerbs(cmd.parent as Command, '');
+      if (args.length === 0) {
+        // Token-frugal listing: name + one-line + markers only.
+        const listing = verbs.map((verb) => ({ name: verb.name, description: verb.description, markers: verb.markers }));
+        return {
+          body: { ok: true, operation: 'describe', verbs: listing, meta: metaBlock() },
+          human: (write) => {
+            for (const verb of listing) {
+              const marks = Object.entries(verb.markers)
+                .filter(([, v]) => v)
+                .map(([k]) => k)
+                .join(',');
+              write(`${verb.name}${marks.length > 0 ? ` [${marks}]` : ''} — ${verb.description}`);
+            }
+          },
+          exitCode: EXIT_OK,
+        };
+      }
+      const wanted = args.join(' ');
+      const match = verbs.find((verb) => verb.name === wanted);
+      if (match === undefined) {
+        const near = verbs.filter((verb) => verb.name.startsWith(`${args[0]} `) || verb.name === args[0]).map((v) => v.name);
+        throw CliError.usage(
+          `Unknown verb '${wanted}'.`,
+          near.length > 0 ? `Did you mean: ${near.join(', ')}` : 'List all verbs: moda describe --json',
+        );
+      }
+      return {
+        body: { ok: true, operation: 'describe', verb: match, meta: metaBlock() },
+        human: (write) => write(JSON.stringify(match, null, 2)),
+        exitCode: EXIT_OK,
+      };
+    }),
+  );
+
   // Hidden machine-readable verb inventory for skills CI parity (skills-and-distribution §3.5).
   program
     .command('__inventory', { hidden: true })
@@ -164,13 +205,44 @@ export function registerMeta(program: Command): void {
     });
 }
 
+interface FlagEntry {
+  flag: string;
+  description: string;
+  /** Flag takes a value (`--limit <n>`) vs boolean switch. */
+  takes_value: boolean;
+  required: boolean;
+  default?: unknown;
+}
+
+interface PositionalEntry {
+  name: string;
+  required: boolean;
+  variadic: boolean;
+}
+
+interface VerbMarkers {
+  mutating: boolean;
+  /** Gated by --yes under --json/--no-input. */
+  destructive: boolean;
+  metered: boolean;
+  read_lane: boolean;
+}
+
 interface VerbEntry {
   name: string;
   description: string;
-  flags: string[];
+  positionals: PositionalEntry[];
+  flags: FlagEntry[];
+  markers: VerbMarkers;
 }
 
-function collectVerbs(program: Command, prefix: string): VerbEntry[] {
+/**
+ * THE machine-readable verb schema — consumed identically by `moda describe`, `__inventory`,
+ * the committed snapshot (cli/verb-inventory.json), and CI parity. Everything is introspected
+ * from the live commander registrations plus the tagVerb semantics attached at those same
+ * registration sites; `destructive` is derived from the presence of a --yes gate.
+ */
+export function collectVerbs(program: Command, prefix: string): VerbEntry[] {
   const out: VerbEntry[] = [];
   for (const sub of program.commands) {
     const name = sub.name();
@@ -179,10 +251,31 @@ function collectVerbs(program: Command, prefix: string): VerbEntry[] {
     if (sub.commands.length > 0) {
       out.push(...collectVerbs(sub, full));
     } else {
+      const semantics = verbSemanticsOf(sub);
       out.push({
         name: full,
         description: sub.description(),
-        flags: sub.options.map((o) => o.long ?? o.short ?? '').filter((f) => f.length > 0).sort(),
+        positionals: sub.registeredArguments.map((arg) => ({
+          name: arg.name(),
+          required: arg.required,
+          variadic: arg.variadic,
+        })),
+        flags: sub.options
+          .map((option) => ({
+            flag: option.long ?? option.short ?? '',
+            description: option.description ?? '',
+            takes_value: /[<[]/.test(option.flags),
+            required: option.mandatory === true,
+            ...(option.defaultValue !== undefined ? { default: option.defaultValue } : {}),
+          }))
+          .filter((entry) => entry.flag.length > 0)
+          .sort((a, b) => a.flag.localeCompare(b.flag)),
+        markers: {
+          mutating: semantics.mutating === true,
+          destructive: sub.options.some((option) => option.long === '--yes'),
+          metered: semantics.metered === true,
+          read_lane: semantics.read_lane === true,
+        },
       });
     }
   }

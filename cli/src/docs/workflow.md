@@ -69,5 +69,12 @@ ride alongside them additively:
   `requires_repair`; `--screenshot` adds `screenshot: {ok, pages[]}`.
 - List/search lanes add `returned` (count of items in this response).
 - `notes[]` carries format advisories (e.g. PDF hyperlink flattening).
+- `moda describe --json` is the machine-readable verb schema (positionals,
+  flags with type/required/default, and the semantic markers `mutating`,
+  `destructive`, `metered`, `read_lane`); `moda describe <verb> --json`
+  returns one verb in full. Part of this versioned surface.
+- Big-result routing: `--output FILE` on `canvas read`, `task list`, and
+  `web read` writes the full payload to the file and shrinks the stdout
+  envelope to summary fields + `output`/`bytes` + a bounded `preview`.
 - Export adds `requested_format` + `delivered_format` — what the file
   actually is (multi-page raster exports deliver `zip`).

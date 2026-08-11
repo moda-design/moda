@@ -6,6 +6,7 @@ import { deriveIdempotencyKey } from '../api/idempotency.ts';
 import { asObject, str } from '../api/types.ts';
 import { CliError } from '../cliError.ts';
 import { readTaskStart, recordTaskStart, recordTaskStatus, type TaskStartEntry } from '../config/state.ts';
+import { PREVIEW_ITEMS, writeResultFile } from '../output/resultFile.ts';
 import { EXIT_OK } from '../output/exitCodes.ts';
 import { parseRef } from '../refs.ts';
 import { addGlobalFlags, authedClient, buildInvocation, metaBlock, wrapAction, type Invocation } from './runtime.ts';
@@ -191,7 +192,8 @@ export function registerTask(program: Command): void {
     task
       .command('list')
       .description('list tasks')
-      .option('--active', 'only running tasks'),
+      .option('--active', 'only running tasks')
+      .option('--output <file>', 'write the full payload to a file; stdout gets a small summary + preview'),
   ).action(
     wrapAction(async (_args, opts, cmd) => {
       const inv = buildInvocation(cmd);
@@ -202,6 +204,30 @@ export function registerTask(program: Command): void {
         path: endpoints.taskList(),
         query: opts.active === true ? { status: 'running' } : undefined,
       });
+      if (typeof opts.output === 'string') {
+        const root = asObject(response.body);
+        const tasks = (Array.isArray(response.body) ? (response.body as unknown[]) : (root.tasks as unknown[] | undefined)) ?? [];
+        const written = writeResultFile(opts.output, { ok: true, operation: 'task.list', ...root });
+        const preview = tasks.slice(0, PREVIEW_ITEMS).map((task) => {
+          const obj = asObject(task);
+          return { id: str(obj, 'id'), status: str(obj, 'status') };
+        });
+        return {
+          body: {
+            ok: true,
+            operation: 'task.list',
+            returned: tasks.length,
+            ...written,
+            preview,
+            meta: metaBlock({ requestId: response.requestId, durationMs: response.durationMs }),
+          },
+          human: (write) => {
+            write(`${tasks.length} task${tasks.length === 1 ? '' : 's'} → ${written.output} (inspect with jq/grep)`);
+            for (const entry of preview) write(`${entry.id ?? '?'}  ${entry.status ?? ''}`);
+          },
+          exitCode: EXIT_OK,
+        };
+      }
       return passthroughOutcome('task.list', response, inv, {
         emptyHint: opts.active === true ? 'no running tasks — see all: moda task list' : 'no tasks yet',
       });
