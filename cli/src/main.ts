@@ -1,7 +1,10 @@
 /** Entry: commander program assembly. */
 import { Command, CommanderError } from 'commander';
 import { registerAuth } from './commands/auth.ts';
+import { registerCanvas } from './commands/canvas.ts';
 import { registerContext } from './commands/context.ts';
+import { registerExport } from './commands/export.ts';
+import { registerFileUpload } from './commands/file.ts';
 import { registerMeta } from './commands/meta.ts';
 import { registerOrg } from './commands/org.ts';
 import { EXIT_INVALID_INPUT, EXIT_SIGINT } from './output/exitCodes.ts';
@@ -19,6 +22,9 @@ export function buildProgram(): Command {
   registerContext(program);
   registerOrg(program);
   registerAuth(program);
+  registerCanvas(program);
+  registerExport(program);
+  registerFileUpload(program);
   return program;
 }
 
