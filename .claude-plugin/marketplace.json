@@ -1,0 +1,18 @@
+{
+  "name": "moda",
+  "owner": {
+    "name": "Moda Design",
+    "url": "https://moda.app"
+  },
+  "metadata": {
+    "description": "Design real, editable artifacts on Moda from any coding agent: decks, one-pagers, brand-true designs, and precise canvas edits over the moda CLI.",
+    "version": "0.1.0"
+  },
+  "plugins": [
+    {
+      "name": "moda",
+      "source": "./",
+      "description": "Four skills (moda-deck, moda-one-pager, moda-brand, moda-edit) plus the /moda router. Requires the moda CLI; Step 0 in every skill checks it and never installs anything itself."
+    }
+  ]
+}

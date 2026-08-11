@@ -1,0 +1,51 @@
+#!/bin/sh
+# Moda skills installer (private dogfood).
+# Copies the skill directories into the harness locations it can detect and
+# PRINTS the pinned moda-CLI install command. It never installs the CLI,
+# never pipes curl to sh, never uses sudo.
+set -eu
+cd "$(dirname "$0")"
+
+SKILLS="moda-deck moda-one-pager moda-brand moda-edit"
+installed=""
+
+copy_into() {
+  dest="$1"
+  mkdir -p "$dest"
+  for s in $SKILLS; do
+    rm -rf "$dest/$s"
+    cp -R "skills/$s" "$dest/$s"
+  done
+  installed="$installed $dest"
+}
+
+# Codex and other SKILL.md-native harnesses
+if [ -d "$HOME/.agents" ] || command -v codex >/dev/null 2>&1; then
+  copy_into "$HOME/.agents/skills"
+fi
+
+# Claude Code personal skills dir (plugin marketplace is the preferred path)
+if [ -d "$HOME/.claude" ]; then
+  copy_into "$HOME/.claude/skills"
+fi
+
+# Cursor
+if [ -d "$HOME/.cursor" ]; then
+  copy_into "$HOME/.cursor/skills"
+fi
+
+if [ -z "$installed" ]; then
+  copy_into "$HOME/.agents/skills"
+fi
+
+echo "Skills installed to:$installed"
+echo
+echo "Claude Code users: prefer the marketplace instead of this copy:"
+echo "  /plugin marketplace add moda-design/moda && /plugin install moda@moda"
+echo
+echo "Now install the moda CLI yourself (this script never will). Pinned command:"
+echo
+echo '  gh release download -R moda-design/moda -p "moda-$(uname -s | tr '"'"'[:upper:]'"'"' '"'"'[:lower:]'"'"')-$(uname -m)*" -D /tmp/moda-dl'
+echo '  (cd /tmp/moda-dl && shasum -a 256 -c checksums.txt --ignore-missing)'
+echo '  install -m 0755 /tmp/moda-dl/moda-* "$HOME/.local/bin/moda"'
+echo '  moda doctor'
