@@ -62,6 +62,10 @@ export function exitCodeForError(err: CliErrorFields): number {
   // (code arrives as the generic `invalid_request`) — key on the status, not the code.
   if (err.status === 402) return EXIT_QUOTA;
   if (QUOTA_CODES.has(err.code)) return EXIT_QUOTA;
+  // Per-code override: the platform-wide publish kill switch arrives typed `permission`
+  // (403), but exit 3 would send harnesses into a pointless `moda auth login` loop — it is
+  // a wait/retry condition, not an auth problem, so it takes the quota/limits exit class.
+  if (err.code === 'free_publishing_disabled') return EXIT_QUOTA;
   return TYPE_TABLE[err.type] ?? EXIT_INTERNAL;
 }
 

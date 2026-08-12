@@ -336,6 +336,8 @@ describe('site publish (POST /v1/websites/{id}/publish)', () => {
       expect((err as CliError).fields.code).toBe('slug_taken');
       expect((err as CliError).fields.type).toBe('invalid_request');
       expect((err as CliError).fields.retryable).toBe(false);
+      // Slug-lane hints: the agent should pick a new slug, not re-run the same command.
+      expect((err as CliError).fields.hint).toContain('--slug');
     }
   });
 

@@ -307,7 +307,7 @@ export function registerCanvas(program: Command): void {
   addGlobalFlags(
     canvas
       .command('delete-items <canvas> <node_ids...>')
-      .description('delete nodes by id (standalone by contract — remove() throws inside edit code)')
+      .description('delete nodes, pages, variables, or animations by id (standalone by contract — remove() throws inside edit code)')
       .option('--revision <token>', 'expected revision (defaults to the cached last read; required)')
       .option('--yes', 'confirm large deletions under --json/--no-input'),
   ).action(
@@ -324,7 +324,7 @@ export function registerCanvas(program: Command): void {
       const { client } = await authedClient(inv, MUTATION_TIMEOUT_MS);
       const ref = await resolveCanvasRef(refArg as string, client);
       const revision = chooseRevision(ref, opts.revision as string | undefined, true, inv.env);
-      warnStaleShortIds(ref, nodeIds.filter((id) => /^(n\d+|p_[a-z0-9]+|img\d+)$/.test(id)), inv);
+      warnStaleShortIds(ref, nodeIds.filter((id) => /^(n\d+|p_[a-z0-9]+|img\d+|anim\d+)$/.test(id)), inv);
       // Server contract: CanvasDeleteItemsRequest {ids, expected_revision}.
       const payload = { ids: nodeIds, expected_revision: revision.expectedRevision };
       const response = await client.request({

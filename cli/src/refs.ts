@@ -98,8 +98,8 @@ function parseCanvasUrl(input: string): ParsedRef {
   );
 }
 
-/** Short session ids minted by canvas reads (`n7`, `p_a`, `img1`) — pass-through per contract. */
-export const SHORT_ID_RE = /\b(?:n\d+|p_[a-z0-9]+|img\d+)\b/g;
+/** Short session ids minted by canvas reads (`n7`, `p_a`, `img1`, `anim2`) — pass-through per contract. */
+export const SHORT_ID_RE = /\b(?:n\d+|p_[a-z0-9]+|img\d+|anim\d+)\b/g;
 
 export function extractShortIds(dslText: string): string[] {
   const found = new Set<string>();

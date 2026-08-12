@@ -1006,7 +1006,7 @@
     },
     {
       "name": "canvas delete-items",
-      "description": "delete nodes by id (standalone by contract — remove() throws inside edit code)",
+      "description": "delete nodes, pages, variables, or animations by id (standalone by contract — remove() throws inside edit code)",
       "positionals": [
         {
           "name": "canvas",

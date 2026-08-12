@@ -348,6 +348,14 @@ export async function performSitePublish(
         // safe by construction (same row, same slug, artifact rebuilt).
         website_already_published:
           `Another publish just won the first-publish race — re-run: moda site publish ${id} (it will succeed).`,
+        slug_invalid:
+          `Pick a different --slug (3-63 chars, lowercase letters/digits/single hyphens, no reserved or brand words) and re-run: moda site publish ${id} --slug <prefix>.`,
+        slug_taken:
+          `That slug is already in use — pick a different --slug and re-run: moda site publish ${id} --slug <prefix>.`,
+        slug_cooldown:
+          `That slug was recently unpublished and is cooling down — pick a different --slug and re-run: moda site publish ${id} --slug <prefix>.`,
+        free_publishing_disabled:
+          'Publishing is temporarily disabled platform-wide — not an auth or account problem; retry later.',
       }),
     );
   const root = asObject(response.body);

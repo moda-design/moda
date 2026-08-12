@@ -72,6 +72,10 @@ describe('exit-code mapper (cli.md §4.1)', () => {
     expect(exitCodeForError({ ...api('invalid_request', 'cli_update_required'), status: 426 })).toBe(EXIT_INVALID_INPUT);
   });
 
+  test('free_publishing_disabled (platform kill switch, typed permission/403) → exit 6, not the auth lane', () => {
+    expect(exitCodeForError(api('permission', 'free_publishing_disabled'))).toBe(EXIT_QUOTA);
+  });
+
   test('billing/quota codes → exit 6 regardless of type', () => {
     expect(exitCodeForError(api('permission', 'payment_required'))).toBe(EXIT_QUOTA);
     expect(exitCodeForError(api('invalid_request', 'insufficient_credits'))).toBe(EXIT_QUOTA);

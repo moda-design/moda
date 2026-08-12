@@ -116,13 +116,24 @@ export function registerFileFacade(program: Command): void {
         flags,
         30_000,
       );
-      return listOutcome({
+      const outcome = listOutcome({
         operation: 'file.search',
         pages,
         flags,
         emptyHint: `no results for '${args[0] as string}' — broaden the query or switch --kind (icon | photo)`,
         itemLine: (asset) => `${str(asset, 'id') ?? '?'}  ${str(asset, 'name') ?? ''}`,
       });
+      // The server scores relevance: has_good_matches false means every hit is below its
+      // confidence bar. Surface it in the human lane too — a silent low-confidence page reads
+      // as a match and gets placed as-is (the JSON body already carries the flag via root).
+      if (pages.root.has_good_matches === false && pages.items.length > 0) {
+        const inner = outcome.human;
+        outcome.human = (write) => {
+          write('low-confidence matches — verify visually before placing (or generate instead)');
+          inner?.(write);
+        };
+      }
+      return outcome;
     }),
   );
 

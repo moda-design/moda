@@ -60,8 +60,8 @@ describe('parseRef', () => {
 });
 
 describe('extractShortIds', () => {
-  test('collects node/page/image short ids from DSL text', () => {
-    const ids = extractShortIds('# Page p_a\n n7 rect 10x10\n n12 text "hi" img1');
-    expect(ids).toEqual(['img1', 'n12', 'n7', 'p_a']);
+  test('collects node/page/image/animation short ids from DSL text', () => {
+    const ids = extractShortIds('# Page p_a\n n7 rect 10x10\n n12 text "hi" img1\n anim2 fade-in n7');
+    expect(ids).toEqual(['anim2', 'img1', 'n12', 'n7', 'p_a']);
   });
 });
