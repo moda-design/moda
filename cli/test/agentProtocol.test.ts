@@ -93,7 +93,7 @@ describe('moda describe (machine-readable schema)', () => {
 
   test('dotted verb grammar (gate finding F7): the error names the exact space-separated retry', async () => {
     const { code, stdout } = await run(['describe', 'brand.create', '--json']);
-    expect(code).not.toBe(0);
+    expect(code).toBe(2);
     const error = (JSON.parse(stdout) as Record<string, unknown>).error as Record<string, unknown>;
     expect(error.code).toBe('usage');
     expect(error.hint).toBe('Verb names are space-separated: moda describe brand create');
@@ -101,7 +101,7 @@ describe('moda describe (machine-readable schema)', () => {
 
   test('unknown verb with no near miss still teaches the grammar', async () => {
     const { code, stdout } = await run(['describe', 'zebra', '--json']);
-    expect(code).not.toBe(0);
+    expect(code).toBe(2);
     const error = (JSON.parse(stdout) as Record<string, unknown>).error as Record<string, unknown>;
     expect(String(error.hint)).toContain('space-separated');
   });
@@ -113,16 +113,59 @@ describe('moda describe (machine-readable schema)', () => {
   });
 });
 
-describe('canvas markup missing --page (gate finding F6)', () => {
-  test('the miss is a typed usage error naming the exact retry shape, not a raw commander line', async () => {
+describe('commander parse errors become typed envelopes (gate finding F6)', () => {
+  test('canvas markup missing --page: typed usage error naming the exact retry shape', async () => {
     const { code, stdout } = await run(['canvas', 'markup', 'cvs_123', '--file', 'page.xml', '--json']);
     expect(code).toBe(2);
     const error = (JSON.parse(stdout) as Record<string, unknown>).error as Record<string, unknown>;
     expect(error.code).toBe('usage');
     expect(String(error.message)).toContain('--page');
     const hint = String(error.hint);
-    expect(hint).toContain('moda canvas markup cvs_123 --file FILE --page PAGE_ID');
+    expect(hint).toContain('moda canvas markup CANVAS --file FILE --page PAGE_ID');
     expect(hint).toContain('moda canvas show');
+  });
+
+  test('any other missing required flag gets a typed envelope too — never an empty --json stdout', async () => {
+    const { code, stdout } = await run(['canvas', 'markup', 'cvs_123', '--page', 'p_a', '--json']);
+    expect(code).toBe(2);
+    const error = (JSON.parse(stdout) as Record<string, unknown>).error as Record<string, unknown>;
+    expect(error.code).toBe('usage');
+    expect(String(error.message)).toContain('--file');
+    expect(String(error.hint)).toContain('moda describe canvas markup --json');
+  });
+
+  test('a CliError from an option-value parser is a typed envelope, not a stack trace', async () => {
+    const { code, stdout } = await run(['template', 'list', '--limit', 'abc', '--json']);
+    expect(code).toBe(2);
+    const error = (JSON.parse(stdout) as Record<string, unknown>).error as Record<string, unknown>;
+    expect(error.code).toBe('usage');
+    expect(String(error.message)).toContain("--limit value 'abc'");
+  });
+
+  test('with both flags present, a missing markup file surfaces the FILE error (guard ordering pin)', async () => {
+    const { code, stdout } = await run([
+      'canvas', 'markup', 'cvs_123', '--file', 'definitely-missing.xml', '--page', 'p_a', '--json',
+    ]);
+    expect(code).not.toBe(0);
+    const error = (JSON.parse(stdout) as Record<string, unknown>).error as Record<string, unknown>;
+    expect(String(error.message)).toContain('definitely-missing.xml');
+  });
+
+  test('bare `moda` still prints usage help on stderr (the non-usage commander lane flushes)', async () => {
+    const scratch = mkdtempSync(join(tmpdir(), 'moda-proto-'));
+    const proc = Bun.spawn(['bun', MAIN], {
+      stdout: 'pipe',
+      stderr: 'pipe',
+      env: {
+        ...process.env,
+        MODA_NO_UPDATE_CHECK: '1',
+        MODA_CONFIG_DIR: join(scratch, 'config'),
+        MODA_STATE_DIR: join(scratch, 'state'),
+      },
+    });
+    const [code, stderr] = await Promise.all([proc.exited, new Response(proc.stderr).text()]);
+    expect(code).toBe(2);
+    expect(stderr).toContain('Usage: moda');
   });
 });
 

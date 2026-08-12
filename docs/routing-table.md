@@ -24,7 +24,7 @@ enforces that moda-help names every skill).
 | "Build a brand kit from our site" | moda-brand | kit lifecycle |
 | "Here's the canvas URL — make the headline bigger" | moda-edit | existing-canvas change request |
 | "Set up Moda for me" / "what can Moda do?" / "how do I switch orgs" / CLI errors | moda-help | meta-only; never claims authoring asks |
-| "Set up Moda to auto-post blog articles to LinkedIn weekly" (automation/integration/scheduling asks) | moda-help | none-fit catcher: no automation surface exists — honest gap + nearest-thing offer, never a wrong-format build; a matching format skill still always wins |
+| "Set up Moda to auto-post blog articles to LinkedIn weekly" (automation/integration/scheduling asks) | moda-help | none-fit catcher: no automation surface exists — see the automation-vs-authoring boundary rule |
 
 Boundary rules, stated once:
 
@@ -44,3 +44,9 @@ Boundary rules, stated once:
   (moda-diagram).
 - **Animated ads**: routed to moda-social, which refuses the animation
   honestly and delivers static — routing never bounces on the limitation.
+- **Automation vs authoring**: "set up Moda to …" scheduling/integration
+  asks are moda-help even when they name a platform whose creative rows
+  belong to a format skill (the LinkedIn trap above) — the automation is the
+  ask, and no such surface exists: honest gap, then offer the one-time
+  artifact via its format skill. A single-deliverable ask (even a recurring
+  topic, "our weekly post") stays with the format skill.

@@ -20,7 +20,7 @@ export const LIST_ALL_CAP = 500;
 /** Array field names the /v1 list lanes return their items under. */
 const LIST_ITEM_KEYS = [
   'items', 'data', 'canvases', 'results', 'tasks', 'files', 'brand_kits', 'websites', 'assets',
-  'models', 'image_models', 'organizations', 'pages', 'folders',
+  'models', 'organizations', 'pages', 'folders',
 ];
 
 /**

@@ -6,7 +6,8 @@ description: >-
   "what can Moda do?", "which Moda skill or tool should handle X?", CLI
   troubleshooting (doctor, last-error, typed errors), automation and
   integration asks ("set up Moda to auto-post/sync/schedule X", connect
-  Moda to another tool, recurring or scheduled jobs) — or when a Moda
+  Moda to another tool, recurring jobs — the automation part only: any
+  artifact to author still routes to its format skill) — or when a Moda
   request doesn't CLEARLY fit any other moda skill (a matching format skill
   always wins; this is the none-fit catcher, never a shortcut). Creating or
   editing designs, decks, documents, sites, graphics, or diagrams is NEVER
@@ -136,12 +137,11 @@ page is live (website); decorative shapes → social, not diagram.
   caps at 500). Copy ids/URLs verbatim.
 
 ## When nothing fits
-Consult the table above; if a format skill fits after all, load it and
-proceed — don't narrate the detour. Capability unclear? `moda describe
-[verb] --json` is ground truth (`moda docs` for the authoring surface).
-Outside Moda's powers? Say so honestly, offer the nearest thing Moda CAN
-do; ask exactly ONE question, only when the fork is real — never enumerate
-the catalog at the user.
+Consult the table above; a format skill that fits after all wins — load it,
+don't narrate the detour. Capability unclear? `moda describe [verb] --json`
+is ground truth (`moda docs` for authoring). Outside Moda's powers? Say so
+honestly, offer the nearest thing Moda CAN do, and ask exactly ONE
+question, only when the fork is real — never enumerate the catalog.
 
 ## Verbs at a glance (load the format skill for the work)
 Decks/documents/social/diagrams author via `moda canvas markup|edit` +

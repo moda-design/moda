@@ -2224,9 +2224,9 @@
         },
         {
           "flag": "--page",
-          "description": "target page — required (page id from a read/show, or \"canvas\" for floating nodes)",
+          "description": "target page (a page id from a read/show, or \"canvas\" for floating nodes)",
           "takes_value": true,
-          "required": false
+          "required": true
         },
         {
           "flag": "--pretty",
@@ -4671,15 +4671,9 @@
     },
     {
       "name": "media models",
-      "description": "available media models (the required --model values)",
+      "description": "available media models and their capabilities (the required --model values)",
       "positionals": [],
       "flags": [
-        {
-          "flag": "--all",
-          "description": "fetch every page (bounded at 500 items)",
-          "takes_value": false,
-          "required": false
-        },
         {
           "flag": "--api-base",
           "description": "endpoint override (staging/dev)",
@@ -4693,12 +4687,6 @@
           "required": false
         },
         {
-          "flag": "--limit",
-          "description": "page size",
-          "takes_value": true,
-          "required": false
-        },
-        {
           "flag": "--no-input",
           "description": "fail instead of prompting (implied by --json)",
           "takes_value": false,
@@ -4708,12 +4696,6 @@
           "flag": "--no-retry",
           "description": "disable the built-in busy/transport retry",
           "takes_value": false,
-          "required": false
-        },
-        {
-          "flag": "--offset",
-          "description": "pagination offset",
-          "takes_value": true,
           "required": false
         },
         {

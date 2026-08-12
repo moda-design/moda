@@ -547,9 +547,9 @@ export function registerCanvas(program: Command): void {
       .command('markup <canvas>')
       .description('apply XML markup to a page (append or atomic full-page replace)')
       .requiredOption('--file <path>', "markup file, or '-' for stdin")
-      // Required, but enforced in the action so the miss is a TYPED error naming the exact
-      // retry shape — the raw commander line taught nothing on real first-contact runs.
-      .option('--page <page_id>', 'target page — required (page id from a read/show, or "canvas" for floating nodes)')
+      // A missed --page is re-emitted as a typed error naming the exact retry shape — see
+      // USAGE_HINTS in main.ts (gate finding F6: the raw commander line taught nothing).
+      .requiredOption('--page <page_id>', 'target page (a page id from a read/show, or "canvas" for floating nodes)')
       .option('--mode <mode>', 'append | replace', 'append')
       .option('--revision <token>', 'expected revision (required for --mode replace)')
       .option('--screenshot <path>', SCREENSHOT_FLAG_HELP),
@@ -558,13 +558,6 @@ export function registerCanvas(program: Command): void {
     .action(
     wrapAction(async (args, opts, cmd) => {
       const inv = buildInvocation(cmd);
-      if (typeof opts.page !== 'string') {
-        throw CliError.usage(
-          'Missing --page — markup applies to ONE page.',
-          `Retry: moda canvas markup ${args[0] as string} --file FILE --page PAGE_ID ` +
-            '(page ids come from moda canvas show/read; --page canvas targets floating nodes).',
-        );
-      }
       const mode = opts.mode as string;
       if (mode !== 'append' && mode !== 'replace') {
         throw CliError.usage(`Invalid --mode '${mode}' — expected append or replace.`);

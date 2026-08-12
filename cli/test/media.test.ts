@@ -3,9 +3,13 @@
  * Regression for the cold-gate F4 defect: the server envelope is
  * `{image_models: [descriptor…], video_model_ids: [id…]}` (backend media router), but the
  * plain formatter printed "no models reported" while --json listed everything — which steered
- * real runs into declaring imagery unavailable and skipping the workflow step.
+ * real runs into declaring imagery unavailable and skipping the workflow step. The verb is a
+ * complete one-document capability registry, NOT a paginated list: no page note, ever.
  */
 import { afterEach, describe, expect, test } from 'bun:test';
+import { mkdtempSync, readFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { ApiClient } from '../src/api/client.ts';
 import { performMediaModels } from '../src/commands/media.ts';
 
@@ -87,9 +91,9 @@ const MODELS_ENVELOPE = {
 };
 
 describe('media models — human/JSON model-set parity (gate finding F4)', () => {
-  test('human lane renders every model id the JSON lane carries', async () => {
+  test('human lane renders every model id the JSON lane carries — and NOTHING extra (no page note)', async () => {
     const { base } = serve(MODELS_ENVELOPE);
-    const outcome = await performMediaModels(client(base), {});
+    const outcome = await performMediaModels(client(base));
 
     const body = outcome.body as Record<string, unknown>;
     const jsonImageIds = (body.image_models as Array<Record<string, unknown>>).map((m) => m.id as string);
@@ -97,21 +101,27 @@ describe('media models — human/JSON model-set parity (gate finding F4)', () =>
     expect(jsonImageIds).toEqual(['nano-banana', 'nano-banana-pro', 'gpt-image-2']);
     expect(jsonVideoIds).toEqual(MODELS_ENVELOPE.video_model_ids);
 
-    const human = humanLines(outcome).join('\n');
-    expect(human).not.toContain('no models reported');
-    for (const id of [...jsonImageIds, ...jsonVideoIds]) {
-      expect(human).toContain(id);
+    const lines = humanLines(outcome);
+    // Exactly one line per image model + one video-ids line: a full registry read must never
+    // suggest truncation or pagination.
+    expect(lines).toHaveLength(jsonImageIds.length + 1);
+    expect(lines.join('\n')).not.toContain('no models reported');
+    expect(lines.join('\n')).not.toContain('showing');
+    for (const [i, id] of jsonImageIds.entries()) {
+      expect(lines[i]).toStartWith(id);
     }
+    expect(lines.at(-1)).toBe('video models: gemini-omni-flash, seedance-2.5, veo-3.1, veo-3.1-fast');
   });
 
-  test('capability lines carry the axes the skills defer to (aspect ratios, res tiers, refs, params)', async () => {
+  test('capability lines carry the axes the skills defer to (aspect ratios, res tiers, refs, image cap, params)', async () => {
     const { base } = serve(MODELS_ENVELOPE);
-    const lines = humanLines(await performMediaModels(client(base), {}));
+    const lines = humanLines(await performMediaModels(client(base)));
 
     const nano = lines.find((l) => l.startsWith('nano-banana '));
     expect(nano).toContain('NanoBanana 2');
     expect(nano).toContain('ar auto,1:1,16:9,9:16');
     expect(nano).toContain('refs max 3');
+    expect(nano).toContain('imgs max 4');
     expect(nano).toContain('Fast, low-cost baseline');
 
     const pro = lines.find((l) => l.startsWith('nano-banana-pro'));
@@ -119,20 +129,51 @@ describe('media models — human/JSON model-set parity (gate finding F4)', () =>
 
     const gpt = lines.find((l) => l.startsWith('gpt-image-2'));
     expect(gpt).toContain('params quality');
+  });
 
-    expect(lines.at(-1)).toBe('video models: gemini-omni-flash, seedance-2.5, veo-3.1, veo-3.1-fast');
+  test('resolutions/controls tolerate bare-string entries (the envelope already mixes shapes)', async () => {
+    const { base } = serve({
+      image_models: [
+        { id: 'm1', label: 'M1', resolutions: ['1K', '2K'], controls: ['quality'] },
+      ],
+      video_model_ids: [],
+    });
+    const lines = humanLines(await performMediaModels(client(base)));
+    expect(lines).toEqual(['m1 — M1  [res 1K,2K; params quality]']);
+  });
+
+  test('an empty-string description leaves no trailing junk', async () => {
+    const { base } = serve({ image_models: [{ id: 'm1', label: 'M1', description: '' }], video_model_ids: [] });
+    const lines = humanLines(await performMediaModels(client(base)));
+    expect(lines).toEqual(['m1 — M1']);
   });
 
   test('a genuinely empty registry still says so', async () => {
     const { base } = serve({ image_models: [], video_model_ids: [] });
-    const lines = humanLines(await performMediaModels(client(base), {}));
+    const lines = humanLines(await performMediaModels(client(base)));
     expect(lines).toEqual(['no models reported']);
   });
 
-  test('video-only envelope never contradicts itself with the empty hint', async () => {
+  test('video-only envelope renders exactly the video line — no empty hint, no contradiction', async () => {
     const { base } = serve({ image_models: [], video_model_ids: ['veo-3.1'] });
-    const lines = humanLines(await performMediaModels(client(base), {}));
-    expect(lines.join('\n')).not.toContain('no models reported');
-    expect(lines.at(-1)).toBe('video models: veo-3.1');
+    const lines = humanLines(await performMediaModels(client(base)));
+    expect(lines).toEqual(['video models: veo-3.1']);
+  });
+
+  test('--output routes the full registry to the file; the envelope keeps counts + a bounded preview', async () => {
+    const { base } = serve(MODELS_ENVELOPE);
+    const out = join(mkdtempSync(join(tmpdir(), 'moda-media-out-')), 'models.json');
+    const outcome = await performMediaModels(client(base), out);
+    const body = outcome.body as Record<string, unknown>;
+    expect(body.output).toBe(out);
+    expect(body.image_model_count).toBe(3);
+    expect(body.video_model_count).toBe(4);
+    expect((body.preview as string[]).length).toBeLessThanOrEqual(3);
+    expect(body.image_models).toBeUndefined();
+    const onDisk = JSON.parse(readFileSync(out, 'utf8')) as Record<string, unknown>;
+    expect((onDisk.image_models as unknown[]).length).toBe(3);
+    expect(onDisk.video_model_ids).toEqual(MODELS_ENVELOPE.video_model_ids);
+    const lines = humanLines(outcome);
+    expect(lines[0]).toBe(`7 models → ${out} (inspect with jq/grep)`);
   });
 });
