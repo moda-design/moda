@@ -165,8 +165,9 @@ export function registerCanvas(program: Command): void {
         if (conflicting.length > 0) {
           throw CliError.usage(
             `--template cannot be combined with ${conflicting.join(', ')}.`,
-            'The template defines the page size, page count, and category, and placement is not wired through the ' +
-              'copy yet — create the copy, then place it with `moda drive move` (or `moda drive visibility`).',
+            'The template defines the page size, page count, and category, and placement is not wired through ' +
+              'the copy yet — drop those flags (or drop --template); place the copy afterwards with ' +
+              '`moda drive move` / `moda drive visibility`.',
           );
         }
       }
