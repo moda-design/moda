@@ -93,6 +93,8 @@ const SEMANTICS: Record<string, VerbSemantics> = {
   'site show': { read_lane: true },
   'task list': {},
   'task status': {},
+  'template list': {},
+  'template pull': {},
   'update': {},
   'version': {},
 };

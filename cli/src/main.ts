@@ -12,6 +12,7 @@ import { registerMeta } from './commands/meta.ts';
 import { registerOrg } from './commands/org.ts';
 import { registerSite } from './commands/site.ts';
 import { registerTask } from './commands/task.ts';
+import { registerTemplate } from './commands/template.ts';
 import { registerWeb } from './commands/web.ts';
 import { applyVerbSemantics } from './commands/verbSemantics.ts';
 import { EXIT_INVALID_INPUT, EXIT_SIGINT } from './output/exitCodes.ts';
@@ -34,6 +35,7 @@ export function buildProgram(): Command {
   registerFileUpload(program);
   registerFileFacade(program);
   registerBrand(program);
+  registerTemplate(program);
   registerTask(program);
   registerAccount(program);
   registerMedia(program);
