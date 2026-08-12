@@ -48,3 +48,16 @@ export class CliError extends Error {
     return new CliError({ type: 'invalid_request', code: 'io_error', message, hint, source: 'local' });
   }
 }
+
+/**
+ * Re-throw a typed error with an actionable hint for known, contract-settled codes. A hint that
+ * is already set wins (api/errors.ts attaches its own for cli_update_required and the terminal
+ * codes) and unknown codes re-throw untouched — this never swallows an error.
+ */
+export function withCodeHint(err: unknown, hints: Record<string, string>): never {
+  if (err instanceof CliError && err.fields.hint === undefined) {
+    const hint = hints[err.fields.code];
+    if (hint !== undefined) throw new CliError({ ...err.fields, hint });
+  }
+  throw err;
+}

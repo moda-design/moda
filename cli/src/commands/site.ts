@@ -14,7 +14,7 @@ import type { Command } from 'commander';
 import type { ApiClient } from '../api/client.ts';
 import { endpoints } from '../api/endpoints.ts';
 import { asObject, str, type JsonObject } from '../api/types.ts';
-import { CliError } from '../cliError.ts';
+import { CliError, withCodeHint } from '../cliError.ts';
 import { EXIT_OK } from '../output/exitCodes.ts';
 import type { CommandOutcome } from '../output/emit.ts';
 import { addGlobalFlags, authedClient, buildInvocation, metaBlock, wrapAction, type Invocation } from './runtime.ts';
@@ -356,15 +356,6 @@ export interface SiteContentInput {
   expectedVersion?: number;
 }
 
-/** Re-throw a typed error with an actionable hint for known site-lane codes (contract-settled). */
-function withSiteHint(err: unknown, hints: Record<string, string>): never {
-  if (err instanceof CliError && err.fields.hint === undefined) {
-    const hint = hints[err.fields.code];
-    if (hint !== undefined) throw new CliError({ ...err.fields, hint });
-  }
-  throw err;
-}
-
 export async function performSiteCreate(client: ApiClient, input: SiteContentInput): Promise<CommandOutcome> {
   if (input.html.trim().length === 0) throw CliError.usage('The HTML page is empty.');
   const payload = { html: input.html, ...(input.title !== undefined ? { title: input.title } : {}) };
@@ -430,7 +421,7 @@ export async function performSiteSetContent(
   const response = await client
     .request({ method: 'PUT', path: endpoints.websiteContent(id), body: payload })
     .catch((err: unknown) =>
-      withSiteHint(err, {
+      withCodeHint(err, {
         website_version_conflict:
           `The site changed since your read — re-read (moda site show ${id}), re-apply, then republish.`,
       }),
@@ -455,7 +446,7 @@ export async function performSitePublish(
   const response = await client
     .request({ method: 'POST', path: endpoints.websitePublish(id), body: payload })
     .catch((err: unknown) =>
-      withSiteHint(err, {
+      withCodeHint(err, {
         // Contract-settled: fires only when two concurrent FIRST publishes race; republish is
         // safe by construction (same row, same slug, artifact rebuilt).
         website_already_published:
@@ -513,7 +504,7 @@ export async function performSitePageSetContent(
   const response = await client
     .request({ method: 'PUT', path: endpoints.websitePageContent(id), body: payload })
     .catch((err: unknown) =>
-      withSiteHint(err, {
+      withCodeHint(err, {
         website_version_conflict: `The site changed since your read — re-read (moda site pages ${id}), re-apply, then republish.`,
       }),
     );
@@ -563,7 +554,7 @@ export async function performSiteAddPage(client: ApiClient, siteRef: string, inp
       idempotency: { command: 'site add-page', canvas: id, expectedRevision: undefined, payload: JSON.stringify(payload) },
     })
     .catch((err: unknown) =>
-      withSiteHint(err, {
+      withCodeHint(err, {
         website_page_exists: `A page already exists at ${input.path} — update it instead: moda site set-content ${id} --path ${input.path} --file …`,
       }),
     );
@@ -595,7 +586,7 @@ export async function performSiteDeletePage(
       },
     })
     .catch((err: unknown) =>
-      withSiteHint(err, {
+      withCodeHint(err, {
         website_home_page_protected: 'The homepage (/) cannot be deleted — replace its content instead: moda site set-content … --path /',
       }),
     );

@@ -1373,6 +1373,12 @@
           "required": false
         },
         {
+          "flag": "--folder",
+          "description": "place the new canvas in this drive folder (fld_…); omitted, the workspace's default save location decides",
+          "takes_value": true,
+          "required": false
+        },
+        {
           "flag": "--json",
           "description": "machine output: exactly one compact JSON document on stdout; implies --no-input",
           "takes_value": false,
@@ -1435,6 +1441,12 @@
         {
           "flag": "--timeout",
           "description": "per-command ceiling override, seconds",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--visibility",
+          "description": "team | private — private hides it from teammates; only when the user asks",
           "takes_value": true,
           "required": false
         }
@@ -3226,6 +3238,532 @@
       }
     },
     {
+      "name": "drive folders",
+      "description": "list drive folders (flat, sorted by path, with item counts)",
+      "positionals": [],
+      "flags": [
+        {
+          "flag": "--all",
+          "description": "fetch every page (bounded at 500 items)",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--api-base",
+          "description": "endpoint override (staging/dev)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--json",
+          "description": "machine output: exactly one compact JSON document on stdout; implies --no-input",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--limit",
+          "description": "page size (server default 50, capped at 200)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--no-input",
+          "description": "fail instead of prompting (implied by --json)",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-retry",
+          "description": "disable the built-in busy/transport retry",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--offset",
+          "description": "pagination offset",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--org",
+          "description": "override the configured org context for this invocation",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--output",
+          "description": "write the full payload to a file; stdout gets a small summary + preview",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--parent",
+          "description": "only folders directly under this folder, or 'root' for the top-level ones",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--pretty",
+          "description": "pretty-print the --json document",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--quiet",
+          "description": "suppress non-essential stderr",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--timeout",
+          "description": "per-command ceiling override, seconds",
+          "takes_value": true,
+          "required": false
+        }
+      ],
+      "markers": {
+        "mutating": false,
+        "destructive": false,
+        "metered": false,
+        "read_lane": false
+      }
+    },
+    {
+      "name": "drive mkdir",
+      "description": "create a drive folder (the place to group one project's deliverables)",
+      "positionals": [
+        {
+          "name": "name",
+          "required": true,
+          "variadic": false
+        }
+      ],
+      "flags": [
+        {
+          "flag": "--api-base",
+          "description": "endpoint override (staging/dev)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--in",
+          "description": "parent folder (fld_…); omitted, the folder is created at the team root",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--json",
+          "description": "machine output: exactly one compact JSON document on stdout; implies --no-input",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-input",
+          "description": "fail instead of prompting (implied by --json)",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-retry",
+          "description": "disable the built-in busy/transport retry",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--org",
+          "description": "override the configured org context for this invocation",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--pretty",
+          "description": "pretty-print the --json document",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--quiet",
+          "description": "suppress non-essential stderr",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--timeout",
+          "description": "per-command ceiling override, seconds",
+          "takes_value": true,
+          "required": false
+        }
+      ],
+      "markers": {
+        "mutating": true,
+        "destructive": false,
+        "metered": false,
+        "read_lane": false
+      }
+    },
+    {
+      "name": "drive move",
+      "description": "move a canvas, file, or folder into another folder (destination 'root' = the team root)",
+      "positionals": [
+        {
+          "name": "ref",
+          "required": true,
+          "variadic": false
+        },
+        {
+          "name": "destination",
+          "required": true,
+          "variadic": false
+        }
+      ],
+      "flags": [
+        {
+          "flag": "--api-base",
+          "description": "endpoint override (staging/dev)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--json",
+          "description": "machine output: exactly one compact JSON document on stdout; implies --no-input",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-input",
+          "description": "fail instead of prompting (implied by --json)",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-retry",
+          "description": "disable the built-in busy/transport retry",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--org",
+          "description": "override the configured org context for this invocation",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--pretty",
+          "description": "pretty-print the --json document",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--quiet",
+          "description": "suppress non-essential stderr",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--timeout",
+          "description": "per-command ceiling override, seconds",
+          "takes_value": true,
+          "required": false
+        }
+      ],
+      "markers": {
+        "mutating": true,
+        "destructive": false,
+        "metered": false,
+        "read_lane": false
+      }
+    },
+    {
+      "name": "drive rename",
+      "description": "rename a canvas, file, or folder in the drive",
+      "positionals": [
+        {
+          "name": "ref",
+          "required": true,
+          "variadic": false
+        },
+        {
+          "name": "new-name",
+          "required": true,
+          "variadic": false
+        }
+      ],
+      "flags": [
+        {
+          "flag": "--api-base",
+          "description": "endpoint override (staging/dev)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--json",
+          "description": "machine output: exactly one compact JSON document on stdout; implies --no-input",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-input",
+          "description": "fail instead of prompting (implied by --json)",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-retry",
+          "description": "disable the built-in busy/transport retry",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--org",
+          "description": "override the configured org context for this invocation",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--pretty",
+          "description": "pretty-print the --json document",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--quiet",
+          "description": "suppress non-essential stderr",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--timeout",
+          "description": "per-command ceiling override, seconds",
+          "takes_value": true,
+          "required": false
+        }
+      ],
+      "markers": {
+        "mutating": true,
+        "destructive": false,
+        "metered": false,
+        "read_lane": false
+      }
+    },
+    {
+      "name": "drive rm",
+      "description": "delete a canvas, file, or folder from the drive (destructive — requires --yes under --json/--no-input)",
+      "positionals": [
+        {
+          "name": "ref",
+          "required": true,
+          "variadic": false
+        }
+      ],
+      "flags": [
+        {
+          "flag": "--api-base",
+          "description": "endpoint override (staging/dev)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--json",
+          "description": "machine output: exactly one compact JSON document on stdout; implies --no-input",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-input",
+          "description": "fail instead of prompting (implied by --json)",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-retry",
+          "description": "disable the built-in busy/transport retry",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--org",
+          "description": "override the configured org context for this invocation",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--pretty",
+          "description": "pretty-print the --json document",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--quiet",
+          "description": "suppress non-essential stderr",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--recursive",
+          "description": "delete a folder together with everything inside it",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--timeout",
+          "description": "per-command ceiling override, seconds",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--yes",
+          "description": "confirm deletion",
+          "takes_value": false,
+          "required": false
+        }
+      ],
+      "markers": {
+        "mutating": true,
+        "destructive": true,
+        "metered": false,
+        "read_lane": false
+      }
+    },
+    {
+      "name": "drive tree",
+      "description": "the nested folder tree — how this workspace is actually organized",
+      "positionals": [],
+      "flags": [
+        {
+          "flag": "--api-base",
+          "description": "endpoint override (staging/dev)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--depth",
+          "description": "levels to expand, 1-10 (server default 3)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--json",
+          "description": "machine output: exactly one compact JSON document on stdout; implies --no-input",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-input",
+          "description": "fail instead of prompting (implied by --json)",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-retry",
+          "description": "disable the built-in busy/transport retry",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--org",
+          "description": "override the configured org context for this invocation",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--pretty",
+          "description": "pretty-print the --json document",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--quiet",
+          "description": "suppress non-essential stderr",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--timeout",
+          "description": "per-command ceiling override, seconds",
+          "takes_value": true,
+          "required": false
+        }
+      ],
+      "markers": {
+        "mutating": false,
+        "destructive": false,
+        "metered": false,
+        "read_lane": false
+      }
+    },
+    {
+      "name": "drive visibility",
+      "description": "set who can see an item: private hides it from teammates; team makes it visible to the whole team (canvases and files — a folder takes its visibility from where it lives)",
+      "positionals": [
+        {
+          "name": "ref",
+          "required": true,
+          "variadic": false
+        },
+        {
+          "name": "visibility",
+          "required": true,
+          "variadic": false
+        }
+      ],
+      "flags": [
+        {
+          "flag": "--api-base",
+          "description": "endpoint override (staging/dev)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--json",
+          "description": "machine output: exactly one compact JSON document on stdout; implies --no-input",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-input",
+          "description": "fail instead of prompting (implied by --json)",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-retry",
+          "description": "disable the built-in busy/transport retry",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--org",
+          "description": "override the configured org context for this invocation",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--pretty",
+          "description": "pretty-print the --json document",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--quiet",
+          "description": "suppress non-essential stderr",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--timeout",
+          "description": "per-command ceiling override, seconds",
+          "takes_value": true,
+          "required": false
+        }
+      ],
+      "markers": {
+        "mutating": true,
+        "destructive": false,
+        "metered": false,
+        "read_lane": false
+      }
+    },
+    {
       "name": "export",
       "description": "export a canvas (pdf|pptx|png|jpeg|mp4|gif); polls transparently and downloads to -o",
       "positionals": [
@@ -3330,7 +3868,7 @@
     },
     {
       "name": "file download",
-      "description": "download file bytes — not available (no public drive endpoint)",
+      "description": "download file bytes — not available (no public file endpoint)",
       "positionals": [
         {
           "name": "file_id",
@@ -3403,7 +3941,7 @@
     },
     {
       "name": "file list",
-      "description": "list drive files — not available (no public drive endpoint)",
+      "description": "list drive files — not available (no public file endpoint; folders live under moda drive)",
       "positionals": [],
       "flags": [
         {
@@ -3562,7 +4100,7 @@
     },
     {
       "name": "file show",
-      "description": "file metadata — not available (no public drive endpoint)",
+      "description": "file metadata — not available (no public file endpoint)",
       "positionals": [
         {
           "name": "file_id",
@@ -3695,134 +4233,6 @@
       ],
       "markers": {
         "mutating": true,
-        "destructive": false,
-        "metered": false,
-        "read_lane": false
-      }
-    },
-    {
-      "name": "folder create",
-      "description": "create a folder — not available",
-      "positionals": [
-        {
-          "name": "name",
-          "required": true,
-          "variadic": false
-        }
-      ],
-      "flags": [
-        {
-          "flag": "--api-base",
-          "description": "endpoint override (staging/dev)",
-          "takes_value": true,
-          "required": false
-        },
-        {
-          "flag": "--json",
-          "description": "machine output: exactly one compact JSON document on stdout; implies --no-input",
-          "takes_value": false,
-          "required": false
-        },
-        {
-          "flag": "--no-input",
-          "description": "fail instead of prompting (implied by --json)",
-          "takes_value": false,
-          "required": false
-        },
-        {
-          "flag": "--no-retry",
-          "description": "disable the built-in busy/transport retry",
-          "takes_value": false,
-          "required": false
-        },
-        {
-          "flag": "--org",
-          "description": "override the configured org context for this invocation",
-          "takes_value": true,
-          "required": false
-        },
-        {
-          "flag": "--pretty",
-          "description": "pretty-print the --json document",
-          "takes_value": false,
-          "required": false
-        },
-        {
-          "flag": "--quiet",
-          "description": "suppress non-essential stderr",
-          "takes_value": false,
-          "required": false
-        },
-        {
-          "flag": "--timeout",
-          "description": "per-command ceiling override, seconds",
-          "takes_value": true,
-          "required": false
-        }
-      ],
-      "markers": {
-        "mutating": false,
-        "destructive": false,
-        "metered": false,
-        "read_lane": false
-      }
-    },
-    {
-      "name": "folder list",
-      "description": "list folders — not available",
-      "positionals": [],
-      "flags": [
-        {
-          "flag": "--api-base",
-          "description": "endpoint override (staging/dev)",
-          "takes_value": true,
-          "required": false
-        },
-        {
-          "flag": "--json",
-          "description": "machine output: exactly one compact JSON document on stdout; implies --no-input",
-          "takes_value": false,
-          "required": false
-        },
-        {
-          "flag": "--no-input",
-          "description": "fail instead of prompting (implied by --json)",
-          "takes_value": false,
-          "required": false
-        },
-        {
-          "flag": "--no-retry",
-          "description": "disable the built-in busy/transport retry",
-          "takes_value": false,
-          "required": false
-        },
-        {
-          "flag": "--org",
-          "description": "override the configured org context for this invocation",
-          "takes_value": true,
-          "required": false
-        },
-        {
-          "flag": "--pretty",
-          "description": "pretty-print the --json document",
-          "takes_value": false,
-          "required": false
-        },
-        {
-          "flag": "--quiet",
-          "description": "suppress non-essential stderr",
-          "takes_value": false,
-          "required": false
-        },
-        {
-          "flag": "--timeout",
-          "description": "per-command ceiling override, seconds",
-          "takes_value": true,
-          "required": false
-        }
-      ],
-      "markers": {
-        "mutating": false,
         "destructive": false,
         "metered": false,
         "read_lane": false

@@ -11,6 +11,7 @@ import { alert, type CommandOutcome } from '../output/emit.ts';
 import { EXIT_OK } from '../output/exitCodes.ts';
 import { toCanvasWireId, extractShortIds } from '../refs.ts';
 import { previewText, writeResultFile } from '../output/resultFile.ts';
+import { parseFolderRef, parseVisibility } from './drive.ts';
 import { LIST_ALL_CAP, fetchListPages, listFlagsOf, listOutcome, parseListLimit, parseListOffset } from './listLane.ts';
 import { addGlobalFlags, authedClient, buildInvocation, metaBlock, wrapAction, type Invocation } from './runtime.ts';
 import {
@@ -140,7 +141,12 @@ export function registerCanvas(program: Command): void {
       .option('--size <WxH>', 'page size, e.g. 1920x1080')
       .option('--pages <n>', 'initial page count', (v: string) => Number.parseInt(v, 10))
       .option('--category <category>', 'canvas category (drives export defaults and multi-page semantics)')
-      .option('--template <canvas>', 'start from a team template (moda template list): a full copy of that canvas'),
+      .option('--template <canvas>', 'start from a team template (moda template list): a full copy of that canvas')
+      .option(
+        '--folder <folder_ref>',
+        "place the new canvas in this drive folder (fld_…); omitted, the workspace's default save location decides",
+      )
+      .option('--visibility <visibility>', 'team | private — private hides it from teammates; only when the user asks'),
   )
     .addHelpText('after', '\nExamples:\n  moda canvas create --name "Q3 deck" --size 1920x1080 --pages 1 --category slides\n  moda canvas create --name "One-pager" --size 816x1056\n  moda canvas create --name "Q3 QBR" --template cvs_… (copy of a team template; edit the copy)\n\nNot for: adding pages to an existing canvas (moda canvas add-pages), or\nreworking an existing design (moda canvas read, then markup/edit).\n')
     .action(
@@ -153,17 +159,24 @@ export function registerCanvas(program: Command): void {
           ...(typeof opts.size === 'string' ? ['--size'] : []),
           ...(typeof opts.pages === 'number' ? ['--pages'] : []),
           ...(typeof opts.category === 'string' ? ['--category'] : []),
+          ...(typeof opts.folder === 'string' ? ['--folder'] : []),
+          ...(typeof opts.visibility === 'string' ? ['--visibility'] : []),
         ];
         if (conflicting.length > 0) {
           throw CliError.usage(
             `--template cannot be combined with ${conflicting.join(', ')}.`,
-            'The template defines the page size, page count, and category — drop those flags, or drop --template to build from scratch.',
+            'The template defines the page size, page count, and category, and placement is not wired through ' +
+              'the copy yet — drop those flags (or drop --template); place the copy afterwards with ' +
+              '`moda drive move` / `moda drive visibility`.',
           );
         }
       }
       const { client } = await authedClient(inv, MUTATION_TIMEOUT_MS);
-      // Server contract: CanvasCreateRequest {name, width, height, page_count, category?} —
-      // or {name, template_canvas_id} for a template-sourced create (mutually exclusive).
+      // Server contract: CanvasCreateRequest {name, width, height, page_count, category?,
+      // folder_id?, visibility?} — or {name, template_canvas_id} for a template-sourced create
+      // (mutually exclusive with the blank-canvas fields AND with folder_id/visibility: create
+      // the copy, then place it with `moda drive move`). Placement/visibility are OPTIONAL —
+      // omitted, the workspace's default save location governs where the canvas lands.
       const size = typeof opts.size === 'string' ? parseSize(opts.size) : undefined;
       const payload = {
         name: opts.name as string,
@@ -171,6 +184,8 @@ export function registerCanvas(program: Command): void {
         ...(size !== undefined ? { width: size.width, height: size.height } : {}),
         ...(typeof opts.pages === 'number' ? { page_count: opts.pages } : {}),
         ...(typeof opts.category === 'string' ? { category: opts.category } : {}),
+        ...(typeof opts.folder === 'string' ? { folder_id: parseFolderRef(opts.folder) } : {}),
+        ...(typeof opts.visibility === 'string' ? { visibility: parseVisibility(opts.visibility) } : {}),
       };
       const response = await client.request({
         method: 'POST',
