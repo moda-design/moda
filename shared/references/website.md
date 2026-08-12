@@ -4,37 +4,38 @@ A Moda site publishes to a public `https://<slug>.moda.page` URL. The lane is
 deterministic and unmetered. This is a design surface: design quality matters,
 not just valid HTML.
 
-**v1 is static single-page sites**: one HTML document in, served as the site.
-No extra routes, no server code, no logins, no databases — and **no
-screenshot/visual-QA verb on this surface**. Say BOTH up front when a request
-implies multiple pages or rendered-preview checks: offer supported embeds,
-anchor-linked sections, and live-URL review instead, and say plainly when
-something is out of scope — before building, not after.
+**Static multi-page sites**: HTML documents in, served as routable pages
+(`/`, `/pricing`, …). No server code, no logins, no databases — offer
+supported embeds and links instead, and say plainly when something is out
+of scope. Visual QA is real: `moda site screenshot` renders draft pages at
+desktop/tablet/mobile widths.
 
 ## Verbs
 
 ```
-moda site create --file page.html [--title "Name"]
-moda site list [--limit N] [--offset N]
-moda site show SITE_ID
-moda site set-content SITE_ID --file page.html [--title "Name"]
-moda site publish SITE_ID [--slug prefix]
-moda site unpublish SITE_ID
-moda site delete SITE_ID
+moda site create --file page.html [--title "Name"]   # starts with the homepage
+moda site list / show / pages SITE_ID                # pages → paths, names, VERSION
+moda site set-content SITE_ID --file page.html [--path /route] [--expected-version N]
+moda site add-page SITE_ID --path /pricing --file page.html [--name Pricing]
+moda site delete-page SITE_ID --path /route          # the homepage (/) is protected
+moda site screenshot SITE_ID [--path /a /b] [--viewport desktop|tablet|mobile] [--format jpg|png]
+moda site publish SITE_ID [--slug prefix]            # one publish covers ALL pages
+moda site unpublish SITE_ID / delete SITE_ID
 ```
 
 - Site ids are plain UUIDs — take them from `create` / `list`; never invent
   or transform one.
 - `create` stores the page but publishes nothing. The site has no URL until
   the first `publish`.
-- `set-content` replaces the whole page (send the complete HTML document,
-  not a diff). It does NOT touch the live site: the published page keeps
-  serving the last publish until you run `moda site publish` again — the
-  response's `has_unpublished_changes` flags exactly this. The edit loop is
-  always save-then-republish. For read-modify-write safety pass
-  `--expected-version N` (the `version` from your last `moda site show`); a
-  409 `website_version_conflict` means the site changed since your read —
-  re-read, re-apply, republish.
+- `set-content` replaces a page's complete HTML (never a diff): `--path`
+  targets one route; omitting it writes the homepage/site-level content.
+  Saves do NOT touch the live site — every page keeps serving the last
+  publish until `moda site publish` runs again (`has_unpublished_changes`
+  flags this). The edit loop is always save-then-republish. Pass
+  `--expected-version N` (the `version` from `moda site pages`/`show`) for
+  read-modify-write safety; 409 `website_version_conflict` → re-read,
+  re-apply, republish. Adding a page that exists is 409
+  `website_page_exists` (update it instead).
 - `publish` returns the live URL — print it prominently. `--slug` is a
   first-publish hint only (the final slug gets a random suffix; the hint is
   ignored on republish). A `slug_taken` / `slug_invalid` error means pick a
@@ -58,9 +59,9 @@ moda site delete SITE_ID
   rights on this site — it is NOT an auth failure; do not re-run
   `moda auth login`.
 
-## Authoring the page
+## Authoring pages
 
-Write the HTML with your own tools as one **self-contained document**: inline
+Write each page with your own tools as one **self-contained document**: inline
 `<style>` for CSS, minimal inline `<script>` for behavior. Do not add blanket
 CSS resets or normalize rules (`* { margin:0 }` and friends) — the hosting
 runtime provides a sane baseline; component-specific styles only. Mobile-first,
@@ -127,7 +128,11 @@ from a URL, reuse its real copy/colors/fonts but re-host its images in Moda.
 
 ## Verify loop
 
-There is no screenshot verb on this surface. Verify by reviewing the HTML you
-authored (read it back critically: hierarchy, spacing, responsive behavior,
-contrast) and, after publish, by fetching the live URL when your harness can.
-Fix, `set-content`, republish.
+`moda site screenshot SITE_ID --path /route --viewport mobile` renders the
+DRAFT (saved) content — up to 3 pages per call, desktop/tablet/mobile, files
+downloaded locally for your own vision. Check hierarchy, spacing, contrast,
+and responsive behavior at desktop AND mobile before publishing; a
+`js_disabled` capture is degraded (JS-off fallback) — re-capture before
+judging animation-dependent layouts. 503 `render_capacity` is transient
+(retry after a moment); 422 `website_render_too_heavy` is deterministic —
+lighten the page. Fix, `set-content`, screenshot again, republish.

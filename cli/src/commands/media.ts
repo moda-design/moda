@@ -156,16 +156,28 @@ export function registerMedia(program: Command): void {
   addGlobalFlags(
     media
       .command('upscale-video <ref_or_path>')
-      .description('upscale a video — not available: the public media lane has no upscale-video endpoint'),
+      .description('upscale a video (metered); accepts a file_ ref, URL, or local path')
+      .option('--resolution <res>', 'target resolution: 720p | 1080p | 1440p | 2160p')
+      .option('-o, --output <path>', 'download the artifact to a local file'),
   ).action(
-    wrapAction(async () => {
-      throw new CliError({
-        type: 'unprocessable',
-        code: 'not_available',
-        message: 'Video upscaling has no public API endpoint — a recorded parity exception in the prototype.',
-        hint: 'Upscale video in the Moda app; image upscaling is available: moda media upscale.',
-        source: 'local',
-      });
+    wrapAction(async (args, opts, cmd) => {
+      const inv = buildInvocation(cmd);
+      const { client } = await authedClient(inv, MEDIA_TIMEOUT_MS);
+      const video = await mediaInput(args[0] as string, client);
+      const payload = { video, ...(typeof opts.resolution === 'string' ? { resolution: opts.resolution } : {}) };
+      try {
+        return await mediaCall(client, inv, 'media.upscale_video', endpoints.mediaUpscaleVideo(), payload, opts.output as string | undefined);
+      } catch (err) {
+        // Tolerant lane: a bare route 404 means this server predates the endpoint (#9292).
+        if (err instanceof CliError && err.fields.code === 'http_404') {
+          throw new CliError({
+            ...err.fields,
+            message: 'This server predates the video-upscale endpoint.',
+            hint: 'It ships with the next backend deploy; image upscaling works today: moda media upscale.',
+          });
+        }
+        throw err;
+      }
     }),
   );
 

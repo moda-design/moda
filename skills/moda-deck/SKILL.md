@@ -111,14 +111,15 @@ allowed-tools: Bash(moda:*), Read, Glob, Grep
    as I work."
 2. **Gather** with your harness's file-reading/search tools (your own research;
    `moda web search`/`moda web read` for live facts — references/web.md).
+   Given an existing .pptx: `moda canvas import-pptx deck.pptx` (free)
+   brings it in as an editable canvas — import first, then edit.
    Distill to a slide list: title, agenda, one idea per slide, 6–12 unless
    the user named a count. Data preservation rules apply from here on.
 3. **Read the design references before authoring**: references/deck-design.md
-   (concept-first cover, layout bar), references/deck-playbooks.md when the
-   deck matches a known type, references/markup.md before any markup, and
-   compute the type ladder for your canvas size per
-   references/design-quality.md (1920×1080 → body ≈ 40px, floor 18px).
-   Brand kit in play → LOOK at its assets before settling the concept
+   (concept-first cover, layout bar), references/deck-playbooks.md for known
+   deck types, references/markup.md before any markup; compute the type
+   ladder per references/design-quality.md (1920×1080 → body ≈ 40px, floor
+   18px). Brand kit in play → LOOK at its assets before settling the concept
    (references/brand.md "Look at the brand, not just the tokens").
 4. **Author per slide** with `moda canvas markup CANVAS_REF --file - --page P`
    in small batches — one slide per apply. Add the remaining slides with
@@ -127,9 +128,9 @@ allowed-tools: Bash(moda:*), Read, Glob, Grep
    author with the kit's tokens, create takes no brand flag). Read every
    result: `requires_repair` or `operation_counts.skipped > 0` means fix
    before the next slide.
-5. **Verify**: `moda canvas lint` once per finished section (fix every
-   error-severity finding); `moda canvas screenshot` at milestones and review
-   the PNGs with your own vision — layout balance, dead zones, clipped text.
+5. **Verify**: `moda canvas lint` per finished section (fix error-severity
+   findings); screenshot at milestones and review with your own vision —
+   layout balance, dead zones, clipped text.
 6. **Deliver**: point back to the link ("still open — everything stays
    editable"); export on request or one brief offer ("Want this as a
    PPTX/PDF too?"): `moda export CANVAS_REF --format pptx|pdf -o …`.
@@ -146,5 +147,4 @@ allowed-tools: Bash(moda:*), Read, Glob, Grep
 | references/reading-and-verifying.md | DSL reading, lint/screenshot loop |
 | references/brand.md | a brand kit exists |
 | references/web.md | content needs live web research |
-| references/export.md, references/omni-and-media.md | delivering; metered lanes |
-| references/gotchas.md | anything surprising |
+| references/export.md, references/omni-and-media.md, references/gotchas.md | delivering; media; anything surprising |

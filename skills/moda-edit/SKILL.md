@@ -106,14 +106,15 @@ allowed-tools: Bash(moda:*), Read
 ## Workflow
 
 **Result reading is the discipline of this skill.** Exit 0 with
-`requires_repair: true`, `operation_counts.skipped > 0`, or a `no_op_reason`
-means the mutation committed but did NOT do what you meant — read the report
-and repair before touching anything else. Any nonzero exit committed nothing;
-follow the typed hint. Never re-run a command that exited 0.
+`requires_repair: true`, skipped ops, or a `no_op_reason` means the mutation
+committed but did NOT do what you meant — read the report and repair before
+touching anything else. Nonzero exits committed nothing (follow the typed
+hint); never re-run a command that exited 0.
 
-1. `moda canvas read CANVAS_REF` (URL, share link, `cvs_` id, or UUID — all
-   resolve identically) and echo the canvas link back so the user can watch
-   the edits live (re-run the read at the start of each new request in a
+1. Given a .pptx instead of a canvas: `moda canvas import-pptx deck.pptx`
+   (free) first, then edit the import. `moda canvas read CANVAS_REF` (URL,
+   share link, `cvs_` id, or UUID — all resolve identically) and echo the
+   canvas link back so the user can watch the edits live (re-run the read at the start of each new request in a
    continuing session — the user may have edited in the app since your last
    read). This yields the DSL, the short ids, and the revision token every
    write is checked against.
@@ -146,5 +147,4 @@ follow the typed hint. Never re-run a command that exited 0.
 | references/edit-code.md | before writing any edit code — API, limits, results |
 | references/reading-and-verifying.md | DSL reading, revision, lint/screenshot |
 | references/markup.md | recreating sections; markup grammar |
-| references/design-quality.md | routing, data preservation, typography |
-| references/gotchas.md | anything surprising |
+| references/design-quality.md, references/gotchas.md | routing, data preservation, typography; anything surprising |

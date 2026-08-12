@@ -71,14 +71,27 @@ export const endpoints = {
   websiteCreate: () => '/v1/websites',
   websiteShow: (id: string) => `/v1/websites/${enc(id)}`,
   websiteContent: (id: string) => `/v1/websites/${enc(id)}/content`,
+  websitePages: (id: string) => `/v1/websites/${enc(id)}/pages`,
+  websitePageContent: (id: string) => `/v1/websites/${enc(id)}/pages/content`,
+  websiteScreenshot: (id: string) => `/v1/websites/${enc(id)}/screenshot`,
   websitePublish: (id: string) => `/v1/websites/${enc(id)}/publish`,
   websiteUnpublish: (id: string) => `/v1/websites/${enc(id)}/unpublish`,
+
+  // Canvas page import + instructions + brand guides (wave-2 facade lifts)
+  canvasImportPages: (ref: string) => `/v1/canvases/${enc(ref)}/import-pages`,
+  canvasInstructions: (ref: string) => `/v1/canvases/${enc(ref)}/instructions`,
+  brandGuides: (ref: string) => `/v1/brand-kits/${enc(ref)}/guides`,
+  brandGuide: (ref: string, id: string) => `/v1/brand-kits/${enc(ref)}/guides/${enc(id)}`,
+  remix: () => '/v1/remix',
+  canvasImportPptx: () => '/v1/canvases/import-pptx',
+  canvasImportPptxStatus: (jobId: string) => `/v1/canvases/import-pptx/${enc(jobId)}`,
 
   // Media (NEW metered lane)
   mediaGenerateImage: () => '/v1/media/generate-image',
   mediaEditImage: () => '/v1/media/edit-image',
   mediaGenerateVideo: () => '/v1/media/generate-video',
   mediaUpscale: () => '/v1/media/upscale',
+  mediaUpscaleVideo: () => '/v1/media/upscale-video',
   mediaRemoveBackground: () => '/v1/media/remove-background',
   mediaModels: () => '/v1/media/models',
 

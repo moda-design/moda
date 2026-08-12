@@ -43,6 +43,60 @@ export function registerBrand(program: Command): void {
     }),
   );
 
+  addGlobalFlags(brand.command('guides <brand>').description("list the kit's brand-guide documents (the written brand rules)")).action(
+    wrapAction(async (args, _opts, cmd) => {
+      const inv = buildInvocation(cmd);
+      const { client } = await authedClient(inv, READ_TIMEOUT_MS);
+      const ref = parseRef(args[0] as string, 'brand_kit').ref;
+      const response = await client.request({ method: 'GET', path: endpoints.brandGuides(ref) });
+      const root = asObject(response.body);
+      const guides = Array.isArray(root.guides) ? root.guides.map(asObject) : [];
+      return {
+        body: {
+          ok: true,
+          ...root,
+          operation: 'brand.guides',
+          returned: guides.length,
+          meta: { ...asObject(root.meta), ...metaBlock({ requestId: response.requestId, durationMs: response.durationMs }) },
+        },
+        human: (write) => {
+          for (const guide of guides) {
+            write(`${str(guide, 'id') ?? '?'}  ${str(guide, 'title') ?? ''}${str(guide, 'description') !== undefined ? ` — ${str(guide, 'description')}` : ''}`);
+          }
+          if (guides.length === 0) write('no guides on this kit');
+        },
+        exitCode: EXIT_OK,
+      };
+    }),
+  );
+
+  addGlobalFlags(
+    brand.command('guide <brand> <guide_id>').description("read one guide's full prose (markdown; frontmatter under metadata)"),
+  ).action(
+    wrapAction(async (args, _opts, cmd) => {
+      const inv = buildInvocation(cmd);
+      const { client } = await authedClient(inv, READ_TIMEOUT_MS);
+      const ref = parseRef(args[0] as string, 'brand_kit').ref;
+      const response = await client.request({ method: 'GET', path: endpoints.brandGuide(ref, args[1] as string) });
+      const root = asObject(response.body);
+      const guide = asObject(root.guide);
+      return {
+        body: {
+          ok: true,
+          ...root,
+          operation: 'brand.guide',
+          meta: { ...asObject(root.meta), ...metaBlock({ requestId: response.requestId, durationMs: response.durationMs }) },
+        },
+        human: (write) => {
+          const title = str(guide, 'title');
+          if (title !== undefined) write(`# ${title}`);
+          write(str(guide, 'markdown') ?? '(empty guide)');
+        },
+        exitCode: EXIT_OK,
+      };
+    }),
+  );
+
   addGlobalFlags(
     brand.command('show <brand>').description('verbose kit: palette, fonts, logos (durable file_ ids + signed URLs)'),
   ).action(

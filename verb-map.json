@@ -20,13 +20,16 @@
     "upload_attachment": "moda file upload",
     "list_brand_kits": "moda brand list",
     "find_brand_kits": "moda brand list",
-    "read_brand_kit_guide": "moda brand show",
+    "read_brand_kit_guide": "moda brand guide",
     "create_brand_kit": "moda brand create",
     "share_canvas": "moda canvas share",
     "create_website": "moda site create",
     "open_website": "moda site show",
     "edit_website": "moda site set-content",
-    "publish_website": "moda site publish"
+    "publish_website": "moda site publish",
+    "import_canvas_pages": "moda canvas import-pages",
+    "screenshot_website": "moda site screenshot",
+    "upscale_video": "moda media upscale-video"
   },
   "cli_invocations_allowed": [
     "moda doctor",
@@ -93,12 +96,21 @@
     "moda site set-content",
     "moda site publish",
     "moda site unpublish",
-    "moda site delete"
+    "moda site delete",
+    "moda site pages",
+    "moda site add-page",
+    "moda site delete-page",
+    "moda site screenshot",
+    "moda canvas import-pages",
+    "moda canvas duplicate",
+    "moda canvas instructions",
+    "moda brand guides",
+    "moda brand guide",
+    "moda canvas import-pptx",
+    "moda media upscale-video"
   ],
   "unresolved": {
-    "screenshot_website": "The Omni website lane screenshots rendered routes; the public website surface has no screenshot endpoint (v1 is static single-page HTML). Skills verify by reviewing the authored HTML and the published page, not via a CLI capture verb.",
     "close_website": "Omni's open/close session bracket has no public analogue — the REST surface is stateless (create / set-content / publish are direct calls).",
-    "upscale_video": "Video upscaling has no public API endpoint (recorded parity exception). The CLI verb exists but fails with a typed not_available error; skill text must not recommend it.",
     "asset_search": "`moda file search` now rides GET /v1/assets/search (Canvas Actions resource verb): `--kind icon` searches the shared icon packs, `--kind photo` (default) the caller's own gallery, returning durable file_ ids usable in markup and media inputs. Markup `<image icon=\"...\">` remains the parser-native icon path. The broader files/folders drive facade (list/show/download, folders) has no public endpoints — those CLI verbs fail typed not_available."
   }
 }

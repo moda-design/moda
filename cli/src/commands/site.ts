@@ -8,6 +8,8 @@
  * hint on first publish only; review_status "pending_review" = published but held for review
  * before serving), POST .../unpublish, DELETE. Site ids are plain UUIDs.
  */
+import { mkdirSync, writeFileSync } from 'node:fs';
+import { dirname } from 'node:path';
 import type { Command } from 'commander';
 import type { ApiClient } from '../api/client.ts';
 import { endpoints } from '../api/endpoints.ts';
@@ -15,7 +17,7 @@ import { asObject, str } from '../api/types.ts';
 import { CliError } from '../cliError.ts';
 import { EXIT_OK } from '../output/exitCodes.ts';
 import type { CommandOutcome } from '../output/emit.ts';
-import { addGlobalFlags, authedClient, buildInvocation, metaBlock, wrapAction } from './runtime.ts';
+import { addGlobalFlags, authedClient, buildInvocation, metaBlock, wrapAction, type Invocation } from './runtime.ts';
 import { LIST_ALL_CAP, fetchListPages, listFlagsOf, listOutcome, parseListOffset, type ListFlags } from './listLane.ts';
 import { readFileArg } from './canvasShared.ts';
 
@@ -89,9 +91,10 @@ export function registerSite(program: Command): void {
   addGlobalFlags(
     site
       .command('set-content <site>')
-      .description('replace the page HTML (the live site keeps serving the last publish until you republish)')
+      .description('replace page HTML (--path targets one route; the live site serves the last publish until you republish)')
       .requiredOption('--file <path>', "the new page HTML file, or '-' for stdin")
-      .option('--title <title>', 'update the site title')
+      .option('--path <route>', "target route (e.g. /pricing); omit for the site's single-page/home content")
+      .option('--title <title>', 'update the site title (site-level form only)')
       .option(
         '--expected-version <n>',
         'read-modify-write guard: the version from your last read; mismatch fails instead of overwriting',
@@ -102,10 +105,92 @@ export function registerSite(program: Command): void {
       const inv = buildInvocation(cmd);
       const { client } = await authedClient(inv, SITE_TIMEOUT_MS);
       const html = await readFileArg(opts.file as string);
+      if (typeof opts.path === 'string') {
+        if (typeof opts.title === 'string') {
+          throw CliError.usage('--title applies to the site, not a page — set it without --path.');
+        }
+        return performSitePageSetContent(client, args[0] as string, {
+          path: opts.path,
+          html,
+          expectedVersion: opts.expectedVersion as number | undefined,
+        });
+      }
       return performSiteSetContent(client, args[0] as string, {
         html,
         title: opts.title as string | undefined,
         expectedVersion: opts.expectedVersion as number | undefined,
+      });
+    }),
+  );
+
+  addGlobalFlags(site.command('pages <site>').description("list the site's pages (path, name) + the pinnable version")).action(
+    wrapAction(async (args, _opts, cmd) => {
+      const inv = buildInvocation(cmd);
+      const { client } = await authedClient(inv, SITE_TIMEOUT_MS);
+      return performSitePages(client, args[0] as string);
+    }),
+  );
+
+  addGlobalFlags(
+    site
+      .command('add-page <site>')
+      .description('add a routable page from an HTML file')
+      .requiredOption('--path <route>', "the new page's route, e.g. /pricing")
+      .requiredOption('--file <path>', "the page HTML file, or '-' for stdin")
+      .option('--name <name>', 'display name (derived from the path when omitted)')
+      .option('--expected-version <n>', 'read-modify-write guard', parseVersion),
+  ).action(
+    wrapAction(async (args, opts, cmd) => {
+      const inv = buildInvocation(cmd);
+      const { client } = await authedClient(inv, SITE_TIMEOUT_MS);
+      const html = await readFileArg(opts.file as string);
+      return performSiteAddPage(client, args[0] as string, {
+        path: opts.path as string,
+        html,
+        name: opts.name as string | undefined,
+        expectedVersion: opts.expectedVersion as number | undefined,
+      });
+    }),
+  );
+
+  addGlobalFlags(
+    site
+      .command('delete-page <site>')
+      .description('delete a routable page (the homepage cannot be deleted; requires --yes under --json/--no-input)')
+      .requiredOption('--path <route>', 'the route to delete, e.g. /pricing')
+      .option('--expected-version <n>', 'read-modify-write guard', parseVersion)
+      .option('--yes', 'confirm deletion'),
+  ).action(
+    wrapAction(async (args, opts, cmd) => {
+      const inv = buildInvocation(cmd);
+      requireYes('Deleting a page', inv.flags.noInput, opts.yes === true, `moda site delete-page ${args[0] as string} --path ${opts.path as string}`);
+      const { client } = await authedClient(inv, SITE_TIMEOUT_MS);
+      return performSiteDeletePage(client, args[0] as string, {
+        path: opts.path as string,
+        expectedVersion: opts.expectedVersion as number | undefined,
+      });
+    }),
+  );
+
+  addGlobalFlags(
+    site
+      .command('screenshot <site>')
+      .description('render up to 3 pages to images (draft content; desktop/tablet/mobile viewport)')
+      .option('--path <routes...>', 'route(s) to capture (default: the homepage)')
+      .option('--viewport <vp>', 'desktop | tablet | mobile', 'desktop')
+      .option('--format <fmt>', 'jpg | png', 'jpg')
+      .option('--scale <n>', 'device scale factor 1-2 (default 2)', (v: string) => Number.parseInt(v, 10))
+      .option('-o, --output <path>', 'output file (single capture) or directory'),
+  ).action(
+    wrapAction(async (args, opts, cmd) => {
+      const inv = buildInvocation(cmd);
+      const { client } = await authedClient(inv, SCREENSHOT_TIMEOUT_MS);
+      return performSiteScreenshot(client, inv, args[0] as string, {
+        paths: Array.isArray(opts.path) ? (opts.path as string[]) : undefined,
+        viewport: opts.viewport as string,
+        format: opts.format as string,
+        scale: typeof opts.scale === 'number' ? opts.scale : undefined,
+        output: opts.output as string | undefined,
       });
     }),
   );
@@ -376,6 +461,199 @@ export async function performSitePublish(
   // actually being served right now.
   base.body = { ...base.body, serving: root.is_live === true && !pendingReview };
   return base;
+}
+
+const SCREENSHOT_TIMEOUT_MS = 180_000;
+
+export interface SitePageContentInput {
+  path: string;
+  html: string;
+  expectedVersion?: number;
+}
+
+export async function performSitePageSetContent(
+  client: ApiClient,
+  siteRef: string,
+  input: SitePageContentInput,
+): Promise<CommandOutcome> {
+  const id = parseSiteId(siteRef);
+  if (input.html.trim().length === 0) throw CliError.usage('The HTML page is empty.');
+  const payload = {
+    path: input.path,
+    html: input.html,
+    ...(input.expectedVersion !== undefined ? { expected_version: input.expectedVersion } : {}),
+  };
+  const response = await client
+    .request({ method: 'PUT', path: endpoints.websitePageContent(id), body: payload })
+    .catch((err: unknown) =>
+      withSiteHint(err, {
+        website_version_conflict: `The site changed since your read — re-read (moda site pages ${id}), re-apply, then republish.`,
+      }),
+    );
+  const root = asObject(response.body);
+  const website = asObject(root.website);
+  return outcome('site.set-content', root, response, (write) => {
+    write(`site.set-content: ${input.path} saved (version ${website.version ?? root.version ?? '?'})`);
+    if (website.is_published === true) {
+      write(`the live site still serves the last publish — republish: moda site publish ${id}`);
+    }
+  });
+}
+
+export async function performSitePages(client: ApiClient, siteRef: string): Promise<CommandOutcome> {
+  const id = parseSiteId(siteRef);
+  const response = await client.request({ method: 'GET', path: endpoints.websitePages(id) });
+  const root = asObject(response.body);
+  const pages = Array.isArray(root.pages) ? root.pages.map(asObject) : [];
+  return outcome('site.pages', root, response, (write) => {
+    for (const page of pages) write(`${str(page, 'path') ?? '?'}  ${str(page, 'name') ?? ''}`);
+    write(`${pages.length} page${pages.length === 1 ? '' : 's'}; version: ${root.version ?? '?'}`);
+  });
+}
+
+export interface SiteAddPageInput {
+  path: string;
+  html: string;
+  name?: string;
+  expectedVersion?: number;
+}
+
+export async function performSiteAddPage(client: ApiClient, siteRef: string, input: SiteAddPageInput): Promise<CommandOutcome> {
+  const id = parseSiteId(siteRef);
+  if (input.html.trim().length === 0) throw CliError.usage('The HTML page is empty.');
+  const payload = {
+    path: input.path,
+    html: input.html,
+    ...(input.name !== undefined ? { name: input.name } : {}),
+    ...(input.expectedVersion !== undefined ? { expected_version: input.expectedVersion } : {}),
+  };
+  const response = await client
+    .request({
+      method: 'POST',
+      path: endpoints.websitePages(id),
+      body: payload,
+      idempotency: { command: 'site add-page', canvas: id, expectedRevision: undefined, payload: JSON.stringify(payload) },
+    })
+    .catch((err: unknown) =>
+      withSiteHint(err, {
+        website_page_exists: `A page already exists at ${input.path} — update it instead: moda site set-content ${id} --path ${input.path} --file …`,
+      }),
+    );
+  const root = asObject(response.body);
+  return outcome('site.add-page', root, response, (write) => {
+    write(`site.add-page: ${input.path} added${root.replayed === true ? ' (replayed)' : ''}`);
+    write(`the live site still serves the last publish — republish: moda site publish ${id}`);
+  });
+}
+
+export interface SiteDeletePageInput {
+  path: string;
+  expectedVersion?: number;
+}
+
+export async function performSiteDeletePage(
+  client: ApiClient,
+  siteRef: string,
+  input: SiteDeletePageInput,
+): Promise<CommandOutcome> {
+  const id = parseSiteId(siteRef);
+  const response = await client
+    .request({
+      method: 'DELETE',
+      path: endpoints.websitePages(id),
+      query: {
+        path: input.path,
+        ...(input.expectedVersion !== undefined ? { expected_version: String(input.expectedVersion) } : {}),
+      },
+    })
+    .catch((err: unknown) =>
+      withSiteHint(err, {
+        website_home_page_protected: 'The homepage (/) cannot be deleted — replace its content instead: moda site set-content … --path /',
+      }),
+    );
+  const root = asObject(response.body);
+  return outcome('site.delete-page', root, response, (write) => write(`site.delete-page: ${input.path} deleted`));
+}
+
+export interface SiteScreenshotInput {
+  paths?: string[];
+  viewport: string;
+  format: string;
+  scale?: number;
+  output?: string;
+}
+
+export async function performSiteScreenshot(
+  client: ApiClient,
+  inv: Invocation,
+  siteRef: string,
+  input: SiteScreenshotInput,
+): Promise<CommandOutcome> {
+  const id = parseSiteId(siteRef);
+  if (!['desktop', 'tablet', 'mobile'].includes(input.viewport)) {
+    throw CliError.usage(`Invalid --viewport '${input.viewport}' — expected desktop, tablet, or mobile.`);
+  }
+  if (!['jpg', 'png'].includes(input.format)) {
+    throw CliError.usage(`Invalid --format '${input.format}' — expected jpg or png.`);
+  }
+  const payload = {
+    ...(input.paths !== undefined ? { paths: input.paths } : {}),
+    viewport: input.viewport,
+    format: input.format,
+    ...(input.scale !== undefined ? { scale: input.scale } : {}),
+  };
+  const response = await client.request({
+    method: 'POST',
+    path: endpoints.websiteScreenshot(id),
+    body: payload,
+    timeoutMs: SCREENSHOT_TIMEOUT_MS,
+  });
+  const root = asObject(response.body);
+  const images = Array.isArray(root.images) ? root.images.map(asObject) : [];
+  // File-pointer discipline: signed URLs are short-lived — download to files, return paths.
+  const written: Array<{ path: string; file: string; js_disabled?: boolean }> = [];
+  for (const image of images) {
+    const url = str(image, 'url');
+    if (url === undefined) continue;
+    const route = (str(image, 'path') ?? 'page').replaceAll('/', '_').replace(/^_$/, 'home') || 'home';
+    const target = resolveShotPath(input.output, images.length, route, input.format);
+    const bare = await fetch(url, { signal: AbortSignal.timeout(120_000) });
+    if (!bare.ok) {
+      inv.note(`capture download failed for ${str(image, 'path') ?? route} (HTTP ${bare.status})`);
+      continue;
+    }
+    mkdirSync(dirname(target), { recursive: true });
+    writeFileSync(target, new Uint8Array(await bare.arrayBuffer()));
+    written.push({
+      path: str(image, 'path') ?? route,
+      file: target,
+      ...(image.js_disabled === true ? { js_disabled: true } : {}),
+    });
+  }
+  return outcome(
+    'site.screenshot',
+    {
+      ...root,
+      images: images.map((image, i) => ({ ...image, url: undefined, file: written[i]?.file })),
+    },
+    response,
+    (write) => {
+      for (const [i, image] of images.entries()) {
+        const dims = typeof image.width === 'number' ? ` (${image.width}x${image.height})` : '';
+        write(
+          `${str(image, 'path') ?? '?'} [${str(image, 'viewport') ?? ''}] → ${written[i]?.file ?? '(download failed)'}${dims}` +
+            `${image.js_disabled === true ? ' — rendered with JS off (degraded)' : ''}` +
+            `${image.truncated === true ? ' — capture truncated (page over the pixel budget)' : ''}`,
+        );
+      }
+    },
+  );
+}
+
+function resolveShotPath(output: string | undefined, count: number, route: string, format: string): string {
+  if (output === undefined) return `site-${route}.${format}`;
+  if (count === 1 && /\.[a-z]+$/i.test(output)) return output;
+  return `${output.replace(/\/$/, '')}/${route}.${format}`;
 }
 
 export async function performSiteUnpublish(client: ApiClient, siteRef: string): Promise<CommandOutcome> {
