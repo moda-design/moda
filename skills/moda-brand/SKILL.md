@@ -38,14 +38,14 @@ allowed-tools: Bash(moda:*), Read
      relay doctor's actionable hint verbatim and stop. Never retry in a loop.
 2. Run `moda account status --json`. Note the org, plan, and remaining
    credits (metered verbs spend them; deterministic authoring never does).
-3. Run `moda brand list` — one cheap deterministic call, never skipped,
-   even for simple asks. Kits exist: use the default (or the one context
-   implies); if several plausibly apply, ask which — never guess between
-   clients' kits — and read the kit before designing (references/brand.md).
-   An explicit "no brand" from the user wins over everything. NO kits:
-   offer once, briefly — "Want me to set up a brand kit from your website
-   first? It's free and makes everything come out on-brand" — yes →
-   `moda brand create` from their URL; no → proceed unbranded, no nagging.
+3. Run `moda brand list` — one cheap deterministic call, never skipped, even
+   for simple asks. Kits exist: use the default (or the one context implies);
+   several plausible → ask which, never guess between clients' kits — and read
+   the kit before designing (references/brand.md). An explicit "no brand" from
+   the user wins over everything. NO kits: offer once, briefly — "Want me to
+   set up a brand kit first? It's free and makes everything come out on-brand"
+   — yes → `moda brand create` from their URL, or manually with no website
+   (--name/--color/--font, references/brand.md); no → unbranded, no nagging.
 
 ## UX rules
 
@@ -116,8 +116,18 @@ allowed-tools: Bash(moda:*), Read
   reporting pass/fail per element — off-kit colors (with node ids and nearest
   kit color), non-kit fonts, logo size/variant/contrast. Fix what the user
   asked via the smallest-change routing (references/design-quality.md).
-- **Create**: `moda brand create --url https://…` — server-side extraction,
-  deterministic and free.
+- **Create** (deterministic, no credits — two paths): `moda brand create
+  --url https://…` runs server-side extraction (the fast path when a website
+  exists); no website → build manually from fields: `moda brand create
+  --name "Acme" --color '#0F172A:Primary' --font 'Inter:title' --logo
+  FILE_REF`, or `--from-file kit.json` for a rich palette. One path per
+  create. Details: references/brand.md.
+- **Update / fix in place**: extraction got a value slightly wrong, or the
+  brand evolved → `moda brand update BRAND_REF` (fields; `--color`/`--font`
+  REPLACE the whole list — re-send the full corrected set), `moda brand
+  images` / `add-image` / `remove-image` for logo + imagery attachments.
+  Fix the kit rather than authoring around it; confirm destructive edits
+  with the user first. Details: references/brand.md.
 - **Escalate**: full brand-guide generation (a new identity, multiple
   concepts) is creative work for the metered Omni lane — `moda task start`
   (references/brand.md and the metered-lane rules in the UX block).

@@ -55,6 +55,9 @@ export const endpoints = {
   brandList: () => '/v1/brand-kits',
   brandShow: (ref: string) => `/v1/brand-kits/${enc(ref)}`,
   brandCreate: () => '/v1/brand-kits',
+  brandUpdate: (ref: string) => `/v1/brand-kits/${enc(ref)}`,
+  brandImages: (ref: string) => `/v1/brand-kits/${enc(ref)}/images`,
+  brandImage: (ref: string, imageId: string) => `/v1/brand-kits/${enc(ref)}/images/${enc(imageId)}`,
 
   // Tasks (Omni escalation lane)
   taskStart: () => '/v1/tasks',

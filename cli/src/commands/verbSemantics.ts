@@ -29,6 +29,10 @@ const SEMANTICS: Record<string, VerbSemantics> = {
   // Files / brand
   'file upload': { mutating: true },
   'brand create': { mutating: true },
+  'brand update': { mutating: true },
+  'brand images': {},
+  'brand add-image': { mutating: true },
+  'brand remove-image': { mutating: true },
   // Websites (deterministic writes)
   'site create': { mutating: true },
   'site set-content': { mutating: true },

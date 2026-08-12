@@ -5,11 +5,12 @@
  */
 import { CliError } from './cliError.ts';
 
-export type RefKind = 'canvas' | 'brand_kit' | 'task' | 'file' | 'org' | 'folder' | 'export';
+export type RefKind = 'canvas' | 'brand_kit' | 'brand_kit_image' | 'task' | 'file' | 'org' | 'folder' | 'export';
 
 const PREFIX_BY_KIND: Record<RefKind, string> = {
   canvas: 'cvs',
   brand_kit: 'bk',
+  brand_kit_image: 'bki',
   task: 'task',
   file: 'file',
   org: 'org',
@@ -22,7 +23,7 @@ const KIND_BY_PREFIX: Record<string, RefKind> = Object.fromEntries(
 ) as Record<string, RefKind>;
 
 // Known non-target prefixes we can name in cross-kind errors (IdKind, backend/app/api/public/ids.py:48).
-const KNOWN_PREFIXES = new Set([...Object.values(PREFIX_BY_KIND), 'ak', 'team', 'conv', 'upl', 'evt', 'whd', 'bki']);
+const KNOWN_PREFIXES = new Set([...Object.values(PREFIX_BY_KIND), 'ak', 'team', 'conv', 'upl', 'evt', 'whd']);
 
 const UUID_RE = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
 const WIRE_ID_RE = /^([a-z]{2,5})_([0-9A-Za-z]{10,40})$/;
@@ -36,7 +37,7 @@ export interface ParsedRef {
 }
 
 function kindLabel(kind: RefKind): string {
-  return kind.replace('_', ' ');
+  return kind.replaceAll('_', ' ');
 }
 
 /**
