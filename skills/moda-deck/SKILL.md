@@ -109,29 +109,29 @@ allowed-tools: Bash(moda:*), Read, Glob, Grep
    "…" --size 1920x1080 --pages 1 --category slides`, then send the link at
    once (`moda canvas share CANVAS_REF`): "follow along live — it builds up
    as I work."
-2. **Gather** with your harness's file-reading/search tools (your own research;
-   `moda web search`/`moda web read` for live facts — references/web.md).
-   Given an existing .pptx: `moda canvas import-pptx deck.pptx` (free)
-   brings it in as an editable canvas — import first, then edit.
-   Distill to a slide list: title, agenda, one idea per slide, 6–12 unless
-   the user named a count. Data preservation rules apply from here on.
+2. **Gather** with your harness's file-reading/search tools (your own
+   research; `moda web search`/`moda web read` — references/web.md; a given
+   .pptx imports first: `moda canvas import-pptx deck.pptx`, free). Distill
+   to a slide list: title, agenda, one idea per slide, 6–12 unless the user
+   named a count. Data preservation rules apply from here on.
 3. **Read the design references before authoring**: references/deck-design.md
    (concept-first cover, layout bar), references/deck-playbooks.md for known
    deck types, references/markup.md before any markup; compute the type
    ladder per references/design-quality.md (1920×1080 → body ≈ 40px, floor
    18px). Brand kit in play → LOOK at its assets before settling the concept
    (references/brand.md "Look at the brand, not just the tokens").
-4. **Author per slide** with `moda canvas markup CANVAS_REF --file - --page P`
-   in small batches — one slide per apply. Add the remaining slides with
-   `moda canvas add-pages CANVAS_REF --count N` (page short ids come from
-   its result or one `moda canvas read`; brand application is client-side —
-   author with the kit's tokens, create takes no brand flag). Read every
-   result: `requires_repair` or `operation_counts.skipped > 0` means fix
-   before the next slide.
-5. **Verify**: `moda canvas lint` per finished section (fix error-severity
+4. **Imagery**: generate the cover/hero/atmospheric imagery now
+   (`moda media generate-image`, styled to the brand) — unless the deck
+   deliberately goes vector/typography-only; state that choice in your
+   delivery note.
+5. **Author per slide** with `moda canvas markup CANVAS_REF --file - --page P`
+   — one slide per apply; add remaining slides via `moda canvas add-pages`
+   (page ids from its result; author with the kit's tokens — create takes no
+   brand flag). `requires_repair`/skipped ops → fix before the next slide.
+6. **Verify**: `moda canvas lint` per finished section (fix error-severity
    findings); screenshot at milestones and review with your own vision —
    layout balance, dead zones, clipped text.
-6. **Deliver**: point back to the link ("still open — everything stays
+7. **Deliver**: point back to the link ("still open — everything stays
    editable"); export on request or one brief offer ("Want this as a
    PPTX/PDF too?"): `moda export CANVAS_REF --format pptx|pdf -o …`.
 

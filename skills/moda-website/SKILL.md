@@ -110,34 +110,35 @@ in references/website.md governs).
 
 ## Workflow
 
-A site is a set of routable, self-contained HTML pages published together
-to `https://<slug>.moda.page`. Site verbs are deterministic and free; only
-`moda web *` and `moda media *` meter.
+A site is routable, self-contained HTML pages published together to
+`https://<slug>.moda.page`; site verbs are free — `moda web/media *` meter.
 
 1. **Gather** content with your harness's file-reading/search tools (your
    own research; `moda web search`/`moda web read` — references/web.md).
    For an existing site: `moda site list` + `moda site pages` first.
 2. **Read references/website.md before authoring** — structure, styling,
    typography, and the library/embed allowlists (violations silently break
-   or fail the publish gate). When a brand kit is in play, `moda brand show`
-   it and LOOK at its assets before settling the direction
-   (references/brand.md); imagery must be Moda-hosted, never hotlinked.
-3. **Author pages locally**: each page one complete, self-contained HTML
+   or fail the publish gate). Brand kit in play → `moda brand show` and
+   LOOK at its assets before settling the direction (references/brand.md).
+3. **Imagery**: generate hero/atmospheric imagery now (`moda media
+   generate-image`, styled to the brand; use Moda-hosted refs, never
+   hotlinks) — unless the site deliberately goes vector/typography-only;
+   state that choice in your delivery note.
+4. **Author pages locally**: each page one complete, self-contained HTML
    document (inline styles, mobile-first), reviewed against
    references/website.md as you go.
-4. **Create + build out**: `moda site create --file home.html --title "…"`
+5. **Create + build out**: `moda site create --file home.html --title "…"`
    (the homepage), then `moda site add-page SITE_ID --path /route --file …`
    per additional page. Nothing is public yet.
-5. **Verify with your own vision**: `moda site screenshot SITE_ID --path
+6. **Verify with your own vision**: `moda site screenshot SITE_ID --path
    /route --viewport desktop` AND `--viewport mobile` — draft renders, up
    to 3 pages per call. Fix (`set-content --path`), re-capture.
-6. **Publish**: `moda site publish SITE_ID [--slug hint]` — ONE publish
+7. **Publish**: `moda site publish SITE_ID [--slug hint]` — ONE publish
    covers all pages; print the live URL. `pending_review` = published but
    held for review, goes live once approved — never call it browsable yet.
-7. **Revise**: edit locally → `moda site set-content SITE_ID --path /route
-   --file …` → screenshot → `moda site publish` again (saved content does
-   NOT go live until republished; `has_unpublished_changes` flags this).
-8. **Deliver**: end with the live *.moda.page URL ("stays editable —
+8. **Revise**: edit locally → `set-content --path` → screenshot →
+   `moda site publish` again (saves do NOT go live until republished).
+9. **Deliver**: end with the live *.moda.page URL ("stays editable —
    re-publish after changes"). `moda site unpublish` takes it down if asked.
 
 ## References

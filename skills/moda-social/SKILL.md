@@ -114,25 +114,25 @@ allowed-tools: Bash(moda:*), Read, Glob, Grep
 1. **Settle format and count**: platform, exact pixel size, single piece
    or carousel, one concept (default) or N directions — read
    references/social.md (sizes, safe areas, craft) BEFORE designing;
-   platformless one-off (quote card, simple graphic) → 1080x1080 default.
-   Animated asks: gif/mp4 is unavailable here — deliver static, say so.
+   platformless one-off → 1080x1080. Animated asks: deliver static, say so.
 2. **Create + link**: `moda canvas create --name "…" --size 1080x1350`
    with `--category carousel` / `web-ads` / `other` (platformless) /
    `social`, then send the link immediately ("follow along live here —
    it builds up as I work").
 3. **Read the design references**: references/markup.md before any markup;
-   the type ladder per references/design-quality.md. Brand kit in play →
-   `moda brand show` and LOOK at its assets before settling the direction
-   (references/brand.md); brand colors and logo stay tight on social.
-4. **Author** one page or concept per apply — carousel: prove slide 1
+   type ladder per references/design-quality.md. Brand kit in play → `moda
+   brand show` and LOOK at its assets first (references/brand.md).
+4. **Imagery**: generate the hero/atmospheric imagery now
+   (`moda media generate-image`, styled to the brand) — unless this design
+   deliberately goes vector/typography-only; state that choice in your
+   delivery note.
+5. **Author** one page or concept per apply — carousel: prove slide 1
    (author, screenshot, fix) before `moda canvas add-pages` for the rest
-   with identical styles. Imagery per references/design-quality.md —
-   generate where it elevates; essentials inside the platform safe area
+   with identical styles; essentials inside the platform safe area
    (references/social.md).
-5. **Verify**: `moda canvas lint` per finished piece; screenshot and review
-   with your own vision — safe-area collisions, type below the ladder
-   floor, concepts that collapsed into one look.
-6. **Deliver**: live link first. Platform creative implies the file
+6. **Verify**: `moda canvas lint` per finished piece; screenshot and review
+   with your own vision — safe areas, ladder floor, collapsed concepts.
+7. **Deliver**: live link first. Platform creative implies the file
    (format-implied: `moda export --format png --pixel-ratio 2`; multi-page
    zip = IG/TikTok carousel; LinkedIn carousel → ONE multi-page PDF); a
    platformless one-off hands off the link + one brief file offer.

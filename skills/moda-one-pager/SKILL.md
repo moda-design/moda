@@ -113,23 +113,25 @@ allowed-tools: Bash(moda:*), Read, Glob, Grep
    "…" --size 816x1056` (A4: 794x1123; `--pages N` multi-page), then send
    the user the link right away (`moda canvas share CANVAS_REF`): "follow
    along live here — it builds up as I work."
-2. **Read the source** with your harness's file-reading/search tools (your own research;
-   `moda web search` / `moda web read` for live web facts —
-   references/web.md). Settle scope per references/document-design.md: one
-   page → info-dense single page; multi-page → one system + page outline.
+2. **Read the source** with your harness's file-reading/search tools (own
+   research; `moda web search`/`moda web read` — references/web.md). Scope
+   per references/document-design.md: one dense page, or one system/outline.
 3. **Plan** the layout and compute the document type ladder
-   (references/design-quality.md; 816×1056 → body ≈ 11px, floor 11px). A PDF
-   is read up close — pack the page; icons, dividers, stat rows, and cards
-   carry structure. When a brand kit is in play, also LOOK at its assets
-   before settling the concept — references/brand.md "Look at the brand, not
-   just the tokens".
-4. **Author** with `moda canvas markup CANVAS_REF --file -` — one page or
+   (references/design-quality.md; 816×1056 → body ≈ 11px, floor 11px). A
+   PDF is read up close — pack the page; icons, dividers, stat rows, cards
+   carry structure. Brand kit in play → LOOK at its assets before settling
+   the concept (references/brand.md "Look at the brand, not just the tokens").
+4. **Imagery** (by document type): report covers and section breaks get
+   generated imagery now (`moda media generate-image`, styled to the
+   brand); a dense text-only document is a legitimate vector-only choice —
+   state it in your delivery note either way.
+5. **Author** with `moda canvas markup CANVAS_REF --file -` — one page or
    section per apply, with the kit's tokens (brand application is
    client-side). Read every result; repair before building more.
-5. **Verify**: `moda canvas lint` (fix error-severity findings), then
+6. **Verify**: `moda canvas lint` (fix error-severity findings), then
    `moda canvas screenshot` and review the PNG — vertical balance, dead
    zones, clipped text.
-6. **Deliver**: the live link IS the handoff. This lane's asks usually name
+7. **Deliver**: the live link IS the handoff. This lane's asks usually name
    a PDF/print artifact — format words win, so export (`moda export
    --format pdf`); otherwise offer once ("Want this as a PDF too?").
 
