@@ -20,16 +20,16 @@ allowed-tools: Bash(moda:*), Read
 1. Run `moda doctor --json`. It verifies CLI version compatibility, auth state,
    API reachability, and account entitlements in one call.
    - `moda` missing from PATH, below the server minimum (doctor reports
-     `version.below_minimum`), or update required: STOP — show the user
-     the pinned command doctor prints, or when the CLI is missing entirely:
-     `npm i -g @moda-design/moda` (a 401/registry failure means registry
-     auth is missing — point at the one-time setup box in the repo README).
-     Wait for the user to run it, then re-run doctor. Never install or
-     update anything yourself, never pipe curl to sh, and never use sudo.
+     `version.below_minimum`), or update required: STOP — your stop reply
+     MUST quote the install command verbatim (the pinned command doctor
+     prints; CLI missing entirely: `npm i -g @moda-design/moda`; a 401 =
+     registry auth missing — the README's one-time setup box). Never stop
+     without the command; no Mermaid/HTML/prose stand-in replaces the
+     stop. Wait for the user to run it, then re-run doctor. Never install
+     or update anything yourself, never pipe curl to sh, and never sudo.
    - `authenticated: false`: have the user run `moda auth login` (browser
-     key mint → OS keychain; headless: `--paste` or `MODA_API_KEY`). Never
-     ask for, print, or handle keys — no CLI verb reveals them. Do not
-     proceed unauthenticated and do not loop on auth errors.
+     key mint → keychain; headless: `--paste` or `MODA_API_KEY`). Never
+     handle or print keys. No unauthenticated work; no auth-error loops.
    - Switching organizations (ONLY when the user explicitly asks):
      `moda org list`; stored credential for the target → `moda org use
      <org_id|slug>`; none → `moda auth login` again (the browser page picks
