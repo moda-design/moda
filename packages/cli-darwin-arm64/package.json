@@ -1,6 +1,6 @@
 {
   "name": "@moda-design/cli-darwin-arm64",
-  "version": "0.8.0",
+  "version": "0.8.1",
   "description": "moda CLI binary for darwin-arm64. Installed automatically by the 'moda' wrapper package.",
   "license": "UNLICENSED",
   "repository": "github:moda-design/moda",
