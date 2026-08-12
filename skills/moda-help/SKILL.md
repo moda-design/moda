@@ -10,10 +10,10 @@ description: >-
   artifact to author still routes to its format skill) — or when a Moda
   request doesn't CLEARLY fit any other moda skill (a matching format skill
   always wins; this is the none-fit catcher, never a shortcut). Creating or
-  editing designs, decks, documents, sites, graphics, or diagrams is NEVER
-  this skill — load the format skill (moda-deck, moda-one-pager,
-  moda-social, moda-diagram, moda-website, moda-brand, moda-edit).
-  Requires the moda CLI (Step 0 checks it; installs nothing).
+  editing designs, decks, documents, sites, graphics, videos, or diagrams
+  is NEVER this skill — load the format skill (moda-deck, moda-one-pager,
+  moda-social, moda-diagram, moda-website, moda-video, moda-brand,
+  moda-edit). Requires the moda CLI (Step 0 checks it; installs nothing).
 argument-hint: "[the meta question: setup, update, auth, orgs, routing, errors]"
 allowed-tools: Bash(moda:*), Read, Glob, Grep
 ---
@@ -104,7 +104,7 @@ allowed-tools: Bash(moda:*), Read, Glob, Grep
   otherwise deliver the link and put ONE export offer in the final reply —
   running an unasked export IS the violation; offering is compliance.
 - Multi-skill requests: the artifact skill (deck/one-pager/social/diagram/
-  website) leads and pulls brand/edit behavior via its references; if no
+  website/video) leads and pulls brand/edit behavior via its references; if no
   Moda skill fits, say what they can make and ask — never force a fit.
 
 ## Lifecycle
@@ -113,8 +113,7 @@ allowed-tools: Bash(moda:*), Read, Glob, Grep
   repo: the README's one-time registry box). **Update**: same two installs
   again — skills are hash-pinned, re-add to update — then `moda doctor`.
 - **Orgs** (ONLY when asked; org = workspace + billing): Step-0's org-switch flow above.
-- **Troubleshooting**: `moda doctor` first; `moda last-error` re-prints the
-  last failure — never re-run a failed write just to see its error.
+- **Troubleshooting**: `moda doctor` first; `moda last-error` re-prints the last failure — never re-run a failed write just to see its error.
 
 ## Which skill handles X (mirrors the repo routing table — update both)
 | Ask | Skill |
@@ -124,11 +123,12 @@ allowed-tools: Bash(moda:*), Read, Glob, Grep
 | social post, carousel, static ad, banner, quote card, one-off graphic | moda-social |
 | flowchart, architecture, 2x2, standalone data chart, UI mockup | moda-diagram |
 | live hosted site / landing page on *.moda.page | moda-website |
+| video, GIF, animated ad/post, motion graphic, animate a logo/design | moda-video |
 | brand kits and brand guides | moda-brand |
 | change THIS canvas (URL/id given) | moda-edit |
 
 Boundaries: print → one-pager; a mockup is a picture (diagram), a landing
-page is live (website); decorative shapes → social, not diagram.
+page is live (website); decorative shapes → social; mp4/gif output → video.
 
 ## CLI conventions
 - `moda describe <verb> --json` is any verb's ground truth — flags plus the
@@ -140,11 +140,11 @@ page is live (website); decorative shapes → social, not diagram.
 Consult the table above; a format skill that fits after all wins — load it,
 don't narrate the detour. Capability unclear? `moda describe [verb] --json`
 is ground truth (`moda docs` for authoring). Outside Moda's powers? Say so
-honestly, offer the nearest thing Moda CAN do, and ask exactly ONE
-question, only when the fork is real — never enumerate the catalog.
+honestly, offer the nearest thing Moda CAN do, and ask exactly ONE question,
+only when the fork is real — never enumerate the catalog.
 
 ## Verbs at a glance (load the format skill for the work)
 Decks/documents/social/diagrams author via `moda canvas markup|edit` +
-`moda export`; sites via `moda site *`; kits + guides via `moda brand *`;
-`moda task start` delegates whole jobs; `moda media *` / `moda web *`
-generate and research (metered lanes).
+`moda export` (mp4/gif = moda-video's motion lane); sites via `moda site *`;
+kits + guides via `moda brand *`; `moda task start` delegates whole jobs;
+`moda media *` / `moda web *` generate video, imagery, research (metered).

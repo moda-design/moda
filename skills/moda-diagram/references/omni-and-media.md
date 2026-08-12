@@ -43,10 +43,10 @@ Results return durable refs that feed markup `image(...)` fills and `src` attrib
 
 ### Video rules
 
-- Same verbatim-prompt and required-model rules. Video models (e.g. Veo 3.1 / Veo 3.1 Fast, Seedance 2.0/2.5, Gemini Omni Flash) differ in modes (text / start-image / reference-to-video), durations, resolutions, and native audio — read the CLI's capability lines.
+- Same verbatim-prompt and required-model rules. Video models (e.g. Veo 3.1 / Veo 3.1 Fast, Seedance 2.0/2.5, Gemini Omni Flash) differ in modes (text / start-image / reference-to-video), durations, resolutions, and native audio. `moda media models` lists the video model IDS only; the per-model envelope is enforced server-side — knobs snap (read `applied`/`adjustments`), and an unsupported mode fails typed, naming the models that can do it. The moda-video skill owns model routing and the video workflows.
 - **Always pass an explicit duration** — duration is the dominant cost driver (a 30s clip costs ~6× a 5s clip), and omitting it forces the credit precheck to reserve for the model's longest clip, which can fail outright on a small balance.
 - Requested duration/resolution/shape SNAP to the nearest supported value; the result reports what was `applied` and each `adjustment` — read them before describing the output. Snapping can round upward and cost more.
-- Put exact graphic text, branding, prices, and CTA/legal copy on the canvas AFTER generation — never ask a video model to render precise text.
+- Never ask a video model to render precise text, prices, or CTA/legal copy — and a canvas cannot composite over video afterward (no video inputs on canvases, see gotchas.md). Keep on-screen text minimal, design exact text into the start frame, or go vector-native (the moda-video skill owns both moves).
 - There is no video-to-video editing and no source-video input; a canvas never takes video (see gotchas.md).
 
 ## Imagery is a default quality lever
@@ -69,7 +69,7 @@ moda task status TASK_REF        moda task list [--active]        moda task canc
 - A genuinely open-ended creative brief where the user wants Moda's designer to own the direction ("surprise me", "make it beautiful", multiple concepts to choose from).
 - Imagery-heavy work where generation, art direction, and layout must co-evolve.
 - Brand-guide generation (a new identity — see references/brand.md).
-- Work the deterministic surface cannot express (today: animation authoring).
+- Motion choreography beyond the deterministic lane (motion v3 via `moda canvas edit` on an animation-category canvas covers the basics; preset animations on ordinary canvases remain app-only).
 
 **When NOT to escalate:** anything you can author deterministically. You are the agent; a known layout with known content is your job, free, and faster to iterate on.
 

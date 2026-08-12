@@ -1,5 +1,5 @@
 ---
-description: Design on Moda — routes to the right moda skill (deck, one-pager, social, diagram, website, brand, edit, help)
+description: Design on Moda — routes to the right moda skill (deck, one-pager, social, diagram, website, video, brand, edit, help)
 argument-hint: "[what you want made or changed]"
 ---
 
@@ -13,7 +13,11 @@ Route the user's request to the right Moda skill and follow it:
   **moda-one-pager** skill.
 - A social post, carousel, story, TikTok/IG/LinkedIn creative, static ad,
   banner ad, or channel header/cover → use the **moda-social** skill
-  (animated ads are refused honestly with a static offer).
+  (stills only — the animated version of any of these is moda-video).
+- A video, GIF, animated ad or post, motion graphic, "make a video",
+  animating a logo/image/design, turning a canvas into motion, or a video
+  upscale → use the **moda-video** skill (it owns anything delivered as
+  mp4/gif; still formats stay with moda-social).
 - A diagram, flowchart, org/architecture chart, 2x2 matrix, standalone data
   chart, wireframe, or a mockup of an app/site screen → use the
   **moda-diagram** skill (a diagram or chart destined for an existing

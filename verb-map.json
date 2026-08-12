@@ -96,6 +96,7 @@
     "moda task status",
     "moda task list",
     "moda task cancel",
+    "moda media models",
     "moda media generate-image",
     "moda media generate-video",
     "moda media remove-background",

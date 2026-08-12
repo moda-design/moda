@@ -35,7 +35,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 
-SKILLS = ["moda-deck", "moda-one-pager", "moda-brand", "moda-edit", "moda-website", "moda-social", "moda-diagram", "moda-help"]
+SKILLS = ["moda-deck", "moda-one-pager", "moda-brand", "moda-edit", "moda-website", "moda-social", "moda-diagram", "moda-video", "moda-help"]
 
 # Must mirror scripts/fanout.sh.
 EXPECTED_REFERENCES: dict[str, list[str]] = {
@@ -70,6 +70,10 @@ EXPECTED_REFERENCES: dict[str, list[str]] = {
     ],
     "moda-diagram": [
         "diagram", "markup", "edit-code", "reading-and-verifying", "gotchas", "design-quality",
+        "brand", "export", "charts", "omni-and-media",
+    ],
+    "moda-video": [
+        "video", "markup", "edit-code", "reading-and-verifying", "gotchas", "design-quality",
         "brand", "export", "charts", "omni-and-media",
     ],
 }

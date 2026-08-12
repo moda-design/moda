@@ -6,7 +6,7 @@
 set -eu
 cd "$(dirname "$0")"
 
-SKILLS="moda-deck moda-one-pager moda-social moda-diagram moda-website moda-brand moda-edit moda-help"
+SKILLS="moda-deck moda-one-pager moda-social moda-diagram moda-website moda-video moda-brand moda-edit moda-help"
 installed=""
 
 copy_into() {

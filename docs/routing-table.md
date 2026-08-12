@@ -1,6 +1,6 @@
 # Skill routing table — the adversarial contract
 
-The seven skill descriptions are a mutual-exclusivity contract: for any
+The nine skill descriptions are a mutual-exclusivity contract: for any
 plausible ask, exactly ONE skill claims it. This table is the maintained
 record of that contract — update it in the same commit as any description
 change, and re-verify the rows that touch the changed skill. moda-help
@@ -16,7 +16,11 @@ enforces that moda-help names every skill).
 | "Quote card" / "make a circle with a witty quote beneath it" | moda-social | the uncategorized-standalone lane: simple one-off graphics with no platform attached |
 | "A simple graphic for X" | moda-social | same lane; digital one-off, no print word |
 | "Instagram carousel about our launch" | moda-social | platform creative (png zip; LinkedIn carousel → one multi-page PDF) |
-| "LinkedIn banner for my profile" / "static TikTok ad" | moda-social | platform surface; animated ads refused honestly with a static offer |
+| "LinkedIn banner for my profile" / "static TikTok ad" | moda-social | platform surface — stills; the animated version of the same ad is moda-video |
+| "Make a fun short video with our logo" / "animate our logo" | moda-video | generated video from brand assets (image-to-video, reference-guided) |
+| "An animated ad / motion graphic / GIF of X" | moda-video | owns anything that renders to mp4/gif — moda-social keeps still formats |
+| "Turn this canvas/page into a video" / "export this animation as mp4" | moda-video | canvas frame → motion, or animation-canvas mp4/gif export |
+| "Upscale this video" | moda-video | the metered video-enhance lane |
 | "A landing page for my product" | moda-website | live, hosted (*.moda.page) |
 | "A mockup of our app's dashboard" | moda-diagram | a PICTURE of an interface — live page goes to moda-website |
 | "Flowchart of our onboarding" / "2×2 of the landscape" | moda-diagram | structural boxes-and-arrows |
@@ -42,8 +46,12 @@ Boundary rules, stated once:
 - **Landing page**: "landing page" alone means the live hosted site
   (moda-website); "landing page mockup/design" means the picture
   (moda-diagram).
-- **Animated ads**: routed to moda-social, which refuses the animation
-  honestly and delivers static — routing never bounces on the limitation.
+- **Motion vs stills**: moda-video owns anything that renders to mp4/gif —
+  generated clips, animated ads/posts, logo animations, animation-canvas
+  exports, video upscales. moda-social owns still deliverables and the
+  platform sizing/safe-area rules. An "animated social post" is ONE owner:
+  moda-video makes the motion (consulting social sizes for the aspect);
+  it never bounces back mid-task.
 - **Automation vs authoring**: "set up Moda to …" scheduling/integration
   asks are moda-help even when they name a platform whose creative rows
   belong to a format skill (the LinkedIn trap above) — the automation is the

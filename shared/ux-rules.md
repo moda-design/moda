@@ -53,5 +53,5 @@
   otherwise deliver the link and put ONE export offer in the final reply —
   running an unasked export IS the violation; offering is compliance.
 - Multi-skill requests: the artifact skill (deck/one-pager/social/diagram/
-  website) leads and pulls brand/edit behavior via its references; if no
+  website/video) leads and pulls brand/edit behavior via its references; if no
   Moda skill fits, say what they can make and ask — never force a fit.

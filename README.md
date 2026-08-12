@@ -82,6 +82,7 @@ whenever a newer version exists.
 | `moda-social` | Social posts, carousels, static ads, banners → png/jpeg (carousel = zip) |
 | `moda-diagram` | Flowcharts, 2×2 matrices, UI wireframes/mockups → png/pdf |
 | `moda-website` | Live websites → published to a public `*.moda.page` URL |
+| `moda-video` | Video and motion: generated clips (brand stingers, image-to-video), animation-canvas exports → mp4/gif |
 | `moda-brand` | Brand-kit reads, creation, and canvas-vs-kit audits |
 | `moda-edit` | Precise edits to an existing canvas from its URL |
 | `moda-help` | Meta home: setup/update, auth + orgs, routing, CLI troubleshooting |
@@ -95,7 +96,7 @@ verify loop, metered verbs labeled with cost class and receipt).
 
 - `cli/` — TypeScript source of the `moda` CLI, compiled with Bun into
   per-platform standalone binaries (`bun scripts/build.ts`).
-- `skills/` — the eight skills, each self-contained with its `references/`.
+- `skills/` — the nine skills, each self-contained with its `references/`.
 - `shared/` — the canonical authored copy of the shared blocks and
   references; `scripts/fanout.sh` fans them into the skills.
 - `commands/` — the `/moda` router command (Claude Code).

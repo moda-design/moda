@@ -9,9 +9,9 @@ description: >-
   attached. Use for a social post, carousel, story, platform creative,
   static ad, banner ad, channel header/cover, quote card, or "a simple
   graphic of/for X". Produces platform- or purpose-sized pages on a live
-  Moda canvas, exporting png/jpeg or pdf (multi-page carousel → zip);
-  animated gif/mp4 ads are not available — it delivers the static version
-  and says so. Slide decks → moda-deck; printable flyers, posters, PDFs →
+  Moda canvas, exporting png/jpeg or pdf (multi-page carousel → zip).
+  Stills only: an ANIMATED ad/post or anything delivered as gif/mp4 →
+  moda-video. Slide decks → moda-deck; printable flyers, posters, PDFs →
   moda-one-pager; live hosted pages → moda-website. Requires the moda CLI
   and a Moda account (Step 0 checks both; it never installs anything
   itself).
@@ -106,7 +106,7 @@ allowed-tools: Bash(moda:*), Read, Glob, Grep
   otherwise deliver the link and put ONE export offer in the final reply —
   running an unasked export IS the violation; offering is compliance.
 - Multi-skill requests: the artifact skill (deck/one-pager/social/diagram/
-  website) leads and pulls brand/edit behavior via its references; if no
+  website/video) leads and pulls brand/edit behavior via its references; if no
   Moda skill fits, say what they can make and ask — never force a fit.
 
 ## Workflow
@@ -114,7 +114,7 @@ allowed-tools: Bash(moda:*), Read, Glob, Grep
 1. **Settle format and count**: platform, exact pixel size, single piece
    or carousel, one concept (default) or N directions — read
    references/social.md (sizes, safe areas, craft) BEFORE designing;
-   platformless one-off → 1080x1080. Animated asks: deliver static, say so.
+   platformless one-off → 1080x1080. Animated asks → the moda-video skill.
 2. **Template check, then create + link**: recurring post type (launch,
    hiring, quote series)? Check team templates, view thumbnails — a fitting
    one beats scratch (references/templates.md): `moda canvas create
