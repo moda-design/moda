@@ -113,16 +113,16 @@ describe('fetchListPages', () => {
 
 
 describe('#9317 shipped envelopes (cursor/offset lane split)', () => {
-  test('FOUNDER REPRO: brand list --all walks 25 kits across two cursor pages (data key, total null)', async () => {
+  test('FOUNDER REPRO: brand list --all walks 25 kits across two cursor pages (data key, true total)', async () => {
     const kits = Array.from({ length: 25 }, (_, i) => ({ id: `bk_${i}`, name: `Kit ${i}` }));
     const { base, urls } = serve((url) => {
       const cursor = url.searchParams.get('cursor');
       if (cursor === null) {
         return Response.json({
-          data: kits.slice(0, 13), next_cursor: 'c_page2', returned: 13, has_more: true, limit: 25, total: null,
+          data: kits.slice(0, 13), next_cursor: 'c_page2', returned: 13, has_more: true, limit: 25, total: 25,
         });
       }
-      return Response.json({ data: kits.slice(13), next_cursor: null, returned: 12, has_more: false, limit: 25, total: null });
+      return Response.json({ data: kits.slice(13), next_cursor: null, returned: 12, has_more: false, limit: 25, total: 25 });
     });
     const pages = await fetchListPages(client(base), '/v1/brand-kits', {}, { all: true }, undefined, 'cursor');
     expect(pages.returned).toBe(25);
@@ -131,9 +131,24 @@ describe('#9317 shipped envelopes (cursor/offset lane split)', () => {
     expect(urls[1]?.searchParams.get('offset')).toBeNull();
     expect(pages.itemKey).toBe('data');
     expect(pages.items[24]?.id).toBe('bk_24');
-    // total: null is treated as no-total; has_more false closes the walk honestly.
+    // brand-kits ships a true COUNT (#9317 table) — the walk reports the whole set.
+    expect(pages.total).toBe(25);
+    expect(pageNote(pages)).toBe('showing all 25');
+  });
+
+  test('cursor walk with total: null (canvases-list shape) closes honestly on has_more false', async () => {
+    const { base } = serve((url) => {
+      const cursor = url.searchParams.get('cursor');
+      if (cursor === null) {
+        return Response.json({ data: [{ id: 'cvs_a' }], next_cursor: 'c_2', returned: 1, has_more: true, limit: 1, total: null });
+      }
+      return Response.json({ data: [{ id: 'cvs_b' }], next_cursor: null, returned: 1, has_more: false, limit: 1, total: null });
+    });
+    const pages = await fetchListPages(client(base), '/v1/canvases', {}, { all: true }, undefined, 'cursor');
+    expect(pages.returned).toBe(2);
+    // total: null is treated as no-total — never "of null".
     expect(pages.total).toBeUndefined();
-    expect(pageNote(pages)).toBe('showing 25 (all)');
+    expect(pageNote(pages)).toBe('showing 2 (all)');
   });
 
   test('cursor lanes REFUSE --offset with the lane-truth usage error', async () => {
