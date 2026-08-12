@@ -12,6 +12,11 @@
   validator enforces it).
 - Verb names are canonical to the moda CLI contract (`verb-map.json` lists
   the allowed inventory). Internal Moda tool names never appear here.
+- `allowed-tools` frontmatter is Claude Code-only metadata: other harnesses
+  ignore it entirely, and even in Claude Code it is a permissions hint, not
+  containment. Never rely on it to restrict what an agent can do, and keep
+  SKILL.md prose harness-neutral — say "your harness's file-reading/search
+  tools", not literal tool names like Read/Glob/Grep.
 
 **At ship time:** this repo becomes a generated artifact of the studio
 `skills-src/` publish pipeline. From that point, PR upstream in studio — the

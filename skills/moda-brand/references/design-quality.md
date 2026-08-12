@@ -94,7 +94,7 @@ The single most common failure is defaulting to **a gradient background, a coupl
 There is no dedicated image node — an image is a pattern fill on a shape. Generated imagery is a DEFAULT quality lever, not a last resort: covers, heroes, section breaks, and full-bleed closers get generated imagery wherever it elevates the design, styled to the brand's palette and mood. An icon/vector-only system is a deliberate style choice, never a cost fallback. Where each image comes from:
 
 1. **Brand kit assets** when the brand IS the subject (logos, product shots — `moda brand show`; refs, never re-hosted URLs).
-2. **The user's own uploads and team assets** when they are the actual content — `moda file search QUERY` (`--kind photo` default; `--kind icon` for the shared icon packs); `moda file upload PATH` → `file_…` ref.
+2. **The user's own uploads and team assets** when they are the actual content — `moda file search QUERY` (`--kind photo` default; `--kind icon` for the shared icon packs); `moda file upload PATH` → `file_…` ref. When the result says the matches are low-confidence (`has_good_matches: false`), verify visually before placing — or generate instead.
 3. **Functional UI icons** — markup `<image icon="query"/>` (deterministic; nav/status/bullets, not decoration or logos).
 4. **Generate everything atmospheric or illustrative** — `moda media generate-image`. Styled/thematic icons, logos, heroes, illustrations. Model choice: references/omni-and-media.md.
 

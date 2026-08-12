@@ -2,9 +2,9 @@
 
 1. Run `moda doctor --json`. It verifies CLI version compatibility, auth state,
    API reachability, and account entitlements in one call.
-   - `moda` missing from PATH, below this skill's compatibility floor, or
-     doctor says update required: STOP — show the user the pinned command
-     doctor prints, or when the CLI is missing entirely:
+   - `moda` missing from PATH, below the server minimum (doctor reports
+     `version.below_minimum`), or update required: STOP — show the user
+     the pinned command doctor prints, or when the CLI is missing entirely:
      `npm i -g @moda-design/moda` (a 401/registry failure means registry
      auth is missing — point at the one-time setup box in the repo README).
      Wait for the user to run it, then re-run doctor. Never install or

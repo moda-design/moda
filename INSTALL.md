@@ -15,6 +15,11 @@ auth (`gh auth login` / git SSH); nothing here is published anywhere.
 `setup` copies the skill directories and **prints** the CLI install command
 below — it never runs it.
 
+The `/moda` router command (`commands/moda.md`) installs with the Claude Code
+plugin only — other harnesses invoke the skills directly. Its routing table is
+convenience; the cross-skill arbitration rules travel inside every skill's
+shared UX rules, so no harness depends on the router being present.
+
 ## 2. Install the moda CLI (pinned command)
 
 The dogfood channel is GitHub Releases on this repo (`github-private`); npm

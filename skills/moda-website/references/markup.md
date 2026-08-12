@@ -8,7 +8,7 @@ moda canvas markup CANVAS_REF --file - < page.xml     # stdin — the agent-ergo
 ```
 
 - `--page` takes a page short id from your latest `moda canvas read` (or `canvas` for floating, canvas-absolute nodes on a Design canvas).
-- `--mode replace` is the atomic full-page rewrite: it deletes every node on the page and then adds the markup — deletion happens only after a clean parse, so an interrupted call can never leave the page empty. Default is `append`.
+- `--mode replace` is the atomic full-page rewrite: it deletes every node on the page and then adds the markup — deletion happens only after a clean parse, so an interrupted call can never leave the page empty. Default is `append`. Replace requires a revision token: the CLI uses your cached last `moda canvas read` automatically, so read first (or pass `--revision`).
 - `--screenshot PATH` captures the touched page right after the commit — the same capture and files as `moda canvas screenshot -o PATH`, folded into one invocation. Use it when a screenshot is your next step anyway (`--page canvas` falls back to the default capture; a capture failure never changes the mutation's exit code).
 
 ## Root & flow
@@ -69,7 +69,7 @@ The parser dispatches all 23 elements below — including `<chart>`, `<path>`, `
 - **Styles:** `<styles>` block with `.class { fill: …; font: "Family" 48 700 }`. Cascade: builtin < content defaults < inherited (color/font-family/font-size/font-weight from row/column parents to text) < class < inline attrs < inline `style="…"`.
 - **Value forgiveness:** units stripped (`100px`,`24pt`,`45deg`); `opacity="50%"`; camelCase→kebab; tag aliases (`rect`,`circle`,`img`,`div`→row, `p`/`h1`→text, `ul`→column, `card`/`box`/`panel`→column, `zstack`→layers, `for-each`→repeat); attr aliases (`bg`→fill, `radius`→corner-radius, `border-color`→stroke, `w`/`h`, `left`/`top`, `href`→src…); inline `style="border: 2px solid #ccc"` parsed to stroke props.
 - **`corner-radius`:** `"full"` = min(w,h)/2 (pill/circle); `%` of the min dimension (≥50% = full); per-corner `"TL,TR,BR,BL"`.
-- **Gradients:** `linear-gradient(…)`, `radial-gradient(…)` on fill+stroke; `conic-gradient(…)` fill-only; shader fills `shader(<type>)` (e.g. `shader(prismatic-swirl-panels)`, `shader(plasma-field)` — many types; pick one that fits, don't default to `mesh-gradient`; directory in references/design-quality.md) on background, all fillable shapes, containers, and text.
+- **Gradients:** `linear-gradient(…)`, `radial-gradient(…)` on fill+stroke; `conic-gradient(…)` fill-only (and not on a page `<background>`, which degrades a conic to its first stop color — use linear/radial or a shader there); shader fills `shader(<type>)` (e.g. `shader(prismatic-swirl-panels)`, `shader(plasma-field)` — many types; pick one that fits, don't default to `mesh-gradient`; directory in references/design-quality.md) on background, all fillable shapes, containers, and text.
 - **Effects:** `shadow="x,y,blur,color"`; `inner-shadow="x y blur [spread] color"` (rect+ellipse only); `blend-mode`; `backdrop="blur|glass|pixelate|dither|none"` + `backdrop-preset="subtle|strong"`; text-only `glow`, `echo`, `extrude`. Re-applying updates in place; `="none"` removes.
 - **`rotation`/`rot`:** clockwise degrees **around the shape's center** — the parser adjusts x/y so concentric rotated shapes stay concentric.
 

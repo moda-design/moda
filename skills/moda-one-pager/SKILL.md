@@ -23,9 +23,9 @@ allowed-tools: Bash(moda:*), Read, Glob, Grep
 
 1. Run `moda doctor --json`. It verifies CLI version compatibility, auth state,
    API reachability, and account entitlements in one call.
-   - `moda` missing from PATH, below this skill's compatibility floor, or
-     doctor says update required: STOP — show the user the pinned command
-     doctor prints, or when the CLI is missing entirely:
+   - `moda` missing from PATH, below the server minimum (doctor reports
+     `version.below_minimum`), or update required: STOP — show the user
+     the pinned command doctor prints, or when the CLI is missing entirely:
      `npm i -g @moda-design/moda` (a 401/registry failure means registry
      auth is missing — point at the one-time setup box in the repo README).
      Wait for the user to run it, then re-run doctor. Never install or
@@ -77,18 +77,15 @@ allowed-tools: Bash(moda:*), Read, Glob, Grep
   one page, a quick edit) goes direct — create, author, one screenshot
   check, deliver (the Step-0 brand rule always applies). Reserve concept
   fan-out, multi-pass verify, and lint-until-clean for multi-page, branded,
-  or high-stakes work: this scales simple asks DOWN, never relaxing the
-  deck/document/website workflows or their verification; never pad a
-  simple ask with process the user didn't need.
+  or high-stakes work: scale simple asks DOWN — never relax the full
+  workflows or their verification, never pad a simple ask with process.
 - Run independent calls in parallel when your harness supports it: reads of
-  different resources (`moda brand show` + `moda file search` +
-  `moda account status` at session start) and screenshots of different
-  canvases fan out together. Mutations on the SAME canvas stay serial —
-  the per-canvas lock and revision discipline order writes.
+  different resources and screenshots of different canvases fan out
+  together. Mutations on the SAME canvas stay serial — the per-canvas lock
+  and revision discipline order writes.
 - Don't re-read state you already hold: your last read's DSL stays valid
-  until someone mutates the canvas. Re-read at loop boundaries (structural
-  changes minting fresh ids, a new request, user edits in the app) — not
-  between consecutive calls on unchanged state.
+  until someone mutates the canvas. Re-read at loop boundaries (fresh ids,
+  a new request, user edits in the app), not between consecutive calls.
 - Never delete or regenerate an image because a screenshot report listed it
   under `failedAssets`/`pendingAssets` — that state is transient; re-capture.
 - Metered lanes (`moda media *`, `moda web *`, `moda task start`) are normal
@@ -106,6 +103,9 @@ allowed-tools: Bash(moda:*), Read, Glob, Grep
   pointing back ("still open at <link> — everything stays editable"); export
   only when the user named a file/format (format words win) or accepts one
   brief offer ("Want this as a PPTX/PDF too?") — never as ceremony.
+- Multi-skill requests: the artifact skill (deck/one-pager/social/diagram/
+  website) leads and pulls brand/edit behavior via its references; if no
+  Moda skill fits, say what they can make and ask — never force a fit.
 
 ## Workflow
 
@@ -113,7 +113,7 @@ allowed-tools: Bash(moda:*), Read, Glob, Grep
    "…" --size 816x1056` (A4: 794x1123; `--pages N` multi-page), then send
    the user the link right away (`moda canvas share CANVAS_REF`): "follow
    along live here — it builds up as I work."
-2. **Read the source** with your own tools (Read/Glob; your own research;
+2. **Read the source** with your harness's file-reading/search tools (your own research;
    `moda web search` / `moda web read` for live web facts —
    references/web.md). Settle scope per references/document-design.md: one
    page → info-dense single page; multi-page → one system + page outline.

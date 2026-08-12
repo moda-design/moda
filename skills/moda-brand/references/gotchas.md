@@ -7,6 +7,7 @@ Canvas verbs execute on Moda's tool host, not a full browser tab. Most things be
 1. **`<latex>` on a host without the render seam** → a typed per-element refusal. It degrades **only that element/update**, not the whole call — the rest of your markup still lands.
 2. **Canvas-space region captures on FLOATING (freeform) layouts** are unsupported. Page-anchored captures (default layouts) work fine, so `moda canvas screenshot` of a normal page is unaffected.
 3. **Selection is not a document operation.** Nothing in this surface selects nodes for the user; the change itself is what collaborators see.
+4. **Cross-session agent memory does not reach this surface.** Standing preferences and history the user saved with Moda's in-app agent are not readable from the CLI — no verb recalls them. Solicit standing preferences from the user or the repo context instead of assuming the account "remembers" them here.
 
 Other minor divergences worth knowing: shrink-fit font sizes can land within a ±6% band; non-catalog fonts are heuristically measured; lint contrast sampling degrades over image fills; screenshot bytes differ slightly from the browser.
 
