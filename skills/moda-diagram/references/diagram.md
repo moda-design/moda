@@ -93,8 +93,9 @@ skill). Pick the viewport before composing; it decides everything:
 - Nest `<row>`/`<column>` for the chrome — shell, sidebar, header, card
   grids — and reserve absolute x/y for decorative accents and full-bleed
   blocks. Icons come from `<image icon="query"/>` or `moda file search
-  --kind icon`; product screenshots from uploads or `moda media
-  generate-image` (metered — say so first).
+  --kind icon` (the shared packs ARE the stock icon library); product
+  screenshots from uploads or `moda media generate-image` (metered — say
+  so first).
 - Push past three-equal-cards: a bento grid (a 2fr feature beside stacked
   1fr cards), a full-bleed color block carrying nav + hero, oversized
   low-opacity step numerals, colored overline labels. A mockup with a point

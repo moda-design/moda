@@ -26,13 +26,13 @@ function driveNotAvailable(verb: string): CliError {
     type: 'unprocessable',
     code: 'not_available',
     message: `'moda ${verb}' has no public API endpoint — the file list/show/download facade is a recorded parity exception in the prototype.`,
-    hint: 'Available today: moda file upload, moda file search (team asset search), and moda drive folders | tree | move for folders and placement.',
+    hint: 'Available today: moda file upload, moda file search (team/stock asset search), and moda drive folders | tree | move for folders and placement.',
     source: 'local',
   });
 }
 
 export function registerFileUpload(program: Command): void {
-  const file = program.command('file').description('Moda files: upload local files, search team assets');
+  const file = program.command('file').description('Moda files: upload local files, search team and stock assets');
 
   addGlobalFlags(
     file
@@ -94,8 +94,13 @@ export function registerFileFacade(program: Command): void {
   addGlobalFlags(
     file
       .command('search <query>')
-      .description('search team assets (durable file_ ids + URLs, usable in markup and media inputs)')
+      .description('search team assets or the stock photo library (durable ids usable in markup and media inputs)')
       .option('--kind <kind>', 'icon | photo (default photo)', 'photo')
+      .option(
+        '--source <source>',
+        'team | stock (default team). stock = the stock photo library (photo only; the shared icon packs already ARE the stock icons)',
+        'team',
+      )
       .option('--limit <n>', 'max results', parseListLimit)
       .option('--offset <n>', 'pagination offset', parseListOffset)
       .option('--all', `fetch every page (bounded at ${LIST_ALL_CAP} items)`)
@@ -107,13 +112,22 @@ export function registerFileFacade(program: Command): void {
       if (kind !== 'icon' && kind !== 'photo') {
         throw CliError.usage(`Invalid --kind '${kind}' — expected icon or photo.`);
       }
+      const source = opts.source as string;
+      if (source !== 'team' && source !== 'stock') {
+        throw CliError.usage(`Invalid --source '${source}' — expected team or stock.`);
+      }
       const flags = listFlagsOf(opts);
       const { client } = await authedClient(inv, 30_000);
-      // Server contract: GET /v1/assets/search?q=&kind=&limit= → {query, kind, assets, has_good_matches}.
+      // Server contract: GET /v1/assets/search?q=&kind=&source=&limit=&offset= → {query, kind,
+      // source, assets, has_good_matches, …}. source=stock (photo only) returns
+      // `stock_unsplash_<id>` refs — directly placeable in markup/edit code (the write pre-pass
+      // imports the photo into team storage on use) — plus per-result `attribution` that must be
+      // shown wherever the photo appears; its url/thumb_url are PREVIEW-only provider links.
+      // For kind=icon the server ignores source: the shared packs are the stock icon library.
       const pages = await fetchListPages(
         client,
         endpoints.assetsSearch(),
-        { q: args[0] as string, kind },
+        { q: args[0] as string, kind, source },
         flags,
         30_000,
       );
@@ -121,14 +135,31 @@ export function registerFileFacade(program: Command): void {
         operation: 'file.search',
         pages,
         flags,
-        emptyHint: `no results for '${args[0] as string}' — broaden the query or switch --kind (icon | photo)`,
+        emptyHint:
+          `no results for '${args[0] as string}' — broaden the query or switch --kind (icon | photo)` +
+          (kind === 'photo' && source === 'team' ? ' or try --source stock (stock photo library)' : ''),
         itemLine: (asset) => `${str(asset, 'id') ?? '?'}  ${str(asset, 'name') ?? ''}`,
       });
-      // The server scores relevance: has_good_matches false means every hit is below its
-      // confidence bar. Surface it in the human lane too — a silent low-confidence page reads
-      // as a match and gets placed as-is (the JSON body already carries the flag via root).
-      if (pages.root.has_good_matches === false && pages.items.length > 0) {
-        const inner = outcome.human;
+      const inner = outcome.human;
+      // Degraded stock lane: provider_status 'unavailable' means "could not search", NOT "no
+      // matches" — surface the server's note so an empty page is not read as a zero-hit query.
+      if (source === 'stock' && str(pages.root, 'provider_status') === 'unavailable') {
+        outcome.human = (write) => {
+          write(str(pages.root, 'note') ?? 'stock photo search is unavailable on this deployment — use --source team, or upload the image');
+          inner?.(write);
+        };
+      } else if (source === 'stock' && str(pages.root, 'source') !== 'stock') {
+        // A server predating the source param ignores it and silently serves TEAM results —
+        // the response echo is the truth signal. Say so rather than mislabeling the hits.
+        outcome.human = (write) => {
+          write('note: this server predates stock sourcing — these are team-asset results');
+          inner?.(write);
+        };
+        inv.note('server did not echo source=stock — team-asset results returned');
+      } else if (pages.root.has_good_matches === false && pages.items.length > 0) {
+        // The server scores relevance: has_good_matches false means every hit is below its
+        // confidence bar. Surface it in the human lane too — a silent low-confidence page reads
+        // as a match and gets placed as-is (the JSON body already carries the flag via root).
         outcome.human = (write) => {
           write('low-confidence matches — verify visually before placing (or generate instead)');
           inner?.(write);

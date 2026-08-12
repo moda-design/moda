@@ -19,13 +19,14 @@ moda export CANVAS_REF --format pdf|pptx|png|jpeg|mp4|gif [-o PATH] [--page N]  
   answer, deliver a still + the live link). When an animated canvas gets a
   static-file request, offer the motion file too.
 - **The hero claim, stated verbatim:** PDF exports carry real text layers and embedded fonts — but hyperlinks are flattened to plain text in PDF output (never promise clickable links); PPTX exports are native editable shapes and text — not screenshots pasted into a deck. `--flatten` degrades PDF to raster; use it only when the user asks.
+- **Read the `warnings[]` on a completed export.** The CLI prints each as a `warning: …` line (and carries them in `--json`): quality caveats about a file that still succeeded — `pptx_shape_rasterized` (some images baked into the slide rather than editable shapes), `pptx_content_dropped` (elements missing from the deck entirely), `pdf_links_flattened` (hyperlinks not clickable). Relay the caveat honestly when you hand over the file. A warning is never a reason to re-run the export — an identical re-run degrades identically — and never a reason to withhold the file; treat an unrecognized code as informational and pass its message along.
 - Export is deterministic-lane: **zero metered credits on every plan** (`usage.metered_credits: 0` on the response). Export rate is plan-quota enforced server-side; a throttle surfaces as a typed error with a retry hint.
 - The CLI polls transparently when the render exceeds the sync window — you just get the file. `--no-wait` prints the export task id and exits 0; check later with the same verb or hand the id to the user.
 - Never poll with sleeps longer than 60 seconds; prefer the CLI's own waiting (the default sync wait, or `--no-wait` + re-check with the same verb). If export fails with the same typed code twice, deliver the share link + screenshots and note the export failure honestly.
 - Downloads land at `-o` (default `<canvas>.<ext>` in the configured output dir; with `--page N` the default is `<canvas>.pN.<ext>`, so per-page loops never clobber). Print the final path in your reply.
 - **Multi-page png/jpeg arrives as ONE zip of per-page images** — the response's `delivered_format` says `zip` and the CLI names the file `.zip`. That zip is the deliverable for image carousels; don't rename it to `.png`.
 - `--page N` exports a single 1-indexed page (there is no range selection); omit it for all pages. A multi-page png/jpeg export arrives as one `.zip` of per-page files.
-- **`--format gif|mp4|webp` is rejected with a typed error** — animation export has no server lane; the Moda app is the path. Say so plainly instead of retrying.
+- **`--format webp` is rejected with a typed error** — it has no server lane. Say so plainly instead of retrying; the supported stills are pdf, pptx, png, jpeg.
 
 Typical closes:
 

@@ -113,6 +113,65 @@ export async function captureScreenshots(input: {
 export interface WrittenPage {
   page_id?: string;
   path: string;
+  /** Server per-page fields, threaded VERBATIM (tool-host-owned wire shapes — never reshaped). */
+  pageName?: string;
+  width?: number;
+  height?: number;
+  /** Assets still loading when the frame was grabbed — a THIS-CAPTURE timing artifact. */
+  pendingAssets?: unknown[];
+  /** Image fills that drew the load-failure placeholder — usually transient (never regenerate). */
+  failedAssets?: unknown[];
+  /** Text nodes that rendered with substitute fonts (the typography is not the design's). */
+  fontFallbacks?: unknown[];
+}
+
+/**
+ * The per-page degradation/context fields the server reports alongside `dataURL`, copied
+ * verbatim onto the written page so the CLI envelope keeps the truth the transport carried
+ * (reading-and-verifying.md documents these to agents). Absent fields stay absent.
+ */
+function passthroughPageFields(page: Record<string, unknown>): Partial<WrittenPage> {
+  const pageName = str(page, 'pageName');
+  return {
+    ...(pageName !== undefined ? { pageName } : {}),
+    ...(typeof page.width === 'number' ? { width: page.width } : {}),
+    ...(typeof page.height === 'number' ? { height: page.height } : {}),
+    ...(Array.isArray(page.pendingAssets) ? { pendingAssets: page.pendingAssets } : {}),
+    ...(Array.isArray(page.failedAssets) ? { failedAssets: page.failedAssets } : {}),
+    ...(Array.isArray(page.fontFallbacks) ? { fontFallbacks: page.fontFallbacks } : {}),
+  };
+}
+
+/**
+ * The typed `warnings[]` roll-up merged across every batched call, deduped by serialized
+ * identity — canvas-global entries (`fonts_pending`) repeat verbatim on each batched response
+ * and must not multiply, while per-page entries are naturally distinct. Returns `undefined`
+ * when NO response carried the field (a server predating the roll-up), so callers can tell
+ * "nothing degraded" from "not reported".
+ */
+export function mergeCaptureWarnings(roots: Record<string, unknown>[]): Record<string, unknown>[] | undefined {
+  let reported = false;
+  const seen = new Set<string>();
+  const merged: Record<string, unknown>[] = [];
+  for (const root of roots) {
+    if (!Array.isArray(root.warnings)) continue;
+    reported = true;
+    for (const warning of root.warnings) {
+      const entry = asObject(warning);
+      const key = JSON.stringify(entry);
+      if (seen.has(key)) continue;
+      seen.add(key);
+      merged.push(entry);
+    }
+  }
+  return reported ? merged : undefined;
+}
+
+/** Human `warning: …` lines for the merged roll-up (site.ts style; message verbatim). */
+export function captureWarningLines(warnings: Record<string, unknown>[] | undefined): string[] {
+  return (warnings ?? []).map(
+    (warning) => `warning: ${str(warning, 'message') ?? str(warning, 'code') ?? JSON.stringify(warning)}`,
+  );
 }
 
 /**
@@ -193,7 +252,7 @@ export function writeScreenshotPages(input: {
     if (named.warning !== undefined) input.note(named.warning);
     mkdirSync(dirname(named.path), { recursive: true });
     writeFileSync(named.path, bytes);
-    written.push({ page_id: pageId, path: named.path });
+    written.push({ page_id: pageId, path: named.path, ...passthroughPageFields(page) });
   });
   return written;
 }

@@ -101,7 +101,8 @@ describe('captureAfterMutation', () => {
     });
     expect(server.calls).toEqual([{ page_ids: ['p_a'] }]);
     expect(result.block.ok).toBe(true);
-    expect(result.written).toEqual([{ page_id: 'p_a', path: out }]);
+    // width/height thread through from the capture response (G13 per-page passthrough).
+    expect(result.written).toEqual([{ page_id: 'p_a', path: out, width: 100, height: 100 }]);
     expect(result.block.pages).toEqual(result.written);
     expect(result.block.truncated).toBeUndefined();
     expect(result.block.capture_calls).toBeUndefined();
@@ -141,7 +142,7 @@ describe('captureAfterMutation', () => {
     });
     expect(server.calls).toEqual([{}]);
     // One captured page → `-o` single-file semantics; extensionless paths gain the byte format.
-    expect(result.written).toEqual([{ page_id: 'p_default', path: `${out}.jpg` }]);
+    expect(result.written).toEqual([{ page_id: 'p_default', path: `${out}.jpg`, width: 100, height: 100 }]);
   });
 
   test('a capture failure never throws: ok:false block + non-suppressible failure line, no files', async () => {

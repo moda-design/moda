@@ -54,6 +54,9 @@ persist one, never hand one to the user. They expire.
   category, so passing those flags with it is an error.
 - The copy is a **regular canvas** — read it, then edit its content through
   the normal flow. Nothing about it is locked or linked back to the source.
+- Want a copy of an EXISTING canvas rather than a template? `moda canvas
+  duplicate CANVAS_REF --name "…"` is the pure as-is copy (no AI changes) —
+  same idea, any canvas you can read.
 - **None fit?** Say so in one line ("no team template matched, so I designed
   this fresh") and build from scratch per the usual design references
   (references/design-quality.md). Never force a bad-fit template.

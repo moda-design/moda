@@ -120,6 +120,11 @@ export async function performExport(
   }
 
   const final = await pollExport(client, ref, exportId, startBody, inv);
+  // Server contract: `warnings` (ExportCanvasResponse/ExportStatusResponse) — quality caveats
+  // about a file that still SUCCEEDED ({code, message, severity, details}; codes today:
+  // pptx_shape_rasterized, pptx_content_dropped, pdf_links_flattened). Surfaced verbatim in
+  // --json and as `warning: …` human lines. `undefined` = a server predating the field.
+  const serverWarnings = Array.isArray(final.warnings) ? final.warnings.map(asObject) : undefined;
   const downloadUrl = downloadUrlOf(final);
   if (downloadUrl === undefined) {
     throw new CliError({
@@ -150,8 +155,15 @@ export async function performExport(
       delivered_format: deliveredFormat,
       output: toStdout ? '-' : outPath,
       bytes: bytes.byteLength,
-      // Format truth the caller must not oversell (verified against the export pipeline).
-      ...(format === 'pdf' ? { notes: ['hyperlinks are flattened to text in PDF output'] } : {}),
+      // Degradation truth: the server's own warnings when it reports the field (it names
+      // exactly what was degraded, incl. pdf_links_flattened on every completed PDF); the old
+      // hardcoded PDF-hyperlink note survives ONLY as the fallback for servers that predate
+      // the warnings contract — never alongside it.
+      ...(serverWarnings !== undefined
+        ? { warnings: serverWarnings }
+        : format === 'pdf'
+          ? { notes: ['hyperlinks are flattened to text in PDF output'] }
+          : {}),
       usage: final.usage ?? { class: 'deterministic', metered_credits: 0 },
       meta: metaBlock({ requestId: started.requestId }),
     },
@@ -167,6 +179,10 @@ export async function performExport(
         );
       }
       write(`${deliveredFormat} -> ${toStdout ? '(stdout)' : outPath} (${bytes.byteLength} bytes)`);
+      // site.ts-style warning lines: one per server caveat, message verbatim.
+      for (const warning of serverWarnings ?? []) {
+        write(`warning: ${str(warning, 'message') ?? str(warning, 'code') ?? JSON.stringify(warning)}`);
+      }
     },
     exitCode: EXIT_OK,
     summaryToStderr: toStdout,
