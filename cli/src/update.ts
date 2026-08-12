@@ -71,7 +71,7 @@ export function maybeUpdateNotice(env: NodeJS.ProcessEnv = process.env, now: Dat
     if (Number.isFinite(last) && now.getTime() - last < 24 * 60 * 60 * 1000) return undefined;
   }
   writeUpdateStamp({ ...stamp, last_notice_at: now.toISOString(), last_notice_version: available.latest }, env);
-  return `moda ${available.latest} is available (current: ${CLI_VERSION}). Run: moda update`;
+  return `moda ${available.latest} is available (current: ${CLI_VERSION}). Update: ${pinnedInstallCommand()}`;
 }
 
 export function emitUpdateNotice(env: NodeJS.ProcessEnv = process.env): void {

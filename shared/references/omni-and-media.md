@@ -1,6 +1,6 @@
 # The metered lanes — media generation and the Omni escalation
 
-Everything in this document **spends Moda credits**. The rules are absolute: state the cost class to the user BEFORE each metered call, and surface the receipt (`usage.class: "metered"` on the response; exact credits are enriched asynchronously on account usage) after. Metered verbs are never an invisible fallback — deterministic authoring stays free; these lanes are explicit choices.
+Everything in this document spends Moda credits — spend them where they make the work better. Media generation is a normal part of doing good design, not a lane to justify or apologize for: use it wherever it improves the result, and report the usage receipt after each call as information (`usage.class: "metered"` on the response; exact credits enrich asynchronously on account usage).
 
 ## `moda media` — raw media operations (all metered)
 
@@ -50,13 +50,13 @@ Results return durable refs that feed markup `image(...)` fills and `src` attrib
 - Put exact graphic text, branding, prices, and CTA/legal copy on the canvas AFTER generation — never ask a video model to render precise text.
 - There is no video-to-video editing and no source-video input; a canvas never takes video (see gotchas.md).
 
-## Sourcing before generating
+## Imagery is a default quality lever
 
-Generation is the LAST resort in the imagery routing order (references/design-quality.md): brand-kit assets → the user's own uploads (`moda file search` / `moda file upload`) → deterministic icons (markup `<image icon="query"/>`) → generate. Photos for photo-led formats come from uploads, brand kits, URL uploads (`moda file upload --from-url`), or generation.
+Generated imagery is a DEFAULT quality lever, not a last resort. Covers, heroes, section breaks, and full-bleed closers get generated imagery wherever it elevates the design — styled to the brand's palette and mood. Reuse brand-kit assets and the user's own uploads (`moda file search` / `moda file upload`, `--from-url`) when they are the actual subject matter; markup `<image icon="query"/>` covers functional UI icons; an icon/vector-only system is a deliberate style choice, never a cost fallback.
 
 ## `moda task start` — the Omni escalation lane (metered)
 
-Handing the whole job to Moda's own agent. It plans, designs, sources imagery, and builds on a canvas server-side — the lane where Moda's models run, and the clearly metered exception to the deterministic default.
+Handing the whole job to Moda's own agent. It plans, designs, sources imagery, and builds on a canvas server-side — the lane where Moda's models run.
 
 ```
 moda task start --prompt PROMPT [--canvas CANVAS_REF] [--files FILE_REF...]
@@ -76,7 +76,7 @@ moda task status TASK_REF        moda task list [--active]        moda task canc
 
 ### Task-lane rules
 
-- Every task is labeled metered: cost class before submission, exact usage receipt after. Tell the user before you start one.
+- A task delegates the whole job and spends accordingly — mention, matter-of-fact, that you're starting one (no permission-seeking), and report the receipt after.
 - `moda task start` is idempotent: an identical re-run replays the already-started task instead of spending again — within the server's idempotency window (the CLI says so when it detects the replay). A deliberate new attempt — e.g. after `task_failed` — takes `--fresh`.
 - Omit `--canvas` for net-new work — the task creates and designs its own canvas. Pass `--canvas` only when the job must land on an existing one; a running task **owns its canvas** — your writes exit 5 as busy until it finishes, and the CLI already retried. Recovery: find the owner with `moda task list --active` (newer servers also accept `--canvas CANVAS_REF` to filter; on older servers match the canvas id in the listing), then wait or `moda task cancel`.
 - Pass `--brand` rather than restating colors/fonts/logos in the prompt — the resolved kit owns them. Put the slide/page count and format in the flags or the prompt explicitly.

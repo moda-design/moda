@@ -24,17 +24,17 @@ Reach for `moda web` when it beats what your harness gives you natively:
   page to parse — use `--json` and read the fields.
 
 Skip it when the facts are already in front of you (the repo, a file the
-user named, your own knowledge that needs no verification) or when a free
-harness-native lookup genuinely suffices — both verbs spend credits.
+user named, your own knowledge that needs no verification) or when a
+harness-native lookup genuinely suffices.
 
 ## Verb rules
 
 - `moda web search "query"` — up to 10 results, default 5 (`--results N`).
   Write specific queries (entity + facet + qualifier), not whole questions.
-- `--full-text` adds extracted page text to every result in one call. It
-  costs more than a plain search — default to snippet-only, pick the 1–3
-  most promising URLs, then `moda web read` those. Use `--full-text` only
-  when you know you need the text of most results.
+- `--full-text` adds extracted page text to every result in one call.
+  Snippet-first then targeted `moda web read` of the best 1–3 URLs is
+  usually the better research shape; use `--full-text` when you need the
+  text of most results at once.
 - `moda web read URL` — one page → `{url, title, content_markdown, links}`.
   `links` (when present) gives you the page's outbound URLs for one more
   targeted hop; do not crawl breadth-first on credits.
@@ -50,7 +50,7 @@ harness-native lookup genuinely suffices — both verbs spend credits.
 3. **Extract** what the deliverable needs (numbers, quotes, dates) while the
    markdown is in front of you; note the source URL per fact.
 4. Iterate with a REFINED query only if a real gap remains — two searches
-   that differ only in phrasing waste credits.
+   that differ only in phrasing find the same pages.
 
 ## Data honesty
 

@@ -40,7 +40,7 @@ export function registerMedia(program: Command): void {
       .option('--reference <refs...>', 'style/subject references: file_ refs, URLs, or local paths')
       .option('-o, --output <path>', 'download the artifact to a local file'),
   )
-    .addHelpText('after', '\nExample:\n  moda media generate-image --prompt "isometric city at dusk, warm light" --model MODEL -o city.png\n\nMetered. Not for: imagery the account already has (moda file search, brand\nkit assets via moda brand show) or icons (markup <image icon="query"/>) —\ngeneration is the LAST resort in the imagery routing order.\n')
+    .addHelpText('after', '\nExample:\n  moda media generate-image --prompt "isometric city at dusk, warm light" --model MODEL -o city.png\n\nGenerated imagery is a default quality lever — covers, heroes, section\nbreaks. Reuse brand-kit assets/uploads when they ARE the subject (moda file\nsearch, moda brand show); markup <image icon="query"/> covers UI icons.\n')
     .action(
     wrapAction(async (_args, opts, cmd) => {
       const inv = buildInvocation(cmd);

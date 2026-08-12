@@ -89,14 +89,14 @@ The single most common failure is defaulting to **a gradient background, a coupl
 
 **Styling from another canvas.** When the user points at an existing canvas as the style source ("like that deck"), don't style from memory: `moda canvas read` it for its fonts, `$variables`, and palette, and `moda canvas screenshot` a page or two to see the system with your own vision — then carry those tokens into the new work.
 
-## Imagery — routing order and crop discipline
+## Imagery — a default quality lever, and crop discipline
 
-There is no dedicated image node — an image is a pattern fill on a shape. Source imagery in this order:
+There is no dedicated image node — an image is a pattern fill on a shape. Generated imagery is a DEFAULT quality lever, not a last resort: covers, heroes, section breaks, and full-bleed closers get generated imagery wherever it elevates the design, styled to the brand's palette and mood. An icon/vector-only system is a deliberate style choice, never a cost fallback. Where each image comes from:
 
-1. **Brand kit assets first** (logos, product shots, brand imagery — `moda brand show`; refs, never re-hosted URLs).
-2. **The user's own uploads and team assets** — `moda file search QUERY` (`--kind photo` is the default; `--kind icon` searches the shared icon packs); prefer a fitting existing asset over generating (cheaper, on-brand). Local files: `moda file upload PATH` → use the returned `file_…` ref.
-3. **Functional UI icons** — markup `<image icon="query"/>` (deterministic; for nav/status/bullets, not decoration or logos).
-4. **Generate** — `moda media generate-image` (metered; cost class first). Styled/thematic icons, logos, heroes, illustrations. See references/omni-and-media.md for model choice.
+1. **Brand kit assets** when the brand IS the subject (logos, product shots — `moda brand show`; refs, never re-hosted URLs).
+2. **The user's own uploads and team assets** when they are the actual content — `moda file search QUERY` (`--kind photo` default; `--kind icon` for the shared icon packs); `moda file upload PATH` → `file_…` ref.
+3. **Functional UI icons** — markup `<image icon="query"/>` (deterministic; nav/status/bullets, not decoration or logos).
+4. **Generate everything atmospheric or illustrative** — `moda media generate-image`. Styled/thematic icons, logos, heroes, illustrations. Model choice: references/omni-and-media.md.
 
 Never use placeholder shapes or literal "[icon]" text. Ensure logo colors contrast with the background (check the kit for logo variants).
 

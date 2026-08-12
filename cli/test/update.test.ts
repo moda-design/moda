@@ -42,7 +42,8 @@ describe('version headers + stderr notice discipline (cli.md §14)', () => {
     const t0 = new Date('2026-08-10T10:00:00Z');
     const first = maybeUpdateNotice(env, t0);
     expect(first).toContain('9.9.9');
-    expect(first).toContain('moda update');
+    // The notice names the npm update command directly (README parity).
+    expect(first).toContain('npm i -g @moda-design/moda');
     // Same day: suppressed.
     expect(maybeUpdateNotice(env, new Date('2026-08-10T22:00:00Z'))).toBeUndefined();
     // Next day: fires again.

@@ -55,6 +55,24 @@ install -m 755 moda-<os>-<arch> ~/.local/bin/moda && rm moda-<os>-<arch> SHA256S
 
 </details>
 
+## Update Moda
+
+Paste this to your agent:
+
+```
+Update Moda to the latest version for me.
+
+1. Update the CLI: npm i -g @moda-design/moda
+2. Update the companion skills: npx skills add moda-design/moda
+3. Verify: run `moda doctor` and `moda --version`, and tell me what changed
+   (the skills lockfile and CLI version).
+```
+
+The CLI and the skills update separately: installed skills are hash-pinned
+in `skills-lock.json` and never auto-update (step 2 re-resolves them), while
+the CLI prints a once-daily stderr notice naming the npm update command
+whenever a newer version exists.
+
 ## The skills
 
 | Skill | What it makes |
