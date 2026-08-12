@@ -1,11 +1,12 @@
 /**
  * `moda file` — uploads (existing REST) and asset search.
  *
- * Parity exception (recorded): the prototype backend has NO /v1/files or /v1/folders drive
- * endpoints. What exists: POST /v1/uploads, POST /v1/uploads/from-url, and GET /v1/assets/search
- * (Canvas Actions resource verb returning durable `file_` ids + proxy URLs). `file search` rides
- * assets/search; `file list|show|download` and the `folder` verbs fail with a typed
- * `not_available` error instead of dialing 404-bound paths.
+ * Parity exception (recorded): the prototype backend has NO /v1/files drive endpoints. What
+ * exists: POST /v1/uploads, POST /v1/uploads/from-url, and GET /v1/assets/search (Canvas Actions
+ * resource verb returning durable `file_` ids + proxy URLs). `file search` rides assets/search;
+ * `file list|show|download` fail with a typed `not_available` error instead of dialing 404-bound
+ * paths. Folders, placement, and visibility are NOT part of that exception — they live on
+ * /v1/drive, behind `moda drive` (commands/drive.ts).
  */
 import { statSync } from 'node:fs';
 import { basename } from 'node:path';
@@ -19,13 +20,13 @@ import { LIST_ALL_CAP, fetchListPages, listFlagsOf, listOutcome, parseListLimit,
 
 const UPLOAD_TIMEOUT_MS = 300_000;
 
-/** The typed drive-facade refusal: name the parity exception and the working alternatives. */
+/** The typed file-facade refusal: name the parity exception and the working alternatives. */
 function driveNotAvailable(verb: string): CliError {
   return new CliError({
     type: 'unprocessable',
     code: 'not_available',
-    message: `'moda ${verb}' has no public API endpoint — the files/folders drive facade is a recorded parity exception in the prototype.`,
-    hint: 'Available today: moda file upload, moda file upload --from-url, moda file search (team asset search).',
+    message: `'moda ${verb}' has no public API endpoint — the file list/show/download facade is a recorded parity exception in the prototype.`,
+    hint: 'Available today: moda file upload, moda file search (team asset search), and moda drive folders | tree | move for folders and placement.',
     source: 'local',
   });
 }
@@ -137,13 +138,13 @@ export function registerFileFacade(program: Command): void {
     }),
   );
 
-  addGlobalFlags(file.command('list').description('list drive files — not available (no public drive endpoint)')).action(
+  addGlobalFlags(file.command('list').description('list drive files — not available (no public file endpoint; folders live under moda drive)')).action(
     wrapAction(async () => {
       throw driveNotAvailable('file list');
     }),
   );
 
-  addGlobalFlags(file.command('show <file_id>').description('file metadata — not available (no public drive endpoint)')).action(
+  addGlobalFlags(file.command('show <file_id>').description('file metadata — not available (no public file endpoint)')).action(
     wrapAction(async () => {
       throw driveNotAvailable('file show');
     }),
@@ -152,25 +153,11 @@ export function registerFileFacade(program: Command): void {
   addGlobalFlags(
     file
       .command('download <file_id>')
-      .description('download file bytes — not available (no public drive endpoint)')
+      .description('download file bytes — not available (no public file endpoint)')
       .option('-o, --output <path>', 'output path'),
   ).action(
     wrapAction(async () => {
       throw driveNotAvailable('file download');
-    }),
-  );
-
-  const folder = program.command('folder').description('drive folders — not available (no public drive endpoints)');
-
-  addGlobalFlags(folder.command('list').description('list folders — not available')).action(
-    wrapAction(async () => {
-      throw driveNotAvailable('folder list');
-    }),
-  );
-
-  addGlobalFlags(folder.command('create <name>').description('create a folder — not available')).action(
-    wrapAction(async () => {
-      throw driveNotAvailable('folder create');
     }),
   );
 }

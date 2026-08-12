@@ -72,8 +72,13 @@
     "moda file search",
     "moda file show",
     "moda file download",
-    "moda folder list",
-    "moda folder create",
+    "moda drive folders",
+    "moda drive tree",
+    "moda drive mkdir",
+    "moda drive move",
+    "moda drive rename",
+    "moda drive visibility",
+    "moda drive rm",
     "moda brand list",
     "moda brand show",
     "moda brand use",
@@ -117,6 +122,6 @@
   ],
   "unresolved": {
     "close_website": "Omni's open/close session bracket has no public analogue — the REST surface is stateless (create / set-content / publish are direct calls).",
-    "asset_search": "`moda file search` now rides GET /v1/assets/search (Canvas Actions resource verb): `--kind icon` searches the shared icon packs, `--kind photo` (default) the caller's own gallery, returning durable file_ ids usable in markup and media inputs. Markup `<image icon=\"...\">` remains the parser-native icon path. The broader files/folders drive facade (list/show/download, folders) has no public endpoints — those CLI verbs fail typed not_available."
+    "asset_search": "`moda file search` now rides GET /v1/assets/search (Canvas Actions resource verb): `--kind icon` searches the shared icon packs, `--kind photo` (default) the caller's own gallery, returning durable file_ ids usable in markup and media inputs. Markup `<image icon=\"...\">` remains the parser-native icon path. Folders, placement, and per-item visibility now DO have public endpoints (/v1/drive), exposed as `moda drive` (folders/tree/mkdir/move/rename/visibility/rm); only the file facade proper (list/show/download) is still missing, and those three CLI verbs fail typed not_available."
   }
 }

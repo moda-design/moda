@@ -5,6 +5,7 @@ import { registerAuth } from './commands/auth.ts';
 import { registerBrand } from './commands/brand.ts';
 import { registerCanvas } from './commands/canvas.ts';
 import { registerContext } from './commands/context.ts';
+import { registerDrive } from './commands/drive.ts';
 import { registerExport } from './commands/export.ts';
 import { registerFileFacade, registerFileUpload } from './commands/file.ts';
 import { registerMedia } from './commands/media.ts';
@@ -41,6 +42,7 @@ export function buildProgram(): Command {
   registerMedia(program);
   registerWeb(program);
   registerSite(program);
+  registerDrive(program);
   applyVerbSemantics(program);
   return program;
 }

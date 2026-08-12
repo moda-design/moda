@@ -47,12 +47,19 @@ export const endpoints = {
   uploads: () => '/v1/uploads',
   uploadFromUrl: () => '/v1/uploads/from-url',
 
-  // Asset search (Canvas Actions resource verb — the only drive read that exists today;
-  // /v1/files and /v1/folders were NOT built in the prototype: a recorded parity exception)
+  // Asset search (Canvas Actions resource verb; /v1/files list/show/download was NOT built in
+  // the prototype — a recorded parity exception)
   assetsSearch: () => '/v1/assets/search',
 
   // Team templates (template canvases the team starts new work from)
   templateList: () => '/v1/templates',
+  // Drive (folders, placement, and per-item visibility across canvases, files, and folders).
+  // `item_ref` is a typed wire id: fld_… | cvs_… | file_….
+  driveFolders: () => '/v1/drive/folders',
+  driveFolderCreate: () => '/v1/drive/folders',
+  driveTree: () => '/v1/drive/tree',
+  driveItemMove: (ref: string) => `/v1/drive/items/${enc(ref)}/move`,
+  driveItem: (ref: string) => `/v1/drive/items/${enc(ref)}`,
 
   // Brand kits
   brandList: () => '/v1/brand-kits',
