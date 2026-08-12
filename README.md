@@ -64,8 +64,8 @@ Update Moda to the latest version for me.
 
 1. Update the CLI: npm i -g @moda-design/moda
 2. Update the companion skills: npx skills add moda-design/moda
-3. Verify: run `moda doctor` and `moda --version`, and tell me what changed
-   (the skills lockfile and CLI version).
+3. Verify: run `moda doctor` and confirm everything is healthy, then tell
+   me the update succeeded.
 ```
 
 The CLI and the skills update separately: installed skills are hash-pinned
