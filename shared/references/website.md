@@ -27,6 +27,8 @@ moda site unpublish SITE_ID / delete SITE_ID
   or transform one.
 - `create` stores the page but publishes nothing. The site has no URL until
   the first `publish`.
+- Routes are /-rooted with `[A-Za-z0-9_-]` segments (`/pricing`,
+  `/docs/faq`); `/_moda` is reserved.
 - `set-content` replaces a page's complete HTML (never a diff): `--path`
   targets one route; omitting it writes the homepage/site-level content.
   Saves do NOT touch the live site — every page keeps serving the last
@@ -132,7 +134,7 @@ from a URL, reuse its real copy/colors/fonts but re-host its images in Moda.
 DRAFT (saved) content — up to 3 pages per call, desktop/tablet/mobile, files
 downloaded locally for your own vision. Check hierarchy, spacing, contrast,
 and responsive behavior at desktop AND mobile before publishing; a
-`js_disabled` capture is degraded (JS-off fallback) — re-capture before
-judging animation-dependent layouts. 503 `render_capacity` is transient
+`js_disabled` capture is degraded (JS-off fallback) and a `truncated` one
+was cut at the pixel budget — re-capture before judging either. 503 `render_capacity` is transient
 (retry after a moment); 422 `website_render_too_heavy` is deterministic —
 lighten the page. Fix, `set-content`, screenshot again, republish.

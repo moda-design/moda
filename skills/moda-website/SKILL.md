@@ -115,9 +115,8 @@ to `https://<slug>.moda.page`. Site verbs are deterministic and free; only
 `moda web *` and `moda media *` meter.
 
 1. **Gather** content with your harness's file-reading/search tools (your
-   own research). Live web facts: `moda web search` / `moda web read` (metered)
-   — references/web.md. For an existing site, `moda site list` +
-   `moda site show` first.
+   own research; `moda web search`/`moda web read` — references/web.md).
+   For an existing site: `moda site list` + `moda site pages` first.
 2. **Read references/website.md before authoring** — structure, styling,
    typography, and the library/embed allowlists (violations silently break
    or fail the publish gate). When a brand kit is in play, `moda brand show`

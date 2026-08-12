@@ -9,6 +9,9 @@ import { join } from 'node:path';
 import { ApiClient } from '../src/api/client.ts';
 import { CliError } from '../src/cliError.ts';
 import type { Invocation } from '../src/commands/runtime.ts';
+import { toCanvasWireId } from '../src/refs.ts';
+import { validateRoutePath } from '../src/commands/site.ts';
+import { performExport } from '../src/commands/export.ts';
 import {
   performSiteAddPage,
   performSiteDeletePage,
@@ -176,5 +179,72 @@ describe('site multi-page verbs (#9288 contract)', () => {
     const lines = humanLines(outcome);
     expect(lines[0]).toContain('/ [desktop] → ');
     expect(lines[1]).toContain('rendered with JS off (degraded)');
+  });
+});
+
+describe('review batch regressions', () => {
+  test('B5: a failed download marks ITS image; the sibling keeps the right file', async () => {
+    const { base } = serve((req, url) => {
+      if (url.pathname.endsWith('/screenshot')) {
+        return Response.json({
+          operation: 'websites.screenshot',
+          id: SITE_ID,
+          format: 'jpg',
+          images: [
+            { path: '/', viewport: 'desktop', url: `${base}/signed/missing.jpg?fail=1`, width: 1440, height: 100 },
+            { path: '/pricing', viewport: 'desktop', url: `${base}/signed/ok.jpg`, width: 1440, height: 100 },
+          ],
+        });
+      }
+      if (url.searchParams.get('fail') === '1' || url.pathname.includes('missing')) {
+        return new Response('gone', { status: 403 });
+      }
+      return new Response(PNG, { status: 200 });
+    });
+    const dir = mkdtempSync(join(tmpdir(), 'moda-shotfail-'));
+    const outcome = await performSiteScreenshot(client(base), fakeInv(), SITE_ID, {
+      paths: ['/', '/pricing'],
+      viewport: 'desktop',
+      format: 'jpg',
+      output: dir,
+    });
+    const images = (outcome.body as Record<string, unknown>).images as Array<Record<string, unknown>>;
+    expect(images[0]?.download_failed).toBe(true);
+    expect(images[0]?.file).toBeUndefined();
+    expect(String(images[1]?.file)).toContain('_pricing');
+    expect(existsSync(String(images[1]?.file))).toBe(true);
+  });
+
+  test('M8 + route grammar: local bounds fail clean', async () => {
+    const c = client('http://127.0.0.1:1');
+    await expect(
+      performSiteScreenshot(c, fakeInv(), SITE_ID, { paths: ['/a', '/b', '/c', '/d'], viewport: 'desktop', format: 'jpg' }),
+    ).rejects.toThrow(CliError);
+    await expect(
+      performSiteScreenshot(c, fakeInv(), SITE_ID, { viewport: 'desktop', format: 'jpg', scale: Number.NaN }),
+    ).rejects.toThrow(CliError);
+    expect(() => validateRoutePath('/_moda/x')).toThrow(CliError);
+    expect(() => validateRoutePath('/has space')).toThrow(CliError);
+    expect(validateRoutePath('/docs/faq-2')).toBe('/docs/faq-2');
+  });
+
+  test('M1: bare UUIDs encode to the 26-char Crockford cvs_ wire form; cvs_ passes through', () => {
+    const wire = toCanvasWireId('018f3c6e-1234-4abc-9def-00112233aabb');
+    expect(wire).toMatch(/^cvs_[0-9A-HJKMNP-TV-Z]{26}$/);
+    expect(toCanvasWireId('cvs_01HZX9K2ABCDEFGHJKMNPQRSTV')).toBe('cvs_01HZX9K2ABCDEFGHJKMNPQRSTV');
+    // Deterministic and injective on distinct UUIDs.
+    expect(toCanvasWireId('018f3c6e-1234-4abc-9def-00112233aabb')).toBe(wire);
+    expect(toCanvasWireId('018f3c6e-1234-4abc-9def-00112233aabc')).not.toBe(wire);
+  });
+
+  test('M3: mp4/gif without --page is a clean local usage error', async () => {
+    const inv = { flags: {}, context: { outputDir: { value: '.' }, apiBase: { value: 'http://127.0.0.1:1' } }, env: {}, note: () => {} } as never;
+    try {
+      await performExport(client('http://127.0.0.1:1'), inv, 'cvs_01HZX9K2ABCDEFGHJKMNPQRSTV', { format: 'mp4', wait: true });
+      expect.unreachable();
+    } catch (err) {
+      expect((err as CliError).fields.code).toBe('usage');
+      expect((err as CliError).fields.message).toContain('--page');
+    }
   });
 });

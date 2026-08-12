@@ -1482,7 +1482,7 @@
       "positionals": [
         {
           "name": "file_or_ref",
-          "required": true,
+          "required": false,
           "variadic": false
         }
       ],
@@ -1490,6 +1490,12 @@
         {
           "flag": "--api-base",
           "description": "endpoint override (staging/dev)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--job",
+          "description": "poll an existing import job instead of starting one",
           "takes_value": true,
           "required": false
         },
@@ -4882,7 +4888,7 @@
         "mutating": false,
         "destructive": false,
         "metered": false,
-        "read_lane": false
+        "read_lane": true
       }
     },
     {
@@ -5212,7 +5218,7 @@
         "mutating": false,
         "destructive": false,
         "metered": false,
-        "read_lane": false
+        "read_lane": true
       }
     },
     {

@@ -164,7 +164,8 @@ export function registerMedia(program: Command): void {
       const inv = buildInvocation(cmd);
       const { client } = await authedClient(inv, MEDIA_TIMEOUT_MS);
       const video = await mediaInput(args[0] as string, client);
-      const payload = { video, ...(typeof opts.resolution === 'string' ? { resolution: opts.resolution } : {}) };
+      // Wire field is target_resolution (extra=forbid server-side); the flag stays --resolution.
+      const payload = { video, ...(typeof opts.resolution === 'string' ? { target_resolution: opts.resolution } : {}) };
       try {
         return await mediaCall(client, inv, 'media.upscale_video', endpoints.mediaUpscaleVideo(), payload, opts.output as string | undefined);
       } catch (err) {
@@ -317,9 +318,15 @@ async function mediaCall(
           ` (metered${typeof usage.model === 'string' ? `, model: ${usage.model}` : ''})`,
       );
       // Read-before-describe surface: snapping adjustments, warnings, and checkpoint resumes.
-      const adjustments = asObject(root.adjustments);
-      for (const [key, value] of Object.entries(adjustments)) {
-        write(`adjusted ${key}: ${typeof value === 'object' ? JSON.stringify(value) : String(value)}`);
+      // adjustments is an object on some verbs and a LIST of entries on others (upscale-video).
+      if (Array.isArray(root.adjustments)) {
+        for (const entry of root.adjustments) {
+          write(`adjusted: ${typeof entry === 'string' ? entry : JSON.stringify(entry)}`);
+        }
+      } else {
+        for (const [key, value] of Object.entries(asObject(root.adjustments))) {
+          write(`adjusted ${key}: ${typeof value === 'object' ? JSON.stringify(value) : String(value)}`);
+        }
       }
       const warnings = Array.isArray(root.warnings) ? root.warnings : [];
       for (const warning of warnings) {

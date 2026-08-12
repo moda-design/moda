@@ -1,7 +1,7 @@
 # `moda export` — deliverable files
 
 ```
-moda export CANVAS_REF --format pdf|pptx|png|jpeg|mp4|gif [-o PATH] [--page N]
+moda export CANVAS_REF --format pdf|pptx|png|jpeg|mp4|gif [-o PATH] [--page N]   # mp4/gif REQUIRE --page
             [--pixel-ratio 1..4] [--flatten] [--no-wait]
 ```
 

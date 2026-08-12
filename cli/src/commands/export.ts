@@ -65,7 +65,8 @@ export async function performExport(
   ref: string,
   options: ExportOptions,
 ): Promise<CommandOutcome> {
-  const format = options.format;
+  // Server aliases jpg → jpeg; accept the sibling verbs' spelling here too.
+  const format = options.format === 'jpg' ? 'jpeg' : options.format;
   if (UNSUPPORTED_FORMATS.has(format)) {
     throw new CliError({
       type: 'unprocessable',
@@ -77,6 +78,13 @@ export async function performExport(
   }
   if (!SUPPORTED_FORMATS.has(format)) {
     throw CliError.usage(`Unsupported --format '${format}'.`, 'Supported: pdf, pptx, png, jpeg, mp4, gif.');
+  }
+  if ((format === 'mp4' || format === 'gif') && options.pageNumber === undefined) {
+    // Server-side this is an untyped 400 today — fail it clean and early.
+    throw CliError.usage(
+      `${format} export renders ONE page's animation — pass --page N.`,
+      'Pick the animated page (moda canvas read --summary lists pages).',
+    );
   }
   // Server contract: POST /v1/canvases/{id}/export takes QUERY params (format, page_number,
   // pixel_ratio, flatten, wait), not a JSON body. flatten defaults to True server-side, so

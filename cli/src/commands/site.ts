@@ -13,7 +13,7 @@ import { dirname } from 'node:path';
 import type { Command } from 'commander';
 import type { ApiClient } from '../api/client.ts';
 import { endpoints } from '../api/endpoints.ts';
-import { asObject, str } from '../api/types.ts';
+import { asObject, str, type JsonObject } from '../api/types.ts';
 import { CliError } from '../cliError.ts';
 import { EXIT_OK } from '../output/exitCodes.ts';
 import type { CommandOutcome } from '../output/emit.ts';
@@ -24,6 +24,17 @@ import { readFileArg } from './canvasShared.ts';
 const SITE_TIMEOUT_MS = 120_000;
 
 const UUID_RE = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+
+/** Route grammar the server enforces: /-rooted, segments [A-Za-z0-9_-]; /_moda is reserved. */
+export function validateRoutePath(route: string): string {
+  if (!/^\/(?:[A-Za-z0-9_-]+(?:\/[A-Za-z0-9_-]+)*)?$/.test(route) || route.startsWith('/_moda')) {
+    throw CliError.usage(
+      `Invalid route '${route}'.`,
+      "Routes are /-rooted with [A-Za-z0-9_-] segments (e.g. /pricing, /docs/faq); /_moda is reserved.",
+    );
+  }
+  return route;
+}
 
 /** Site ids are plain UUIDs on the wire — no prefixed form, no URL sugar. */
 export function parseSiteId(input: string): string {
@@ -476,6 +487,7 @@ export async function performSitePageSetContent(
   siteRef: string,
   input: SitePageContentInput,
 ): Promise<CommandOutcome> {
+  validateRoutePath(input.path);
   const id = parseSiteId(siteRef);
   if (input.html.trim().length === 0) throw CliError.usage('The HTML page is empty.');
   const payload = {
@@ -519,6 +531,7 @@ export interface SiteAddPageInput {
 }
 
 export async function performSiteAddPage(client: ApiClient, siteRef: string, input: SiteAddPageInput): Promise<CommandOutcome> {
+  validateRoutePath(input.path);
   const id = parseSiteId(siteRef);
   if (input.html.trim().length === 0) throw CliError.usage('The HTML page is empty.');
   const payload = {
@@ -556,6 +569,7 @@ export async function performSiteDeletePage(
   siteRef: string,
   input: SiteDeletePageInput,
 ): Promise<CommandOutcome> {
+  validateRoutePath(input.path);
   const id = parseSiteId(siteRef);
   const response = await client
     .request({
@@ -596,6 +610,12 @@ export async function performSiteScreenshot(
   if (!['jpg', 'png'].includes(input.format)) {
     throw CliError.usage(`Invalid --format '${input.format}' — expected jpg or png.`);
   }
+  if (input.paths !== undefined && input.paths.length > 3) {
+    throw CliError.usage(`--path takes at most 3 routes per call (got ${input.paths.length}).`);
+  }
+  if (input.scale !== undefined && (!Number.isInteger(input.scale) || input.scale < 1 || input.scale > 2)) {
+    throw CliError.usage(`Invalid --scale '${input.scale}' — expected 1 or 2.`);
+  }
   const payload = {
     ...(input.paths !== undefined ? { paths: input.paths } : {}),
     viewport: input.viewport,
@@ -611,47 +631,53 @@ export async function performSiteScreenshot(
   const root = asObject(response.body);
   const images = Array.isArray(root.images) ? root.images.map(asObject) : [];
   // File-pointer discipline: signed URLs are short-lived — download to files, return paths.
-  const written: Array<{ path: string; file: string; js_disabled?: boolean }> = [];
+  // Per-entry annotation (never a success-compacted side list): a failed download marks ITS
+  // image with download_failed, and every other image keeps the right file.
+  const annotated: JsonObject[] = [];
   for (const image of images) {
     const url = str(image, 'url');
-    if (url === undefined) continue;
     const route = (str(image, 'path') ?? 'page').replaceAll('/', '_').replace(/^_$/, 'home') || 'home';
-    const target = resolveShotPath(input.output, images.length, route, input.format);
-    const bare = await fetch(url, { signal: AbortSignal.timeout(120_000) });
-    if (!bare.ok) {
-      inv.note(`capture download failed for ${str(image, 'path') ?? route} (HTTP ${bare.status})`);
-      continue;
-    }
-    mkdirSync(dirname(target), { recursive: true });
-    writeFileSync(target, new Uint8Array(await bare.arrayBuffer()));
-    written.push({
-      path: str(image, 'path') ?? route,
-      file: target,
-      ...(image.js_disabled === true ? { js_disabled: true } : {}),
-    });
-  }
-  return outcome(
-    'site.screenshot',
-    {
-      ...root,
-      images: images.map((image, i) => ({ ...image, url: undefined, file: written[i]?.file })),
-    },
-    response,
-    (write) => {
-      for (const [i, image] of images.entries()) {
-        const dims = typeof image.width === 'number' ? ` (${image.width}x${image.height})` : '';
-        write(
-          `${str(image, 'path') ?? '?'} [${str(image, 'viewport') ?? ''}] → ${written[i]?.file ?? '(download failed)'}${dims}` +
-            `${image.js_disabled === true ? ' — rendered with JS off (degraded)' : ''}` +
-            `${image.truncated === true ? ' — capture truncated (page over the pixel budget)' : ''}`,
-        );
+    const target = resolveShotPath(input.output, images.length, route, input.format, inv);
+    let entry: JsonObject = { ...image, url: undefined };
+    if (url === undefined) {
+      entry = { ...entry, download_failed: true };
+    } else {
+      const bare = await fetch(url, { signal: AbortSignal.timeout(120_000) });
+      if (!bare.ok) {
+        inv.note(`capture download failed for ${str(image, 'path') ?? route} (HTTP ${bare.status})`);
+        entry = { ...entry, download_failed: true };
+      } else {
+        mkdirSync(dirname(target), { recursive: true });
+        writeFileSync(target, new Uint8Array(await bare.arrayBuffer()));
+        entry = { ...entry, file: target };
       }
-    },
-  );
+    }
+    annotated.push(entry);
+  }
+  return outcome('site.screenshot', { ...root, images: annotated }, response, (write) => {
+    for (const image of annotated) {
+      const dims = typeof image.width === 'number' ? ` (${image.width}x${image.height})` : '';
+      write(
+        `${str(image, 'path') ?? '?'} [${str(image, 'viewport') ?? ''}] → ` +
+          `${str(image, 'file') ?? '(download failed — re-run to re-capture)'}${dims}` +
+          `${image.js_disabled === true ? ' — rendered with JS off (degraded)' : ''}` +
+          `${image.truncated === true ? ' — capture truncated (page over the pixel budget)' : ''}`,
+      );
+    }
+  });
 }
 
-function resolveShotPath(output: string | undefined, count: number, route: string, format: string): string {
-  if (output === undefined) return `site-${route}.${format}`;
+function resolveShotPath(
+  output: string | undefined,
+  count: number,
+  route: string,
+  format: string,
+  inv: Invocation,
+): string {
+  if (output === undefined) {
+    const dir = (inv.context as { outputDir?: { value?: string } }).outputDir?.value ?? '.';
+    return `${dir.replace(/\/$/, '')}/site-${route}.${format}`;
+  }
   if (count === 1 && /\.[a-z]+$/i.test(output)) return output;
   return `${output.replace(/\/$/, '')}/${route}.${format}`;
 }
