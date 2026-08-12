@@ -239,6 +239,18 @@ describe('file list (GET /v1/drive/files)', () => {
       expect((err as CliError).fields.message).toBe('Folder not found');
     }
   });
+
+  test('a missing-scope 403 on the list lane also names the re-mint (shared lane posture)', async () => {
+    const { base } = serve(() =>
+      errorResponse(403, { type: 'permission', code: 'permission', message: 'API key missing required scope: canvases:read' }),
+    );
+    try {
+      await performFileList(client(base), {});
+      expect.unreachable();
+    } catch (err) {
+      expect((err as CliError).fields.hint).toContain('moda auth login');
+    }
+  });
 });
 
 describe('file show (GET /v1/drive/files/{id})', () => {
@@ -334,7 +346,7 @@ describe('file download (GET /v1/drive/files/{id}/download)', () => {
     expect(existsSync(target)).toBe(true);
   });
 
-  test('a hostile server filename is reduced to its basename (no path traversal)', async () => {
+  test('a hostile server filename is reduced to its basename (no path traversal); bare ".." falls back to the ref', async () => {
     const { base } = serve((_req, url) =>
       url.pathname === '/signed/blob'
         ? new Response(BYTES)
@@ -343,6 +355,40 @@ describe('file download (GET /v1/drive/files/{id}/download)', () => {
     const outDir = mkdtempSync(join(tmpdir(), 'moda-file-dl-'));
     const outcome = await performFileDownload(client(base), fakeInv(base, outDir), FILE);
     expect((outcome.body as Record<string, unknown>).output).toBe(join(outDir, 'evil.bin'));
+    // basename('..') === '..' — the parent directory must never become the target.
+    const dots = serve((_req, url) =>
+      url.pathname === '/signed/blob'
+        ? new Response(BYTES)
+        : Response.json({ download_url: '/signed/blob', filename: '..', size_bytes: BYTES.byteLength }),
+    );
+    const dotsOut = await performFileDownload(client(dots.base), fakeInv(dots.base, outDir), FILE);
+    expect((dotsOut.body as Record<string, unknown>).output).toBe(join(outDir, FILE));
+  });
+
+  test('a protocol-relative download_url (//host/…) is judged by its REAL origin — no API key sent', async () => {
+    const signed = serve(() => new Response(BYTES));
+    const signedHost = signed.base.replace(/^http:/, '');
+    const api = serve(() =>
+      Response.json({ download_url: signedHost + '/signed/blob', filename: 'brief.pdf', size_bytes: BYTES.byteLength }),
+    );
+    const outDir = mkdtempSync(join(tmpdir(), 'moda-file-dl-'));
+    await performFileDownload(client(api.base), fakeInv(api.base, outDir), FILE);
+    expect(signed.calls.length).toBe(1);
+    expect(signed.calls[0]?.headers.get('authorization')).toBeNull();
+  });
+
+  test('-o - delivers EVERY byte through a pipe (the stdout drain is awaited before exit)', async () => {
+    const BIG = 'A'.repeat(3_000_000);
+    const { base } = serve((_req, url) =>
+      url.pathname === '/signed/blob'
+        ? new Response(BIG)
+        : Response.json({ download_url: '/signed/blob', filename: 'big.txt', size_bytes: BIG.length }),
+    );
+    const { code, stdout, stderr } = await runCli(['file', 'download', FILE, '-o', '-'], { MODA_API_BASE: base });
+    expect(code).toBe(0);
+    // The whole point of '-': the bytes, all of them, and nothing else on stdout.
+    expect(stdout.length).toBe(BIG.length);
+    expect(stderr).toContain('big.txt -> (stdout)');
   });
 
   test('a size mismatch against the declared size_bytes is surfaced as a warning', async () => {
@@ -437,6 +483,10 @@ describe('file upload folder placement (POST /v1/uploads*)', () => {
     expect(code).toBe(0);
     expect(stdout).toContain('predates upload folder placement');
     expect(stdout).toContain(`moda drive move ${FILE} ${FLD}`);
+    // The agent lane (--json) carries the same truth: warnings ride the body, not just stdout prose.
+    const json = await runCli(['file', 'upload', tempFile(), '--folder', FLD, '--json'], { MODA_API_BASE: base });
+    const body = JSON.parse(json.stdout) as Record<string, unknown>;
+    expect((body.warnings as string[])[0]).toContain('predates upload folder placement');
   });
 
   test('--name renames a single multipart upload; two sources refuse --name before the wire', async () => {
@@ -463,13 +513,14 @@ describe('file upload folder placement (POST /v1/uploads*)', () => {
     expect(stdout).toContain(FILE);
   });
 
-  test("from-url on an old server (extra=forbid 422 naming folder_id) reads as predates-placement", async () => {
+  test("from-url on an old server (extra=forbid 422 on folder_id) reads as predates-placement", async () => {
+    // The public API's exact RequestValidationError shape: {details: {fields: [{field, code}]}}.
     const { base } = serve(() =>
       errorResponse(422, {
         type: 'unprocessable',
-        code: 'validation_error',
+        code: 'validation_failed',
         message: 'Request validation failed',
-        details: { errors: [{ loc: ['body', 'folder_id'], type: 'extra_forbidden' }] },
+        details: { fields: [{ field: 'body.folder_id', code: 'extra_forbidden' }] },
       }),
     );
     const { code, stdout } = await runCli(
@@ -480,6 +531,44 @@ describe('file upload folder placement (POST /v1/uploads*)', () => {
     const error = (JSON.parse(stdout) as Record<string, unknown>).error as Record<string, unknown>;
     expect(error.message).toBe('This server predates upload folder placement (--folder).');
     expect(error.hint).toContain('moda drive move');
+  });
+
+  test('a NEW server 422 about the folder_id VALUE passes through untouched (not misdiagnosed)', async () => {
+    const { base } = serve(() =>
+      errorResponse(422, {
+        type: 'unprocessable',
+        code: 'validation_failed',
+        message: 'Request validation failed',
+        details: { fields: [{ field: 'body.folder_id', code: 'value_error' }] },
+      }),
+    );
+    const { code, stdout } = await runCli(
+      ['file', 'upload', '--from-url', 'https://example.com/a.pdf', '--folder', FLD, '--json'],
+      { MODA_API_BASE: base },
+    );
+    expect(code).toBe(2);
+    const error = (JSON.parse(stdout) as Record<string, unknown>).error as Record<string, unknown>;
+    expect(error.message).toBe('Request validation failed');
+  });
+
+  test('echo EQUALITY: a dedup landing in a different folder warns in the human lane AND the --json body', async () => {
+    const OTHER = 'fld_01HZX9K2ZZZZZZZZZZZZZZZZZZ';
+    const { base } = serve(() => Response.json(uploadResponse({ folder_id: OTHER, was_duplicate: true })));
+    const { code, stdout } = await runCli(['file', 'upload', tempFile(), '--folder', FLD, '--json'], {
+      MODA_API_BASE: base,
+    });
+    expect(code).toBe(0);
+    const body = JSON.parse(stdout) as Record<string, unknown>;
+    const warnings = body.warnings as string[];
+    expect(warnings[0]).toContain(`requested ${FLD} but ${FILE} is in ${OTHER}`);
+    expect(warnings[0]).toContain(`moda drive move ${FILE} ${FLD}`);
+  });
+
+  test('a non-folder --folder ref is refused before any request', async () => {
+    const { base, calls } = serve(() => Response.json(uploadResponse()));
+    const { code } = await runCli(['file', 'upload', tempFile(), '--folder', CVS, '--json'], { MODA_API_BASE: base });
+    expect(code).toBe(2);
+    expect(calls.length).toBe(0);
   });
 
   test('a dedup hit is said out loud (already existed)', async () => {

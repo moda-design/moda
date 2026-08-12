@@ -13,7 +13,7 @@ import type { Command } from 'commander';
 import type { ApiClient } from '../api/client.ts';
 import { endpoints } from '../api/endpoints.ts';
 import { asObject, num, str, strArray, type JsonObject } from '../api/types.ts';
-import { CliError } from '../cliError.ts';
+import { CliError, rethrowRoutePredates } from '../cliError.ts';
 import { EXIT_OK } from '../output/exitCodes.ts';
 import type { CommandOutcome } from '../output/emit.ts';
 import { PREVIEW_ITEMS, writeResultFile } from '../output/resultFile.ts';
@@ -169,15 +169,11 @@ export function registerMedia(program: Command): void {
       try {
         return await mediaCall(client, inv, 'media.upscale_video', endpoints.mediaUpscaleVideo(), payload, opts.output as string | undefined);
       } catch (err) {
-        // Tolerant lane: a bare route 404 means this server predates the endpoint (#9292).
-        if (err instanceof CliError && err.fields.code === 'http_404') {
-          throw new CliError({
-            ...err.fields,
-            message: 'This server predates the video-upscale endpoint.',
-            hint: 'It ships with the next backend deploy; image upscaling works today: moda media upscale.',
-          });
-        }
-        throw err;
+        rethrowRoutePredates(
+          err,
+          'This server predates the video-upscale endpoint.',
+          'It ships with the next backend deploy; image upscaling works today: moda media upscale.',
+        );
       }
     }),
   );

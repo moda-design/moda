@@ -5,7 +5,7 @@ import type { ApiClient } from '../api/client.ts';
 import { endpoints } from '../api/endpoints.ts';
 import { asObject, str } from '../api/types.ts';
 import { resolveAppBase, openBrowser } from '../auth/login.ts';
-import { CliError } from '../cliError.ts';
+import { CliError, rethrowRoutePredates } from '../cliError.ts';
 import { shotsDir } from '../config/state.ts';
 import { alert, type CommandOutcome } from '../output/emit.ts';
 import { EXIT_OK } from '../output/exitCodes.ts';
@@ -127,16 +127,12 @@ async function canvasSummary(client: ApiClient, inv: Invocation, ref: string): P
   try {
     response = await client.request({ method: 'GET', path: endpoints.canvasStateSummary(ref) });
   } catch (err) {
-    // Only a BARE route 404 (no server error envelope → code http_404) means the endpoint is
-    // missing (a pre-summary server). An envelope'd not_found is a real missing canvas.
-    if (err instanceof CliError && err.fields.code === 'http_404') {
-      throw new CliError({
-        ...err.fields,
-        message: 'This server predates the summary endpoint.',
-        hint: 'Use moda canvas show for the page list, or moda canvas read --page PAGE_ID for one page.',
-      });
-    }
-    throw err;
+    // Bare route 404 = a pre-summary server; an envelope'd not_found is a real missing canvas.
+    rethrowRoutePredates(
+      err,
+      'This server predates the summary endpoint.',
+      'Use moda canvas show for the page list, or moda canvas read --page PAGE_ID for one page.',
+    );
   }
   const root = asObject(response.body);
   // Read lane: the summary's revision is pinnable — refresh the cache (no DSL: revision-only).
@@ -393,15 +389,7 @@ export function registerCanvas(program: Command): void {
             timeoutMs: 300_000,
           });
         } catch (err) {
-          // Tolerant lane: a bare route 404 means this server predates the endpoint (#9292).
-          if (err instanceof CliError && err.fields.code === 'http_404') {
-            throw new CliError({
-              ...err.fields,
-              message: 'This server predates the pptx-import endpoint.',
-              hint: 'It ships with the next backend deploy.',
-            });
-          }
-          throw err;
+          rethrowRoutePredates(err, 'This server predates the pptx-import endpoint.', 'It ships with the next backend deploy.');
         }
         startBody = asObject(started.body);
         requestId = started.requestId;

@@ -98,3 +98,14 @@ export function note(message: string, opts: { quiet: boolean }): void {
 export function alert(message: string): void {
   writeStderr(`${redactString(message)}\n`);
 }
+
+/**
+ * Write raw artifact bytes to stdout and WAIT for the pipe to drain. `wrapAction` calls
+ * `process.exit()` right after the outcome is emitted, and Bun drops whatever a piped stdout
+ * has not flushed yet — an unawaited 20 MB write delivered ~1 MB downstream with exit 0.
+ */
+export function writeBytesToStdout(bytes: Uint8Array): Promise<void> {
+  return new Promise<void>((resolve, reject) => {
+    process.stdout.write(bytes, (err) => (err ? reject(err) : resolve()));
+  });
+}

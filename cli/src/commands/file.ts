@@ -28,42 +28,33 @@ import type { Command } from 'commander';
 import type { ApiClient } from '../api/client.ts';
 import { endpoints } from '../api/endpoints.ts';
 import { asObject, num, str, type JsonObject } from '../api/types.ts';
-import { CliError } from '../cliError.ts';
+import { CliError, rethrowRoutePredates } from '../cliError.ts';
 import { EXIT_OK } from '../output/exitCodes.ts';
-import type { CommandOutcome } from '../output/emit.ts';
+import { writeBytesToStdout, type CommandOutcome } from '../output/emit.ts';
 import { parseRef } from '../refs.ts';
 import { addGlobalFlags, authedClient, buildInvocation, metaBlock, wrapAction, type Invocation } from './runtime.ts';
 import { LIST_ALL_CAP, fetchListPages, listFlagsOf, listOutcome, parseListLimit, parseListOffset, type ListFlags } from './listLane.ts';
-import { parseDestination, parseFolderRef } from './drive.ts';
+import { parseDestination, parseFolderRef, validateName } from './drive.ts';
 import { downloadArtifact } from './export.ts';
 
 const UPLOAD_TIMEOUT_MS = 300_000;
 const FILE_TIMEOUT_MS = 60_000;
 
 /**
- * Only a BARE route 404 (no server error envelope → code `http_404`) means this server predates
- * the drive file endpoints (#9292 tolerant lane — studio #9354 deploys after this CLI). An
- * envelope'd `not_found` (`file_not_found`, `folder_not_found`) is a real missing resource and
- * re-throws untouched.
+ * The shared error posture of the three /v1/drive/files lanes: a BARE route 404 means this
+ * server predates the endpoints (studio #9354 deploys after this CLI; envelope'd not_found
+ * codes pass through untouched), and a missing-scope 403 (the server's bare `permission` code)
+ * names the re-mint instead of dead-ending — `files:read` is NEWER than most minted keys.
  */
-function rethrowFilePredates(err: unknown): never {
+function rethrowFileLane(err: unknown): never {
   if (err instanceof CliError && err.fields.code === 'http_404') {
-    throw new CliError({
-      ...err.fields,
-      message: 'This server predates the drive file endpoints.',
-      hint:
-        'They ship with the next backend deploy. Meanwhile: moda file search finds team assets, ' +
+    rethrowRoutePredates(
+      err,
+      'This server predates the drive file endpoints.',
+      'They ship with the next backend deploy. Meanwhile: moda file search finds team assets, ' +
         'and moda drive folders | tree show the workspace organization.',
-    });
+    );
   }
-  throw err;
-}
-
-/**
- * `files:read` is NEWER than most minted keys — a missing-scope 403 (the server's bare
- * `permission` code) names the re-mint instead of dead-ending.
- */
-function rethrowScopeRemint(err: unknown): never {
   if (
     err instanceof CliError &&
     err.fields.type === 'permission' &&
@@ -73,8 +64,8 @@ function rethrowScopeRemint(err: unknown): never {
     throw new CliError({
       ...err.fields,
       hint:
-        'File downloads need the files:read scope; keys minted before it existed lack it. ' +
-        'Re-mint the key: moda auth login.',
+        'This API key lacks a scope the verb needs — newer scopes (files:read guards file ' +
+        'downloads) are missing from keys minted before them. Re-mint the key: moda auth login.',
     });
   }
   throw err;
@@ -106,17 +97,18 @@ export function registerFileUpload(program: Command): void {
     .action(
     wrapAction(async (args, opts, cmd) => {
       const inv = buildInvocation(cmd);
-      const { client } = await authedClient(inv, UPLOAD_TIMEOUT_MS);
       const fromUrl = opts.fromUrl as string | undefined;
       if (fromUrl === undefined && args.length === 0) {
         throw CliError.usage('Pass at least one PATH or --from-url URL.');
       }
       // `root` means unfiled — the server default; nothing is sent.
       const folderId = typeof opts.folder === 'string' ? (parseDestination(opts.folder) ?? undefined) : undefined;
-      const name = typeof opts.name === 'string' ? opts.name : undefined;
+      // Basename-reduced (a separator would fork the storage key) and server-bounded (1..255).
+      const name = typeof opts.name === 'string' ? validateName(basename(opts.name)) : undefined;
       if (name !== undefined && args.length + (fromUrl !== undefined ? 1 : 0) !== 1) {
         throw CliError.usage('--name names ONE upload — pass a single PATH or --from-url URL.');
       }
+      const { client } = await authedClient(inv, UPLOAD_TIMEOUT_MS);
       const uploads: Record<string, unknown>[] = [];
 
       if (fromUrl !== undefined) {
@@ -132,13 +124,17 @@ export function registerFileUpload(program: Command): void {
             },
           })
           .catch((err: unknown) => {
-            // extra=forbid on an old server rejects the unknown folder_id field with a 422 —
-            // translate the validation noise into the placement truth (#9292 class).
+            // extra=forbid on an old server rejects the UNKNOWN folder_id field with a 422 whose
+            // field entry is pydantic's `extra_forbidden` — translate exactly that shape into
+            // the placement truth (#9292 class). A 422 about a folder_id VALUE on a new server
+            // is a real validation error and passes through untouched.
+            const fields = JSON.stringify(err instanceof CliError ? (err.fields.details ?? {}) : {});
             if (
               folderId !== undefined &&
               err instanceof CliError &&
               err.fields.status === 422 &&
-              `${err.fields.message} ${JSON.stringify(err.fields.details ?? '')}`.includes('folder_id')
+              fields.includes('folder_id') &&
+              fields.includes('extra_forbidden')
             ) {
               throw new CliError({
                 ...err.fields,
@@ -169,8 +165,36 @@ export function registerFileUpload(program: Command): void {
         inv.note(`uploaded ${path} (${size} bytes)`);
       }
 
+      // Placement truth is the response ECHO, checked for EQUALITY: no echo means an old server
+      // ignored the field and the file landed unfiled; a different echo means it sits somewhere
+      // other than what was asked. Either way the fix is named — and carried in the --json body
+      // too (`warnings`), because a silent misplacement must never read as success-in-the-folder.
+      const warnings: string[] = [];
+      if (folderId !== undefined) {
+        for (const upload of uploads) {
+          const fileId = String(upload.file_id ?? upload.id ?? '<file_…>');
+          const landed = str(upload, 'folder_id');
+          if (landed === undefined) {
+            warnings.push(
+              `this server predates upload folder placement — ${fileId} landed unfiled; ` +
+                `place it: moda drive move ${fileId} ${folderId}`,
+            );
+          } else if (landed !== folderId) {
+            warnings.push(
+              `requested ${folderId} but ${fileId} is in ${landed} — place it: moda drive move ${fileId} ${folderId}`,
+            );
+          }
+        }
+      }
+
       return {
-        body: { ok: true, operation: 'file.upload', uploads, meta: metaBlock() },
+        body: {
+          ok: true,
+          operation: 'file.upload',
+          uploads,
+          ...(warnings.length > 0 ? { warnings } : {}),
+          meta: metaBlock(),
+        },
         human: (write) => {
           for (const upload of uploads) {
             const landed = str(upload, 'folder_id');
@@ -179,15 +203,8 @@ export function registerFileUpload(program: Command): void {
                 `${landed !== undefined ? ` (in ${landed})` : ''}` +
                 `${upload.was_duplicate === true ? ' — already existed (deduplicated)' : ''}`,
             );
-            if (folderId !== undefined && landed === undefined) {
-              // A server that predates folder placement ignored the field and landed the file
-              // unfiled — never let a silent misplacement read as success-in-the-folder.
-              write(
-                `warning: this server predates upload folder placement — the file landed unfiled; ` +
-                  `place it: moda drive move ${String(upload.file_id ?? upload.id ?? '<file_…>')} ${folderId}`,
-              );
-            }
           }
+          for (const warning of warnings) write(`warning: ${warning}`);
         },
         exitCode: EXIT_OK,
       };
@@ -372,7 +389,7 @@ export async function performFileList(client: ApiClient, flags: ListFlags, folde
     flags,
     FILE_TIMEOUT_MS,
     'offset',
-  ).catch(rethrowFilePredates);
+  ).catch(rethrowFileLane);
   return listOutcome({
     operation: 'file.list',
     pages,
@@ -390,7 +407,7 @@ export async function performFileList(client: ApiClient, flags: ListFlags, folde
 export async function performFileShow(client: ApiClient, ref: string): Promise<CommandOutcome> {
   const response = await client
     .request({ method: 'GET', path: endpoints.driveFile(ref) })
-    .catch(rethrowFilePredates);
+    .catch(rethrowFileLane);
   const root = asObject(response.body);
   const file = asObject(root.file);
   return {
@@ -405,10 +422,11 @@ export async function performFileShow(client: ApiClient, ref: string): Promise<C
       write(`${str(file, 'name') ?? '(unnamed)'}  (${id})`);
       write(`folder: ${str(file, 'folder_id') ?? 'unfiled (library root)'}`);
       const visibility = str(file, 'visibility');
-      if (visibility !== undefined) {
+      const libraryHidden = file.show_in_library === false;
+      if (visibility !== undefined || libraryHidden) {
         write(
-          `visibility: ${visibility}${file.visibility_inherited === true ? ' (inherited from its folder)' : ''}` +
-            `${file.show_in_library === false ? ' — hidden from the library (embedded asset)' : ''}`,
+          `visibility: ${visibility ?? 'unknown'}${file.visibility_inherited === true ? ' (inherited from its folder)' : ''}` +
+            `${libraryHidden ? ' — hidden from the library (embedded asset)' : ''}`,
         );
       }
       const size = num(file, 'size_bytes');
@@ -440,13 +458,11 @@ export async function performFileDownload(
 ): Promise<CommandOutcome> {
   const response = await client
     .request({ method: 'GET', path: endpoints.driveFileDownload(ref) })
-    .catch((err: unknown) => {
-      if (err instanceof CliError && err.fields.code === 'http_404') rethrowFilePredates(err);
-      rethrowScopeRemint(err);
-    });
+    .catch(rethrowFileLane);
   const root = asObject(response.body);
   const downloadUrl = str(root, 'download_url');
-  if (downloadUrl === undefined) {
+  // An empty string would resolve to the API base itself — treat it as missing.
+  if (downloadUrl === undefined || downloadUrl.trim() === '') {
     throw new CliError({
       type: 'upstream_error',
       code: 'download_failed',
@@ -459,17 +475,23 @@ export async function performFileDownload(
   const bytes = await downloadArtifact(client, downloadUrl, inv, 'download_failed');
   const toStdout = output === '-';
   // Default name: the file's OWN name (server-reported) — reduced to a basename so server data
-  // can never traverse paths — in the configured output dir.
-  const safeName = filename !== undefined && basename(filename) !== '' ? basename(filename) : ref;
+  // can never traverse paths (`.`/`..` fall back to the ref) — in the configured output dir.
+  const reduced = filename !== undefined ? basename(filename) : '';
+  const safeName = reduced !== '' && reduced !== '.' && reduced !== '..' ? reduced : ref;
   const outPath = toStdout ? '-' : (output ?? join(inv.context.outputDir.value ?? '.', safeName));
   if (toStdout) {
-    process.stdout.write(bytes);
+    await writeBytesToStdout(bytes);
   } else {
     mkdirSync(dirname(outPath), { recursive: true });
     writeFileSync(outPath, bytes);
   }
   // The presigned URL is time-limited: report what was fetched, never the URL as a durable ref.
-  const sizeMismatch = sizeBytes !== undefined && sizeBytes !== bytes.byteLength;
+  // A declared-size mismatch is a committed-but-degraded outcome — it rides the --json body
+  // (`warnings`) as well as the human lane.
+  const warnings: string[] = [];
+  if (sizeBytes !== undefined && sizeBytes !== bytes.byteLength) {
+    warnings.push(`the server reported ${sizeBytes} bytes but ${bytes.byteLength} were downloaded — verify the file`);
+  }
   return {
     body: {
       ok: true,
@@ -480,13 +502,12 @@ export async function performFileDownload(
       ...(sizeBytes !== undefined ? { size_bytes: sizeBytes } : {}),
       output: outPath,
       bytes: bytes.byteLength,
+      ...(warnings.length > 0 ? { warnings } : {}),
       meta: metaBlock({ requestId: response.requestId, durationMs: response.durationMs }),
     },
     human: (write) => {
       write(`${filename ?? ref} -> ${toStdout ? '(stdout)' : outPath} (${bytes.byteLength} bytes)`);
-      if (sizeMismatch) {
-        write(`warning: the server reported ${sizeBytes} bytes but ${bytes.byteLength} were downloaded — verify the file`);
-      }
+      for (const warning of warnings) write(`warning: ${warning}`);
     },
     exitCode: EXIT_OK,
     summaryToStderr: toStdout,
