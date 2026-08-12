@@ -228,6 +228,14 @@ describe('review batch regressions', () => {
     expect(validateRoutePath('/docs/faq-2')).toBe('/docs/faq-2');
   });
 
+  test('N1: set-content passes an out-of-grammar path through to the server (escape hatch)', async () => {
+    const { base, calls } = serve(() =>
+      Response.json({ operation: 'websites.update_page_content', website: { version: 3 } }),
+    );
+    await performSitePageSetContent(client(base), SITE_ID, { path: '/legacy path!', html: '<html>x</html>' });
+    expect(calls[0]?.body.path).toBe('/legacy path!');
+  });
+
   test('M1: bare UUIDs encode to the 26-char Crockford cvs_ wire form; cvs_ passes through', () => {
     const wire = toCanvasWireId('018f3c6e-1234-4abc-9def-00112233aabb');
     expect(wire).toMatch(/^cvs_[0-9A-HJKMNP-TV-Z]{26}$/);

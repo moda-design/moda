@@ -25,9 +25,19 @@ const SITE_TIMEOUT_MS = 120_000;
 
 const UUID_RE = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
 
-/** Route grammar the server enforces: /-rooted, segments [A-Za-z0-9_-]; /_moda is reserved. */
+/** Route grammar the server enforces ON CREATION: /-rooted, [A-Za-z0-9_-] segments; /_moda reserved. */
+export function isCanonicalRoutePath(route: string): boolean {
+  return /^\/(?:[A-Za-z0-9_-]+(?:\/[A-Za-z0-9_-]+)*)?$/.test(route) && !route.startsWith('/_moda');
+}
+
+/**
+ * Throwing form — ADD-PAGE ONLY. The server deliberately skips grammar validation on
+ * update/delete so sites authored through other lanes are never orphaned (an out-of-grammar
+ * path just 404s there); the CLI must not close that escape hatch — set-content/delete-page
+ * get an advisory note at most, never a throw.
+ */
 export function validateRoutePath(route: string): string {
-  if (!/^\/(?:[A-Za-z0-9_-]+(?:\/[A-Za-z0-9_-]+)*)?$/.test(route) || route.startsWith('/_moda')) {
+  if (!isCanonicalRoutePath(route)) {
     throw CliError.usage(
       `Invalid route '${route}'.`,
       "Routes are /-rooted with [A-Za-z0-9_-] segments (e.g. /pricing, /docs/faq); /_moda is reserved.",
@@ -120,6 +130,9 @@ export function registerSite(program: Command): void {
         if (typeof opts.title === 'string') {
           throw CliError.usage('--title applies to the site, not a page — set it without --path.');
         }
+        if (!isCanonicalRoutePath(opts.path)) {
+          inv.note(`route '${opts.path}' is outside the canonical grammar — passing through (legacy paths are updatable; an unknown path 404s)`);
+        }
         return performSitePageSetContent(client, args[0] as string, {
           path: opts.path,
           html,
@@ -175,6 +188,9 @@ export function registerSite(program: Command): void {
     wrapAction(async (args, opts, cmd) => {
       const inv = buildInvocation(cmd);
       requireYes('Deleting a page', inv.flags.noInput, opts.yes === true, `moda site delete-page ${args[0] as string} --path ${opts.path as string}`);
+      if (!isCanonicalRoutePath(opts.path as string)) {
+        inv.note(`route '${opts.path as string}' is outside the canonical grammar — passing through (legacy paths are deletable; an unknown path 404s)`);
+      }
       const { client } = await authedClient(inv, SITE_TIMEOUT_MS);
       return performSiteDeletePage(client, args[0] as string, {
         path: opts.path as string,
@@ -487,7 +503,6 @@ export async function performSitePageSetContent(
   siteRef: string,
   input: SitePageContentInput,
 ): Promise<CommandOutcome> {
-  validateRoutePath(input.path);
   const id = parseSiteId(siteRef);
   if (input.html.trim().length === 0) throw CliError.usage('The HTML page is empty.');
   const payload = {
@@ -569,7 +584,6 @@ export async function performSiteDeletePage(
   siteRef: string,
   input: SiteDeletePageInput,
 ): Promise<CommandOutcome> {
-  validateRoutePath(input.path);
   const id = parseSiteId(siteRef);
   const response = await client
     .request({

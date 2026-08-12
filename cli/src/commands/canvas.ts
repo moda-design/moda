@@ -291,6 +291,8 @@ export function registerCanvas(program: Command): void {
       let startBody: Record<string, unknown>;
       let requestId: string | undefined;
       if (typeof opts.job === 'string') {
+        // No tolerant-404 rewrite on this lane, deliberately — genuine job 404s must not be
+        // mislabeled as "server predates the endpoint".
         const polled = await client.request({
           method: 'GET',
           path: endpoints.canvasImportPptxStatus(opts.job),
