@@ -9,8 +9,7 @@ moda brand list                          # kits in the workspace (name, id, defa
 moda brand show BRAND_REF --json         # model-safe summary: palette, fonts, logo refs
 moda brand use BRAND_REF [--local]       # persist as the default kit (config or repo context)
 moda brand pull BRAND_REF --output brand.json   # the full kit document
-moda brand create --url https://acme.com # extraction from a website — METERED (cost class
-                                         # before, receipt after)
+moda brand create --url https://acme.com # extraction from a website — deterministic, free
 ```
 
 `moda brand show --json` returns colors, fonts, and per-asset **two handles**: a durable `file_` reference and a signed, short-lived preview `url`. The `file_` ref is the only thing that ever goes into markup or media inputs — refs resolve server-side; never retype a URL or a hex you think you remember. The signed `url` is use-and-discard: download it to LOOK at the asset with your own vision, then discard it.
