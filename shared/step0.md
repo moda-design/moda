@@ -21,9 +21,12 @@
      relay doctor's actionable hint verbatim and stop. Never retry in a loop.
 2. Run `moda account status --json`. Note the org, plan, and remaining
    credits (metered verbs spend them; deterministic authoring never does).
-3. Run `moda brand list`. If the account has at least one brand kit, on-brand
-   is the default: read the kit before designing (see references/brand.md).
-   With several kits, use the one the listing marks as default unless the
-   user names another — never guess between clients' kits; ask if no default
-   exists and the choice is unclear. An explicit "no brand" from the user
-   wins over everything.
+3. Run `moda brand list` — one cheap deterministic call, never skipped,
+   even for simple asks. Kits exist: use the default (or the one context
+   implies); if several plausibly apply, ask which — never guess between
+   clients' kits — and read the kit before designing (references/brand.md).
+   An explicit "no brand" from the user wins over everything. NO kits:
+   offer once, briefly — "Want me to set up a brand kit from your website
+   first? It's free and makes everything come out on-brand" — on yes,
+   `moda brand create` from their URL, then proceed; on no, proceed
+   unbranded without nagging.

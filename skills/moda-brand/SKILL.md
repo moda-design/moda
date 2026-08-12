@@ -37,12 +37,15 @@ allowed-tools: Bash(moda:*), Read
      relay doctor's actionable hint verbatim and stop. Never retry in a loop.
 2. Run `moda account status --json`. Note the org, plan, and remaining
    credits (metered verbs spend them; deterministic authoring never does).
-3. Run `moda brand list`. If the account has at least one brand kit, on-brand
-   is the default: read the kit before designing (see references/brand.md).
-   With several kits, use the one the listing marks as default unless the
-   user names another — never guess between clients' kits; ask if no default
-   exists and the choice is unclear. An explicit "no brand" from the user
-   wins over everything.
+3. Run `moda brand list` — one cheap deterministic call, never skipped,
+   even for simple asks. Kits exist: use the default (or the one context
+   implies); if several plausibly apply, ask which — never guess between
+   clients' kits — and read the kit before designing (references/brand.md).
+   An explicit "no brand" from the user wins over everything. NO kits:
+   offer once, briefly — "Want me to set up a brand kit from your website
+   first? It's free and makes everything come out on-brand" — on yes,
+   `moda brand create` from their URL, then proceed; on no, proceed
+   unbranded without nagging.
 
 ## UX rules
 
@@ -51,15 +54,13 @@ allowed-tools: Bash(moda:*), Read
 - Canvas references: pass whatever the user gave you — a moda.app canvas URL,
   a share link, a `cvs_` public id, or a raw UUID. The CLI resolves all of
   them identically; do not transform ids yourself.
-- Result reading: exit code 0 with `"requires_repair": true` in the JSON means
-  the mutation COMMITTED but needs fixing (skipped operations, error-severity
-  lint). Read the report and repair before building more. Any nonzero exit
-  means nothing committed — it is safe to retry after following the typed
-  error's hint (`STALE_REVISION` → re-read the canvas, then re-apply).
-- If the same typed error occurs twice on the same operation, STOP retrying
-  that operation. Report the error code, what you tried, and deliver
-  everything that succeeded (the canvas link and screenshots are the
-  deliverable; an export can be retried later).
+- Result reading: exit 0 with `"requires_repair": true` means the mutation
+  COMMITTED but needs fixing (skipped ops, error-severity lint) — repair
+  before building more. Any nonzero exit means nothing committed — safe to
+  retry after the typed error's hint (`STALE_REVISION` → re-read, re-apply).
+- The same typed error twice on one operation: STOP retrying it. Report the
+  code and what you tried; deliver everything that succeeded (the canvas
+  link and screenshots are the deliverable; an export can retry later).
 - The revise loop is explicit: mutate, then run `moda canvas screenshot`,
   `moda canvas read`, or `moda canvas lint` when you need to see the result.
   Mutations do not attach state; when a screenshot is your next step anyway,
@@ -68,16 +69,22 @@ allowed-tools: Bash(moda:*), Read
   rebuild a page to undo a bad edit.
 - Work in small batches: one section or slide per markup apply; lint once per
   finished section; screenshot at milestones only (it is the slowest verb).
-- Run independent calls in parallel when your harness supports parallel tool
-  calls: reads of different resources (`moda brand show` + `moda file search`
-  + `moda account status` at session start) and screenshots of different
-  canvases can all fan out together. Mutations on the SAME canvas stay
-  serial — the per-canvas lock and revision discipline order writes.
-- Don't re-read state you already hold: the DSL from your last
-  `moda canvas read` stays valid until you or a collaborator mutate the
-  canvas. Re-read at loop boundaries (structural changes minting fresh ids, a
-  new request, the user edited in the app) — not between consecutive calls on
-  unchanged state.
+- Match effort to the ask. A simple single-artifact request (one graphic,
+  one page, a quick edit) goes direct — create, author, one screenshot
+  check, deliver (the Step-0 brand rule always applies). Reserve concept
+  fan-out, multi-pass verify, and lint-until-clean for multi-page, branded,
+  or high-stakes work: this scales simple asks DOWN, never relaxing the
+  deck/document/website workflows or their verification; never pad a
+  simple ask with process the user didn't need.
+- Run independent calls in parallel when your harness supports it: reads of
+  different resources (`moda brand show` + `moda file search` +
+  `moda account status` at session start) and screenshots of different
+  canvases fan out together. Mutations on the SAME canvas stay serial —
+  the per-canvas lock and revision discipline order writes.
+- Don't re-read state you already hold: your last read's DSL stays valid
+  until someone mutates the canvas. Re-read at loop boundaries (structural
+  changes minting fresh ids, a new request, user edits in the app) — not
+  between consecutive calls on unchanged state.
 - Never delete or regenerate an image because a screenshot report listed it
   under `failedAssets`/`pendingAssets` — that state is transient; re-capture.
 - Deterministic verbs are unmetered and report zero usage. `moda task start`

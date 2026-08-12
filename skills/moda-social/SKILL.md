@@ -1,18 +1,20 @@
 ---
 name: moda-social
 description: >-
-  Design social media creative on Moda: organic posts, swipeable
-  carousels, story/reel covers, static social ads, display banner ads, and
-  profile banners/headers for Instagram, LinkedIn, TikTok, Facebook, X, and
-  YouTube. Use when the user asks for a social post, carousel, story, TikTok
-  or IG or LinkedIn creative, static ad, banner ad, ad campaign visuals, or a
-  channel header/cover. Produces platform-sized pages on a live Moda canvas
-  and exports png/jpeg (a multi-page carousel exports as a zip of images);
-  animated gif/mp4 ads are not available — the skill delivers the static
-  version and says so. For slide decks use moda-deck; for printable flyers,
-  posters, or PDFs use moda-one-pager; for a live hosted page use
-  moda-website. Requires the moda CLI and a Moda account (Step 0 checks both;
-  it never installs anything itself).
+  Design social media creative and one-off graphics on Moda: organic
+  posts, carousels, story/reel covers, static social ads, display banners,
+  profile headers (Instagram, LinkedIn, TikTok, Facebook, X, YouTube) — plus
+  simple standalone graphics that aren't a deck/document/diagram/website:
+  quote cards, single-image visuals, ad-hoc designs with no platform
+  attached. Use for a social post, carousel, story, platform creative,
+  static ad, banner ad, channel header/cover, quote card, or "a simple
+  graphic of/for X". Produces platform- or purpose-sized pages on a live
+  Moda canvas, exporting png/jpeg or pdf (multi-page carousel → zip);
+  animated gif/mp4 ads are not available — it delivers the static version
+  and says so. Slide decks → moda-deck; printable flyers, posters, PDFs →
+  moda-one-pager; live hosted pages → moda-website. Requires the moda CLI
+  and a Moda account (Step 0 checks both; it never installs anything
+  itself).
 argument-hint: "[platform + what the post/ad is about] [--brand <kit>] [--concepts N]"
 allowed-tools: Bash(moda:*), Read, Glob, Grep
 ---
@@ -42,12 +44,15 @@ allowed-tools: Bash(moda:*), Read, Glob, Grep
      relay doctor's actionable hint verbatim and stop. Never retry in a loop.
 2. Run `moda account status --json`. Note the org, plan, and remaining
    credits (metered verbs spend them; deterministic authoring never does).
-3. Run `moda brand list`. If the account has at least one brand kit, on-brand
-   is the default: read the kit before designing (see references/brand.md).
-   With several kits, use the one the listing marks as default unless the
-   user names another — never guess between clients' kits; ask if no default
-   exists and the choice is unclear. An explicit "no brand" from the user
-   wins over everything.
+3. Run `moda brand list` — one cheap deterministic call, never skipped,
+   even for simple asks. Kits exist: use the default (or the one context
+   implies); if several plausibly apply, ask which — never guess between
+   clients' kits — and read the kit before designing (references/brand.md).
+   An explicit "no brand" from the user wins over everything. NO kits:
+   offer once, briefly — "Want me to set up a brand kit from your website
+   first? It's free and makes everything come out on-brand" — on yes,
+   `moda brand create` from their URL, then proceed; on no, proceed
+   unbranded without nagging.
 
 ## UX rules
 
@@ -56,15 +61,13 @@ allowed-tools: Bash(moda:*), Read, Glob, Grep
 - Canvas references: pass whatever the user gave you — a moda.app canvas URL,
   a share link, a `cvs_` public id, or a raw UUID. The CLI resolves all of
   them identically; do not transform ids yourself.
-- Result reading: exit code 0 with `"requires_repair": true` in the JSON means
-  the mutation COMMITTED but needs fixing (skipped operations, error-severity
-  lint). Read the report and repair before building more. Any nonzero exit
-  means nothing committed — it is safe to retry after following the typed
-  error's hint (`STALE_REVISION` → re-read the canvas, then re-apply).
-- If the same typed error occurs twice on the same operation, STOP retrying
-  that operation. Report the error code, what you tried, and deliver
-  everything that succeeded (the canvas link and screenshots are the
-  deliverable; an export can be retried later).
+- Result reading: exit 0 with `"requires_repair": true` means the mutation
+  COMMITTED but needs fixing (skipped ops, error-severity lint) — repair
+  before building more. Any nonzero exit means nothing committed — safe to
+  retry after the typed error's hint (`STALE_REVISION` → re-read, re-apply).
+- The same typed error twice on one operation: STOP retrying it. Report the
+  code and what you tried; deliver everything that succeeded (the canvas
+  link and screenshots are the deliverable; an export can retry later).
 - The revise loop is explicit: mutate, then run `moda canvas screenshot`,
   `moda canvas read`, or `moda canvas lint` when you need to see the result.
   Mutations do not attach state; when a screenshot is your next step anyway,
@@ -73,16 +76,22 @@ allowed-tools: Bash(moda:*), Read, Glob, Grep
   rebuild a page to undo a bad edit.
 - Work in small batches: one section or slide per markup apply; lint once per
   finished section; screenshot at milestones only (it is the slowest verb).
-- Run independent calls in parallel when your harness supports parallel tool
-  calls: reads of different resources (`moda brand show` + `moda file search`
-  + `moda account status` at session start) and screenshots of different
-  canvases can all fan out together. Mutations on the SAME canvas stay
-  serial — the per-canvas lock and revision discipline order writes.
-- Don't re-read state you already hold: the DSL from your last
-  `moda canvas read` stays valid until you or a collaborator mutate the
-  canvas. Re-read at loop boundaries (structural changes minting fresh ids, a
-  new request, the user edited in the app) — not between consecutive calls on
-  unchanged state.
+- Match effort to the ask. A simple single-artifact request (one graphic,
+  one page, a quick edit) goes direct — create, author, one screenshot
+  check, deliver (the Step-0 brand rule always applies). Reserve concept
+  fan-out, multi-pass verify, and lint-until-clean for multi-page, branded,
+  or high-stakes work: this scales simple asks DOWN, never relaxing the
+  deck/document/website workflows or their verification; never pad a
+  simple ask with process the user didn't need.
+- Run independent calls in parallel when your harness supports it: reads of
+  different resources (`moda brand show` + `moda file search` +
+  `moda account status` at session start) and screenshots of different
+  canvases fan out together. Mutations on the SAME canvas stay serial —
+  the per-canvas lock and revision discipline order writes.
+- Don't re-read state you already hold: your last read's DSL stays valid
+  until someone mutates the canvas. Re-read at loop boundaries (structural
+  changes minting fresh ids, a new request, user edits in the app) — not
+  between consecutive calls on unchanged state.
 - Never delete or regenerate an image because a screenshot report listed it
   under `failedAssets`/`pendingAssets` — that state is transient; re-capture.
 - Deterministic verbs are unmetered and report zero usage. `moda task start`
@@ -102,36 +111,31 @@ allowed-tools: Bash(moda:*), Read, Glob, Grep
 
 ## Workflow
 
-1. **Settle format and count**: platform, exact pixel size, single piece or
-   carousel, one concept (default) or N directions — from the request, then
-   read references/social.md for the size table, safe areas, and craft
-   rules BEFORE designing. An animated-ad ask: state plainly that gif/mp4
-   export is not available on this surface, deliver the static version, and
-   point to the Moda app for motion.
+1. **Settle format and count**: platform, exact pixel size, single piece
+   or carousel, one concept (default) or N directions — read
+   references/social.md (sizes, safe areas, craft) BEFORE designing;
+   platformless one-off (quote card, simple graphic) → 1080x1080 default.
+   Animated asks: gif/mp4 is unavailable here — deliver static, say so.
 2. **Read the design references**: references/markup.md before any markup;
-   the type ladder for the canvas size per references/design-quality.md.
-   When a brand kit is in play, `moda brand show` it and LOOK at its assets
-   before settling the direction (references/brand.md) — on social, brand
-   colors and logo stay tight while headline type may lead.
-3. **Create** at the platform's exact size:
-   `moda canvas create --name "…" --size 1080x1350` with `--category
-   carousel` for carousels, `--category web-ads` for display/banner ads,
-   and `--category social` otherwise (sizes in references/social.md).
-   Carousel: prove slide 1 alone first —
-   author it, screenshot it, fix it — then `moda canvas add-pages` for the
-   rest and reuse the identical styles so the system cannot drift.
-4. **Author** one page or concept per markup apply. Imagery per the routing
-   order in references/design-quality.md; `moda media generate-image` is
-   metered — surface the cost class first. Keep every essential element
-   inside the platform safe area (references/social.md).
-5. **Verify**: `moda canvas lint` per finished piece; `moda canvas
-   screenshot` and review with your own vision — safe-area collisions,
-   type below the ladder floor, concepts that collapsed into one look.
+   the type ladder per references/design-quality.md. Brand kit in play →
+   `moda brand show` and LOOK at its assets before settling the direction
+   (references/brand.md); brand colors and logo stay tight on social.
+3. **Create** at the exact size: `moda canvas create --name "…" --size
+   1080x1350` with `--category carousel` (carousels), `web-ads`
+   (display/banner ads), `other` (platformless one-offs), else `social`.
+   Carousel: prove slide 1 alone first — author, screenshot, fix — then
+   `moda canvas add-pages` and reuse identical styles so nothing drifts.
+4. **Author** one page or concept per markup apply; imagery per the routing
+   order in references/design-quality.md (`moda media generate-image` is
+   metered — cost class first); essentials stay inside the platform safe
+   area (references/social.md).
+5. **Verify**: `moda canvas lint` per finished piece; screenshot and review
+   with your own vision — safe-area collisions, type below the ladder
+   floor, concepts that collapsed into one look.
 6. **Deliver**: `moda export CANVAS_REF --format png --pixel-ratio 2 -o
-   <name>.png` (or jpeg); a multi-page canvas arrives as a zip of images —
-   that zip IS the IG/TikTok carousel deliverable. A LinkedIn carousel is a
-   document post: deliver ONE multi-page PDF instead (`moda export --format
-   pdf`). Close per the UX rules: canvas link + the exported file path(s).
+   <name>.png` (or jpeg); a multi-page zip IS the IG/TikTok carousel
+   deliverable; a LinkedIn carousel is a document post — ONE multi-page PDF
+   (`--format pdf`). Close per UX rules: canvas link + file path(s).
 
 ## References
 
@@ -143,5 +147,4 @@ allowed-tools: Bash(moda:*), Read, Glob, Grep
 | references/brand.md | a brand kit exists |
 | references/edit-code.md | targeted fixes, page duplicate/resize |
 | references/reading-and-verifying.md | DSL reading, lint/screenshot loop |
-| references/export.md, references/omni-and-media.md | delivering; metered lanes |
-| references/gotchas.md | anything surprising |
+| references/export.md, references/omni-and-media.md, references/gotchas.md | delivering; metered lanes; anything surprising |

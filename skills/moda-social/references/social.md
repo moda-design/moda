@@ -32,7 +32,10 @@ Never fake motion or silently deliver a static file for an animated ask.
 | Mobile banner | 320×50 / 320×100 | tiny — type only |
 
 A bare "banner ad" request means build BOTH 728×90 and 300×250. Never
-landscape for feed carousels — it wastes mobile real estate.
+landscape for feed carousels — it wastes mobile real estate. A one-off with
+no platform attached (quote card, simple standalone graphic): default
+1080×1080 sized to purpose, `--category other`, deliver png (pdf on request)
+— and the effort rule applies: go direct, no concept fan-out.
 
 ## Safe areas (design full-bleed; keep essentials inside)
 

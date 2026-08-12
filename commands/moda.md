@@ -18,6 +18,10 @@ Route the user's request to the right Moda skill and follow it:
   chart, wireframe, or a mockup of an app/site screen → use the
   **moda-diagram** skill (a diagram or chart destined for an existing
   deck/document canvas stays with moda-deck / moda-one-pager / moda-edit).
+- A one-off standalone graphic with no platform attached — a quote card,
+  "a simple graphic of X", a circle with a caption → use the **moda-social**
+  skill (structural boxes-and-arrows → moda-diagram; print words like
+  poster/flyer → moda-one-pager).
 - A website, landing page, marketing site, portfolio, "put this on the web",
   or an existing moda.page site to change → use the **moda-website** skill
   (a printable/PDF one-pager stays with moda-one-pager).
