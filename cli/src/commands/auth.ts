@@ -7,11 +7,11 @@ import { deleteCredential, requireCredential, storeCredential } from '../auth/cr
 import {
   generateState,
   mintUrl,
-  openBrowser,
   readKeyFromStdin,
   resolveAppBase,
   startLoginListener,
 } from '../auth/login.ts';
+import { openBrowser } from '../browser.ts';
 import { CliError } from '../cliError.ts';
 import { readConfig, writeConfig } from '../config/config.ts';
 import { removeAccountIndex, upsertAccountIndex } from '../config/state.ts';

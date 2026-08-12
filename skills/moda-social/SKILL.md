@@ -99,8 +99,8 @@ allowed-tools: Bash(moda:*), Read, Glob, Grep
 - Send the canvas link the MOMENT it exists — right after create, before
   authoring: "follow along live here — it builds up as I work." In an
   interactive session on the user's machine, also open it in their browser once
-  at create — `open <url>` on macOS, `xdg-open` on Linux, `start ""` on
-  Windows; never in CI/detached/headless runs, never re-open on edits. Close by
+  at create: `moda canvas open` (open verbs show the user — brand/site/drive
+  too); never in CI/detached/headless runs, never re-open on edits. Close by
   pointing back ("still open at <link> — everything stays editable"). Export
   only on format words in the request (they win) or an accepted offer;
   otherwise deliver the link and put ONE export offer in the final reply —

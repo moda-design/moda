@@ -871,6 +871,73 @@
       }
     },
     {
+      "name": "brand open",
+      "description": "open the brand kit in the user's browser (prints the URL either way)",
+      "positionals": [
+        {
+          "name": "brand",
+          "required": true,
+          "variadic": false
+        }
+      ],
+      "flags": [
+        {
+          "flag": "--api-base",
+          "description": "endpoint override (staging/dev)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--json",
+          "description": "machine output: exactly one compact JSON document on stdout; implies --no-input",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-input",
+          "description": "fail instead of prompting (implied by --json)",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-retry",
+          "description": "disable the built-in busy/transport retry",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--org",
+          "description": "override the configured org context for this invocation",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--pretty",
+          "description": "pretty-print the --json document",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--quiet",
+          "description": "suppress non-essential stderr",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--timeout",
+          "description": "per-command ceiling override, seconds",
+          "takes_value": true,
+          "required": false
+        }
+      ],
+      "markers": {
+        "mutating": false,
+        "destructive": false,
+        "metered": false,
+        "read_lane": false
+      }
+    },
+    {
       "name": "brand pull",
       "description": "write the verbose kit JSON to a local file",
       "positionals": [
@@ -2268,7 +2335,7 @@
     },
     {
       "name": "canvas open",
-      "description": "open the canvas in the browser (local)",
+      "description": "open the canvas in the user's browser (prints the URL either way)",
       "positionals": [
         {
           "name": "canvas",
@@ -3468,6 +3535,73 @@
       ],
       "markers": {
         "mutating": true,
+        "destructive": false,
+        "metered": false,
+        "read_lane": false
+      }
+    },
+    {
+      "name": "drive open",
+      "description": "open a drive folder in the user's browser (prints the URL either way)",
+      "positionals": [
+        {
+          "name": "folder",
+          "required": true,
+          "variadic": false
+        }
+      ],
+      "flags": [
+        {
+          "flag": "--api-base",
+          "description": "endpoint override (staging/dev)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--json",
+          "description": "machine output: exactly one compact JSON document on stdout; implies --no-input",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-input",
+          "description": "fail instead of prompting (implied by --json)",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-retry",
+          "description": "disable the built-in busy/transport retry",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--org",
+          "description": "override the configured org context for this invocation",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--pretty",
+          "description": "pretty-print the --json document",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--quiet",
+          "description": "suppress non-essential stderr",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--timeout",
+          "description": "per-command ceiling override, seconds",
+          "takes_value": true,
+          "required": false
+        }
+      ],
+      "markers": {
+        "mutating": false,
         "destructive": false,
         "metered": false,
         "read_lane": false
@@ -5606,6 +5740,73 @@
         {
           "flag": "--output",
           "description": "write the full payload to a file; stdout gets a small summary + preview",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--pretty",
+          "description": "pretty-print the --json document",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--quiet",
+          "description": "suppress non-essential stderr",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--timeout",
+          "description": "per-command ceiling override, seconds",
+          "takes_value": true,
+          "required": false
+        }
+      ],
+      "markers": {
+        "mutating": false,
+        "destructive": false,
+        "metered": false,
+        "read_lane": false
+      }
+    },
+    {
+      "name": "site open",
+      "description": "open the site's editor in the user's browser (prints the URL either way)",
+      "positionals": [
+        {
+          "name": "site",
+          "required": true,
+          "variadic": false
+        }
+      ],
+      "flags": [
+        {
+          "flag": "--api-base",
+          "description": "endpoint override (staging/dev)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--json",
+          "description": "machine output: exactly one compact JSON document on stdout; implies --no-input",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-input",
+          "description": "fail instead of prompting (implied by --json)",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-retry",
+          "description": "disable the built-in busy/transport retry",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--org",
+          "description": "override the configured org context for this invocation",
           "takes_value": true,
           "required": false
         },

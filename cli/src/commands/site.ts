@@ -17,8 +17,10 @@ import { asObject, str, type JsonObject } from '../api/types.ts';
 import { CliError, withCodeHint } from '../cliError.ts';
 import { EXIT_OK } from '../output/exitCodes.ts';
 import type { CommandOutcome } from '../output/emit.ts';
+import { parseRef } from '../refs.ts';
 import { addGlobalFlags, authedClient, buildInvocation, metaBlock, wrapAction, type Invocation } from './runtime.ts';
 import { LIST_ALL_CAP, fetchListPages, listFlagsOf, listOutcome, parseListOffset, type ListFlags } from './listLane.ts';
+import { openLaneContext, resourceOpenOutcome, type OpenLaneContext } from './open.ts';
 import { readFileArg } from './canvasShared.ts';
 
 const SITE_TIMEOUT_MS = 120_000;
@@ -28,6 +30,33 @@ const UUID_RE = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0
 /** Route grammar the server enforces ON CREATION: /-rooted, [A-Za-z0-9_-] segments; /_moda reserved. */
 export function isCanonicalRoutePath(route: string): boolean {
   return /^\/(?:[A-Za-z0-9_-]+(?:\/[A-Za-z0-9_-]+)*)?$/.test(route) && !route.startsWith('/_moda');
+}
+
+/**
+ * Site ids are plain UUIDs on the wire (no prefixed form). A pasted app URL
+ * (https://…/website/<uuid>) is accepted as input sugar via the shared ref parser.
+ */
+export function parseSiteId(input: string): string {
+  const trimmed = input.trim();
+  if (UUID_RE.test(trimmed)) return trimmed;
+  if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+    try {
+      return parseRef(trimmed, 'website').ref;
+    } catch (err) {
+      // Keep the site-list steer: a pasted *.moda.page address is exactly a confused user.
+      if (err instanceof CliError && err.fields.code === 'usage') {
+        throw new CliError({
+          ...err.fields,
+          hint: `${err.fields.hint !== undefined ? `${err.fields.hint} ` : ''}Find site ids with: moda site list`,
+        });
+      }
+      throw err;
+    }
+  }
+  throw CliError.usage(
+    `'${input}' is not a site id (a UUID) or a /website/<uuid> URL.`,
+    'Find site ids with: moda site list',
+  );
 }
 
 /**
@@ -44,15 +73,6 @@ export function validateRoutePath(route: string): string {
     );
   }
   return route;
-}
-
-/** Site ids are plain UUIDs on the wire — no prefixed form, no URL sugar. */
-export function parseSiteId(input: string): string {
-  const trimmed = input.trim();
-  if (!UUID_RE.test(trimmed)) {
-    throw CliError.usage(`'${input}' is not a site id (a UUID).`, 'Find site ids with: moda site list');
-  }
-  return trimmed;
 }
 
 /** Destructive-verb approval gate, mirroring `moda canvas delete`. */
@@ -108,6 +128,23 @@ export function registerSite(program: Command): void {
       return performSiteShow(client, args[0] as string);
     }),
   );
+
+  addGlobalFlags(
+    site.command('open <site>').description("open the site's editor in the user's browser (prints the URL either way)"),
+  )
+    .addHelpText(
+      'after',
+      '\nExamples:\n  moda site open 018f3c6e-1234-4abc-9def-00112233aabb\n\n' +
+        'Opens the EDITOR page in the Moda app. Not for: visiting the live published page\n' +
+        '(moda site show prints its *.moda.page URL).\n',
+    )
+    .action(
+      wrapAction(async (args, _opts, cmd) => {
+        const inv = buildInvocation(cmd);
+        const { client } = await authedClient(inv, SITE_TIMEOUT_MS);
+        return performSiteOpen(client, openLaneContext(inv), args[0] as string);
+      }),
+    );
 
   addGlobalFlags(
     site
@@ -403,6 +440,25 @@ export async function performSiteShow(client: ApiClient, siteRef: string): Promi
     if (review !== undefined && review !== 'approved' && review !== 'pending_review') {
       write(`review_status: ${review}`);
     }
+  });
+}
+
+/**
+ * `site open` — the shared open lane, website flavor. Opens the app's EDITOR page. `editor_url`
+ * is the server field (newer servers); the published-site `url` is deliberately never used —
+ * it is the live *.moda.page address, a different thing. Constructed fallback: /website/<uuid>.
+ */
+export async function performSiteOpen(client: ApiClient, ctx: OpenLaneContext, siteRef: string): Promise<CommandOutcome> {
+  const id = parseSiteId(siteRef);
+  const response = await client.request({ method: 'GET', path: endpoints.websiteShow(id) });
+  const root = asObject(response.body);
+  return resourceOpenOutcome(ctx, {
+    operation: 'site.open',
+    sources: [root, asObject(root.website)],
+    urlFields: ['editor_url', 'app_url'],
+    fallbackUuid: id,
+    fallbackPath: (uuid) => `/website/${uuid}`,
+    meta: { requestId: response.requestId, durationMs: response.durationMs },
   });
 }
 

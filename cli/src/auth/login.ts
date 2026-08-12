@@ -146,31 +146,6 @@ export function startLoginListener(state: string, timeoutMs: number): ListenerHa
   };
 }
 
-/**
- * Open the browser: MODA_BROWSER (a command; '-' means print-only) > `open` (macOS) >
- * `xdg-open` (Linux). Failure is non-fatal — the URL is always printed to stderr.
- */
-export async function openBrowser(url: string, env: NodeJS.ProcessEnv = process.env): Promise<boolean> {
-  const custom = env.MODA_BROWSER;
-  if (custom === '-') return false;
-  const candidates = custom !== undefined && custom !== ''
-    ? [custom]
-    : process.platform === 'darwin'
-      ? ['open']
-      : ['xdg-open'];
-  for (const opener of candidates) {
-    try {
-      const proc = Bun.spawn([opener, url], { stdout: 'ignore', stderr: 'ignore' });
-      // Do not wait for the browser to exit; just confirm the spawn didn't fail immediately.
-      setTimeout(() => proc.unref(), 0);
-      return true;
-    } catch {
-      // try next candidate
-    }
-  }
-  return false;
-}
-
 /** Hidden-echo stdin read for `--paste`. */
 export async function readKeyFromStdin(prompt: string): Promise<string> {
   process.stderr.write(prompt);
