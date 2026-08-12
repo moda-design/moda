@@ -1,45 +1,109 @@
 /**
- * `moda file` — uploads (existing REST) and asset search.
+ * `moda file` — the file lane: upload (with drive-folder placement), search, list, show, download.
  *
- * Parity exception (recorded): the prototype backend has NO /v1/files drive endpoints. What
- * exists: POST /v1/uploads, POST /v1/uploads/from-url, and GET /v1/assets/search (Canvas Actions
- * resource verb returning durable `file_` ids + proxy URLs). `file search` rides assets/search;
- * `file list|show|download` fail with a typed `not_available` error instead of dialing 404-bound
- * paths. Folders, placement, and visibility are NOT part of that exception — they live on
- * /v1/drive, behind `moda drive` (commands/drive.ts).
+ * Server contract (studio #9354, the G9 file-content lanes):
+ * - GET /v1/drive/files — offset lane, true `total`; `folder_id` = `fld_…` | the literal `root`
+ *   (unfiled). The app file browser's exact view: library-visible files, private files of other
+ *   users invisible, newest-modified first.
+ * - GET /v1/drive/files/{file_id} → {file: {id, name, folder_id, visibility,
+ *   visibility_inherited, mime_type, size_bytes, show_in_library, url, created_at, updated_at,
+ *   created_by: {id, name, email}}}. A library-hidden file IS readable by id.
+ * - GET /v1/drive/files/{file_id}/download → {download_url, filename, mime_type, size_bytes} —
+ *   a time-limited presigned URL (bytes never traverse the API). Rides the `files:read` scope;
+ *   keys minted before that scope existed need a re-mint (`moda auth login`).
+ * - POST /v1/uploads (multipart; `folder_id` form field) and POST /v1/uploads/from-url
+ *   ({source_url, filename?, folder_id?}) → FileUploadResponse {id, url, filename, mime_type,
+ *   size_bytes, was_duplicate, folder_id} — `folder_id` echoes where the file actually landed.
+ * - GET /v1/assets/search (team/stock asset search; unchanged).
+ *
+ * Tolerant posture: the file lanes deploy after this CLI ships — a BARE route 404 (code
+ * `http_404`, no server envelope) means the server predates the endpoint and fails typed with
+ * that truth (#9292 class); an envelope'd `not_found` is a real missing file/folder. The upload
+ * lanes degrade by ECHO: a server that predates `folder_id` ignores the form field (multipart)
+ * or rejects it (`extra=forbid`, from-url) — the response echo is the placement truth signal.
  */
-import { statSync } from 'node:fs';
-import { basename } from 'node:path';
+import { mkdirSync, statSync, writeFileSync } from 'node:fs';
+import { basename, dirname, join } from 'node:path';
 import type { Command } from 'commander';
+import type { ApiClient } from '../api/client.ts';
 import { endpoints } from '../api/endpoints.ts';
-import { asObject, str } from '../api/types.ts';
+import { asObject, num, str, type JsonObject } from '../api/types.ts';
 import { CliError } from '../cliError.ts';
 import { EXIT_OK } from '../output/exitCodes.ts';
-import { addGlobalFlags, authedClient, buildInvocation, metaBlock, wrapAction } from './runtime.ts';
-import { LIST_ALL_CAP, fetchListPages, listFlagsOf, listOutcome, parseListLimit, parseListOffset } from './listLane.ts';
+import type { CommandOutcome } from '../output/emit.ts';
+import { parseRef } from '../refs.ts';
+import { addGlobalFlags, authedClient, buildInvocation, metaBlock, wrapAction, type Invocation } from './runtime.ts';
+import { LIST_ALL_CAP, fetchListPages, listFlagsOf, listOutcome, parseListLimit, parseListOffset, type ListFlags } from './listLane.ts';
+import { parseDestination, parseFolderRef } from './drive.ts';
+import { downloadArtifact } from './export.ts';
 
 const UPLOAD_TIMEOUT_MS = 300_000;
+const FILE_TIMEOUT_MS = 60_000;
 
-/** The typed file-facade refusal: name the parity exception and the working alternatives. */
-function driveNotAvailable(verb: string): CliError {
-  return new CliError({
-    type: 'unprocessable',
-    code: 'not_available',
-    message: `'moda ${verb}' has no public API endpoint — the file list/show/download facade is a recorded parity exception in the prototype.`,
-    hint: 'Available today: moda file upload, moda file search (team/stock asset search), and moda drive folders | tree | move for folders and placement.',
-    source: 'local',
-  });
+/**
+ * Only a BARE route 404 (no server error envelope → code `http_404`) means this server predates
+ * the drive file endpoints (#9292 tolerant lane — studio #9354 deploys after this CLI). An
+ * envelope'd `not_found` (`file_not_found`, `folder_not_found`) is a real missing resource and
+ * re-throws untouched.
+ */
+function rethrowFilePredates(err: unknown): never {
+  if (err instanceof CliError && err.fields.code === 'http_404') {
+    throw new CliError({
+      ...err.fields,
+      message: 'This server predates the drive file endpoints.',
+      hint:
+        'They ship with the next backend deploy. Meanwhile: moda file search finds team assets, ' +
+        'and moda drive folders | tree show the workspace organization.',
+    });
+  }
+  throw err;
+}
+
+/**
+ * `files:read` is NEWER than most minted keys — a missing-scope 403 (the server's bare
+ * `permission` code) names the re-mint instead of dead-ending.
+ */
+function rethrowScopeRemint(err: unknown): never {
+  if (
+    err instanceof CliError &&
+    err.fields.type === 'permission' &&
+    err.fields.hint === undefined &&
+    err.fields.message.includes('scope')
+  ) {
+    throw new CliError({
+      ...err.fields,
+      hint:
+        'File downloads need the files:read scope; keys minted before it existed lack it. ' +
+        'Re-mint the key: moda auth login.',
+    });
+  }
+  throw err;
 }
 
 export function registerFileUpload(program: Command): void {
-  const file = program.command('file').description('Moda files: upload local files, search team and stock assets');
+  const file = program
+    .command('file')
+    .description('Moda files: upload into the drive, list/inspect/download files, search team and stock assets');
 
   addGlobalFlags(
     file
       .command('upload [paths...]')
       .description('upload files; returns durable file_ refs usable in markup image fills and media inputs')
-      .option('--from-url <url>', 'ingest from a URL instead of a local path'),
-  ).action(
+      .option('--from-url <url>', 'ingest from a URL instead of a local path')
+      .option(
+        '--folder <folder_ref|root>',
+        "destination drive folder (fld_…) — the file adopts the folder's visibility; 'root' or omitted = unfiled (library root)",
+      )
+      .option('--name <filename>', 'store under this filename (one upload only)'),
+  )
+    .addHelpText(
+      'after',
+      '\nExamples:\n  moda file upload photo.png\n  moda file upload report.pdf --folder fld_01HZX9K2ABCDEFGHJKMNPQRSTV\n' +
+        '  moda file upload --from-url https://example.com/logo.png --name logo.png\n\n' +
+        'Not for: generating new imagery (moda media generate-image) or placing an already\n' +
+        'uploaded file into a folder (moda drive move).\n',
+    )
+    .action(
     wrapAction(async (args, opts, cmd) => {
       const inv = buildInvocation(cmd);
       const { client } = await authedClient(inv, UPLOAD_TIMEOUT_MS);
@@ -47,15 +111,43 @@ export function registerFileUpload(program: Command): void {
       if (fromUrl === undefined && args.length === 0) {
         throw CliError.usage('Pass at least one PATH or --from-url URL.');
       }
+      // `root` means unfiled — the server default; nothing is sent.
+      const folderId = typeof opts.folder === 'string' ? (parseDestination(opts.folder) ?? undefined) : undefined;
+      const name = typeof opts.name === 'string' ? opts.name : undefined;
+      if (name !== undefined && args.length + (fromUrl !== undefined ? 1 : 0) !== 1) {
+        throw CliError.usage('--name names ONE upload — pass a single PATH or --from-url URL.');
+      }
       const uploads: Record<string, unknown>[] = [];
 
       if (fromUrl !== undefined) {
-        // Server contract: UploadFromUrlRequest {source_url, filename?}.
-        const response = await client.request({
-          method: 'POST',
-          path: endpoints.uploadFromUrl(),
-          body: { source_url: fromUrl },
-        });
+        // Server contract: UploadFromUrlRequest {source_url, filename?, folder_id?} (extra=forbid).
+        const response = await client
+          .request({
+            method: 'POST',
+            path: endpoints.uploadFromUrl(),
+            body: {
+              source_url: fromUrl,
+              ...(name !== undefined ? { filename: name } : {}),
+              ...(folderId !== undefined ? { folder_id: folderId } : {}),
+            },
+          })
+          .catch((err: unknown) => {
+            // extra=forbid on an old server rejects the unknown folder_id field with a 422 —
+            // translate the validation noise into the placement truth (#9292 class).
+            if (
+              folderId !== undefined &&
+              err instanceof CliError &&
+              err.fields.status === 422 &&
+              `${err.fields.message} ${JSON.stringify(err.fields.details ?? '')}`.includes('folder_id')
+            ) {
+              throw new CliError({
+                ...err.fields,
+                message: 'This server predates upload folder placement (--folder).',
+                hint: `Re-run without --folder, then place the file: moda drive move <file_id> ${folderId}`,
+              });
+            }
+            throw err;
+          });
         uploads.push(shapeUpload(asObject(response.body), fromUrl));
       }
 
@@ -69,7 +161,9 @@ export function registerFileUpload(program: Command): void {
         }
         const form = new FormData();
         // Bun.file streams from disk — files are never buffered wholesale in memory.
-        form.append('file', Bun.file(path), basename(path));
+        form.append('file', Bun.file(path), name ?? basename(path));
+        // Old servers ignore unknown form fields — the response echo below is the truth signal.
+        if (folderId !== undefined) form.append('folder_id', folderId);
         const response = await client.request({ method: 'POST', path: endpoints.uploads(), formData: form });
         uploads.push({ ...shapeUpload(asObject(response.body), path), bytes: size });
         inv.note(`uploaded ${path} (${size} bytes)`);
@@ -79,7 +173,20 @@ export function registerFileUpload(program: Command): void {
         body: { ok: true, operation: 'file.upload', uploads, meta: metaBlock() },
         human: (write) => {
           for (const upload of uploads) {
-            write(`${String(upload.source)} → ${String(upload.file_id ?? upload.id ?? '?')}`);
+            const landed = str(upload, 'folder_id');
+            write(
+              `${String(upload.source)} → ${String(upload.file_id ?? upload.id ?? '?')}` +
+                `${landed !== undefined ? ` (in ${landed})` : ''}` +
+                `${upload.was_duplicate === true ? ' — already existed (deduplicated)' : ''}`,
+            );
+            if (folderId !== undefined && landed === undefined) {
+              // A server that predates folder placement ignored the field and landed the file
+              // unfiled — never let a silent misplacement read as success-in-the-folder.
+              write(
+                `warning: this server predates upload folder placement — the file landed unfiled; ` +
+                  `place it: moda drive move ${String(upload.file_id ?? upload.id ?? '<file_…>')} ${folderId}`,
+              );
+            }
           }
         },
         exitCode: EXIT_OK,
@@ -177,31 +284,216 @@ export function registerFileFacade(program: Command): void {
     }),
   );
 
-  addGlobalFlags(file.command('list').description('list drive files — not available (no public file endpoint; folders live under moda drive)')).action(
-    wrapAction(async () => {
-      throw driveNotAvailable('file list');
-    }),
-  );
-
-  addGlobalFlags(file.command('show <file_id>').description('file metadata — not available (no public file endpoint)')).action(
-    wrapAction(async () => {
-      throw driveNotAvailable('file show');
-    }),
-  );
+  addGlobalFlags(
+    file
+      .command('list')
+      .description('list drive files (newest first, true total) — the view the app file browser shows')
+      .option('--folder <folder_ref|root>', "only files in this folder (fld_…), or 'root' for unfiled files")
+      .option('--limit <n>', 'page size (server default 50, capped at 200)', parseListLimit)
+      .option('--offset <n>', 'pagination offset', parseListOffset)
+      .option('--all', `fetch every page (bounded at ${LIST_ALL_CAP} items)`)
+      .option('--output <file>', 'write the full payload to a file; stdout gets a small summary + preview'),
+  )
+    .addHelpText(
+      'after',
+      '\nExamples:\n  moda file list\n  moda file list --folder fld_01HZX9K2ABCDEFGHJKMNPQRSTV\n\n' +
+        'Not for: finding an asset by what it shows (moda file search) or listing folders\n' +
+        'themselves (moda drive folders / moda drive tree).\n',
+    )
+    .action(
+      wrapAction(async (_args, opts, cmd) => {
+        const inv = buildInvocation(cmd);
+        const { client } = await authedClient(inv, FILE_TIMEOUT_MS);
+        return performFileList(client, listFlagsOf(opts), typeof opts.folder === 'string' ? opts.folder : undefined);
+      }),
+    );
 
   addGlobalFlags(
     file
-      .command('download <file_id>')
-      .description('download file bytes — not available (no public file endpoint)')
-      .option('-o, --output <path>', 'output path'),
-  ).action(
-    wrapAction(async () => {
-      throw driveNotAvailable('file download');
-    }),
+      .command('show <file_ref>')
+      .description('file metadata: name, folder, visibility, MIME type, size, creator'),
+  )
+    .addHelpText(
+      'after',
+      '\nExamples:\n  moda file show file_01HZX9K2ABCDEFGHJKMNPQRSTV\n\n' +
+        "Not for: the file's bytes (moda file download) or canvas metadata (moda canvas show).\n",
+    )
+    .action(
+      wrapAction(async (args, _opts, cmd) => {
+        const inv = buildInvocation(cmd);
+        const ref = parseRef(args[0] as string, 'file').ref;
+        const { client } = await authedClient(inv, FILE_TIMEOUT_MS);
+        return performFileShow(client, ref);
+      }),
+    );
+
+  addGlobalFlags(
+    file
+      .command('download <file_ref>')
+      .description("download a file's bytes to disk (rides the files:read scope)")
+      .option('-o, --output <path>', "output path ('-' = stdout; default: the file's own name in the output dir)"),
+  )
+    .addHelpText(
+      'after',
+      '\nExamples:\n  moda file download file_01HZX9K2ABCDEFGHJKMNPQRSTV\n' +
+        '  moda file download file_01HZX9K2ABCDEFGHJKMNPQRSTV -o brief.pdf\n\n' +
+        'Not for: rendering a canvas to a file (moda export) or referencing an asset in\n' +
+        'markup — image(file_…) fills take the ref directly, no download needed.\n',
+    )
+    .action(
+      wrapAction(async (args, opts, cmd) => {
+        const inv = buildInvocation(cmd);
+        const ref = parseRef(args[0] as string, 'file').ref;
+        const { client } = await authedClient(inv, FILE_TIMEOUT_MS);
+        return performFileDownload(client, inv, ref, typeof opts.output === 'string' ? opts.output : undefined);
+      }),
+    );
+}
+
+/** `file_…  name  mime  size` — plus the privacy marker the listing itself would hide behind. */
+function fileLine(file: JsonObject): string {
+  const size = num(file, 'size_bytes');
+  return (
+    `${str(file, 'id') ?? '?'}  ${str(file, 'name') ?? '(unnamed)'}` +
+    `${str(file, 'mime_type') !== undefined ? `  ${str(file, 'mime_type')}` : ''}` +
+    `${size !== undefined ? `  ${size} bytes` : ''}` +
+    `${str(file, 'visibility') === 'private' ? '  (private)' : ''}`
   );
 }
 
-/** Server contract: FileUploadResponse {id (file_...), url, filename, mime_type, size_bytes, was_duplicate}. */
+export async function performFileList(client: ApiClient, flags: ListFlags, folder?: string): Promise<CommandOutcome> {
+  // `root` is a literal the endpoint understands (unfiled files); anything else is a folder ref.
+  const isRoot = folder !== undefined && folder.trim().toLowerCase() === 'root';
+  const folderId = folder === undefined ? undefined : isRoot ? 'root' : parseFolderRef(folder);
+  const pages = await fetchListPages(
+    client,
+    endpoints.driveFiles(),
+    { folder_id: folderId },
+    flags,
+    FILE_TIMEOUT_MS,
+    'offset',
+  ).catch(rethrowFilePredates);
+  return listOutcome({
+    operation: 'file.list',
+    pages,
+    flags,
+    emptyHint:
+      folder === undefined
+        ? 'no files in the drive library yet — add one: moda file upload <path>'
+        : isRoot
+          ? 'no unfiled files — files may live inside folders (moda drive tree); list one with --folder fld_…'
+          : `no files in ${folder} — upload into it: moda file upload <path> --folder ${folder}`,
+    itemLine: fileLine,
+  });
+}
+
+export async function performFileShow(client: ApiClient, ref: string): Promise<CommandOutcome> {
+  const response = await client
+    .request({ method: 'GET', path: endpoints.driveFile(ref) })
+    .catch(rethrowFilePredates);
+  const root = asObject(response.body);
+  const file = asObject(root.file);
+  return {
+    body: {
+      ok: true,
+      ...root,
+      operation: 'file.show',
+      meta: { ...asObject(root.meta), ...metaBlock({ requestId: response.requestId, durationMs: response.durationMs }) },
+    },
+    human: (write) => {
+      const id = str(file, 'id') ?? ref;
+      write(`${str(file, 'name') ?? '(unnamed)'}  (${id})`);
+      write(`folder: ${str(file, 'folder_id') ?? 'unfiled (library root)'}`);
+      const visibility = str(file, 'visibility');
+      if (visibility !== undefined) {
+        write(
+          `visibility: ${visibility}${file.visibility_inherited === true ? ' (inherited from its folder)' : ''}` +
+            `${file.show_in_library === false ? ' — hidden from the library (embedded asset)' : ''}`,
+        );
+      }
+      const size = num(file, 'size_bytes');
+      const mime = str(file, 'mime_type');
+      if (mime !== undefined || size !== undefined) {
+        write(`type: ${mime ?? 'unknown'}${size !== undefined ? `, ${size} bytes` : ''}`);
+      }
+      const creator = asObject(file.created_by);
+      const creatorLabel = str(creator, 'name') ?? str(creator, 'email');
+      const createdAt = str(file, 'created_at');
+      const updatedAt = str(file, 'updated_at');
+      if (creatorLabel !== undefined || createdAt !== undefined) {
+        write(
+          `created${creatorLabel !== undefined ? ` by ${creatorLabel}` : ''}${createdAt !== undefined ? ` ${createdAt}` : ''}` +
+            `${updatedAt !== undefined ? `; updated ${updatedAt}` : ''}`,
+        );
+      }
+      write(`bytes: moda file download ${id}`);
+    },
+    exitCode: EXIT_OK,
+  };
+}
+
+export async function performFileDownload(
+  client: ApiClient,
+  inv: Invocation,
+  ref: string,
+  output?: string,
+): Promise<CommandOutcome> {
+  const response = await client
+    .request({ method: 'GET', path: endpoints.driveFileDownload(ref) })
+    .catch((err: unknown) => {
+      if (err instanceof CliError && err.fields.code === 'http_404') rethrowFilePredates(err);
+      rethrowScopeRemint(err);
+    });
+  const root = asObject(response.body);
+  const downloadUrl = str(root, 'download_url');
+  if (downloadUrl === undefined) {
+    throw new CliError({
+      type: 'upstream_error',
+      code: 'download_failed',
+      message: 'The server returned no download_url for this file.',
+      source: 'api',
+    });
+  }
+  const filename = str(root, 'filename');
+  const sizeBytes = num(root, 'size_bytes');
+  const bytes = await downloadArtifact(client, downloadUrl, inv, 'download_failed');
+  const toStdout = output === '-';
+  // Default name: the file's OWN name (server-reported) — reduced to a basename so server data
+  // can never traverse paths — in the configured output dir.
+  const safeName = filename !== undefined && basename(filename) !== '' ? basename(filename) : ref;
+  const outPath = toStdout ? '-' : (output ?? join(inv.context.outputDir.value ?? '.', safeName));
+  if (toStdout) {
+    process.stdout.write(bytes);
+  } else {
+    mkdirSync(dirname(outPath), { recursive: true });
+    writeFileSync(outPath, bytes);
+  }
+  // The presigned URL is time-limited: report what was fetched, never the URL as a durable ref.
+  const sizeMismatch = sizeBytes !== undefined && sizeBytes !== bytes.byteLength;
+  return {
+    body: {
+      ok: true,
+      operation: 'file.download',
+      file_id: ref,
+      ...(filename !== undefined ? { filename } : {}),
+      ...(str(root, 'mime_type') !== undefined ? { mime_type: str(root, 'mime_type') } : {}),
+      ...(sizeBytes !== undefined ? { size_bytes: sizeBytes } : {}),
+      output: outPath,
+      bytes: bytes.byteLength,
+      meta: metaBlock({ requestId: response.requestId, durationMs: response.durationMs }),
+    },
+    human: (write) => {
+      write(`${filename ?? ref} -> ${toStdout ? '(stdout)' : outPath} (${bytes.byteLength} bytes)`);
+      if (sizeMismatch) {
+        write(`warning: the server reported ${sizeBytes} bytes but ${bytes.byteLength} were downloaded — verify the file`);
+      }
+    },
+    exitCode: EXIT_OK,
+    summaryToStderr: toStdout,
+  };
+}
+
+/** Server contract: FileUploadResponse {id (file_...), url, filename, mime_type, size_bytes, was_duplicate, folder_id}. */
 function shapeUpload(body: Record<string, unknown>, source: string): Record<string, unknown> {
   return {
     source,

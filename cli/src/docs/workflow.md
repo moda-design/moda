@@ -45,7 +45,9 @@ Resources:
 
 - Brand: `moda brand show bk_… --json` → author markup with its colors/fonts/logo refs.
 - Files: `moda file upload photo.png` → use the returned `file_…` ref in `image(REF)` fills
-  and media inputs; `moda file search QUERY` finds existing team assets.
+  and media inputs (`--folder fld_…` files it into a drive folder); `moda file search QUERY`
+  finds existing team assets, `moda file list|show` browse the drive library, and
+  `moda file download file_…` fetches the bytes back (files:read scope).
 - Metered lanes (always labeled, never hidden): `moda task start --prompt "…"` (Omni
   escalation) and `moda media generate-image --prompt "…" --model …`. Both are labeled
   `usage.class: "metered"`; exact credits are enriched asynchronously on your account usage.

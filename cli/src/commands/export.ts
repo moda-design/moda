@@ -263,10 +263,16 @@ async function pollExport(
 }
 
 /**
- * Download the artifact. Same-origin paths go through the authed client; absolute (signed)
- * URLs are fetched bare — the API key must never be sent to a third-party host.
+ * Download an artifact. Same-origin paths go through the authed client; absolute (signed)
+ * URLs are fetched bare — the API key must never be sent to a third-party host. Shared with
+ * `moda file download` (`failCode` names the failing lane in the error envelope).
  */
-async function downloadArtifact(client: ApiClient, downloadUrl: string, inv: Invocation): Promise<Uint8Array> {
+export async function downloadArtifact(
+  client: ApiClient,
+  downloadUrl: string,
+  inv: Invocation,
+  failCode = 'export_failed',
+): Promise<Uint8Array> {
   const isAbsolute = downloadUrl.startsWith('http://') || downloadUrl.startsWith('https://');
   const sameOrigin = isAbsolute && new URL(downloadUrl).origin === new URL(inv.context.apiBase.value).origin;
   if (!isAbsolute || sameOrigin) {
@@ -277,7 +283,7 @@ async function downloadArtifact(client: ApiClient, downloadUrl: string, inv: Inv
   if (!response.ok) {
     throw new CliError({
       type: 'upstream_error',
-      code: 'export_failed',
+      code: failCode,
       message: `Artifact download failed (HTTP ${response.status}).`,
       source: 'transport',
     });
