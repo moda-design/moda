@@ -3,7 +3,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import type { Command } from 'commander';
 import type { ApiClient } from '../api/client.ts';
-import type { CommandOutcome } from '../output/emit.ts';
+import { writeBytesToStdout, type CommandOutcome } from '../output/emit.ts';
 import { endpoints } from '../api/endpoints.ts';
 import { asObject, str } from '../api/types.ts';
 import { CliError } from '../cliError.ts';
@@ -141,7 +141,7 @@ export async function performExport(
   const bytes = await downloadArtifact(client, downloadUrl, inv);
   const toStdout = outPath === '-';
   if (toStdout) {
-    process.stdout.write(bytes);
+    await writeBytesToStdout(bytes);
   } else {
     mkdirSync(dirname(outPath), { recursive: true });
     writeFileSync(outPath, bytes);
@@ -263,21 +263,39 @@ async function pollExport(
 }
 
 /**
- * Download the artifact. Same-origin paths go through the authed client; absolute (signed)
- * URLs are fetched bare — the API key must never be sent to a third-party host.
+ * Download an artifact. Same-origin URLs go through the authed client; anything else (signed
+ * storage URLs) is fetched bare — the API key must never be sent to a third-party host. The
+ * URL is resolved against the API base EXACTLY like the client would resolve it before the
+ * origin check, so protocol-relative (`//evil/…`) and mixed-case-scheme forms are judged by
+ * where they would actually dial, never treated as relative paths. Shared with
+ * `moda file download` (`failCode` names the failing lane in the error envelope).
  */
-async function downloadArtifact(client: ApiClient, downloadUrl: string, inv: Invocation): Promise<Uint8Array> {
-  const isAbsolute = downloadUrl.startsWith('http://') || downloadUrl.startsWith('https://');
-  const sameOrigin = isAbsolute && new URL(downloadUrl).origin === new URL(inv.context.apiBase.value).origin;
-  if (!isAbsolute || sameOrigin) {
-    const artifact = await client.request({ method: 'GET', path: downloadUrl, raw: true, timeoutMs: 120_000 });
+export async function downloadArtifact(
+  client: ApiClient,
+  downloadUrl: string,
+  inv: Invocation,
+  failCode = 'export_failed',
+): Promise<Uint8Array> {
+  let resolved: URL;
+  try {
+    resolved = new URL(downloadUrl, inv.context.apiBase.value);
+  } catch {
+    throw new CliError({
+      type: 'upstream_error',
+      code: failCode,
+      message: `The server returned an unusable download URL.`,
+      source: 'api',
+    });
+  }
+  if (resolved.origin === new URL(inv.context.apiBase.value).origin) {
+    const artifact = await client.request({ method: 'GET', path: resolved.toString(), raw: true, timeoutMs: 120_000 });
     return artifact.bytes ?? new Uint8Array();
   }
-  const response = await fetch(downloadUrl, { signal: AbortSignal.timeout(120_000) });
+  const response = await fetch(resolved, { signal: AbortSignal.timeout(120_000) });
   if (!response.ok) {
     throw new CliError({
       type: 'upstream_error',
-      code: 'export_failed',
+      code: failCode,
       message: `Artifact download failed (HTTP ${response.status}).`,
       source: 'transport',
     });

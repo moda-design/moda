@@ -3868,10 +3868,10 @@
     },
     {
       "name": "file download",
-      "description": "download file bytes — not available (no public file endpoint)",
+      "description": "download a file's bytes to disk (rides the files:read scope)",
       "positionals": [
         {
-          "name": "file_id",
+          "name": "file_ref",
           "required": true,
           "variadic": false
         }
@@ -3909,7 +3909,7 @@
         },
         {
           "flag": "--output",
-          "description": "output path",
+          "description": "output path ('-' = stdout; default: the file's own name in the output dir)",
           "takes_value": true,
           "required": false
         },
@@ -3941,9 +3941,15 @@
     },
     {
       "name": "file list",
-      "description": "list drive files — not available (no public file endpoint; folders live under moda drive)",
+      "description": "list drive files (newest first, true total) — the view the app file browser shows",
       "positionals": [],
       "flags": [
+        {
+          "flag": "--all",
+          "description": "fetch every page (bounded at 500 items)",
+          "takes_value": false,
+          "required": false
+        },
         {
           "flag": "--api-base",
           "description": "endpoint override (staging/dev)",
@@ -3951,9 +3957,21 @@
           "required": false
         },
         {
+          "flag": "--folder",
+          "description": "only files in this folder (fld_…), or 'root' for unfiled files",
+          "takes_value": true,
+          "required": false
+        },
+        {
           "flag": "--json",
           "description": "machine output: exactly one compact JSON document on stdout; implies --no-input",
           "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--limit",
+          "description": "page size (server default 50, capped at 200)",
+          "takes_value": true,
           "required": false
         },
         {
@@ -3969,8 +3987,20 @@
           "required": false
         },
         {
+          "flag": "--offset",
+          "description": "pagination offset",
+          "takes_value": true,
+          "required": false
+        },
+        {
           "flag": "--org",
           "description": "override the configured org context for this invocation",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--output",
+          "description": "write the full payload to a file; stdout gets a small summary + preview",
           "takes_value": true,
           "required": false
         },
@@ -4107,10 +4137,10 @@
     },
     {
       "name": "file show",
-      "description": "file metadata — not available (no public file endpoint)",
+      "description": "file metadata: name, folder, visibility, MIME type, size, creator",
       "positionals": [
         {
-          "name": "file_id",
+          "name": "file_ref",
           "required": true,
           "variadic": false
         }
@@ -4190,6 +4220,12 @@
           "required": false
         },
         {
+          "flag": "--folder",
+          "description": "destination drive folder (fld_…) — the file adopts the folder's visibility; 'root' or omitted = unfiled (library root)",
+          "takes_value": true,
+          "required": false
+        },
+        {
           "flag": "--from-url",
           "description": "ingest from a URL instead of a local path",
           "takes_value": true,
@@ -4199,6 +4235,12 @@
           "flag": "--json",
           "description": "machine output: exactly one compact JSON document on stdout; implies --no-input",
           "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--name",
+          "description": "store under this filename (one upload only)",
+          "takes_value": true,
           "required": false
         },
         {

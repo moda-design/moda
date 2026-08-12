@@ -47,8 +47,7 @@ export const endpoints = {
   uploads: () => '/v1/uploads',
   uploadFromUrl: () => '/v1/uploads/from-url',
 
-  // Asset search (Canvas Actions resource verb; /v1/files list/show/download was NOT built in
-  // the prototype — a recorded parity exception)
+  // Asset search (Canvas Actions resource verb)
   assetsSearch: () => '/v1/assets/search',
 
   // Team templates (template canvases the team starts new work from)
@@ -60,6 +59,10 @@ export const endpoints = {
   driveTree: () => '/v1/drive/tree',
   driveItemMove: (ref: string) => `/v1/drive/items/${enc(ref)}/move`,
   driveItem: (ref: string) => `/v1/drive/items/${enc(ref)}`,
+  // Drive files (the G9 file-content lanes: list / metadata / presigned download URL)
+  driveFiles: () => '/v1/drive/files',
+  driveFile: (ref: string) => `/v1/drive/files/${enc(ref)}`,
+  driveFileDownload: (ref: string) => `/v1/drive/files/${enc(ref)}/download`,
 
   // Brand kits
   brandList: () => '/v1/brand-kits',

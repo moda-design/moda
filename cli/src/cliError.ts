@@ -61,3 +61,16 @@ export function withCodeHint(err: unknown, hints: Record<string, string>): never
   }
   throw err;
 }
+
+/**
+ * The #9292 tolerant lane, shared by every verb that ships ahead of its backend deploy: only a
+ * BARE route 404 (no server error envelope → code `http_404`) means the ROUTE is missing (a
+ * server predating the endpoint) — re-throw it as that truth. An envelope'd `not_found` is a
+ * real missing resource and passes through untouched.
+ */
+export function rethrowRoutePredates(err: unknown, message: string, hint: string): never {
+  if (err instanceof CliError && err.fields.code === 'http_404') {
+    throw new CliError({ ...err.fields, message, hint });
+  }
+  throw err;
+}
