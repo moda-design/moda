@@ -104,7 +104,7 @@ Never use placeholder shapes or literal "[icon]" text. Ensure logo colors contra
 
 ## Animated shader fills — the premium-feel lever
 
-`fill="shader(<type>)"` + `colors="#…"` works on page backgrounds, all fillable shapes, containers, and text (via markup; via edit for existing shapes and text, not containers). Lean on shaders for backgrounds, heroes, and large panels. Pick the type that fits the concept — do NOT default to `mesh-gradient`; vary across designs. Directory (premium-first):
+`fill="shader(<type>)"` + `colors="#…"` works on page backgrounds, all fillable shapes, containers, and text (via markup; via edit for existing shapes and text, not containers). Shaders animate LIVE in-app and FREEZE to one frame in any static export — flag that at handoff whenever a file is requested or offered. Lean on shaders for backgrounds, heroes, and large panels. Pick the type that fits the concept — do NOT default to `mesh-gradient`; vary across designs. Directory (premium-first):
 
 - `prismatic-swirl-panels`: layered prismatic swirls through diagonal glass panels; first 3 colors swirl, next 3 blob.
 - `dithered-wave-ribbon`: pixel-blocked wave ribbon; first 2 colors background, next up to 4 ribbon.
