@@ -30,7 +30,7 @@ override.
      screenshot → export pptx → share)
    - **One-pager + media**: "Turn NOTES.md into a designed one-page PDF;
      generate a fitting hero image for the top." (upload/refs → markup →
-     metered generate-image with model param + cost class surfaced + receipt
+     metered generate-image with model param + receipt in the delivery note
      → export pdf)
    - **Edit round-trip**: paste a canvas URL from a previous run — "The third
      slide is cluttered and off-brand; fix it, keep the numbers exactly."
@@ -81,7 +81,7 @@ first, then fanout), reinstall, and restart cold.
 - Every nonzero exit followed by the typed hint's recovery — no blind
   retries, no duplicated committed work.
 - Lint errors fixed before the final reply.
-- Metered cost class surfaced *before* each metered call.
+- Metered spend handled per the notification contract: the Step-0 credit note plus the receipt in the delivery note is compliant — no pre-spend announcement required.
 
 **Ship gate: 2 consecutive clean runs per request per harness** (Claude Code
 and Codex), and cumulative coverage of all DETERMINISTIC + METERED parity
