@@ -9,7 +9,7 @@ import { join } from 'node:path';
 import { ApiClient } from '../src/api/client.ts';
 import { CliError } from '../src/cliError.ts';
 import type { Invocation } from '../src/commands/runtime.ts';
-import { toCanvasWireId } from '../src/refs.ts';
+import { toWireId } from '../src/refs.ts';
 import { validateRoutePath } from '../src/commands/site.ts';
 import { performExport } from '../src/commands/export.ts';
 import {
@@ -237,12 +237,12 @@ describe('review batch regressions', () => {
   });
 
   test('M1: bare UUIDs encode to the 26-char Crockford cvs_ wire form; cvs_ passes through', () => {
-    const wire = toCanvasWireId('018f3c6e-1234-4abc-9def-00112233aabb');
+    const wire = toWireId('canvas', '018f3c6e-1234-4abc-9def-00112233aabb');
     expect(wire).toMatch(/^cvs_[0-9A-HJKMNP-TV-Z]{26}$/);
-    expect(toCanvasWireId('cvs_01HZX9K2ABCDEFGHJKMNPQRSTV')).toBe('cvs_01HZX9K2ABCDEFGHJKMNPQRSTV');
+    expect(toWireId('canvas', 'cvs_01HZX9K2ABCDEFGHJKMNPQRSTV')).toBe('cvs_01HZX9K2ABCDEFGHJKMNPQRSTV');
     // Deterministic and injective on distinct UUIDs.
-    expect(toCanvasWireId('018f3c6e-1234-4abc-9def-00112233aabb')).toBe(wire);
-    expect(toCanvasWireId('018f3c6e-1234-4abc-9def-00112233aabc')).not.toBe(wire);
+    expect(toWireId('canvas', '018f3c6e-1234-4abc-9def-00112233aabb')).toBe(wire);
+    expect(toWireId('canvas', '018f3c6e-1234-4abc-9def-00112233aabc')).not.toBe(wire);
   });
 
   test('M3: mp4/gif without --page is a clean local usage error', async () => {

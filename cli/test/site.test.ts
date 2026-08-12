@@ -87,14 +87,31 @@ describe('parseSiteId', () => {
     expect(parseSiteId(` ${SITE_ID} `)).toBe(SITE_ID);
   });
 
+  test('accepts a pasted /website/<uuid> app URL (any host)', () => {
+    expect(parseSiteId(`https://moda.app/website/${SITE_ID}`)).toBe(SITE_ID);
+    expect(parseSiteId(`http://localhost:3000/website/${SITE_ID}`)).toBe(SITE_ID);
+  });
+
   test('rejects non-UUID refs with a usage error naming site list', () => {
-    for (const bad of ['site_abc', 'launch-page', 'https://launch.moda.page', '']) {
+    for (const bad of ['site_abc', 'launch-page', '']) {
       try {
         parseSiteId(bad);
         expect.unreachable();
       } catch (err) {
         expect((err as CliError).fields.code).toBe('usage');
         expect((err as CliError).fields.hint).toContain('moda site list');
+      }
+    }
+  });
+
+  test('rejects URLs that are not /website/<uuid> with the URL-shape hint', () => {
+    for (const bad of ['https://launch.moda.page', `https://moda.app/canvas/${SITE_ID}`, 'https://moda.app/website/not-a-uuid']) {
+      try {
+        parseSiteId(bad);
+        expect.unreachable();
+      } catch (err) {
+        expect((err as CliError).fields.code).toBe('usage');
+        expect(String((err as CliError).fields.hint)).toContain('website');
       }
     }
   });

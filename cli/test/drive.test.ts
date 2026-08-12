@@ -102,8 +102,8 @@ describe('verb registration + describe schema', () => {
   const verbs = collectVerbs(buildProgram(), '');
   const byName = new Map(verbs.map((verb) => [verb.name, verb]));
 
-  test('all seven drive verbs are registered with a description', () => {
-    for (const name of ['folders', 'tree', 'mkdir', 'move', 'rename', 'visibility', 'rm']) {
+  test('all eight drive verbs are registered with a description', () => {
+    for (const name of ['folders', 'tree', 'open', 'mkdir', 'move', 'rename', 'visibility', 'rm']) {
       const verb = byName.get(`drive ${name}`);
       expect(verb?.description.length ?? 0).toBeGreaterThan(0);
     }
@@ -112,6 +112,8 @@ describe('verb registration + describe schema', () => {
   test('markers: reads are marker-free, writes are mutating, and only rm derives destructive', () => {
     expect(byName.get('drive folders')?.markers).toEqual({ mutating: false, destructive: false, metered: false, read_lane: false });
     expect(byName.get('drive tree')?.markers.mutating).toBe(false);
+    // `drive open` is a read with a local side effect (browser launch) — marker-free like canvas open.
+    expect(byName.get('drive open')?.markers).toEqual({ mutating: false, destructive: false, metered: false, read_lane: false });
     for (const name of ['mkdir', 'move', 'rename', 'visibility', 'rm']) {
       expect(byName.get(`drive ${name}`)?.markers.mutating).toBe(true);
       expect(byName.get(`drive ${name}`)?.markers.metered).toBe(false);
@@ -127,7 +129,7 @@ describe('verb registration + describe schema', () => {
   test('every leaf verb carries the house help epilogue (Examples + Not for)', () => {
     const drive = buildProgram().commands.find((cmd) => cmd.name() === 'drive');
     const leaves = (drive?.commands ?? []).filter((leaf) => leaf.name() !== 'help');
-    expect(leaves.length).toBe(7);
+    expect(leaves.length).toBe(8);
     for (const leaf of leaves) {
       // addHelpText lands in the OUTPUT path, not helpInformation() — capture what a user sees.
       let help = '';

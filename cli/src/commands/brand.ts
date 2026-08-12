@@ -10,9 +10,10 @@ import { readConfig, writeConfig } from '../config/config.ts';
 import { writeRepoContextKey } from '../config/context.ts';
 import { EXIT_OK } from '../output/exitCodes.ts';
 import type { CommandOutcome } from '../output/emit.ts';
-import { parseRef } from '../refs.ts';
+import { parseRef, refUuid } from '../refs.ts';
 import { addGlobalFlags, authedClient, buildInvocation, metaBlock, wrapAction } from './runtime.ts';
 import { LIST_ALL_CAP, fetchListPages, listFlagsOf, listOutcome, parseListLimit, parseListOffset } from './listLane.ts';
+import { openLaneContext, resourceOpenOutcome, type OpenLaneContext } from './open.ts';
 import { passthroughOutcome } from './canvasShared.ts';
 
 const READ_TIMEOUT_MS = 60_000;
@@ -159,6 +160,24 @@ export async function performBrandAddImage(
   };
 }
 
+/**
+ * `brand open` — the shared open lane, brand-kit flavor. GET /v1/brand-kits/{ref} returns
+ * `{brand_kit, id, uuid}`; the kit's `url` is the app's brand-kit editor URL (live today).
+ * Constructed fallback: /brand-kit/<uuid> — the route the app serves.
+ */
+export async function performBrandOpen(client: ApiClient, ctx: OpenLaneContext, ref: string): Promise<CommandOutcome> {
+  const response = await client.request({ method: 'GET', path: endpoints.brandShow(ref) });
+  const root = asObject(response.body);
+  return resourceOpenOutcome(ctx, {
+    operation: 'brand.open',
+    sources: [root, asObject(root.brand_kit)],
+    urlFields: ['url', 'editor_url', 'app_url'],
+    fallbackUuid: str(root, 'uuid') ?? refUuid(ref),
+    fallbackPath: (uuid) => `/brand-kit/${uuid}`,
+    meta: { requestId: response.requestId, durationMs: response.durationMs },
+  });
+}
+
 export async function performBrandRemoveImage(client: ApiClient, ref: string, imageId: string): Promise<CommandOutcome> {
   const response = await client.request({ method: 'DELETE', path: endpoints.brandImage(ref, imageId) });
   return {
@@ -268,6 +287,23 @@ export function registerBrand(program: Command): void {
       return passthroughOutcome('brand.show', response, inv);
     }),
   );
+
+  addGlobalFlags(
+    brand.command('open <brand>').description("open the brand kit in the user's browser (prints the URL either way)"),
+  )
+    .addHelpText(
+      'after',
+      '\nExamples:\n  moda brand open bk_01HZX9K2ABCDEFGHJKMNPQRSTV\n\n' +
+        'Not for: reading the kit yourself (moda brand show) or setting the default (moda brand use).\n',
+    )
+    .action(
+      wrapAction(async (args, _opts, cmd) => {
+        const inv = buildInvocation(cmd);
+        const ref = parseRef(args[0] as string, 'brand_kit').ref;
+        const { client } = await authedClient(inv, READ_TIMEOUT_MS);
+        return performBrandOpen(client, openLaneContext(inv), ref);
+      }),
+    );
 
   addGlobalFlags(
     brand

@@ -18,9 +18,10 @@ import { asObject, num, str, type JsonObject } from '../api/types.ts';
 import { CliError, withCodeHint } from '../cliError.ts';
 import { EXIT_OK } from '../output/exitCodes.ts';
 import type { CommandOutcome } from '../output/emit.ts';
-import { parseRef } from '../refs.ts';
+import { parseRef, refUuid, toWireId } from '../refs.ts';
 import { addGlobalFlags, authedClient, buildInvocation, metaBlock, wrapAction } from './runtime.ts';
 import { LIST_ALL_CAP, fetchListPages, listFlagsOf, listOutcome, parseListLimit, parseListOffset, type ListFlags } from './listLane.ts';
+import { openLaneContext, resourceOpenOutcome, type OpenLaneContext } from './open.ts';
 import { requireYes } from './site.ts';
 
 const DRIVE_TIMEOUT_MS = 60_000;
@@ -147,6 +148,23 @@ export function registerDrive(program: Command): void {
         const inv = buildInvocation(cmd);
         const { client } = await authedClient(inv, DRIVE_TIMEOUT_MS);
         return performDriveTree(client, typeof opts.depth === 'number' ? opts.depth : undefined);
+      }),
+    );
+
+  addGlobalFlags(
+    drive.command('open <folder>').description("open a drive folder in the user's browser (prints the URL either way)"),
+  )
+    .addHelpText(
+      'after',
+      '\nExamples:\n  moda drive open fld_01HZX9K2ABCDEFGHJKMNPQRSTV\n\n' +
+        'Not for: opening a canvas (moda canvas open) or listing what a folder holds\n' +
+        '(moda drive folders / moda canvas list).\n',
+    )
+    .action(
+      wrapAction(async (args, _opts, cmd) => {
+        const inv = buildInvocation(cmd);
+        const { client } = await authedClient(inv, DRIVE_TIMEOUT_MS);
+        return performDriveOpen(client, openLaneContext(inv), args[0] as string);
       }),
     );
 
@@ -388,6 +406,37 @@ function writeTreeNodes(nodes: JsonObject[], level: number, write: (line: string
     const children = Array.isArray(node.children) ? node.children.map(asObject) : [];
     writeTreeNodes(children, level + 1, write);
   }
+}
+
+/**
+ * `drive open` — the shared open lane, folder flavor. There is no single-folder GET, so the
+ * folder is located in the (small, team-scoped) GET /v1/drive/folders listing — which both
+ * validates existence and carries the server URL field (`app_url`, newer servers). Constructed
+ * fallback: /files/folder/<uuid> — the app's folder route (folder rows list only fld_ wire ids,
+ * so the UUID comes from decoding).
+ */
+export async function performDriveOpen(client: ApiClient, ctx: OpenLaneContext, folderRef: string): Promise<CommandOutcome> {
+  const ref = parseFolderRef(folderRef);
+  const wire = toWireId('folder', ref);
+  const pages = await fetchListPages(client, endpoints.driveFolders(), {}, { all: true }, DRIVE_TIMEOUT_MS, 'offset');
+  const folder = pages.items.find((row) => str(row, 'id') === wire);
+  if (folder === undefined) {
+    throw new CliError({
+      type: 'not_found',
+      code: 'folder_not_found',
+      message: `No folder ${wire} is visible to this credential${pages.capped ? ` (search stopped at the ${pages.returned}-folder client cap)` : ''}.`,
+      hint: 'List folders with: moda drive folders',
+      source: 'local',
+    });
+  }
+  return resourceOpenOutcome(ctx, {
+    operation: 'drive.open',
+    sources: [folder],
+    urlFields: ['app_url', 'editor_url'],
+    fallbackUuid: refUuid(wire),
+    fallbackPath: (uuid) => `/files/folder/${uuid}`,
+    meta: { requestId: pages.requestId, durationMs: pages.durationMs },
+  });
 }
 
 export interface DriveMkdirInput {

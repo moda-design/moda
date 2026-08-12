@@ -1,9 +1,10 @@
 import { describe, expect, test } from 'bun:test';
 import { CliError } from '../src/cliError.ts';
-import { extractShortIds, parseRef } from '../src/refs.ts';
+import { extractShortIds, parseRef, refUuid, toWireId, wireIdToUuid } from '../src/refs.ts';
 
 const CVS = 'cvs_01HZX9K2ABCDEFGHJKMNPQRSTV';
 const UUID = '018f3c6e-1234-4abc-9def-00112233aabb';
+const BK = 'bk_01HZX9K2ABCDEFGHJKMNPQRSTV';
 
 describe('parseRef', () => {
   test('prefixed wire id passes through', () => {
@@ -54,8 +55,50 @@ describe('parseRef', () => {
   });
 
   test('brand refs accept bk_ and reject cvs_', () => {
-    expect(parseRef('bk_01HZX9K2ABCDEFGHJKMNPQRSTV', 'brand_kit').ref).toBe('bk_01HZX9K2ABCDEFGHJKMNPQRSTV');
+    expect(parseRef(BK, 'brand_kit').ref).toBe(BK);
     expect(() => parseRef(CVS, 'brand_kit')).toThrow(CliError);
+  });
+
+  test('brand-kit app URLs parse on any host (/brand-kit/<uuid>, bk_ id too)', () => {
+    expect(parseRef(`https://moda.app/brand-kit/${UUID}`, 'brand_kit')).toEqual({ kind: 'brand_kit', ref: UUID });
+    expect(parseRef(`http://localhost:3000/brand-kit/${BK}`, 'brand_kit').ref).toBe(BK);
+  });
+
+  test('website app URLs parse on any host (/website/<uuid>)', () => {
+    expect(parseRef(`https://moda.app/website/${UUID}`, 'website')).toEqual({ kind: 'website', ref: UUID });
+    expect(parseRef(UUID, 'website').ref).toBe(UUID);
+  });
+
+  test('URL kinds do not cross: a canvas URL is not a brand-kit or website ref', () => {
+    expect(() => parseRef(`https://moda.app/canvas/${UUID}`, 'brand_kit')).toThrow(CliError);
+    expect(() => parseRef(`https://moda.app/brand-kit/${UUID}`, 'website')).toThrow(CliError);
+    // Share URLs stay canvas-only — they resolve to canvases server-side.
+    expect(() => parseRef('https://moda.app/s/abc123token', 'brand_kit')).toThrow(CliError);
+  });
+
+  test('a wire id where the kind has none (website) is a usage error', () => {
+    expect(() => parseRef(CVS, 'website')).toThrow(CliError);
+  });
+});
+
+describe('wire id codec', () => {
+  test('toWireId encodes a UUID per kind prefix and passes wire ids through', () => {
+    expect(toWireId('canvas', UUID).startsWith('cvs_')).toBe(true);
+    expect(toWireId('folder', UUID).startsWith('fld_')).toBe(true);
+    expect(toWireId('canvas', CVS)).toBe(CVS);
+    expect(toWireId('website', UUID)).toBe(UUID); // websites have no wire prefix
+  });
+
+  test('wireIdToUuid is the inverse of toWireId', () => {
+    expect(wireIdToUuid(toWireId('canvas', UUID))).toBe(UUID);
+    expect(wireIdToUuid(toWireId('folder', UUID))).toBe(UUID);
+    expect(wireIdToUuid('not-a-wire-id')).toBeUndefined();
+    expect(wireIdToUuid(UUID)).toBeUndefined();
+  });
+
+  test('refUuid: UUIDs pass through, wire ids decode', () => {
+    expect(refUuid(UUID)).toBe(UUID);
+    expect(refUuid(toWireId('canvas', UUID))).toBe(UUID);
   });
 });
 
