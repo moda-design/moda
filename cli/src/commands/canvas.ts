@@ -82,19 +82,27 @@ const IMPORT_PPTX_BUDGET_MS = 10 * 60 * 1000;
  * The `canvas show` guidance block (wave-2 G16, canvas half): surface owner-authored
  * `agent_instructions` on the verbose read so an agent inspecting someone's canvas sees the
  * guidance without knowing to ask for it (`moda canvas instructions` remains the direct verb).
- * Strictly additive and tolerant: no instructions, a server predating the endpoint, or a
- * share-token/permission refusal all mean "no block" — never a failed `show`.
+ * Strictly additive — a missing block never fails `show` — but only the DOCUMENTED absences
+ * are silent (no instructions authored, a server predating the endpoint, a share-token or
+ * permission refusal: instructions are id-authenticated team reads by contract). Any other
+ * failure (timeout, rate limit, 5xx) still omits the block, yet says so on stderr — a canvas
+ * that HAS guidance must not render identically to one without because of a transient fault.
  */
 export async function canvasGuidanceBlock(
   client: ApiClient,
   ref: string,
+  note: (message: string) => void,
 ): Promise<Record<string, unknown> | undefined> {
   let response;
   try {
     response = await client.request({ method: 'GET', path: endpoints.canvasInstructions(ref), timeoutMs: 30_000 });
   } catch (err) {
-    if (err instanceof CliError) return undefined;
-    throw err;
+    if (!(err instanceof CliError)) throw err;
+    const tolerated = ['not_found', 'permission', 'authentication'];
+    if (!tolerated.includes(err.fields.type)) {
+      note(`guidance check failed (${err.fields.code}) — instructions may exist: moda canvas instructions ${ref}`);
+    }
+    return undefined;
   }
   const text = str(asObject(response.body), 'agent_instructions');
   if (text === undefined || text.trim().length === 0) return undefined;
@@ -905,7 +913,7 @@ export function registerCanvas(program: Command): void {
       const details = await client.request({ method: 'GET', path: endpoints.canvasShow(ref) });
       const pages = await client.request({ method: 'GET', path: endpoints.canvasPages(ref) });
       const tokens = opts.tokens === true ? await client.request({ method: 'GET', path: endpoints.canvasTokens(ref) }) : undefined;
-      const guidance = await canvasGuidanceBlock(client, ref);
+      const guidance = await canvasGuidanceBlock(client, ref, inv.note);
       return {
         body: {
           ok: true,

@@ -141,27 +141,35 @@ export function registerFileFacade(program: Command): void {
         itemLine: (asset) => `${str(asset, 'id') ?? '?'}  ${str(asset, 'name') ?? ''}`,
       });
       const inner = outcome.human;
-      // Degraded stock lane: provider_status 'unavailable' means "could not search", NOT "no
-      // matches" — surface the server's note so an empty page is not read as a zero-hit query.
-      if (source === 'stock' && str(pages.root, 'provider_status') === 'unavailable') {
+      // The stock contract applies to the PHOTO lane only — for kind=icon the server ignores
+      // `source` by contract (the shared packs ARE the stock icons), so no echo check there.
+      const stockLane = kind === 'photo' && source === 'stock';
+      if (stockLane && str(pages.root, 'provider_status') === 'unavailable') {
+        // Degraded stock lane: 'unavailable' means "could not search", NOT "no matches" —
+        // REPLACE the renderer so the default zero-hit hint cannot claim an empty match set.
         outcome.human = (write) => {
           write(str(pages.root, 'note') ?? 'stock photo search is unavailable on this deployment — use --source team, or upload the image');
-          inner?.(write);
         };
-      } else if (source === 'stock' && str(pages.root, 'source') !== 'stock') {
+        return outcome;
+      }
+      // Independent cautions, composed (never an else-if): mislabeled old-server results can
+      // ALSO be low-confidence, and dropping the verify-visually guard is a real regression.
+      const cautions: string[] = [];
+      if (stockLane && str(pages.root, 'source') !== 'stock') {
         // A server predating the source param ignores it and silently serves TEAM results —
         // the response echo is the truth signal. Say so rather than mislabeling the hits.
-        outcome.human = (write) => {
-          write('note: this server predates stock sourcing — these are team-asset results');
-          inner?.(write);
-        };
+        cautions.push('note: this server predates stock sourcing — these are team-asset results');
         inv.note('server did not echo source=stock — team-asset results returned');
-      } else if (pages.root.has_good_matches === false && pages.items.length > 0) {
+      }
+      if (pages.root.has_good_matches === false && pages.items.length > 0) {
         // The server scores relevance: has_good_matches false means every hit is below its
         // confidence bar. Surface it in the human lane too — a silent low-confidence page reads
         // as a match and gets placed as-is (the JSON body already carries the flag via root).
+        cautions.push('low-confidence matches — verify visually before placing (or generate instead)');
+      }
+      if (cautions.length > 0) {
         outcome.human = (write) => {
-          write('low-confidence matches — verify visually before placing (or generate instead)');
+          for (const line of cautions) write(line);
           inner?.(write);
         };
       }

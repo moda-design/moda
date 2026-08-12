@@ -334,6 +334,26 @@ describe('G11: stock asset sourcing (file search --source)', () => {
     expect(assets[0]?.attribution).toEqual(stockAsset.attribution);
   });
 
+  test('icon + --source stock: no false "predates stock sourcing" note — the packs ARE the stock icons', async () => {
+    const { base, calls } = serve(() =>
+      Response.json({ query: 'arrow', kind: 'icon', assets: [{ id: 'file_i1', name: 'arrow' }], has_good_matches: true }),
+    );
+    const result = await run(['file', 'search', 'arrow', '--kind', 'icon', '--source', 'stock'], base);
+    expect(result.code).toBe(0);
+    expect(new URLSearchParams(calls[0]?.search).get('source')).toBe('stock');
+    expect(result.stdout).not.toContain('predates stock sourcing');
+  });
+
+  test('old-server mislabel and low-confidence are independent cautions — both print', async () => {
+    const { base } = serve(() =>
+      Response.json({ query: 'skyline', kind: 'photo', assets: [{ id: 'file_1', name: 'x' }], has_good_matches: false }),
+    );
+    const result = await run(['file', 'search', 'skyline', '--source', 'stock'], base);
+    expect(result.code).toBe(0);
+    expect(result.stdout).toContain('predates stock sourcing');
+    expect(result.stdout).toContain('low-confidence matches');
+  });
+
   test('provider unavailable: the note is surfaced instead of reading as a zero-hit search', async () => {
     const { base } = serve(() =>
       Response.json({
@@ -354,6 +374,8 @@ describe('G11: stock asset sourcing (file search --source)', () => {
     const result = await run(['file', 'search', 'skyline', '--source', 'stock'], base);
     expect(result.code).toBe(0);
     expect(result.stdout).toContain('Stock photo search is unavailable on this deployment');
+    // "Could not search" must not ALSO claim an empty match set (the default zero-hit hint).
+    expect(result.stdout).not.toContain('no results');
   });
 
   test('a server that does not echo source=stock is named as serving team results', async () => {
@@ -409,6 +431,29 @@ describe('G16: canvas show guidance block', () => {
       const result = await run(['canvas', 'show', CVS, '--json'], base);
       expect(result.code).toBe(0);
       expect((JSON.parse(result.stdout) as Record<string, unknown>).guidance).toBeUndefined();
+      expect(result.stderr).not.toContain('guidance check failed');
+      server?.stop(true);
+    }
+  });
+
+  test('a transient instructions failure (5xx) omits the block but SAYS so on stderr; permission stays silent', async () => {
+    const cases: Array<{ respond: () => Response; noted: boolean }> = [
+      { respond: () => new Response('boom', { status: 500 }), noted: true },
+      {
+        respond: () =>
+          new Response(JSON.stringify({ error: { type: 'permission', code: 'forbidden', message: 'no' } }), {
+            status: 403,
+            headers: { 'Content-Type': 'application/json' },
+          }),
+        noted: false,
+      },
+    ];
+    for (const { respond, noted } of cases) {
+      const { base } = serve((req, url) => CANVAS_ROUTES(url, respond) ?? new Response('nf', { status: 404 }));
+      const result = await run(['canvas', 'show', CVS, '--json'], base);
+      expect(result.code).toBe(0);
+      expect((JSON.parse(result.stdout) as Record<string, unknown>).guidance).toBeUndefined();
+      expect(result.stderr.includes('guidance check failed')).toBe(noted);
       server?.stop(true);
     }
   });
