@@ -47,7 +47,10 @@ EXPECTED_REFERENCES: dict[str, list[str]] = {
         "markup", "edit-code", "reading-and-verifying", "gotchas", "design-quality",
         "brand", "export", "omni-and-media", "document-design", "web", "charts",
     ],
-    "moda-brand": ["brand", "gotchas", "markup", "design-quality", "charts", "edit-code", "omni-and-media"],
+    "moda-brand": [
+        "brand", "gotchas", "markup", "design-quality", "charts", "edit-code", "omni-and-media",
+        "reading-and-verifying",
+    ],
     "moda-edit": [
         "edit-code", "reading-and-verifying", "gotchas", "markup", "design-quality", "brand",
         "charts", "omni-and-media",

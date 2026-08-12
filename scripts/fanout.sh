@@ -20,7 +20,7 @@ fan moda-deck markup edit-code reading-and-verifying gotchas design-quality \
   brand export omni-and-media deck-design deck-playbooks charts web
 fan moda-one-pager markup edit-code reading-and-verifying gotchas design-quality \
   brand export omni-and-media document-design web charts
-fan moda-brand brand gotchas markup design-quality charts edit-code omni-and-media
+fan moda-brand brand gotchas markup design-quality charts edit-code omni-and-media reading-and-verifying
 fan moda-edit edit-code reading-and-verifying gotchas markup design-quality brand charts omni-and-media
 fan moda-website website brand web design-quality omni-and-media markup edit-code gotchas charts reading-and-verifying
 fan moda-social social markup edit-code reading-and-verifying gotchas design-quality \

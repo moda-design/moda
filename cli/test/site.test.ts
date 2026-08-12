@@ -170,9 +170,10 @@ describe('site list (GET /v1/websites)', () => {
     const sites = (outcome.body as Record<string, unknown>).websites as Array<Record<string, unknown>>;
     expect(sites[0]?.serving).toBe(true);
     const lines = humanLines(outcome);
-    expect(lines[0]).toBe('site.list: 1 of 7 sites');
-    expect(lines[1]).toContain('live at https://launch-x1.moda.page');
-    expect(lines[1]).toContain('unpublished changes');
+    expect(lines[0]).toContain('live at https://launch-x1.moda.page');
+    expect(lines[0]).toContain('unpublished changes');
+    // The uniform page note replaces the old header line.
+    expect(lines[1]).toBe('showing 1 of 7 (from offset 4) — pass --offset 5 for more, or --all');
   });
 
   test('pending_review sites are annotated serving:false in list JSON', async () => {

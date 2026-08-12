@@ -10,6 +10,7 @@ import { writeRepoContextKey } from '../config/context.ts';
 import { EXIT_OK } from '../output/exitCodes.ts';
 import { parseRef } from '../refs.ts';
 import { addGlobalFlags, authedClient, buildInvocation, metaBlock, wrapAction } from './runtime.ts';
+import { LIST_ALL_CAP, fetchListPages, listFlagsOf, listOutcome, parseListLimit, parseListOffset } from './listLane.ts';
 import { passthroughOutcome } from './canvasShared.ts';
 
 const READ_TIMEOUT_MS = 60_000;
@@ -18,25 +19,27 @@ const CREATE_TIMEOUT_MS = 300_000;
 export function registerBrand(program: Command): void {
   const brand = program.command('brand').description('brand kits: list, read tokens, set the default');
 
-  addGlobalFlags(brand.command('list').description('brand kits visible to this credential')).action(
-    wrapAction(async (_args, _opts, cmd) => {
+  addGlobalFlags(
+    brand
+      .command('list')
+      .description('brand kits visible to this credential')
+      .option('--limit <n>', 'page size', parseListLimit)
+      .option('--offset <n>', 'pagination offset', parseListOffset)
+      .option('--all', `fetch every page (bounded at ${LIST_ALL_CAP} items)`)
+      .option('--output <file>', 'write the full payload to a file; stdout gets a small summary + preview'),
+  ).action(
+    wrapAction(async (_args, opts, cmd) => {
       const inv = buildInvocation(cmd);
+      const flags = listFlagsOf(opts);
       const { client } = await authedClient(inv, READ_TIMEOUT_MS);
-      const response = await client.request({ method: 'GET', path: endpoints.brandList() });
-      const kits = listItems(response.body, 'brand_kits');
-      return {
-        body: {
-          ok: true,
-          operation: 'brand.list',
-          brand_kits: kits,
-          meta: metaBlock({ requestId: response.requestId, durationMs: response.durationMs }),
-        },
-        human: (write) => {
-          for (const kit of kits) write(`${str(kit, 'id') ?? '?'}  ${str(kit, 'name') ?? ''}`);
-          if (kits.length === 0) write('no brand kits');
-        },
-        exitCode: EXIT_OK,
-      };
+      const pages = await fetchListPages(client, endpoints.brandList(), {}, flags, READ_TIMEOUT_MS);
+      return listOutcome({
+        operation: 'brand.list',
+        pages,
+        flags,
+        emptyHint: 'no brand kits',
+        itemLine: (kit) => `${str(kit, 'id') ?? '?'}  ${str(kit, 'name') ?? ''}`,
+      });
     }),
   );
 

@@ -7,32 +7,33 @@ import { CliError } from '../cliError.ts';
 import { readConfig, writeConfig } from '../config/config.ts';
 import { EXIT_OK } from '../output/exitCodes.ts';
 import { addGlobalFlags, authedClient, buildInvocation, metaBlock, wrapAction } from './runtime.ts';
+import { LIST_ALL_CAP, fetchListPages, listFlagsOf, listOutcome, parseListLimit, parseListOffset } from './listLane.ts';
 
 export function registerOrg(program: Command): void {
   const org = program.command('org').description('organization context');
 
-  addGlobalFlags(org.command('list').description('organizations this credential can act in')).action(
-    wrapAction(async (_args, _opts, cmd) => {
+  addGlobalFlags(
+    org
+      .command('list')
+      .description('organizations this credential can act in')
+      .option('--limit <n>', 'page size', parseListLimit)
+      .option('--offset <n>', 'pagination offset', parseListOffset)
+      .option('--all', `fetch every page (bounded at ${LIST_ALL_CAP} items)`)
+      .option('--output <file>', 'write the full payload to a file; stdout gets a small summary + preview'),
+  ).action(
+    wrapAction(async (_args, opts, cmd) => {
       const inv = buildInvocation(cmd);
+      const flags = listFlagsOf(opts);
       const { client } = await authedClient(inv, 30_000);
-      const response = await client.request({ method: 'GET', path: endpoints.organizations() });
-      const orgs = listItems(response.body, 'organizations').map((o) => ({
-        id: str(o, 'id'),
-        name: str(o, 'name'),
-        slug: str(o, 'slug'),
-      }));
-      return {
-        body: {
-          ok: true,
-          organizations: orgs,
-          meta: metaBlock({ requestId: response.requestId, durationMs: response.durationMs }),
-        },
-        human: (write) => {
-          for (const o of orgs) write(`${o.id ?? '?'}  ${o.name ?? ''}${o.slug !== undefined ? ` (${o.slug})` : ''}`);
-          if (orgs.length === 0) write('no organizations');
-        },
-        exitCode: EXIT_OK,
-      };
+      const pages = await fetchListPages(client, endpoints.organizations(), {}, flags, 30_000);
+      return listOutcome({
+        operation: 'org.list',
+        pages,
+        flags,
+        emptyHint: 'no organizations',
+        itemLine: (o) =>
+          `${str(o, 'id') ?? '?'}  ${str(o, 'name') ?? ''}${str(o, 'slug') !== undefined ? ` (${str(o, 'slug')})` : ''}`,
+      });
     }),
   );
 

@@ -17,6 +17,7 @@ import { CliError } from '../cliError.ts';
 import { EXIT_OK } from '../output/exitCodes.ts';
 import type { CommandOutcome } from '../output/emit.ts';
 import { addGlobalFlags, authedClient, buildInvocation, metaBlock, wrapAction, type Invocation } from './runtime.ts';
+import { LIST_ALL_CAP, fetchListPages, listFlagsOf, listOutcome, parseListLimit, parseListOffset } from './listLane.ts';
 import { parseSize } from './canvasShared.ts';
 
 const MEDIA_TIMEOUT_MS = 600_000;
@@ -184,21 +185,27 @@ export function registerMedia(program: Command): void {
     }),
   );
 
-  addGlobalFlags(media.command('models').description('available media models (the required --model values)')).action(
-    wrapAction(async (_args, _opts, cmd) => {
+  addGlobalFlags(
+    media
+      .command('models')
+      .description('available media models (the required --model values)')
+      .option('--limit <n>', 'page size', parseListLimit)
+      .option('--offset <n>', 'pagination offset', parseListOffset)
+      .option('--all', `fetch every page (bounded at ${LIST_ALL_CAP} items)`)
+      .option('--output <file>', 'write the full payload to a file; stdout gets a small summary + preview'),
+  ).action(
+    wrapAction(async (_args, opts, cmd) => {
       const inv = buildInvocation(cmd);
+      const flags = listFlagsOf(opts);
       const { client } = await authedClient(inv, 30_000);
-      const response = await client.request({ method: 'GET', path: endpoints.mediaModels() });
-      const root = asObject(response.body);
-      return {
-        body: {
-          ok: true,
-          operation: 'media.models',
-          ...(Array.isArray(response.body) ? { models: response.body } : root),
-          meta: { ...asObject(root.meta), ...metaBlock({ requestId: response.requestId, durationMs: response.durationMs }) },
-        },
-        exitCode: EXIT_OK,
-      };
+      const pages = await fetchListPages(client, endpoints.mediaModels(), {}, flags, 30_000);
+      return listOutcome({
+        operation: 'media.models',
+        pages,
+        flags,
+        emptyHint: 'no models reported',
+        itemLine: (model) => `${str(model, 'id') ?? str(model, 'name') ?? '?'}  ${str(model, 'name') ?? ''}`,
+      });
     }),
   );
 }

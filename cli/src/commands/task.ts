@@ -6,7 +6,7 @@ import { deriveIdempotencyKey } from '../api/idempotency.ts';
 import { asObject, str } from '../api/types.ts';
 import { CliError } from '../cliError.ts';
 import { readTaskStart, recordTaskStart, recordTaskStatus, type TaskStartEntry } from '../config/state.ts';
-import { PREVIEW_ITEMS, writeResultFile } from '../output/resultFile.ts';
+import { LIST_ALL_CAP, fetchListPages, listFlagsOf, listOutcome, parseListLimit, parseListOffset } from './listLane.ts';
 import { EXIT_OK } from '../output/exitCodes.ts';
 import { parseRef } from '../refs.ts';
 import { addGlobalFlags, authedClient, buildInvocation, metaBlock, wrapAction, type Invocation } from './runtime.ts';
@@ -193,47 +193,29 @@ export function registerTask(program: Command): void {
       .command('list')
       .description('list tasks')
       .option('--active', 'only running tasks')
+      .option('--limit <n>', 'page size', parseListLimit)
+      .option('--offset <n>', 'pagination offset', parseListOffset)
+      .option('--all', `fetch every page (bounded at ${LIST_ALL_CAP} items)`)
       .option('--output <file>', 'write the full payload to a file; stdout gets a small summary + preview'),
   ).action(
     wrapAction(async (_args, opts, cmd) => {
       const inv = buildInvocation(cmd);
+      const flags = listFlagsOf(opts);
       const { client } = await authedClient(inv, START_TIMEOUT_MS);
       // Server contract: GET /v1/tasks?status=... (single status filter; 'running' ≈ active).
-      const response = await client.request({
-        method: 'GET',
-        path: endpoints.taskList(),
-        query: opts.active === true ? { status: 'running' } : undefined,
-      });
-      if (typeof opts.output === 'string') {
-        const root = asObject(response.body);
-        const tasks = Array.isArray(response.body)
-          ? (response.body as unknown[])
-          : Array.isArray(root.tasks)
-            ? (root.tasks as unknown[])
-            : [];
-        const written = writeResultFile(opts.output, { ok: true, operation: 'task.list', ...root });
-        const preview = tasks.slice(0, PREVIEW_ITEMS).map((task) => {
-          const obj = asObject(task);
-          return { id: str(obj, 'id'), status: str(obj, 'status') };
-        });
-        return {
-          body: {
-            ok: true,
-            operation: 'task.list',
-            returned: tasks.length,
-            ...written,
-            preview,
-            meta: metaBlock({ requestId: response.requestId, durationMs: response.durationMs }),
-          },
-          human: (write) => {
-            write(`${tasks.length} task${tasks.length === 1 ? '' : 's'} → ${written.output} (inspect with jq/grep)`);
-            for (const entry of preview) write(`${entry.id ?? '?'}  ${entry.status ?? ''}`);
-          },
-          exitCode: EXIT_OK,
-        };
-      }
-      return passthroughOutcome('task.list', response, inv, {
+      const pages = await fetchListPages(
+        client,
+        endpoints.taskList(),
+        opts.active === true ? { status: 'running' } : {},
+        flags,
+        START_TIMEOUT_MS,
+      );
+      return listOutcome({
+        operation: 'task.list',
+        pages,
+        flags,
         emptyHint: opts.active === true ? 'no running tasks — see all: moda task list' : 'no tasks yet',
+        itemLine: (item) => `${str(item, 'id') ?? '?'}  ${str(item, 'status') ?? ''}`,
       });
     }),
   );

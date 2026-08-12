@@ -16,6 +16,7 @@ import { CliError } from '../cliError.ts';
 import { EXIT_OK } from '../output/exitCodes.ts';
 import type { CommandOutcome } from '../output/emit.ts';
 import { addGlobalFlags, authedClient, buildInvocation, metaBlock, wrapAction } from './runtime.ts';
+import { LIST_ALL_CAP, fetchListPages, listFlagsOf, listOutcome, parseListOffset, type ListFlags } from './listLane.ts';
 import { readFileArg } from './canvasShared.ts';
 
 const SITE_TIMEOUT_MS = 120_000;
@@ -66,15 +67,14 @@ export function registerSite(program: Command): void {
       .command('list')
       .description("list the team's sites")
       .option('--limit <n>', 'page size, 1-100 (default 25)', parseCount)
-      .option('--offset <n>', 'pagination offset', parseOffset),
+      .option('--offset <n>', 'pagination offset', parseListOffset)
+      .option('--all', `fetch every page (bounded at ${LIST_ALL_CAP} items)`)
+      .option('--output <file>', 'write the full payload to a file; stdout gets a small summary + preview'),
   ).action(
     wrapAction(async (_args, opts, cmd) => {
       const inv = buildInvocation(cmd);
       const { client } = await authedClient(inv, SITE_TIMEOUT_MS);
-      return performSiteList(client, {
-        limit: opts.limit as number | undefined,
-        offset: opts.offset as number | undefined,
-      });
+      return performSiteList(client, listFlagsOf(opts));
     }),
   );
 
@@ -273,29 +273,18 @@ export async function performSiteCreate(client: ApiClient, input: SiteContentInp
   });
 }
 
-export interface SiteListOptions {
-  limit?: number;
-  offset?: number;
-}
-
-export async function performSiteList(client: ApiClient, opts: SiteListOptions): Promise<CommandOutcome> {
-  const response = await client.request({
-    method: 'GET',
-    path: endpoints.websiteList(),
-    query: {
-      ...(opts.limit !== undefined ? { limit: String(opts.limit) } : {}),
-      ...(opts.offset !== undefined ? { offset: String(opts.offset) } : {}),
-    },
-  });
-  const root = asObject(response.body);
-  const websites = Array.isArray(root.websites) ? root.websites.map(asObject) : [];
+export async function performSiteList(client: ApiClient, flags: ListFlags): Promise<CommandOutcome> {
+  const pages = await fetchListPages(client, endpoints.websiteList(), {}, flags, SITE_TIMEOUT_MS);
   // Same CLI-owned `serving` honesty the publish path carries — annotated per site (the server
   // reports is_published: true + url even while a publish is held for review).
-  const annotated = websites.map((website) => ({ ...website, serving: isServing(website) }));
-  return outcome('site.list', { ...root, websites: annotated }, response, (write) => {
-    const total = typeof root.total === 'number' ? root.total : websites.length;
-    write(`site.list: ${websites.length} of ${total} site${total === 1 ? '' : 's'}`);
-    for (const website of websites) write(siteLine(website));
+  pages.items = pages.items.map((website) => ({ ...website, serving: isServing(website) }));
+  if (pages.itemKey !== undefined) pages.root[pages.itemKey] = pages.items;
+  return listOutcome({
+    operation: 'site.list',
+    pages,
+    flags,
+    emptyHint: 'no sites — create one: moda site create',
+    itemLine: siteLine,
   });
 }
 

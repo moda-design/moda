@@ -15,6 +15,7 @@ import { asObject, str } from '../api/types.ts';
 import { CliError } from '../cliError.ts';
 import { EXIT_OK } from '../output/exitCodes.ts';
 import { addGlobalFlags, authedClient, buildInvocation, metaBlock, wrapAction } from './runtime.ts';
+import { LIST_ALL_CAP, fetchListPages, listFlagsOf, listOutcome, parseListLimit, parseListOffset } from './listLane.ts';
 
 const UPLOAD_TIMEOUT_MS = 300_000;
 
@@ -94,7 +95,10 @@ export function registerFileFacade(program: Command): void {
       .command('search <query>')
       .description('search team assets (durable file_ ids + URLs, usable in markup and media inputs)')
       .option('--kind <kind>', 'icon | photo (default photo)', 'photo')
-      .option('--limit <n>', 'max results (1-50)', (v: string) => Number.parseInt(v, 10)),
+      .option('--limit <n>', 'max results', parseListLimit)
+      .option('--offset <n>', 'pagination offset', parseListOffset)
+      .option('--all', `fetch every page (bounded at ${LIST_ALL_CAP} items)`)
+      .option('--output <file>', 'write the full payload to a file; stdout gets a small summary + preview'),
   ).action(
     wrapAction(async (args, opts, cmd) => {
       const inv = buildInvocation(cmd);
@@ -102,37 +106,23 @@ export function registerFileFacade(program: Command): void {
       if (kind !== 'icon' && kind !== 'photo') {
         throw CliError.usage(`Invalid --kind '${kind}' — expected icon or photo.`);
       }
+      const flags = listFlagsOf(opts);
       const { client } = await authedClient(inv, 30_000);
       // Server contract: GET /v1/assets/search?q=&kind=&limit= → {query, kind, assets, has_good_matches}.
-      const response = await client.request({
-        method: 'GET',
-        path: endpoints.assetsSearch(),
-        query: {
-          q: args[0] as string,
-          kind,
-          ...(typeof opts.limit === 'number' ? { limit: String(opts.limit) } : {}),
-        },
+      const pages = await fetchListPages(
+        client,
+        endpoints.assetsSearch(),
+        { q: args[0] as string, kind },
+        flags,
+        30_000,
+      );
+      return listOutcome({
+        operation: 'file.search',
+        pages,
+        flags,
+        emptyHint: `no results for '${args[0] as string}' — broaden the query or switch --kind (icon | photo)`,
+        itemLine: (asset) => `${str(asset, 'id') ?? '?'}  ${str(asset, 'name') ?? ''}`,
       });
-      const root = asObject(response.body);
-      const assets = Array.isArray(root.assets) ? root.assets.map(asObject) : [];
-      return {
-        body: {
-          ok: true,
-          operation: 'file.search',
-          ...root,
-          returned: assets.length,
-          meta: { ...asObject(root.meta), ...metaBlock({ requestId: response.requestId, durationMs: response.durationMs }) },
-        },
-        human: (write) => {
-          for (const asset of assets) {
-            write(`${str(asset, 'id') ?? '?'}  ${str(asset, 'name') ?? ''}`);
-          }
-          if (assets.length === 0) {
-            write(`no results for '${args[0] as string}' — broaden the query or switch --kind (icon | photo)`);
-          }
-        },
-        exitCode: EXIT_OK,
-      };
     }),
   );
 

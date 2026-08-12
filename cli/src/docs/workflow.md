@@ -67,7 +67,13 @@ ride alongside them additively:
   `replayed: true`.
 - Canvas mutations add `revision`, `warnings`, `operation_counts`, and
   `requires_repair`; `--screenshot` adds `screenshot: {ok, pages[]}`.
-- List/search lanes add `returned` (count of items in this response).
+- List/search lanes add `returned`, plus `total`/`has_more`/`limit`/`offset`
+  where the server reports them (uniform on newer servers), `capped: true`
+  when `--all` hit the 500-item client cap, and `pages_fetched` on multi-page
+  pulls. `--all` auto-paginates (bounded); `--output FILE` routes the full
+  item set to a file with a bounded preview. A response without total or
+  has_more is a bare page from an older server — never present it as
+  everything.
 - `notes[]` carries format advisories (e.g. PDF hyperlink flattening).
 - `moda describe --json` is the machine-readable verb schema (positionals,
   flags with type/required/default, and the semantic markers `mutating`,

@@ -10,6 +10,7 @@ import { alert, type CommandOutcome } from '../output/emit.ts';
 import { EXIT_OK } from '../output/exitCodes.ts';
 import { extractShortIds } from '../refs.ts';
 import { previewText, writeResultFile } from '../output/resultFile.ts';
+import { LIST_ALL_CAP, fetchListPages, listFlagsOf, listOutcome, parseListLimit, parseListOffset } from './listLane.ts';
 import { addGlobalFlags, authedClient, buildInvocation, metaBlock, wrapAction, type Invocation } from './runtime.ts';
 import {
   attachScreenshotResult,
@@ -508,38 +509,56 @@ export function registerCanvas(program: Command): void {
   addGlobalFlags(
     canvas
       .command('list')
-      .description('list canvases (cursor pagination)')
-      .option('--limit <n>', 'page size', (v: string) => Number.parseInt(v, 10))
-      .option('--cursor <cursor>', 'pagination cursor'),
+      .description('list canvases')
+      .option('--limit <n>', 'page size', parseListLimit)
+      .option('--cursor <cursor>', 'legacy pagination cursor (older servers)')
+      .option('--offset <n>', 'pagination offset', parseListOffset)
+      .option('--all', `fetch every page (bounded at ${LIST_ALL_CAP} items)`)
+      .option('--output <file>', 'write the full payload to a file; stdout gets a small summary + preview'),
   ).action(
     wrapAction(async (_args, opts, cmd) => {
       const inv = buildInvocation(cmd);
+      const flags = listFlagsOf(opts);
+      if (flags.all && typeof opts.cursor === 'string') {
+        throw CliError.usage('--all uses offset pagination — drop --cursor.');
+      }
       const { client } = await authedClient(inv, READ_TIMEOUT_MS);
-      const response = await client.request({
-        method: 'GET',
-        path: endpoints.canvasList(),
-        query: {
-          limit: typeof opts.limit === 'number' ? String(opts.limit) : undefined,
-          cursor: opts.cursor as string | undefined,
-        },
-      });
-      return passthroughOutcome('canvas.list', response, inv, {
+      const pages = await fetchListPages(
+        client,
+        endpoints.canvasList(),
+        { cursor: opts.cursor as string | undefined },
+        flags,
+      );
+      return listOutcome({
+        operation: 'canvas.list',
+        pages,
+        flags,
         emptyHint: 'no canvases — create one: moda canvas create',
+        itemLine: (item) => `${str(item, 'id') ?? '?'}  ${str(item, 'name') ?? ''}`,
       });
     }),
   );
 
-  addGlobalFlags(canvas.command('search <query>').description('search canvases')).action(
-    wrapAction(async (args, _opts, cmd) => {
+  addGlobalFlags(
+    canvas
+      .command('search <query>')
+      .description('search canvases')
+      .option('--limit <n>', 'page size', parseListLimit)
+      .option('--offset <n>', 'pagination offset', parseListOffset)
+      .option('--all', `fetch every page (bounded at ${LIST_ALL_CAP} items)`)
+      .option('--output <file>', 'write the full payload to a file; stdout gets a small summary + preview'),
+  ).action(
+    wrapAction(async (args, opts, cmd) => {
       const inv = buildInvocation(cmd);
+      const flags = listFlagsOf(opts);
       const { client } = await authedClient(inv, READ_TIMEOUT_MS);
-      const response = await client.request({
-        method: 'GET',
-        path: endpoints.canvasSearch(),
-        query: { q: args[0] as string },
-      });
-      return passthroughOutcome('canvas.search', response, inv, {
+      const pages = await fetchListPages(client, endpoints.canvasSearch(), { q: args[0] as string }, flags);
+      return listOutcome({
+        operation: 'canvas.search',
+        pages,
+        flags,
         emptyHint: `no results for '${args[0] as string}' — broaden the query or try moda canvas list`,
+        itemLine: (item) => `${str(item, 'id') ?? '?'}  ${str(item, 'name') ?? ''}`,
       });
     }),
   );
