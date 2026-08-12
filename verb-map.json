@@ -79,6 +79,8 @@
     "moda brand use",
     "moda brand pull",
     "moda brand create",
+    "moda template list",
+    "moda template pull",
     "moda task start",
     "moda task status",
     "moda task list",

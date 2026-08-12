@@ -42,10 +42,11 @@ EXPECTED_REFERENCES: dict[str, list[str]] = {
     "moda-deck": [
         "markup", "edit-code", "reading-and-verifying", "gotchas", "design-quality",
         "brand", "export", "omni-and-media", "deck-design", "deck-playbooks", "charts", "web",
+        "templates",
     ],
     "moda-one-pager": [
         "markup", "edit-code", "reading-and-verifying", "gotchas", "design-quality",
-        "brand", "export", "omni-and-media", "document-design", "web", "charts",
+        "brand", "export", "omni-and-media", "document-design", "web", "charts", "templates",
     ],
     "moda-brand": [
         "brand", "gotchas", "markup", "design-quality", "charts", "edit-code", "omni-and-media",
@@ -61,7 +62,7 @@ EXPECTED_REFERENCES: dict[str, list[str]] = {
     ],
     "moda-social": [
         "social", "markup", "edit-code", "reading-and-verifying", "gotchas", "design-quality",
-        "brand", "export", "omni-and-media", "charts",
+        "brand", "export", "omni-and-media", "charts", "templates",
     ],
     "moda-diagram": [
         "diagram", "markup", "edit-code", "reading-and-verifying", "gotchas", "design-quality",

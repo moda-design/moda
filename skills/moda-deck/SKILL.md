@@ -105,10 +105,11 @@ allowed-tools: Bash(moda:*), Read, Glob, Grep
 
 ## Workflow
 
-1. **Create + link, within the first minute**: `moda canvas create --name
-   "…" --size 1920x1080 --pages 1 --category slides`, then send the link at
-   once (`moda canvas share CANVAS_REF`): "follow along live — it builds up
-   as I work."
+1. **Template check, then create + link**: recurring deck type (QBR, board,
+   launch)? Check team templates, view thumbnails — a fitting one beats
+   scratch (references/templates.md): `moda canvas create --template cvs_…
+   --name "…"`; else `moda canvas create --name "…" --size 1920x1080 --pages
+   1 --category slides`. Send the link at once (`moda canvas share CANVAS_REF`).
 2. **Gather** with your harness's file-reading/search tools (your own
    research; `moda web search`/`moda web read` — references/web.md; a given
    .pptx imports first: `moda canvas import-pptx deck.pptx`, free). Distill
@@ -141,10 +142,9 @@ allowed-tools: Bash(moda:*), Read, Glob, Grep
 |---|---|
 | references/markup.md | before writing any markup |
 | references/deck-design.md, references/deck-playbooks.md | planning slides |
-| references/design-quality.md | typography ladder, imagery, recreate rules |
-| references/charts.md | any data slide |
+| references/design-quality.md, references/charts.md | typography ladder, imagery, recreate rules; any data slide |
+| references/templates.md | the ask looks like a recurring artifact your team may have a template for |
 | references/edit-code.md | targeted fixes via `moda canvas edit` |
 | references/reading-and-verifying.md | DSL reading, lint/screenshot loop |
-| references/brand.md | a brand kit exists |
-| references/web.md | content needs live web research |
+| references/brand.md, references/web.md | a brand kit exists; content needs live web research |
 | references/export.md, references/omni-and-media.md, references/gotchas.md | delivering; media; anything surprising |
