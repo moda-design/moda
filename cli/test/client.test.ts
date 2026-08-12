@@ -84,6 +84,50 @@ describe('429 handling', () => {
     expect(response.status).toBe(200);
   });
 
+  test('honors the envelope retry hint on EVERY attempt (soak F-B)', async () => {
+    const waits: number[] = [];
+    const { base } = serve((_req, hits) =>
+      hits <= 2
+        ? new Response(
+            JSON.stringify({ error: { type: 'rate_limited', code: 'rate_limited', message: 'slow down', retry_after_ms: 45_000 } }),
+            { status: 429, headers: { 'Content-Type': 'application/json' } },
+          )
+        : Response.json({ ok: true }),
+    );
+    const response = await client(base, {
+      sleeper: async (ms) => {
+        waits.push(ms);
+      },
+    }).request({ method: 'GET', path: '/v1/x' });
+    expect(response.status).toBe(200);
+    expect(waits).toEqual([45_000, 45_000]);
+  });
+
+  test('hintless 429s escalate 1s→2s→4s…30s instead of a flat 1s storm (soak F-B)', async () => {
+    let hits = 0;
+    const waits: number[] = [];
+    const { base } = serve(() => {
+      hits += 1;
+      // No Retry-After header, no envelope retry_after_ms — the publish site-cap gate's shape.
+      return new Response(JSON.stringify({ error: { type: 'rate_limited', code: 'quota_max_published_sites', message: 'limit' } }), {
+        status: 429,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    });
+    try {
+      await client(base, {
+        sleeper: async (ms) => {
+          waits.push(ms);
+        },
+      }).request({ method: 'GET', path: '/v1/x', timeoutMs: 62_000 });
+      expect.unreachable();
+    } catch (err) {
+      expect((err as CliError).fields.type).toBe('rate_limited');
+    }
+    expect(waits).toEqual([1_000, 2_000, 4_000, 8_000, 16_000, 30_000]);
+    expect(hits).toBe(7);
+  });
+
   test('gives up when waiting would exceed the timeout ceiling', async () => {
     const { base } = serve(
       () =>

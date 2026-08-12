@@ -75,6 +75,7 @@ export class ApiClient {
 
     let busyAttempt = 0;
     let transportAttempt = 0;
+    let rateLimitAttempt = 0;
     let rateLimitWaitedMs = 0;
 
     for (;;) {
@@ -122,9 +123,15 @@ export class ApiClient {
         continue;
       }
 
-      // 429 — honor Retry-After up to the timeout ceiling, then surface (exit 6).
+      // 429 — honor the server's hint (Retry-After header or envelope retry_after_ms) on EVERY
+      // attempt, up to the timeout ceiling, then surface (exit 6). Hintless 429s escalate
+      // 1s→2s→4s…30s instead of a flat 1s: a limiter that omits the hint (e.g. the publish
+      // site-cap gate) otherwise gets hammered at 1/s, and that storm itself feeds per-minute
+      // fair-use gates (soak finding F-B).
       if (response.status === 429 && !this.opts.noRetry) {
-        const waitMs = this.retryAfterMs(response.headers, error.fields.retryAfterS) ?? 1_000;
+        const hintedMs = this.retryAfterMs(response.headers, error.fields.retryAfterS);
+        const waitMs = hintedMs ?? Math.min(1_000 * 2 ** rateLimitAttempt, 30_000);
+        rateLimitAttempt += 1;
         if (rateLimitWaitedMs + waitMs <= timeoutMs) {
           rateLimitWaitedMs += waitMs;
           this.opts.onNotice?.(`rate limited — waiting ${Math.ceil(waitMs / 1000)}s`);
