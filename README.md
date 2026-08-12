@@ -84,6 +84,7 @@ whenever a newer version exists.
 | `moda-website` | Live websites → published to a public `*.moda.page` URL |
 | `moda-brand` | Brand-kit reads, creation, and canvas-vs-kit audits |
 | `moda-edit` | Precise edits to an existing canvas from its URL |
+| `moda-help` | Meta home: setup/update, auth + orgs, routing, CLI troubleshooting |
 
 Plus `/moda` (Claude Code) as a router. Every skill starts with the same
 Step-0 doctor bootstrap (checks the CLI, auth, entitlements; never installs
@@ -94,7 +95,7 @@ verify loop, metered verbs labeled with cost class and receipt).
 
 - `cli/` — TypeScript source of the `moda` CLI, compiled with Bun into
   per-platform standalone binaries (`bun scripts/build.ts`).
-- `skills/` — the seven skills, each self-contained with its `references/`.
+- `skills/` — the eight skills, each self-contained with its `references/`.
 - `shared/` — the canonical authored copy of the shared blocks and
   references; `scripts/fanout.sh` fans them into the skills.
 - `commands/` — the `/moda` router command (Claude Code).

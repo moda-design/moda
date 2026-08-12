@@ -1,20 +1,21 @@
 ---
-name: moda-deck
+name: moda-help
 description: >-
-  Create a real, editable slide deck on Moda from a brief, a document,
-  or the current repo. Use when the user asks for a deck, slides, a presentation,
-  pitch deck, keynote, QBR, board update, sales/client deck, launch deck, or
-  "turn this doc/repo/notes into slides". Produces designed pages on a Moda
-  canvas (live URL, stays editable) and exports native PPTX with real shapes and
-  text layers, or a text-layer PDF — not screenshots pasted into python-pptx.
-  Requires the moda CLI and a Moda account (Step 0 checks both; it never
-  installs anything itself).
-argument-hint: "[topic or source file/dir] [--slides N] [--brand <kit>] [--export pptx|pdf]"
+  Moda meta and routing help — NOT a design tool. Use for meta asks
+  only: installing or updating Moda, authentication and org switching,
+  "what can Moda do?", "which Moda skill or tool should handle X?", CLI
+  troubleshooting (doctor, last-error, typed errors) — or when a Moda
+  request doesn't CLEARLY fit any other moda skill (a matching format skill
+  always wins; this is the none-fit catcher, never a shortcut). Creating or
+  editing designs, decks, documents, sites, graphics, or diagrams is NEVER
+  this skill — load the format skill (moda-deck, moda-one-pager,
+  moda-social, moda-diagram, moda-website, moda-brand, moda-edit).
+  Requires the moda CLI (Step 0 checks it; installs nothing).
+argument-hint: "[the meta question: setup, update, auth, orgs, routing, errors]"
 allowed-tools: Bash(moda:*), Read, Glob, Grep
 ---
 
-# moda-deck
-
+# moda-help
 ## Step 0 — doctor (always run first; skip nothing)
 
 1. Run `moda doctor --json`. It verifies CLI version compatibility, auth state,
@@ -103,48 +104,47 @@ allowed-tools: Bash(moda:*), Read, Glob, Grep
   website) leads and pulls brand/edit behavior via its references; if no
   Moda skill fits, say what they can make and ask — never force a fit.
 
-## Workflow
+## Lifecycle
+- **Setup**: `npm i -g @moda-design/moda` → `moda auth login` (`--paste`
+  headless) → `npx skills add moda-design/moda` → `moda doctor` (private
+  repo: the README's one-time registry box). **Update**: same two installs
+  again — skills are hash-pinned, re-add to update — then `moda doctor`.
+- **Orgs** (ONLY when asked; org = workspace + billing): `moda org list`;
+  stored → `moda org use <org>`; new → `moda auth login`; `moda org current`.
+- **Troubleshooting**: `moda doctor` first; `moda last-error` re-prints the
+  last failure — never re-run a failed write just to see its error.
 
-1. **Template check, then create + link**: recurring deck type (QBR, board,
-   launch)? Check team templates, view thumbnails — a fitting one beats
-   scratch (references/templates.md): `moda canvas create --template cvs_…
-   --name "…"`; else `moda canvas create --name "…" --size 1920x1080 --pages
-   1 --category slides`. Send the link at once (`moda canvas share CANVAS_REF`).
-2. **Gather** with your harness's file-reading/search tools (your own
-   research; `moda web search`/`moda web read` — references/web.md; a given
-   .pptx imports first: `moda canvas import-pptx deck.pptx`, free). Distill
-   to a slide list: title, agenda, one idea per slide, 6–12 unless the user
-   named a count. Data preservation rules apply from here on.
-3. **Read the design references before authoring**: references/deck-design.md
-   (concept-first cover, layout bar), references/deck-playbooks.md for known
-   deck types, references/markup.md before any markup; compute the type
-   ladder per references/design-quality.md (1920×1080 → body ≈ 40px, floor
-   18px). Brand kit in play → LOOK at its assets before settling the concept
-   (references/brand.md "Look at the brand, not just the tokens").
-4. **Imagery**: generate the cover/hero/atmospheric imagery now
-   (`moda media generate-image`, styled to the brand) — unless the deck
-   deliberately goes vector/typography-only; state that choice in your
-   delivery note.
-5. **Author per slide** with `moda canvas markup CANVAS_REF --file - --page P`
-   — one slide per apply; add remaining slides via `moda canvas add-pages`
-   (page ids from its result; author with the kit's tokens — create takes no
-   brand flag). `requires_repair`/skipped ops → fix before the next slide.
-6. **Verify**: `moda canvas lint` per finished section (fix error-severity
-   findings); screenshot at milestones and review with your own vision —
-   layout balance, dead zones, clipped text.
-7. **Deliver**: point back to the link ("still open — everything stays
-   editable"); export on request or one brief offer ("Want this as a
-   PPTX/PDF too?"): `moda export CANVAS_REF --format pptx|pdf -o …`.
-
-## References
-
-| Doc | Load when |
+## Which skill handles X (mirrors the repo routing table — update both)
+| Ask | Skill |
 |---|---|
-| references/markup.md | before writing any markup |
-| references/deck-design.md, references/deck-playbooks.md | planning slides |
-| references/design-quality.md, references/charts.md | typography ladder, imagery, recreate rules; any data slide |
-| references/templates.md | the ask looks like a recurring artifact your team may have a template for |
-| references/edit-code.md | targeted fixes via `moda canvas edit` |
-| references/reading-and-verifying.md | DSL reading, lint/screenshot loop |
-| references/brand.md, references/web.md | a brand kit exists; content needs live web research |
-| references/export.md, references/omni-and-media.md, references/gotchas.md | delivering; media; anything surprising |
+| deck, slides, presentation, pitch | moda-deck |
+| one-pager, report (any page count), infographic, print piece | moda-one-pager |
+| social post, carousel, static ad, banner, quote card, one-off graphic | moda-social |
+| flowchart, architecture, 2x2, standalone data chart, UI mockup | moda-diagram |
+| live hosted site / landing page on *.moda.page | moda-website |
+| brand kits and brand guides | moda-brand |
+| change THIS canvas (URL/id given) | moda-edit |
+
+Boundaries: print → one-pager; a mockup is a picture (diagram), a landing
+page is live (website); decorative shapes → social, not diagram.
+
+## CLI conventions
+- `moda describe <verb> --json` is any verb's ground truth — flags plus the
+  markers mutating / destructive / metered / read_lane.
+- Big results: `--output FILE`; a list is a PAGE (`total`/`has_more`; `--all`
+  caps at 500). Copy ids/URLs verbatim. Exports are ask-first. Metered lanes
+  (media/web/task) are normal tools — receipt after, no pre-spend ceremony.
+
+## When nothing fits
+Consult the table above; if a format skill fits after all, load it and
+proceed — don't narrate the detour. Capability unclear? `moda describe
+[verb] --json` is ground truth (`moda docs` for the authoring surface).
+Outside Moda's powers? Say so honestly, offer the nearest thing Moda CAN
+do; ask exactly ONE question, only when the fork is real — never enumerate
+the catalog at the user.
+
+## Verbs at a glance (load the format skill for the work)
+Decks/documents/social/diagrams author via `moda canvas markup|edit` +
+`moda export`; sites via `moda site *`; kits + guides via `moda brand *`;
+`moda task start` delegates whole jobs; `moda media *` / `moda web *`
+generate and research (metered lanes).

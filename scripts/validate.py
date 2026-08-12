@@ -35,7 +35,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 
-SKILLS = ["moda-deck", "moda-one-pager", "moda-brand", "moda-edit", "moda-website", "moda-social", "moda-diagram"]
+SKILLS = ["moda-deck", "moda-one-pager", "moda-brand", "moda-edit", "moda-website", "moda-social", "moda-diagram", "moda-help"]
 
 # Must mirror scripts/fanout.sh.
 EXPECTED_REFERENCES: dict[str, list[str]] = {
@@ -63,6 +63,10 @@ EXPECTED_REFERENCES: dict[str, list[str]] = {
     "moda-social": [
         "social", "markup", "edit-code", "reading-and-verifying", "gotchas", "design-quality",
         "brand", "export", "omni-and-media", "charts", "templates",
+    ],
+    "moda-help": [
+        "brand", "gotchas", "markup", "design-quality", "charts", "edit-code", "omni-and-media",
+        "reading-and-verifying",
     ],
     "moda-diagram": [
         "diagram", "markup", "edit-code", "reading-and-verifying", "gotchas", "design-quality",
@@ -377,6 +381,16 @@ def check_install_block() -> None:
         fail("shared/step0.md", "registry wiring belongs in the README's one-time box, not the canonical block")
 
 
+def check_routing_home() -> None:
+    """moda-help mirrors the routing table at runtime — it must name every skill, so a new
+    skill cannot ship without its routing-home row (pairs with docs/routing-table.md's
+    update-both rule)."""
+    text = read(ROOT / "skills" / "moda-help" / "SKILL.md")
+    for skill in SKILLS:
+        if skill not in text:
+            fail("skills/moda-help/SKILL.md", f"routing home does not mention {skill}")
+
+
 def check_manifests() -> None:
     names = set()
     for rel in [".claude-plugin/marketplace.json", ".claude-plugin/plugin.json",
@@ -407,6 +421,7 @@ def main() -> int:
     check_budgets()
     check_payload_paths()
     check_install_block()
+    check_routing_home()
     check_manifests()
     if findings:
         print(f"FAIL — {len(findings)} finding(s):")

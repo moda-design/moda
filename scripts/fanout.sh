@@ -25,6 +25,8 @@ fan moda-edit edit-code reading-and-verifying gotchas markup design-quality bran
 fan moda-website website brand web design-quality omni-and-media markup edit-code gotchas charts reading-and-verifying
 fan moda-social social markup edit-code reading-and-verifying gotchas design-quality \
   brand export omni-and-media charts templates
+fan moda-help brand gotchas markup design-quality charts edit-code omni-and-media \
+  reading-and-verifying
 fan moda-diagram diagram markup edit-code reading-and-verifying gotchas design-quality \
   brand export charts omni-and-media
 

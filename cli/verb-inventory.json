@@ -391,13 +391,105 @@
       }
     },
     {
+      "name": "brand add-image",
+      "description": "attach an uploaded image to the kit (default role: logo)",
+      "positionals": [
+        {
+          "name": "brand",
+          "required": true,
+          "variadic": false
+        }
+      ],
+      "flags": [
+        {
+          "flag": "--api-base",
+          "description": "endpoint override (staging/dev)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--file",
+          "description": "the file_ ref from moda file upload",
+          "takes_value": true,
+          "required": true
+        },
+        {
+          "flag": "--json",
+          "description": "machine output: exactly one compact JSON document on stdout; implies --no-input",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--label",
+          "description": "human-readable label (e.g. 'Dark mode logo')",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--no-input",
+          "description": "fail instead of prompting (implied by --json)",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-retry",
+          "description": "disable the built-in busy/transport retry",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--org",
+          "description": "override the configured org context for this invocation",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--pretty",
+          "description": "pretty-print the --json document",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--quiet",
+          "description": "suppress non-essential stderr",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--role",
+          "description": "logo | reference | asset",
+          "takes_value": true,
+          "required": false,
+          "default": "logo"
+        },
+        {
+          "flag": "--timeout",
+          "description": "per-command ceiling override, seconds",
+          "takes_value": true,
+          "required": false
+        }
+      ],
+      "markers": {
+        "mutating": true,
+        "destructive": false,
+        "metered": false,
+        "read_lane": false
+      }
+    },
+    {
       "name": "brand create",
-      "description": "extract a brand kit from a website (deterministic — no credits)",
+      "description": "create a brand kit: extract from a website, or build manually from fields (deterministic — no credits)",
       "positionals": [],
       "flags": [
         {
           "flag": "--api-base",
           "description": "endpoint override (staging/dev)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--color",
+          "description": "manual path: palette entry, repeatable (e.g. --color '#0F172A:Primary')",
           "takes_value": true,
           "required": false
         },
@@ -408,9 +500,33 @@
           "required": false
         },
         {
+          "flag": "--font",
+          "description": "manual path: font entry, repeatable (e.g. --font 'Inter:title:600')",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--from-file",
+          "description": "manual path: full kit JSON ({name, colors, fonts, logo_file_ids}) — beats many flags for rich palettes",
+          "takes_value": true,
+          "required": false
+        },
+        {
           "flag": "--json",
           "description": "machine output: exactly one compact JSON document on stdout; implies --no-input",
           "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--logo",
+          "description": "manual path: attach an uploaded file_ ref as a logo, repeatable (upload first: moda file upload)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--name",
+          "description": "manual path: kit name (doubles as the company name)",
+          "takes_value": true,
           "required": false
         },
         {
@@ -451,7 +567,7 @@
         },
         {
           "flag": "--url",
-          "description": "extract from a website",
+          "description": "extract from a website (mutually exclusive with the manual flags)",
           "takes_value": true,
           "required": false
         }
@@ -538,6 +654,73 @@
     {
       "name": "brand guides",
       "description": "list the kit's brand-guide documents (the written brand rules)",
+      "positionals": [
+        {
+          "name": "brand",
+          "required": true,
+          "variadic": false
+        }
+      ],
+      "flags": [
+        {
+          "flag": "--api-base",
+          "description": "endpoint override (staging/dev)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--json",
+          "description": "machine output: exactly one compact JSON document on stdout; implies --no-input",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-input",
+          "description": "fail instead of prompting (implied by --json)",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-retry",
+          "description": "disable the built-in busy/transport retry",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--org",
+          "description": "override the configured org context for this invocation",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--pretty",
+          "description": "pretty-print the --json document",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--quiet",
+          "description": "suppress non-essential stderr",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--timeout",
+          "description": "per-command ceiling override, seconds",
+          "takes_value": true,
+          "required": false
+        }
+      ],
+      "markers": {
+        "mutating": false,
+        "destructive": false,
+        "metered": false,
+        "read_lane": false
+      }
+    },
+    {
+      "name": "brand images",
+      "description": "list the kit's attached images (bki_ ids pair with remove-image)",
       "positionals": [
         {
           "name": "brand",
@@ -761,6 +944,78 @@
       }
     },
     {
+      "name": "brand remove-image",
+      "description": "detach an image by its bki_ id (from moda brand images)",
+      "positionals": [
+        {
+          "name": "brand",
+          "required": true,
+          "variadic": false
+        },
+        {
+          "name": "image_id",
+          "required": true,
+          "variadic": false
+        }
+      ],
+      "flags": [
+        {
+          "flag": "--api-base",
+          "description": "endpoint override (staging/dev)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--json",
+          "description": "machine output: exactly one compact JSON document on stdout; implies --no-input",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-input",
+          "description": "fail instead of prompting (implied by --json)",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-retry",
+          "description": "disable the built-in busy/transport retry",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--org",
+          "description": "override the configured org context for this invocation",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--pretty",
+          "description": "pretty-print the --json document",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--quiet",
+          "description": "suppress non-essential stderr",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--timeout",
+          "description": "per-command ceiling override, seconds",
+          "takes_value": true,
+          "required": false
+        }
+      ],
+      "markers": {
+        "mutating": true,
+        "destructive": false,
+        "metered": false,
+        "read_lane": false
+      }
+    },
+    {
       "name": "brand show",
       "description": "verbose kit: palette, fonts, logos (durable file_ ids + signed URLs)",
       "positionals": [
@@ -822,6 +1077,121 @@
       ],
       "markers": {
         "mutating": false,
+        "destructive": false,
+        "metered": false,
+        "read_lane": false
+      }
+    },
+    {
+      "name": "brand update",
+      "description": "update kit fields in place (fix an extraction, evolve the kit) — colors/fonts REPLACE the whole list",
+      "positionals": [
+        {
+          "name": "brand",
+          "required": true,
+          "variadic": false
+        }
+      ],
+      "flags": [
+        {
+          "flag": "--api-base",
+          "description": "endpoint override (staging/dev)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--color",
+          "description": "palette entry, repeatable — the flags you pass become the ENTIRE palette",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--company-name",
+          "description": "company name",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--description",
+          "description": "company description",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--font",
+          "description": "font entry, repeatable — the flags you pass become the ENTIRE font list",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--json",
+          "description": "machine output: exactly one compact JSON document on stdout; implies --no-input",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-input",
+          "description": "fail instead of prompting (implied by --json)",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-retry",
+          "description": "disable the built-in busy/transport retry",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--org",
+          "description": "override the configured org context for this invocation",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--pretty",
+          "description": "pretty-print the --json document",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--quiet",
+          "description": "suppress non-essential stderr",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--tagline",
+          "description": "tagline",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--timeout",
+          "description": "per-command ceiling override, seconds",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--title",
+          "description": "kit display name",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--tone",
+          "description": "tone-of-voice words, comma-separated (e.g. 'direct,friendly')",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--values",
+          "description": "brand values, comma-separated (e.g. 'transparent,fast')",
+          "takes_value": true,
+          "required": false
+        }
+      ],
+      "markers": {
+        "mutating": true,
         "destructive": false,
         "metered": false,
         "read_lane": false

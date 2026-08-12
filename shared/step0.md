@@ -22,11 +22,11 @@
      relay doctor's actionable hint verbatim and stop. Never retry in a loop.
 2. Run `moda account status --json`. Note the org, plan, and remaining
    credits (metered verbs spend them; deterministic authoring never does).
-3. Run `moda brand list` — one cheap deterministic call, never skipped,
-   even for simple asks. Kits exist: use the default (or the one context
-   implies); if several plausibly apply, ask which — never guess between
-   clients' kits — and read the kit before designing (references/brand.md).
-   An explicit "no brand" from the user wins over everything. NO kits:
-   offer once, briefly — "Want me to set up a brand kit from your website
-   first? It's free and makes everything come out on-brand" — yes →
-   `moda brand create` from their URL; no → proceed unbranded, no nagging.
+3. Run `moda brand list` — one cheap deterministic call, never skipped, even
+   for simple asks. Kits exist: use the default (or the one context implies);
+   several plausible → ask which, never guess between clients' kits — and read
+   the kit before designing (references/brand.md). An explicit "no brand" from
+   the user wins over everything. NO kits: offer once, briefly — "Want me to
+   set up a brand kit first? It's free and makes everything come out on-brand"
+   — yes → `moda brand create` from their URL, or manually with no website
+   (--name/--color/--font, references/brand.md); no → unbranded, no nagging.
