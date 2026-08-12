@@ -65,7 +65,7 @@ async function findAccount(
   if (forHost.length > 1) {
     throw CliError.auth(
       `Multiple credentials stored for ${host}; no org selected.`,
-      'Run `moda org use <org>` or pass --org.',
+      'Run `moda org use <org>` or pass --org; a NEW org needs `moda auth login` again.',
     );
   }
   return undefined;
