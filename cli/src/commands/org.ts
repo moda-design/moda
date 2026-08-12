@@ -17,7 +17,7 @@ export function registerOrg(program: Command): void {
       .command('list')
       .description('organizations this credential can act in')
       .option('--limit <n>', 'page size', parseListLimit)
-      .option('--offset <n>', 'pagination offset', parseListOffset)
+      .option('--cursor <token>', "resume token from a previous page's next_cursor")
       .option('--all', `fetch every page (bounded at ${LIST_ALL_CAP} items)`)
       .option('--output <file>', 'write the full payload to a file; stdout gets a small summary + preview'),
   ).action(
@@ -25,7 +25,8 @@ export function registerOrg(program: Command): void {
       const inv = buildInvocation(cmd);
       const flags = listFlagsOf(opts);
       const { client } = await authedClient(inv, 30_000);
-      const pages = await fetchListPages(client, endpoints.organizations(), {}, flags, 30_000);
+      // Cursor lane (#9317).
+      const pages = await fetchListPages(client, endpoints.organizations(), {}, flags, 30_000, 'cursor');
       return listOutcome({
         operation: 'org.list',
         pages,

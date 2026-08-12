@@ -8,7 +8,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { ApiClient } from '../src/api/client.ts';
 import { asObject, str } from '../src/api/types.ts';
-import { LIST_ALL_CAP, fetchListPages, listOutcome, pageNote } from '../src/commands/listLane.ts';
+import { LIST_ALL_CAP, fetchListPages, listOutcome, pageFields, pageNote } from '../src/commands/listLane.ts';
+import { CliError } from '../src/cliError.ts';
 
 let server: ReturnType<typeof Bun.serve> | undefined;
 
@@ -64,7 +65,7 @@ describe('fetchListPages', () => {
     expect(pages.total).toBe(47);
     expect(pages.hasMore).toBe(true);
     expect(pages.oldServer).toBe(false);
-    expect(pageNote(pages)).toBe('showing 5 of 47 (from offset 20) — pass --offset 25 for more, or --all');
+    expect(pageNote(pages)).toBe('showing 5 of 47 (from offset 20) — more via --offset 25, or --all');
   });
 
   test('--all paginates to completion and merges', async () => {
@@ -110,6 +111,78 @@ describe('fetchListPages', () => {
   });
 });
 
+
+describe('#9317 shipped envelopes (cursor/offset lane split)', () => {
+  test('FOUNDER REPRO: brand list --all walks 25 kits across two cursor pages (data key, total null)', async () => {
+    const kits = Array.from({ length: 25 }, (_, i) => ({ id: `bk_${i}`, name: `Kit ${i}` }));
+    const { base, urls } = serve((url) => {
+      const cursor = url.searchParams.get('cursor');
+      if (cursor === null) {
+        return Response.json({
+          data: kits.slice(0, 13), next_cursor: 'c_page2', returned: 13, has_more: true, limit: 25, total: null,
+        });
+      }
+      return Response.json({ data: kits.slice(13), next_cursor: null, returned: 12, has_more: false, limit: 25, total: null });
+    });
+    const pages = await fetchListPages(client(base), '/v1/brand-kits', {}, { all: true }, undefined, 'cursor');
+    expect(pages.returned).toBe(25);
+    expect(pages.pagesFetched).toBe(2);
+    expect(urls[1]?.searchParams.get('cursor')).toBe('c_page2');
+    expect(urls[1]?.searchParams.get('offset')).toBeNull();
+    expect(pages.itemKey).toBe('data');
+    expect(pages.items[24]?.id).toBe('bk_24');
+    // total: null is treated as no-total; has_more false closes the walk honestly.
+    expect(pages.total).toBeUndefined();
+    expect(pageNote(pages)).toBe('showing 25 (all)');
+  });
+
+  test('cursor lanes REFUSE --offset with the lane-truth usage error', async () => {
+    const { base } = serve(() => Response.json({ data: [], next_cursor: null, has_more: false }));
+    try {
+      await fetchListPages(client(base), '/v1/brand-kits', {}, { offset: 25 }, undefined, 'cursor');
+      expect.unreachable();
+    } catch (err) {
+      expect((err as CliError).fields.code).toBe('usage');
+      expect((err as CliError).fields.message).toContain('re-serve page 1');
+      expect((err as CliError).fields.hint).toContain('--cursor');
+    }
+  });
+
+  test('single cursor page surfaces next_cursor + the resume wording', async () => {
+    const { base } = serve(() =>
+      Response.json({ data: [{ id: 'bk_0' }], next_cursor: 'c_next', returned: 1, has_more: true, limit: 1, total: null }),
+    );
+    const flags = { limit: 1 };
+    const pages = await fetchListPages(client(base), '/v1/brand-kits', {}, flags, undefined, 'cursor');
+    expect(pageFields(pages, flags).next_cursor).toBe('c_next');
+    expect(pageFields(pages, flags).offset).toBeUndefined();
+    expect(pageNote(pages)).toBe('showing 1 — more available (--cursor c_next, or --all)');
+  });
+
+  test('canvases/search shipped shape: has_more only, total ABSENT — wording handles the missing key', async () => {
+    const { base } = serve(() =>
+      Response.json({ canvases: [{ id: 'cvs_a' }, { id: 'cvs_b' }], returned: 2, limit: 2, offset: 0, has_more: true }),
+    );
+    const pages = await fetchListPages(client(base), '/v1/canvases/search', { q: 'x' }, { limit: 2 });
+    expect(pages.total).toBeUndefined();
+    expect(pages.oldServer).toBe(false);
+    expect(pageNote(pages)).toBe('showing 2 — more available (--offset 2, or --all)');
+  });
+
+  test('cursor --all resumes FROM a seed --cursor', async () => {
+    const { base, urls } = serve((url) => {
+      const cursor = url.searchParams.get('cursor');
+      if (cursor === 'c_seed') {
+        return Response.json({ data: [{ id: 'bk_5' }], next_cursor: 'c_6', returned: 1, has_more: true, total: null });
+      }
+      return Response.json({ data: [{ id: 'bk_6' }], next_cursor: null, returned: 1, has_more: false, total: null });
+    });
+    const pages = await fetchListPages(client(base), '/v1/brand-kits', {}, { all: true, cursor: 'c_seed' }, undefined, 'cursor');
+    expect(urls[0]?.searchParams.get('cursor')).toBe('c_seed');
+    expect(pages.returned).toBe(2);
+  });
+});
+
 describe('listOutcome', () => {
   const itemLine = (item: Record<string, unknown>) => `${str(asObject(item), 'id') ?? '?'}`;
 
@@ -123,7 +196,7 @@ describe('listOutcome', () => {
     expect(body.total).toBe(9);
     expect(body.limit).toBe(2);
     const lines = humanLines(outcome);
-    expect(lines).toEqual(['cvs_0', 'cvs_1', 'showing 2 of 9 — pass --offset 2 for more, or --all']);
+    expect(lines).toEqual(['cvs_0', 'cvs_1', 'showing 2 of 9 — more via --offset 2, or --all']);
   });
 
   test('--output interplay: merged pull lands in the file; envelope keeps a bounded preview', async () => {

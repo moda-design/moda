@@ -776,24 +776,16 @@ export function registerCanvas(program: Command): void {
       .command('list')
       .description('list canvases')
       .option('--limit <n>', 'page size', parseListLimit)
-      .option('--cursor <cursor>', 'legacy pagination cursor (older servers)')
-      .option('--offset <n>', 'pagination offset', parseListOffset)
+      .option('--cursor <token>', "resume token from a previous page's next_cursor")
       .option('--all', `fetch every page (bounded at ${LIST_ALL_CAP} items)`)
       .option('--output <file>', 'write the full payload to a file; stdout gets a small summary + preview'),
   ).action(
     wrapAction(async (_args, opts, cmd) => {
       const inv = buildInvocation(cmd);
       const flags = listFlagsOf(opts);
-      if (flags.all && typeof opts.cursor === 'string') {
-        throw CliError.usage('--all uses offset pagination — drop --cursor.');
-      }
       const { client } = await authedClient(inv, READ_TIMEOUT_MS);
-      const pages = await fetchListPages(
-        client,
-        endpoints.canvasList(),
-        { cursor: opts.cursor as string | undefined },
-        flags,
-      );
+      // Cursor lane (#9317): pagination follows next_cursor; --all resumes from --cursor too.
+      const pages = await fetchListPages(client, endpoints.canvasList(), {}, flags, undefined, 'cursor');
       return listOutcome({
         operation: 'canvas.list',
         pages,

@@ -24,7 +24,7 @@ export function registerBrand(program: Command): void {
       .command('list')
       .description('brand kits visible to this credential')
       .option('--limit <n>', 'page size', parseListLimit)
-      .option('--offset <n>', 'pagination offset', parseListOffset)
+      .option('--cursor <token>', "resume token from a previous page's next_cursor")
       .option('--all', `fetch every page (bounded at ${LIST_ALL_CAP} items)`)
       .option('--output <file>', 'write the full payload to a file; stdout gets a small summary + preview'),
   ).action(
@@ -32,7 +32,8 @@ export function registerBrand(program: Command): void {
       const inv = buildInvocation(cmd);
       const flags = listFlagsOf(opts);
       const { client } = await authedClient(inv, READ_TIMEOUT_MS);
-      const pages = await fetchListPages(client, endpoints.brandList(), {}, flags, READ_TIMEOUT_MS);
+      // Cursor lane (#9317): brand-kits page by next_cursor (items under `data`).
+      const pages = await fetchListPages(client, endpoints.brandList(), {}, flags, READ_TIMEOUT_MS, 'cursor');
       return listOutcome({
         operation: 'brand.list',
         pages,

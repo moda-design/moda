@@ -7,7 +7,7 @@
  * one as everything.
  */
 import type { ApiClient } from '../api/client.ts';
-import { asObject, num, type JsonObject } from '../api/types.ts';
+import { asObject, num, str, type JsonObject } from '../api/types.ts';
 import { CliError } from '../cliError.ts';
 import { EXIT_OK } from '../output/exitCodes.ts';
 import type { CommandOutcome } from '../output/emit.ts';
@@ -19,15 +19,24 @@ export const LIST_ALL_CAP = 500;
 
 /** Array field names the /v1 list lanes return their items under. */
 const LIST_ITEM_KEYS = [
-  'items', 'canvases', 'results', 'tasks', 'files', 'brand_kits', 'websites', 'assets',
+  'items', 'data', 'canvases', 'results', 'tasks', 'files', 'brand_kits', 'websites', 'assets',
   'models', 'organizations', 'pages',
 ];
+
+/**
+ * Server pagination style (#9317): CURSOR lanes (brand-kits, canvases list, organizations,
+ * tasks) page by `next_cursor` and IGNORE offset — sending one silently re-serves page 1.
+ * OFFSET lanes (websites, canvases/search, assets/search) take limit/offset.
+ */
+export type PaginationMode = 'cursor' | 'offset';
 
 export interface ListFlags {
   limit?: number;
   offset?: number;
   all?: boolean;
   output?: string;
+  /** Cursor lanes: resume token from a previous page's next_cursor. */
+  cursor?: string;
 }
 
 /** Commander parser for --limit (1..500) shared across list verbs. */
@@ -58,10 +67,13 @@ export interface ListPages {
   hasMore?: boolean;
   /** --all stopped at LIST_ALL_CAP. */
   capped: boolean;
-  /** The server reported neither total nor has_more — a bare page (pre-uniform-contract). */
+  /** The server reported neither total, has_more, nor next_cursor — a bare page (pre-#9317). */
   oldServer: boolean;
   startOffset: number;
   pagesFetched: number;
+  mode: PaginationMode;
+  /** Cursor lanes: the resume token for the page after the last one fetched. */
+  nextCursor?: string;
   requestId?: string;
   durationMs: number;
 }
@@ -76,9 +88,11 @@ function extractItems(body: unknown): { itemKey?: string; items: JsonObject[] } 
 }
 
 /**
- * Fetch one page — or, under --all, pages until complete/capped. Old-server tolerance: without
- * total/has_more the loop cannot know whether offset is honored, so --all stops after the
- * first page rather than risking a duplicate-page loop; the page note says so.
+ * Fetch one page — or, under --all, pages until complete/capped. Offset lanes advance by item
+ * count; cursor lanes follow `next_cursor` (offset is refused there: the server ignores it and
+ * would silently re-serve page 1). Old-server tolerance: with no total, has_more, or
+ * next_cursor the loop cannot verify progress, so --all stops after the first page rather
+ * than risking a duplicate-page loop; the page note says so.
  */
 export async function fetchListPages(
   client: ApiClient,
@@ -86,14 +100,23 @@ export async function fetchListPages(
   baseQuery: Record<string, string | undefined>,
   flags: ListFlags,
   timeoutMs?: number,
+  mode: PaginationMode = 'offset',
 ): Promise<ListPages> {
+  if (mode === 'cursor' && flags.offset !== undefined) {
+    throw CliError.usage(
+      'This lane paginates by cursor, not offset — the server would ignore --offset and re-serve page 1.',
+      "Use --all, or resume from a previous page's next_cursor with --cursor <token>.",
+    );
+  }
   const startOffset = flags.offset ?? 0;
   let offset = startOffset;
+  let cursor = flags.cursor;
   const merged: JsonObject[] = [];
   let firstRoot: JsonObject = {};
   let itemKey: string | undefined;
   let total: number | undefined;
   let hasMore: boolean | undefined;
+  let nextCursor: string | undefined;
   let oldServer = false;
   let capped = false;
   let pagesFetched = 0;
@@ -107,7 +130,9 @@ export async function fetchListPages(
       query: {
         ...baseQuery,
         ...(flags.limit !== undefined ? { limit: String(flags.limit) } : {}),
-        ...(offset !== startOffset || flags.offset !== undefined ? { offset: String(offset) } : {}),
+        ...(mode === 'cursor'
+          ? { ...(cursor !== undefined ? { cursor } : {}) }
+          : { ...(offset !== startOffset || flags.offset !== undefined ? { offset: String(offset) } : {}) }),
       },
       ...(timeoutMs !== undefined ? { timeoutMs } : {}),
     });
@@ -116,24 +141,33 @@ export async function fetchListPages(
     durationMs += response.durationMs;
     const root = asObject(response.body);
     const page = extractItems(response.body);
+    // total: null (CursorPage lanes) and ABSENT (canvases/search) are the same "no total" —
+    // num() maps both to undefined.
+    const pageCursor = str(root, 'next_cursor');
     if (pagesFetched === 1) {
       firstRoot = Array.isArray(response.body) ? {} : root;
       itemKey = page.itemKey;
       total = num(root, 'total');
       hasMore = typeof root.has_more === 'boolean' ? root.has_more : undefined;
-      oldServer = total === undefined && hasMore === undefined;
+      oldServer = total === undefined && hasMore === undefined && pageCursor === undefined;
     } else {
       // Later pages refresh the moving-window signals.
       total = num(root, 'total') ?? total;
       hasMore = typeof root.has_more === 'boolean' ? root.has_more : hasMore;
     }
+    nextCursor = pageCursor;
     merged.push(...page.items);
     if (flags.all !== true) break;
-    if (oldServer) break; // cannot verify offset is honored — never risk a duplicate loop
+    if (oldServer) break; // cannot verify pagination progress — never risk a duplicate loop
     if (page.items.length === 0) break;
-    offset += page.items.length;
-    if (hasMore === false) break;
-    if (total !== undefined && offset >= total) break;
+    if (mode === 'cursor') {
+      if (nextCursor === undefined || hasMore === false) break;
+      cursor = nextCursor;
+    } else {
+      offset += page.items.length;
+      if (hasMore === false) break;
+      if (total !== undefined && offset >= total) break;
+    }
     if (merged.length >= LIST_ALL_CAP) {
       capped = true;
       break;
@@ -153,18 +187,25 @@ export async function fetchListPages(
     oldServer,
     startOffset,
     pagesFetched,
+    mode,
+    nextCursor,
     requestId,
     durationMs,
   };
 }
 
+/** The lane-correct continuation instruction. */
+function continueWith(pages: ListPages): string {
+  if (pages.mode === 'cursor') {
+    return pages.nextCursor !== undefined ? `--cursor ${pages.nextCursor}, or --all` : '--all';
+  }
+  return `--offset ${pages.startOffset + pages.returned}, or --all`;
+}
+
 /** The one honest page line — appended to every list verb's human output. */
 export function pageNote(pages: ListPages): string {
   if (pages.capped) {
-    return (
-      `stopped at ${pages.returned} items (client cap ${LIST_ALL_CAP}) — narrow the query, ` +
-      `or continue with --offset ${pages.startOffset + pages.returned}`
-    );
+    return `stopped at ${pages.returned} items (client cap ${LIST_ALL_CAP}) — narrow the query, or continue with ${continueWith(pages)}`;
   }
   if (pages.oldServer) {
     return `showing ${pages.returned} (server did not report a total — there may be more; newer servers do)`;
@@ -178,13 +219,12 @@ export function pageNote(pages: ListPages): string {
     }
     return (
       `showing ${pages.returned} of ${pages.total}` +
-      `${pages.startOffset > 0 ? ` (from offset ${pages.startOffset})` : ''} — ` +
-      `pass --offset ${shownThrough} for more, or --all`
+      `${pages.startOffset > 0 ? ` (from offset ${pages.startOffset})` : ''} — more via ${continueWith(pages)}`
     );
   }
   return pages.hasMore === true
-    ? `showing ${pages.returned} — more available (--offset ${pages.startOffset + pages.returned}, or --all)`
-    : `showing ${pages.returned}`;
+    ? `showing ${pages.returned} — more available (${continueWith(pages)})`
+    : `showing ${pages.returned}${pages.hasMore === false && pages.mode === 'cursor' ? ' (all)' : ''}`;
 }
 
 /** Machine fields for the envelope (documented list-lane surface). */
@@ -194,7 +234,8 @@ export function pageFields(pages: ListPages, flags: ListFlags): Record<string, u
     ...(pages.total !== undefined ? { total: pages.total } : {}),
     ...(pages.hasMore !== undefined ? { has_more: pages.hasMore } : {}),
     ...(flags.limit !== undefined ? { limit: flags.limit } : {}),
-    ...(pages.startOffset > 0 ? { offset: pages.startOffset } : {}),
+    ...(pages.mode === 'offset' && pages.startOffset > 0 ? { offset: pages.startOffset } : {}),
+    ...(pages.nextCursor !== undefined ? { next_cursor: pages.nextCursor } : {}),
     ...(pages.capped ? { capped: true } : {}),
     ...(pages.pagesFetched > 1 ? { pages_fetched: pages.pagesFetched } : {}),
   };
@@ -267,5 +308,6 @@ export function listFlagsOf(opts: Record<string, unknown>): ListFlags {
     offset: typeof opts.offset === 'number' ? opts.offset : undefined,
     all: opts.all === true,
     output: typeof opts.output === 'string' ? opts.output : undefined,
+    cursor: typeof opts.cursor === 'string' ? opts.cursor : undefined,
   };
 }

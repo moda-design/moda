@@ -194,7 +194,7 @@ export function registerTask(program: Command): void {
       .description('list tasks')
       .option('--active', 'only running tasks')
       .option('--limit <n>', 'page size', parseListLimit)
-      .option('--offset <n>', 'pagination offset', parseListOffset)
+      .option('--cursor <token>', "resume token from a previous page's next_cursor")
       .option('--all', `fetch every page (bounded at ${LIST_ALL_CAP} items)`)
       .option('--output <file>', 'write the full payload to a file; stdout gets a small summary + preview'),
   ).action(
@@ -202,13 +202,14 @@ export function registerTask(program: Command): void {
       const inv = buildInvocation(cmd);
       const flags = listFlagsOf(opts);
       const { client } = await authedClient(inv, START_TIMEOUT_MS);
-      // Server contract: GET /v1/tasks?status=... (single status filter; 'running' ≈ active).
+      // Server contract: GET /v1/tasks?status=... (single status filter); cursor lane (#9317).
       const pages = await fetchListPages(
         client,
         endpoints.taskList(),
         opts.active === true ? { status: 'running' } : {},
         flags,
         START_TIMEOUT_MS,
+        'cursor',
       );
       return listOutcome({
         operation: 'task.list',

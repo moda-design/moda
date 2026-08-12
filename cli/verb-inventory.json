@@ -620,6 +620,12 @@
           "required": false
         },
         {
+          "flag": "--cursor",
+          "description": "resume token from a previous page's next_cursor",
+          "takes_value": true,
+          "required": false
+        },
+        {
           "flag": "--json",
           "description": "machine output: exactly one compact JSON document on stdout; implies --no-input",
           "takes_value": false,
@@ -641,12 +647,6 @@
           "flag": "--no-retry",
           "description": "disable the built-in busy/transport retry",
           "takes_value": false,
-          "required": false
-        },
-        {
-          "flag": "--offset",
-          "description": "pagination offset",
-          "takes_value": true,
           "required": false
         },
         {
@@ -1714,7 +1714,7 @@
         },
         {
           "flag": "--cursor",
-          "description": "legacy pagination cursor (older servers)",
+          "description": "resume token from a previous page's next_cursor",
           "takes_value": true,
           "required": false
         },
@@ -1740,12 +1740,6 @@
           "flag": "--no-retry",
           "description": "disable the built-in busy/transport retry",
           "takes_value": false,
-          "required": false
-        },
-        {
-          "flag": "--offset",
-          "description": "pagination offset",
-          "takes_value": true,
           "required": false
         },
         {
@@ -4283,6 +4277,12 @@
           "required": false
         },
         {
+          "flag": "--cursor",
+          "description": "resume token from a previous page's next_cursor",
+          "takes_value": true,
+          "required": false
+        },
+        {
           "flag": "--json",
           "description": "machine output: exactly one compact JSON document on stdout; implies --no-input",
           "takes_value": false,
@@ -4304,12 +4304,6 @@
           "flag": "--no-retry",
           "description": "disable the built-in busy/transport retry",
           "takes_value": false,
-          "required": false
-        },
-        {
-          "flag": "--offset",
-          "description": "pagination offset",
-          "takes_value": true,
           "required": false
         },
         {
@@ -5385,6 +5379,12 @@
           "required": false
         },
         {
+          "flag": "--cursor",
+          "description": "resume token from a previous page's next_cursor",
+          "takes_value": true,
+          "required": false
+        },
+        {
           "flag": "--json",
           "description": "machine output: exactly one compact JSON document on stdout; implies --no-input",
           "takes_value": false,
@@ -5406,12 +5406,6 @@
           "flag": "--no-retry",
           "description": "disable the built-in busy/transport retry",
           "takes_value": false,
-          "required": false
-        },
-        {
-          "flag": "--offset",
-          "description": "pagination offset",
-          "takes_value": true,
           "required": false
         },
         {

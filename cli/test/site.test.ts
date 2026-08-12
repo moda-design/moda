@@ -173,7 +173,7 @@ describe('site list (GET /v1/websites)', () => {
     expect(lines[0]).toContain('live at https://launch-x1.moda.page');
     expect(lines[0]).toContain('unpublished changes');
     // The uniform page note replaces the old header line.
-    expect(lines[1]).toBe('showing 1 of 7 (from offset 4) — pass --offset 5 for more, or --all');
+    expect(lines[1]).toBe('showing 1 of 7 (from offset 4) — more via --offset 5, or --all');
   });
 
   test('pending_review sites are annotated serving:false in list JSON', async () => {
