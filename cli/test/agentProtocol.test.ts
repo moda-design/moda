@@ -91,10 +91,38 @@ describe('moda describe (machine-readable schema)', () => {
     expect(String((body.error as Record<string, unknown>).hint)).toContain('canvas read');
   });
 
+  test('dotted verb grammar (gate finding F7): the error names the exact space-separated retry', async () => {
+    const { code, stdout } = await run(['describe', 'brand.create', '--json']);
+    expect(code).not.toBe(0);
+    const error = (JSON.parse(stdout) as Record<string, unknown>).error as Record<string, unknown>;
+    expect(error.code).toBe('usage');
+    expect(error.hint).toBe('Verb names are space-separated: moda describe brand create');
+  });
+
+  test('unknown verb with no near miss still teaches the grammar', async () => {
+    const { code, stdout } = await run(['describe', 'zebra', '--json']);
+    expect(code).not.toBe(0);
+    const error = (JSON.parse(stdout) as Record<string, unknown>).error as Record<string, unknown>;
+    expect(String(error.hint)).toContain('space-separated');
+  });
+
   test('the committed inventory snapshot is the same schema (single source)', async () => {
     const { stdout } = await run(['__inventory']);
     const snapshot = readFileSync(resolve(import.meta.dir, '../verb-inventory.json'), 'utf8');
     expect(JSON.parse(stdout)).toEqual(JSON.parse(snapshot));
+  });
+});
+
+describe('canvas markup missing --page (gate finding F6)', () => {
+  test('the miss is a typed usage error naming the exact retry shape, not a raw commander line', async () => {
+    const { code, stdout } = await run(['canvas', 'markup', 'cvs_123', '--file', 'page.xml', '--json']);
+    expect(code).toBe(2);
+    const error = (JSON.parse(stdout) as Record<string, unknown>).error as Record<string, unknown>;
+    expect(error.code).toBe('usage');
+    expect(String(error.message)).toContain('--page');
+    const hint = String(error.hint);
+    expect(hint).toContain('moda canvas markup cvs_123 --file FILE --page PAGE_ID');
+    expect(hint).toContain('moda canvas show');
   });
 });
 

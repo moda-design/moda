@@ -24,6 +24,7 @@ enforces that moda-help names every skill).
 | "Build a brand kit from our site" | moda-brand | kit lifecycle |
 | "Here's the canvas URL — make the headline bigger" | moda-edit | existing-canvas change request |
 | "Set up Moda for me" / "what can Moda do?" / "how do I switch orgs" / CLI errors | moda-help | meta-only; never claims authoring asks |
+| "Set up Moda to auto-post blog articles to LinkedIn weekly" (automation/integration/scheduling asks) | moda-help | none-fit catcher: no automation surface exists — honest gap + nearest-thing offer, never a wrong-format build; a matching format skill still always wins |
 
 Boundary rules, stated once:
 

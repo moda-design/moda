@@ -12,12 +12,20 @@ import { existsSync } from 'node:fs';
 import type { Command } from 'commander';
 import type { ApiClient } from '../api/client.ts';
 import { endpoints } from '../api/endpoints.ts';
-import { asObject, str } from '../api/types.ts';
+import { asObject, num, str, strArray, type JsonObject } from '../api/types.ts';
 import { CliError } from '../cliError.ts';
 import { EXIT_OK } from '../output/exitCodes.ts';
 import type { CommandOutcome } from '../output/emit.ts';
 import { addGlobalFlags, authedClient, buildInvocation, metaBlock, wrapAction, type Invocation } from './runtime.ts';
-import { LIST_ALL_CAP, fetchListPages, listFlagsOf, listOutcome, parseListLimit, parseListOffset } from './listLane.ts';
+import {
+  LIST_ALL_CAP,
+  fetchListPages,
+  listFlagsOf,
+  listOutcome,
+  parseListLimit,
+  parseListOffset,
+  type ListFlags,
+} from './listLane.ts';
 import { parseSize } from './canvasShared.ts';
 
 const MEDIA_TIMEOUT_MS = 600_000;
@@ -209,17 +217,63 @@ export function registerMedia(program: Command): void {
   ).action(
     wrapAction(async (_args, opts, cmd) => {
       const inv = buildInvocation(cmd);
-      const flags = listFlagsOf(opts);
       const { client } = await authedClient(inv, 30_000);
-      const pages = await fetchListPages(client, endpoints.mediaModels(), {}, flags, 30_000);
-      return listOutcome({
-        operation: 'media.models',
-        pages,
-        flags,
-        emptyHint: 'no models reported',
-        itemLine: (model) => `${str(model, 'id') ?? str(model, 'name') ?? '?'}  ${str(model, 'name') ?? ''}`,
-      });
+      return performMediaModels(client, listFlagsOf(opts));
     }),
+  );
+}
+
+/**
+ * `media models` — the capability source the skills defer to. Server envelope
+ * (GET /v1/media/models): `{image_models: [descriptor…], video_model_ids: [id…]}` — image
+ * descriptors carry the capability axes; video models ship as bare ids. The human lane must
+ * render the SAME model set the JSON lane carries (the "no models reported" regression steered
+ * real runs into skipping imagery entirely).
+ */
+export async function performMediaModels(client: ApiClient, flags: ListFlags): Promise<CommandOutcome> {
+  const pages = await fetchListPages(client, endpoints.mediaModels(), {}, flags, 30_000);
+  const videoModelIds = strArray(pages.root, 'video_model_ids');
+  const outcome = listOutcome({
+    operation: 'media.models',
+    pages,
+    flags,
+    // Image models are the itemLine lane; suppress the empty hint while video ids still render.
+    ...(videoModelIds.length === 0 ? { emptyHint: 'no models reported' } : {}),
+    itemLine: imageModelLine,
+  });
+  if (videoModelIds.length === 0) return outcome;
+  return {
+    ...outcome,
+    human: (write) => {
+      outcome.human?.(write);
+      write(`video models: ${videoModelIds.join(', ')}`);
+    },
+  };
+}
+
+/** One capability line per image model — id, label, aspect ratios, resolution tiers, refs, extra params. */
+function imageModelLine(model: JsonObject): string {
+  const id = str(model, 'id') ?? str(model, 'name') ?? '?';
+  const label = str(model, 'label') ?? str(model, 'name') ?? '';
+  const caps: string[] = [];
+  const aspectRatios = strArray(model, 'aspect_ratios');
+  if (aspectRatios.length > 0) caps.push(`ar ${aspectRatios.join(',')}`);
+  const resolutions = (Array.isArray(model.resolutions) ? model.resolutions : [])
+    .map((entry) => str(asObject(entry), 'id'))
+    .filter((res): res is string => res !== undefined);
+  if (resolutions.length > 0) caps.push(`res ${resolutions.join(',')}`);
+  if (model.accepts_reference_images === true) {
+    const maxRefs = num(model, 'max_reference_images');
+    caps.push(`refs${maxRefs !== undefined ? ` max ${maxRefs}` : ''}`);
+  }
+  const controls = (Array.isArray(model.controls) ? model.controls : [])
+    .map((entry) => str(asObject(entry), 'id'))
+    .filter((control): control is string => control !== undefined);
+  if (controls.length > 0) caps.push(`params ${controls.join(',')}`);
+  const description = str(model, 'description');
+  return (
+    `${id}${label.length > 0 && label !== id ? ` — ${label}` : ''}` +
+    `${caps.length > 0 ? `  [${caps.join('; ')}]` : ''}${description !== undefined ? `  ${description}` : ''}`
   );
 }
 

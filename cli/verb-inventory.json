@@ -2224,9 +2224,9 @@
         },
         {
           "flag": "--page",
-          "description": "target page (short id or \"canvas\" for floating nodes)",
+          "description": "target page — required (page id from a read/show, or \"canvas\" for floating nodes)",
           "takes_value": true,
-          "required": true
+          "required": false
         },
         {
           "flag": "--pretty",
