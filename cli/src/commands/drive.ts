@@ -418,13 +418,23 @@ function writeTreeNodes(nodes: JsonObject[], level: number, write: (line: string
 export async function performDriveOpen(client: ApiClient, ctx: OpenLaneContext, folderRef: string): Promise<CommandOutcome> {
   const ref = parseFolderRef(folderRef);
   const wire = toWireId('folder', ref);
-  const pages = await fetchListPages(client, endpoints.driveFolders(), {}, { all: true }, DRIVE_TIMEOUT_MS, 'offset');
-  const folder = pages.items.find((row) => str(row, 'id') === wire);
+  // limit 200 = the server's page cap — 4x fewer round trips than its default of 50.
+  const pages = await fetchListPages(client, endpoints.driveFolders(), {}, { all: true, limit: 200 }, DRIVE_TIMEOUT_MS, 'offset');
+  // Identity compare via decoded UUIDs: the server (and parseRef) accept lowercase wire ids,
+  // so a raw string compare would false-negative on fld_01hz… input.
+  const wireUuid = refUuid(wire);
+  const folder = pages.items.find((row) => {
+    const rowId = str(row, 'id');
+    return rowId === wire || (wireUuid !== undefined && refUuid(rowId ?? '') === wireUuid);
+  });
   if (folder === undefined) {
+    // Both stop-early cases mean "not searched to the end": the 500-item client cap, and an
+    // old server that reports no total/has_more (fetchListPages stops after page 1 there).
+    const truncated = pages.capped || pages.oldServer;
     throw new CliError({
       type: 'not_found',
       code: 'folder_not_found',
-      message: `No folder ${wire} is visible to this credential${pages.capped ? ` (search stopped at the ${pages.returned}-folder client cap)` : ''}.`,
+      message: `No folder ${wire} is visible to this credential${truncated ? ` (only the first ${pages.returned} folders could be searched)` : ''}.`,
       hint: 'List folders with: moda drive folders',
       source: 'local',
     });

@@ -79,6 +79,12 @@ describe('parseRef', () => {
   test('a wire id where the kind has none (website) is a usage error', () => {
     expect(() => parseRef(CVS, 'website')).toThrow(CliError);
   });
+
+  test('folder app URLs round-trip: /files/folder/<uuid> parses as a folder ref', () => {
+    expect(parseRef(`https://moda.app/files/folder/${UUID}`, 'folder')).toEqual({ kind: 'folder', ref: UUID });
+    // /files without the folder segment is not a folder permalink.
+    expect(() => parseRef(`https://moda.app/files/${UUID}`, 'folder')).toThrow(CliError);
+  });
 });
 
 describe('wire id codec', () => {

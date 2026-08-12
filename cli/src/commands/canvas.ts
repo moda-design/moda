@@ -8,8 +8,8 @@ import { CliError, rethrowRoutePredates } from '../cliError.ts';
 import { shotsDir } from '../config/state.ts';
 import { alert, type CommandOutcome } from '../output/emit.ts';
 import { EXIT_OK } from '../output/exitCodes.ts';
-import { toWireId, refUuid, extractShortIds } from '../refs.ts';
-import { openLaneContext, resourceOpenOutcome, type OpenLaneContext } from './open.ts';
+import { parseRef, toWireId, refUuid, extractShortIds } from '../refs.ts';
+import { openLaneContext, openUrlOutcome, resourceOpenOutcome, type OpenLaneContext } from './open.ts';
 import { previewText, writeResultFile } from '../output/resultFile.ts';
 import { parseFolderRef, parseVisibility } from './drive.ts';
 import { LIST_ALL_CAP, fetchListPages, listFlagsOf, listOutcome, parseListLimit, parseListOffset } from './listLane.ts';
@@ -117,18 +117,41 @@ export async function canvasGuidanceBlock(
  * the URL the server hands back (`canvas_url` today; `editor_url` tolerated for newer servers).
  * The constructed fallback is /canvas/<uuid> — the route the app actually serves. `canvas_id`
  * in the response serializes to the cvs_ wire form, so it is decoded before construction.
+ *
+ * Two deliberate divergences from a plain read:
+ * - A share URL opens AS the share page (/s/<token>), with no canvas read at all: the resolved
+ *   canvas id would hit the team-scoped read (404 for a canvas shared from another team), and
+ *   /canvas/<uuid> is exactly the page a share recipient often cannot view.
+ * - The read's not-ready states degrade instead of failing: a canvas mid-population
+ *   (canvas_active_job) or not yet compacted (canvas_not_ready) still has a perfectly good
+ *   editor URL — and "open at create" is precisely when those states occur. Real errors
+ *   (not_found, permission, …) still fail the verb.
  */
 export async function performCanvasOpen(client: ApiClient, ctx: OpenLaneContext, refInput: string): Promise<CommandOutcome> {
-  const ref = await resolveCanvasRef(refInput, client);
-  const response = await client.request({ method: 'GET', path: endpoints.canvasShow(ref), timeoutMs: READ_TIMEOUT_MS });
-  const root = asObject(response.body);
+  const parsed = parseRef(refInput, 'canvas');
+  if (parsed.shareToken !== undefined) {
+    const url = new URL(`/s/${parsed.shareToken}`, ctx.appBase).toString();
+    return openUrlOutcome(ctx, { operation: 'canvas.open', url, urlSource: 'share_link', meta: {} });
+  }
+  const ref = parsed.ref;
+  let root: Record<string, unknown> = {};
+  let meta: { requestId?: string; durationMs?: number } = {};
+  try {
+    const response = await client.request({ method: 'GET', path: endpoints.canvasShow(ref), timeoutMs: READ_TIMEOUT_MS });
+    root = asObject(response.body);
+    meta = { requestId: response.requestId, durationMs: response.durationMs };
+  } catch (err) {
+    const tolerated = ['canvas_not_ready', 'canvas_active_job'];
+    if (!(err instanceof CliError) || !tolerated.includes(err.fields.code) || refUuid(ref) === undefined) throw err;
+    ctx.note(`canvas read unavailable (${err.fields.code}) — opening the constructed editor URL`);
+  }
   return resourceOpenOutcome(ctx, {
     operation: 'canvas.open',
     sources: [root],
     urlFields: ['editor_url', 'canvas_url', 'url'],
     fallbackUuid: refUuid(str(root, 'canvas_id') ?? ref),
     fallbackPath: (uuid) => `/canvas/${uuid}`,
-    meta: { requestId: response.requestId, durationMs: response.durationMs },
+    meta,
   });
 }
 

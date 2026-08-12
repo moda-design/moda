@@ -3,7 +3,7 @@
  * The API takes prefixed wire IDs (`cvs_…`, Crockford base32) or bare UUIDs; URL parsing is
  * client-side sugar; share URLs resolve via POST /v1/share_links/resolve before the target call.
  * Pasted app URLs are accepted for the kinds with an app page: /c|/canvas/<canvas>,
- * /brand-kit/<uuid>, /website/<uuid>.
+ * /brand-kit/<uuid>, /website/<uuid>, /files/folder/<uuid>.
  */
 import { CliError } from './cliError.ts';
 
@@ -49,14 +49,17 @@ const KNOWN_PREFIXES = new Set([
 ]);
 
 /**
- * App URL path segments accepted as pasted refs, per kind. The app serves /canvas/<id> (and
- * historically linked /c/<id>, still accepted as INPUT sugar — never emitted), /brand-kit/<uuid>,
- * and /website/<uuid>. Canvas additionally accepts /s/<token> share URLs (resolved server-side).
+ * App URL path prefixes accepted as pasted refs, per kind (the ref is the segment AFTER the
+ * prefix). The app serves /canvas/<id> (and historically linked /c/<id>, still accepted as
+ * INPUT sugar — never emitted), /brand-kit/<uuid>, /website/<uuid>, and /files/folder/<uuid>.
+ * Canvas additionally accepts /s/<token> share URLs (resolved server-side). Every URL the open
+ * lane can emit round-trips through here.
  */
-const URL_SEGMENTS_BY_KIND: Partial<Record<RefKind, string[]>> = {
-  canvas: ['c', 'canvas'],
-  brand_kit: ['brand-kit'],
-  website: ['website'],
+const URL_PATHS_BY_KIND: Partial<Record<RefKind, string[][]>> = {
+  canvas: [['c'], ['canvas']],
+  brand_kit: [['brand-kit']],
+  website: [['website']],
+  folder: [['files', 'folder']],
 };
 
 const UUID_RE = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
@@ -98,10 +101,7 @@ export function parseRef(input: string, expected: RefKind): ParsedRef {
     }
   }
 
-  if (
-    URL_SEGMENTS_BY_KIND[expected] !== undefined &&
-    (trimmed.startsWith('http://') || trimmed.startsWith('https://'))
-  ) {
+  if (URL_PATHS_BY_KIND[expected] !== undefined && (trimmed.startsWith('http://') || trimmed.startsWith('https://'))) {
     return parseAppUrl(trimmed, expected);
   }
 
@@ -113,8 +113,8 @@ export function parseRef(input: string, expected: RefKind): ParsedRef {
 
 function urlHint(expected: RefKind): string {
   if (expected === 'canvas') return ', or a moda.app canvas/share URL';
-  const segments = URL_SEGMENTS_BY_KIND[expected];
-  return segments !== undefined ? `, or a moda.app /${segments[0]}/<uuid> URL` : '';
+  const paths = URL_PATHS_BY_KIND[expected];
+  return paths !== undefined ? `, or a moda.app /${(paths[0] as string[]).join('/')}/<uuid> URL` : '';
 }
 
 function parseAppUrl(input: string, expected: RefKind): ParsedRef {
@@ -125,16 +125,18 @@ function parseAppUrl(input: string, expected: RefKind): ParsedRef {
     throw CliError.usage(`Cannot parse ${kindLabel(expected)} URL '${input}'.`);
   }
   const segments = url.pathname.split('/').filter((s) => s.length > 0);
-  const accepted = URL_SEGMENTS_BY_KIND[expected] ?? [];
-  // /<segment>/<ref> — app editor URLs (any host); ref may be the kind's wire id or a UUID.
-  if (segments.length >= 2 && accepted.includes(segments[0] as string)) {
-    const candidate = segments[1] as string;
+  const paths = URL_PATHS_BY_KIND[expected] ?? [];
+  // /<prefix…>/<ref> — app URLs (any host); ref may be the kind's wire id or a UUID.
+  for (const prefixPath of paths) {
+    if (segments.length < prefixPath.length + 1) continue;
+    if (!prefixPath.every((seg, i) => segments[i] === seg)) continue;
+    const candidate = segments[prefixPath.length] as string;
     const prefix = PREFIX_BY_KIND[expected];
     if (UUID_RE.test(candidate) || (prefix !== undefined && WIRE_ID_RE.exec(candidate)?.[1] === prefix)) {
       return { kind: expected, ref: candidate };
     }
     throw CliError.usage(
-      `${kindLabel(expected)} URL path '/${segments[0]}/${candidate}' does not contain ` +
+      `${kindLabel(expected)} URL path '/${prefixPath.join('/')}/${candidate}' does not contain ` +
         `${prefix !== undefined ? `a ${prefix}_ id or ` : ''}a UUID.`,
       `Pass the raw ${kindLabel(expected)} id instead.`,
     );
@@ -147,7 +149,7 @@ function parseAppUrl(input: string, expected: RefKind): ParsedRef {
     `Cannot extract a ${kindLabel(expected)} from URL '${input}'.`,
     expected === 'canvas'
       ? 'Expected a /c/<canvas>, /canvas/<canvas>, or /s/<share> URL — or pass the raw canvas id.'
-      : `Expected a /${accepted[0]}/<uuid> URL — or pass the raw ${kindLabel(expected)} id.`,
+      : `Expected a /${((paths[0] ?? []) as string[]).join('/')}/<uuid> URL — or pass the raw ${kindLabel(expected)} id.`,
   );
 }
 

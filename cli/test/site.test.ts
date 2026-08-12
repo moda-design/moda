@@ -104,7 +104,7 @@ describe('parseSiteId', () => {
     }
   });
 
-  test('rejects URLs that are not /website/<uuid> with the URL-shape hint', () => {
+  test('rejects URLs that are not /website/<uuid> with the URL-shape hint AND the site-list steer', () => {
     for (const bad of ['https://launch.moda.page', `https://moda.app/canvas/${SITE_ID}`, 'https://moda.app/website/not-a-uuid']) {
       try {
         parseSiteId(bad);
@@ -112,6 +112,7 @@ describe('parseSiteId', () => {
       } catch (err) {
         expect((err as CliError).fields.code).toBe('usage');
         expect(String((err as CliError).fields.hint)).toContain('website');
+        expect(String((err as CliError).fields.hint)).toContain('moda site list');
       }
     }
   });

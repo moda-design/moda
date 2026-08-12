@@ -111,18 +111,59 @@ describe('canvas open', () => {
     expect(outcome.body.url).toBe(`${APP_BASE}/canvas/${UUID}`);
   });
 
-  test('launch failure never fails the verb: exit 0, opened false, stderr note with the URL', async () => {
+  test('launch failure never fails the verb: exit 0, launched false, stderr note with the URL', async () => {
     const serverUrl = `https://moda.app/canvas/${UUID}`;
     const { base } = serve(() => json({ canvas_id: CVS, canvas_url: serverUrl }));
     const { ctx, notes } = testContext(false);
     const outcome = await performCanvasOpen(client(base), ctx, CVS);
     expect(outcome.exitCode).toBe(0);
-    expect(outcome.body.opened).toBe(false);
+    expect(outcome.body.launched).toBe(false);
     expect(notes.join('\n')).toContain(serverUrl);
     // The URL is the human output either way.
     const lines: string[] = [];
     outcome.human?.((line) => lines.push(line));
     expect(lines).toEqual([serverUrl]);
+  });
+
+  test('a share URL opens the share page directly — no canvas read (recipients may lack team access)', async () => {
+    const { base, paths } = serve(() => json({}));
+    const { ctx, launched } = testContext();
+    const outcome = await performCanvasOpen(client(base), ctx, 'https://moda.app/s/abc123token');
+    expect(outcome.body.url).toBe(`${APP_BASE}/s/abc123token`);
+    expect(outcome.body.url_source).toBe('share_link');
+    expect(launched).toEqual([`${APP_BASE}/s/abc123token`]);
+    expect(paths).toEqual([]); // zero API calls
+  });
+
+  test('canvas_not_ready / canvas_active_job degrade to the constructed URL instead of failing', async () => {
+    for (const code of ['canvas_not_ready', 'canvas_active_job']) {
+      const { base } = serve(
+        () =>
+          new Response(JSON.stringify({ error: { type: 'unprocessable', code, message: 'not ready' } }), {
+            status: 422,
+            headers: { 'Content-Type': 'application/json' },
+          }),
+      );
+      const { ctx, notes } = testContext();
+      const outcome = await performCanvasOpen(client(base), ctx, CVS);
+      expect(outcome.exitCode).toBe(0);
+      expect(outcome.body.url).toBe(`${APP_BASE}/canvas/${UUID}`);
+      expect(outcome.body.url_source).toBe('constructed');
+      expect(notes.join('\n')).toContain(code);
+      server?.stop(true);
+    }
+  });
+
+  test('a real error (envelope not_found) still fails the verb', async () => {
+    const { base } = serve(
+      () =>
+        new Response(JSON.stringify({ error: { type: 'not_found', code: 'not_found', message: 'no such canvas' } }), {
+          status: 404,
+          headers: { 'Content-Type': 'application/json' },
+        }),
+    );
+    const { ctx } = testContext();
+    expect(performCanvasOpen(client(base), ctx, CVS)).rejects.toThrow();
   });
 });
 
@@ -202,6 +243,13 @@ describe('drive open', () => {
     const { base } = serve(() => json({ folders: [{ id: FLD, name: 'Acme', path: '/Acme' }], returned: 1, total: 1, has_more: false }));
     const { ctx } = testContext();
     const outcome = await performDriveOpen(client(base), ctx, UUID);
+    expect(outcome.body.url).toBe(`${APP_BASE}/files/folder/${UUID}`);
+  });
+
+  test('a lowercase fld_ ref still matches (identity compare, not raw string compare)', async () => {
+    const { base } = serve(() => json({ folders: [{ id: FLD, name: 'Acme', path: '/Acme' }], returned: 1, total: 1, has_more: false }));
+    const { ctx } = testContext();
+    const outcome = await performDriveOpen(client(base), ctx, FLD.toLowerCase());
     expect(outcome.body.url).toBe(`${APP_BASE}/files/folder/${UUID}`);
   });
 

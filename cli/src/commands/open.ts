@@ -4,8 +4,9 @@
  * the per-noun verbs are thin wrappers that supply the read and the field/route names.
  *
  * Contract:
- * - The SERVER-provided URL is the truth whenever the read returns one — frontend routing is
- *   the server's to know (flow canvases live under /flow/, not /canvas/), never the CLI's.
+ * - The SERVER-provided URL wins whenever the read returns one. Routing should be the server's
+ *   to own — it currently hardcodes /canvas/<uuid> (flow canvases, which the app serves under
+ *   /flow/, are a known server-side gap) — so the CLI never second-guesses a URL it is handed.
  * - Client-side construction is the documented fallback for a server that predates the URL
  *   field: appBase + the real app route — /canvas/<uuid>, /brand-kit/<uuid>, /website/<uuid>,
  *   /files/folder/<uuid> — always with the BARE UUID, never the wire form, and never the
@@ -32,9 +33,39 @@ export function openLaneContext(inv: Invocation): OpenLaneContext {
   return { appBase: resolveAppBase(inv.context.apiBase.value, inv.env), env: inv.env, note: inv.note };
 }
 
+/** Where the opened URL came from — carried on the --json document as `url_source`. */
+export type UrlSource = 'server' | 'constructed' | 'share_link';
+
+/** Launch (or print) a fully-resolved URL — the tail every open verb funnels through. */
+export async function openUrlOutcome(
+  ctx: OpenLaneContext,
+  input: { operation: string; url: string; urlSource: UrlSource; meta: { requestId?: string; durationMs?: number } },
+): Promise<CommandOutcome> {
+  const launch = ctx.launch ?? openBrowser;
+  // `launched` = the launcher spawned; it is NOT proof a window appeared (headless xdg-open
+  // spawns fine), which is why the URL is the human output either way.
+  const launched = await launch(input.url, ctx.env);
+  if (!launched) ctx.note(`no browser could be launched — open it manually: ${input.url}`);
+  return {
+    body: {
+      ok: true,
+      operation: input.operation,
+      url: input.url,
+      url_source: input.urlSource,
+      launched,
+      meta: metaBlock(input.meta),
+    },
+    human: (write) => write(input.url),
+    exitCode: EXIT_OK,
+  };
+}
+
 export interface ResourceOpenInput {
   operation: string;
-  /** Objects to search for the URL, in priority order (response root first, then envelopes). */
+  /**
+   * Objects to search for the URL. FIELD priority dominates (outer loop): the first name in
+   * `urlFields` found on ANY source wins; source order only breaks ties within one field name.
+   */
   sources: Array<Record<string, unknown>>;
   /** URL field names in priority order. Only http(s) string values count. */
   urlFields: string[];
@@ -47,7 +78,7 @@ export interface ResourceOpenInput {
 
 export async function resourceOpenOutcome(ctx: OpenLaneContext, input: ResourceOpenInput): Promise<CommandOutcome> {
   let url: string | undefined;
-  let urlSource: 'server' | 'constructed' = 'server';
+  let urlSource: UrlSource = 'server';
   for (const field of input.urlFields) {
     for (const source of input.sources) {
       const candidate = str(source, field);
@@ -72,20 +103,5 @@ export async function resourceOpenOutcome(ctx: OpenLaneContext, input: ResourceO
     url = new URL(input.fallbackPath(input.fallbackUuid), ctx.appBase).toString();
     urlSource = 'constructed';
   }
-  const openedUrl = url;
-  const launch = ctx.launch ?? openBrowser;
-  const opened = await launch(openedUrl, ctx.env);
-  if (!opened) ctx.note(`no browser could be launched — open it manually: ${openedUrl}`);
-  return {
-    body: {
-      ok: true,
-      operation: input.operation,
-      url: openedUrl,
-      url_source: urlSource,
-      opened,
-      meta: metaBlock(input.meta),
-    },
-    human: (write) => write(openedUrl),
-    exitCode: EXIT_OK,
-  };
+  return openUrlOutcome(ctx, { operation: input.operation, url, urlSource, meta: input.meta });
 }

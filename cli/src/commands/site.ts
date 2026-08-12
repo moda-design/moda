@@ -39,7 +39,20 @@ export function isCanonicalRoutePath(route: string): boolean {
 export function parseSiteId(input: string): string {
   const trimmed = input.trim();
   if (UUID_RE.test(trimmed)) return trimmed;
-  if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) return parseRef(trimmed, 'website').ref;
+  if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+    try {
+      return parseRef(trimmed, 'website').ref;
+    } catch (err) {
+      // Keep the site-list steer: a pasted *.moda.page address is exactly a confused user.
+      if (err instanceof CliError && err.fields.code === 'usage') {
+        throw new CliError({
+          ...err.fields,
+          hint: `${err.fields.hint !== undefined ? `${err.fields.hint} ` : ''}Find site ids with: moda site list`,
+        });
+      }
+      throw err;
+    }
+  }
   throw CliError.usage(
     `'${input}' is not a site id (a UUID) or a /website/<uuid> URL.`,
     'Find site ids with: moda site list',
