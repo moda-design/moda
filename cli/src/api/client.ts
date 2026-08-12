@@ -125,14 +125,21 @@ export class ApiClient {
 
       // 429 — honor the server's hint (Retry-After header or envelope retry_after_ms) on EVERY
       // attempt, up to the timeout ceiling, then surface (exit 6). Hintless 429s escalate
-      // 1s→2s→4s…30s instead of a flat 1s: a limiter that omits the hint (e.g. the publish
-      // site-cap gate) otherwise gets hammered at 1/s, and that storm itself feeds per-minute
-      // fair-use gates (soak finding F-B).
+      // 1s→2s→4s…30s plus 0-1s jitter (concurrent processes must not wake in lockstep bursts)
+      // instead of a flat 1s: a limiter that omits the hint (e.g. the publish site-cap gate)
+      // otherwise gets hammered at 1/s, and that storm itself feeds per-minute fair-use gates
+      // (soak finding F-B). Every wait is floored at 1s — a zero or negative hint (a limiter
+      // emitting reset_at - now at its window edge) must never spin the loop at full speed.
+      // The escalation counter advances on hinted 429s too, so a limiter alternating hinted
+      // and hintless responses cannot pin the hintless wait at 1s.
       if (response.status === 429 && !this.opts.noRetry) {
         const hintedMs = this.retryAfterMs(response.headers, error.fields.retryAfterS);
-        const waitMs = hintedMs ?? Math.min(1_000 * 2 ** rateLimitAttempt, 30_000);
-        rateLimitAttempt += 1;
+        const waitMs = Math.max(
+          1_000,
+          hintedMs ?? Math.min(1_000 * 2 ** rateLimitAttempt, 30_000) + Math.random() * 1_000,
+        );
         if (rateLimitWaitedMs + waitMs <= timeoutMs) {
+          rateLimitAttempt += 1;
           rateLimitWaitedMs += waitMs;
           this.opts.onNotice?.(`rate limited — waiting ${Math.ceil(waitMs / 1000)}s`);
           await sleep(waitMs);
@@ -143,7 +150,7 @@ export class ApiClient {
       // canvas_busy conflict — 3 attempts, 5s/15s/30s, server retry_after_s wins.
       if (error.fields.type === 'conflict' && error.fields.code === 'canvas_busy' && busyAttempt < busySchedule.length) {
         const scheduled = busySchedule[busyAttempt] as number;
-        const serverMs = error.fields.retryAfterS !== undefined ? error.fields.retryAfterS * 1000 : undefined;
+        const serverMs = error.fields.retryAfterS !== undefined ? Math.max(0, error.fields.retryAfterS * 1000) : undefined;
         const waitMs = serverMs ?? scheduled;
         busyAttempt += 1;
         this.opts.onNotice?.(`canvas busy — retry ${busyAttempt}/${busySchedule.length} in ${Math.ceil(waitMs / 1000)}s`);
@@ -199,7 +206,9 @@ export class ApiClient {
       const seconds = Number.parseFloat(header);
       if (Number.isFinite(seconds)) return Math.max(0, seconds * 1000);
     }
-    if (retryAfterS !== undefined) return retryAfterS * 1000;
+    // Clamp like the header path: a limiter computing reset_at - now can emit a negative at
+    // its window edge, and a negative wait would run the budget arithmetic backwards.
+    if (retryAfterS !== undefined) return Math.max(0, retryAfterS * 1000);
     return undefined;
   }
 

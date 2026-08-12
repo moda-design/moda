@@ -103,7 +103,7 @@ describe('429 handling', () => {
     expect(waits).toEqual([45_000, 45_000]);
   });
 
-  test('hintless 429s escalate 1s→2s→4s…30s instead of a flat 1s storm (soak F-B)', async () => {
+  test('hintless 429s escalate 1s→2s→4s…30s (+0-1s jitter) instead of a flat 1s storm (soak F-B)', async () => {
     let hits = 0;
     const waits: number[] = [];
     const { base } = serve(() => {
@@ -119,13 +119,79 @@ describe('429 handling', () => {
         sleeper: async (ms) => {
           waits.push(ms);
         },
-      }).request({ method: 'GET', path: '/v1/x', timeoutMs: 62_000 });
+      }).request({ method: 'GET', path: '/v1/x', timeoutMs: 70_000 });
       expect.unreachable();
     } catch (err) {
       expect((err as CliError).fields.type).toBe('rate_limited');
     }
-    expect(waits).toEqual([1_000, 2_000, 4_000, 8_000, 16_000, 30_000]);
+    // Deterministic under jitter: 6 waits max 67s ≤ 70s budget; a 7th (≥30s) always breaches.
+    const schedule = [1_000, 2_000, 4_000, 8_000, 16_000, 30_000];
+    expect(waits).toHaveLength(schedule.length);
+    for (const [i, base_] of schedule.entries()) {
+      expect(waits[i]).toBeGreaterThanOrEqual(base_);
+      expect(waits[i]).toBeLessThan(base_ + 1_000);
+    }
     expect(hits).toBe(7);
+  });
+
+  test('zero and negative hints are floored at 1s — never a full-speed spin', async () => {
+    const waits: number[] = [];
+    const { base } = serve((_req, hits) => {
+      if (hits === 1)
+        return new Response(JSON.stringify({ error: { type: 'rate_limited', code: 'rpm', message: 'edge' } }), {
+          status: 429,
+          headers: { 'Retry-After': '0', 'Content-Type': 'application/json' },
+        });
+      if (hits === 2)
+        return new Response(
+          JSON.stringify({ error: { type: 'rate_limited', code: 'rpm', message: 'edge', retry_after_ms: -60_000 } }),
+          { status: 429, headers: { 'Content-Type': 'application/json' } },
+        );
+      if (hits === 3)
+        return new Response(
+          JSON.stringify({ error: { type: 'rate_limited', code: 'rpm', message: 'edge', retry_after_ms: 0 } }),
+          { status: 429, headers: { 'Content-Type': 'application/json' } },
+        );
+      return Response.json({ ok: true });
+    });
+    const response = await client(base, {
+      sleeper: async (ms) => {
+        waits.push(ms);
+      },
+    }).request({ method: 'GET', path: '/v1/x' });
+    expect(response.status).toBe(200);
+    expect(waits).toEqual([1_000, 1_000, 1_000]);
+  });
+
+  test('hinted 429s advance the hintless escalation counter (no 1s pin under alternation)', async () => {
+    const waits: number[] = [];
+    const { base } = serve((_req, hits) => {
+      if (hits === 1 || hits === 3)
+        return new Response(JSON.stringify({ error: { type: 'rate_limited', code: 'rpm', message: 'no hint' } }), {
+          status: 429,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      if (hits === 2)
+        return new Response(
+          JSON.stringify({ error: { type: 'rate_limited', code: 'rpm', message: 'hinted', retry_after_ms: 5_000 } }),
+          { status: 429, headers: { 'Content-Type': 'application/json' } },
+        );
+      return Response.json({ ok: true });
+    });
+    const response = await client(base, {
+      sleeper: async (ms) => {
+        waits.push(ms);
+      },
+    }).request({ method: 'GET', path: '/v1/x' });
+    expect(response.status).toBe(200);
+    expect(waits).toHaveLength(3);
+    // attempt 0 hintless: 1s + jitter; attempt 1 hinted: exact; attempt 2 hintless: the counter
+    // advanced through BOTH prior 429s → 4s + jitter, not a re-pinned 1s.
+    expect(waits[0]).toBeGreaterThanOrEqual(1_000);
+    expect(waits[0]).toBeLessThan(2_000);
+    expect(waits[1]).toBe(5_000);
+    expect(waits[2]).toBeGreaterThanOrEqual(4_000);
+    expect(waits[2]).toBeLessThan(5_000);
   });
 
   test('gives up when waiting would exceed the timeout ceiling', async () => {

@@ -59,7 +59,7 @@ allowed-tools: Bash(moda:*), Read, Glob, Grep
 - Result reading: exit 0 with `"requires_repair": true` means the mutation
   COMMITTED but needs fixing (skipped ops, error-severity lint) — repair
   before building more. Any nonzero exit means nothing committed — safe to
-  retry after the typed error's hint (`STALE_REVISION` → re-read, re-apply).
+  retry after the typed error's hint (`stale_revision` → re-read, re-apply).
 - The same typed error twice on one operation: STOP retrying it; report the
   code and what you tried, and deliver everything that succeeded.
 - The revise loop is explicit: mutate, then screenshot/read/lint when you need
@@ -77,7 +77,7 @@ allowed-tools: Bash(moda:*), Read, Glob, Grep
 - Run independent calls in parallel when your harness supports it: reads and
   screenshots of different resources fan out together; mutations on the SAME
   canvas stay serial — per-page markups of one canvas INCLUDED (a parallel
-  batch shares one revision pin; all but the first fail `stale_revision`).
+  batch shares one revision pin and loses outright to `stale_revision`).
 - Don't re-read state you already hold: your last read's DSL stays valid
   until someone mutates the canvas. Re-read at loop boundaries (fresh ids,
   a new request, user edits in the app), not between consecutive calls.
