@@ -8,10 +8,13 @@ the IG/TikTok carousel deliverable**. A **LinkedIn carousel is a document
 post: deliver ONE multi-page PDF** (`moda export --format pdf`), not a zip.
 Single formats: pass `--page N` or keep the canvas single-page.
 
-**No animation lane**: gif/mp4/webp export is a typed refusal on this
-surface. When the user asks for an animated ad or motion graphic, say
-plainly that animated export isn't available here, offer the static
-version(s) of the same concept, and point them to the Moda app for motion.
+**Motion belongs to moda-video**: this skill's deliverables are stills
+(png/jpeg/pdf; webp has no lane anywhere). An animated ad, motion graphic,
+or "make it a video" ask routes to the moda-video skill — Moda DOES ship
+motion: `moda export --format mp4|gif` renders a page's animation (per
+export.md's `--page` rules) and the metered `moda media` lane generates
+video. When motion comes up mid-build here, hand the motion to moda-video
+and keep the still formats' sizing/safe-area rules from this document.
 Never fake motion or silently deliver a static file for an animated ask.
 
 ## Canvas sizes (create with `moda canvas create --size WxH`)

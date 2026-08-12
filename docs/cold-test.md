@@ -85,4 +85,4 @@ first, then fanout), reinstall, and restart cold.
 
 **Ship gate: 2 consecutive clean runs per request per harness** (Claude Code
 and Codex), and cumulative coverage of all DETERMINISTIC + METERED parity
-rows reachable by the eight skills.
+rows reachable by the nine skills.

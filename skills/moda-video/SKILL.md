@@ -1,19 +1,25 @@
 ---
-name: moda-website
+name: moda-video
 description: >-
-  Build and publish a live website hosted on Moda. Use when the user
-  asks for a website, site, web page, landing page, marketing site, portfolio
-  site, homepage, coming-soon page, "put this on the web", or wants an existing
-  moda.page site updated or re-published. Produces a real hosted site at a
-  public *.moda.page URL that stays editable and re-publishable. For a
-  printable/PDF one-pager use moda-one-pager; for slides use moda-deck.
-  Requires the moda CLI and a Moda account (Step 0 checks both; it never
-  installs anything itself).
-argument-hint: "[what the site is for, or an existing site to change] [--brand <kit>]"
+  Make video and motion on Moda: short generated clips (text-to-video,
+  image-to-video from a logo, photo, or canvas frame, reference-guided),
+  brand stingers, animated posts and ads, logo animations, video upscaling,
+  and vector-native motion (animated shader fills, animation-canvas
+  exports). Use for "make a video", a GIF or mp4, an animated ad/post/
+  banner, a motion graphic, animating a logo/image/design, or upscaling a
+  video. moda-video owns anything that renders to mp4/gif — an animated
+  social post is this skill for the motion (moda-social owns still sizes
+  and formats). Still posts/carousels/banners → moda-social; slide decks →
+  moda-deck; live sites → moda-website; edits to an existing canvas that
+  stay still → moda-edit. Video generation is metered (spends Moda
+  credits); canvas motion authoring and mp4/gif export are free. Requires
+  the moda CLI and a Moda account (Step 0 checks both; it never installs
+  anything itself).
+argument-hint: "[what the video shows + what to start from (brand/canvas/image)] [--brand <kit>]"
 allowed-tools: Bash(moda:*), Read, Glob, Grep
 ---
 
-# moda-website
+# moda-video
 
 ## Step 0 — doctor (always run first; skip nothing)
 
@@ -103,48 +109,40 @@ allowed-tools: Bash(moda:*), Read, Glob, Grep
   website/video) leads and pulls brand/edit behavior via its references; if no
   Moda skill fits, say what they can make and ask — never force a fit.
 
-**Override for this skill:** it produces no canvas and no export — the
-deliverable is the live *.moda.page URL; the canvas/lint/screenshot/
-`requires_repair` rules above do not apply (the site-specific verify loop
-in references/website.md governs).
-
 ## Workflow
 
-A site is routable, self-contained HTML pages published together to
-`https://<slug>.moda.page`; site verbs are free — `moda web/media *` meter.
-
-1. **Gather** content with your harness's file-reading/search tools (your
-   own research; `moda web search`/`moda web read` — references/web.md).
-   For an existing site: `moda site list` + `moda site pages` first.
-2. **Read references/website.md before authoring** — structure, styling,
-   typography, and the library/embed allowlists (violations silently break
-   or fail the publish gate). Brand kit in play → `moda brand show` and
-   LOOK at its assets before settling the direction (references/brand.md).
-3. **Imagery**: generate hero/atmospheric imagery now (`moda media
-   generate-image`, styled to the brand; use Moda-hosted refs, never
-   hotlinks) — unless the site deliberately goes vector/typography-only;
-   state that choice in your delivery note.
-4. **Author pages locally**: each page one complete, self-contained HTML
-   document (inline styles, mobile-first), reviewed against
-   references/website.md as you go.
-5. **Create + build out**: `moda site create --file home.html --title "…"`
-   (the homepage), then `moda site add-page SITE_ID --path /route --file …`
-   per additional page. Nothing is public yet.
-6. **Verify with your own vision**: `moda site screenshot SITE_ID --path
-   /route --viewport desktop` AND `--viewport mobile` — draft renders, up
-   to 3 pages per call. Fix (`set-content --path`), re-capture.
-7. **Publish**: `moda site publish SITE_ID [--slug hint]` — ONE publish
-   covers all pages; print the live URL. `pending_review` = published but
-   held for review, goes live once approved — never call it browsable yet.
-8. **Revise**: edit locally → `set-content --path` → screenshot →
-   `moda site publish` again (saves do NOT go live until republished).
-9. **Deliver**: end with the live *.moda.page URL ("stays editable —
-   re-publish after changes"). `moda site unpublish` takes it down if asked.
+1. **Route the lane** — read references/video.md BEFORE anything else:
+   generated video (metered `moda media`) for cinematic/photographic
+   motion and "make a video" asks; vector-native (animation canvas or
+   shader fills → `moda export --format mp4|gif --page N`) for crisp type,
+   exact brand geometry, and loops. A video ask IS format words — the
+   motion file is the deliverable, not a ceremony violation.
+2. **Gather the start assets**: brand kit in play → `moda brand show
+   BRAND_REF --json` for durable logo `file_` refs, and LOOK at them first
+   (references/brand.md). A canvas frame → `moda export --format png
+   --page N`. User files → `moda file upload` (local paths also upload
+   themselves as media inputs).
+3. **Pick the model from the registry**: `moda media models` for the
+   current ids; route by the strengths table in references/video.md; knobs
+   snap and `adjustments` reports what ran.
+4. **Spend checkpoint, then generate** (references/video.md): explicit
+   `--duration`, smallest resolution that serves, balance check, one
+   matter-of-fact spend line — then `moda media generate-video` with
+   `--image` / `--reference` / `--end-image` as the workflow dictates.
+5. **Verify — degraded posture**: no frame-inspection verb exists; read
+   `applied`/`adjustments`/`warnings`, view the clip only if your harness
+   has vision, and say so honestly when it can't (references/video.md).
+6. **Enhance and deliver**: `moda media upscale-video` on the winner only;
+   deliver the file path + usage receipt (plus the live canvas link
+   whenever a canvas was involved — link first, always).
 
 ## References
 
 | Doc | Load when |
 |---|---|
-| references/website.md | before authoring any page (always) |
-| references/brand.md | a brand kit exists |
-| references/web.md | content needs live web research |
+| references/video.md | always — lanes, models, spend checkpoint, workflows, prompt craft |
+| references/omni-and-media.md | metered-lane rules, video knob semantics, task-lane escalation |
+| references/brand.md | a brand kit exists — logo refs, variant choice, guides |
+| references/export.md | any canvas export (frames, mp4/gif ceremony, --page rules) |
+| references/markup.md, references/design-quality.md, references/edit-code.md | vector-native motion: authoring, shader fills, animation edits |
+| references/reading-and-verifying.md, references/gotchas.md | reading canvases, degraded verify; no-video-on-canvas and other traps |

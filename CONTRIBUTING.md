@@ -8,7 +8,7 @@
   copies, then `python3 scripts/validate.py`. Commit both the canonical file
   and the fanned copies — CI fails on drift.
 - SKILL.md bodies embed the shared blocks byte-identically; if you change a
-  shared block you must update all eight SKILL.md files to match (the
+  shared block you must update all nine SKILL.md files to match (the
   validator enforces it).
 - Verb names are canonical to the moda CLI contract (`verb-map.json` lists
   the allowed inventory). Internal Moda tool names never appear here.

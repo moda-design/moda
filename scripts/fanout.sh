@@ -29,5 +29,7 @@ fan moda-help brand gotchas markup design-quality charts edit-code omni-and-medi
   reading-and-verifying
 fan moda-diagram diagram markup edit-code reading-and-verifying gotchas design-quality \
   brand export charts omni-and-media
+fan moda-video video markup edit-code reading-and-verifying gotchas design-quality \
+  brand export charts omni-and-media
 
 echo "fanout complete"

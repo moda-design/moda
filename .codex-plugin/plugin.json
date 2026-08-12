@@ -1,7 +1,7 @@
 {
   "name": "moda",
   "version": "0.1.0",
-  "description": "Design on Moda from your agent: editable decks, one-pager and multi-page PDFs, social posts and static ads, diagrams and UI mockups, hosted websites on moda.page, brand kits, precise canvas edits, and a meta/help skill — native PPTX/PDF/PNG exports from a live, collaborative canvas.",
+  "description": "Design on Moda from your agent: editable decks, one-pager and multi-page PDFs, social posts and static ads, diagrams and UI mockups, hosted websites on moda.page, video and motion (generated clips and mp4/gif animation exports), brand kits, precise canvas edits, and a meta/help skill — native PPTX/PDF/PNG exports from a live, collaborative canvas.",
   "skills": [
     "skills/moda-deck",
     "skills/moda-one-pager",
@@ -10,6 +10,7 @@
     "skills/moda-website",
     "skills/moda-brand",
     "skills/moda-edit",
+    "skills/moda-video",
     "skills/moda-help"
   ]
 }
