@@ -58,14 +58,13 @@ allowed-tools: Bash(moda:*), Read
 - Result reading: exit 0 with `"requires_repair": true` means the mutation
   COMMITTED but needs fixing (skipped ops, error-severity lint) — repair
   before building more. Any nonzero exit means nothing committed — safe to
-  retry after the typed error's hint (`STALE_REVISION` → re-read, re-apply).
+  retry after the typed error's hint (`stale_revision` → re-read, re-apply).
 - The same typed error twice on one operation: STOP retrying it; report the
   code and what you tried, and deliver everything that succeeded.
-- The revise loop is explicit: mutate, then screenshot/read/lint when you
-  need to see the result. Mutations do not attach state; when a screenshot
-  is next anyway, pass `--screenshot PATH` on markup/edit to fold the
-  capture in. Canvas history is the recovery mechanism — never rebuild a
-  page to undo a bad edit.
+- The revise loop is explicit: mutate, then screenshot/read/lint when you need
+  to see the result. Mutations don't attach state; when a screenshot is next
+  anyway, pass `--screenshot PATH` on markup/edit to fold it in. Canvas history
+  is the recovery mechanism — never rebuild a page to undo a bad edit.
 - Work in small batches: one section or slide per markup apply; lint once per
   finished section; screenshot at milestones only (it is the slowest verb).
 - Match effort to the ask. A simple single-artifact request (one graphic,
@@ -76,7 +75,8 @@ allowed-tools: Bash(moda:*), Read
   workflows or their verification, never pad a simple ask with process.
 - Run independent calls in parallel when your harness supports it: reads and
   screenshots of different resources fan out together; mutations on the SAME
-  canvas stay serial (the per-canvas lock and revision discipline).
+  canvas stay serial — per-page markups of one canvas INCLUDED (a parallel
+  batch shares one revision pin and loses outright to `stale_revision`).
 - Don't re-read state you already hold: your last read's DSL stays valid
   until someone mutates the canvas. Re-read at loop boundaries (fresh ids,
   a new request, user edits in the app), not between consecutive calls.
