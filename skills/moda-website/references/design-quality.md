@@ -95,8 +95,9 @@ There is no dedicated image node — an image is a pattern fill on a shape. Gene
 
 1. **Brand kit assets** when the brand IS the subject (logos, product shots — `moda brand show`; refs, never re-hosted URLs).
 2. **The user's own uploads and team assets** when they are the actual content — `moda file search QUERY` (`--kind photo` default; `--kind icon` for the shared icon packs); `moda file upload PATH` → `file_…` ref. When the result says the matches are low-confidence (`has_good_matches: false`), verify visually before placing — or generate instead.
-3. **Functional UI icons** — markup `<image icon="query"/>` (deterministic; nav/status/bullets, not decoration or logos).
-4. **Generate everything atmospheric or illustrative** — `moda media generate-image`. Styled/thematic icons, logos, heroes, illustrations. Model choice: references/omni-and-media.md.
+3. **Stock photography** when real-world photography fits better than generation and the team has nothing — `moda file search QUERY --source stock`. Place the returned `stock_unsplash_…` id verbatim as an image src (the server imports the photo on use); the result's `url`/`thumb_url` are preview-only provider links — never write them into a canvas — and each result carries `attribution` (photographer + source) that must be credited wherever the photo appears.
+4. **Functional UI icons** — markup `<image icon="query"/>` (deterministic; nav/status/bullets, not decoration or logos).
+5. **Generate everything atmospheric or illustrative** — `moda media generate-image`. Styled/thematic icons, logos, heroes, illustrations. Model choice: references/omni-and-media.md.
 
 Never use placeholder shapes or literal "[icon]" text. Ensure logo colors contrast with the background (check the kit for logo variants).
 

@@ -51,7 +51,7 @@ Results return durable refs that feed markup `image(...)` fills and `src` attrib
 
 ## Imagery is a default quality lever
 
-Generated imagery is a DEFAULT quality lever, not a last resort. Covers, heroes, section breaks, and full-bleed closers get generated imagery wherever it elevates the design — styled to the brand's palette and mood. Reuse brand-kit assets and the user's own uploads (`moda file search` / `moda file upload`, `--from-url`) when they are the actual subject matter; markup `<image icon="query"/>` covers functional UI icons; an icon/vector-only system is a deliberate style choice, never a cost fallback.
+Generated imagery is a DEFAULT quality lever, not a last resort. Covers, heroes, section breaks, and full-bleed closers get generated imagery wherever it elevates the design — styled to the brand's palette and mood. Reuse brand-kit assets and the user's own uploads (`moda file search` / `moda file upload`, `--from-url`) when they are the actual subject matter; `moda file search QUERY --source stock` adds stock photography (place the `stock_unsplash_…` id verbatim; credit the result's `attribution` wherever the photo appears); markup `<image icon="query"/>` covers functional UI icons; an icon/vector-only system is a deliberate style choice, never a cost fallback.
 
 ## `moda task start` — the Omni escalation lane (metered)
 

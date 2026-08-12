@@ -2741,7 +2741,7 @@
     },
     {
       "name": "canvas show",
-      "description": "canvas details + pages",
+      "description": "canvas details + pages (includes owner guidance when the canvas carries it)",
       "positionals": [
         {
           "name": "canvas",
@@ -4002,7 +4002,7 @@
     },
     {
       "name": "file search",
-      "description": "search team assets (durable file_ ids + URLs, usable in markup and media inputs)",
+      "description": "search team assets or the stock photo library (durable ids usable in markup and media inputs)",
       "positionals": [
         {
           "name": "query",
@@ -4083,6 +4083,13 @@
           "description": "suppress non-essential stderr",
           "takes_value": false,
           "required": false
+        },
+        {
+          "flag": "--source",
+          "description": "team | stock (default team). stock = the stock photo library (photo only; the shared icon packs already ARE the stock icons)",
+          "takes_value": true,
+          "required": false,
+          "default": "team"
         },
         {
           "flag": "--timeout",

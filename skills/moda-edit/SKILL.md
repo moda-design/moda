@@ -17,8 +17,7 @@ allowed-tools: Bash(moda:*), Read
 
 ## Step 0 — doctor (always run first; skip nothing)
 
-1. Run `moda doctor --json`. It verifies CLI version compatibility, auth state,
-   API reachability, and account entitlements in one call.
+1. Run `moda doctor --json`. It verifies CLI version compatibility, auth state, API reachability, and account entitlements in one call.
    - `moda` missing from PATH, below the server minimum (doctor reports
      `version.below_minimum`), or update required: STOP — your stop reply
      MUST quote the install command verbatim (the pinned command doctor
@@ -37,8 +36,7 @@ allowed-tools: Bash(moda:*), Read
      initiative — org decides whose workspace and billing everything lands in.
    - Any entitlement gate (e.g. the account cannot author canvases yet):
      relay doctor's actionable hint verbatim and stop. Never retry in a loop.
-2. Run `moda account status --json`. Note the org, plan, and remaining
-   credits (metered verbs spend them; deterministic authoring never does).
+2. Run `moda account status --json`. Note the org, plan, and remaining credits (metered verbs spend them; deterministic authoring never does).
 3. Run `moda brand list` — one cheap deterministic call, never skipped, even
    for simple asks. Kits exist: use the default (or the one context implies);
    several plausible → ask which, never guess between clients' kits — and read
@@ -47,6 +45,8 @@ allowed-tools: Bash(moda:*), Read
    set up a brand kit first? It's free and makes everything come out on-brand"
    — yes → `moda brand create` from their URL, or manually with no website
    (--name/--color/--font, references/brand.md); no → unbranded, no nagging.
+4. Note whether you can VIEW images: screenshot review assumes vision. A
+   vision-less harness follows the degraded verify loop in references/reading-and-verifying.md.
 
 ## UX rules
 

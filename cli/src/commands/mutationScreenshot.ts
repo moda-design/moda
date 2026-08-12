@@ -18,6 +18,8 @@ import { CliError } from '../cliError.ts';
 import type { CommandOutcome } from '../output/emit.ts';
 import {
   captureScreenshots,
+  captureWarningLines,
+  mergeCaptureWarnings,
   writeCaptureRun,
   writtenPageLine,
   type ScreenshotCall,
@@ -71,11 +73,15 @@ export async function captureAfterMutation(input: {
       shotsDirPath: input.shotsDirPath,
       note: input.note,
     });
+    // Same degradation truth as the standalone verb: per-page fields ride each written page,
+    // and the typed roll-up (merged across batched calls) rides the block.
+    const warnings = mergeCaptureWarnings(capture.roots);
     return {
       block: {
         ok: true,
         ...(capture.truncated ? { truncated: true } : {}),
         ...(capture.calls > 1 ? { capture_calls: capture.calls } : {}),
+        ...(warnings !== undefined ? { warnings } : {}),
         pages: written,
       },
       written,
@@ -87,15 +93,19 @@ export async function captureAfterMutation(input: {
   }
 }
 
-/** Attach the capture to a mutation outcome: `screenshot` in --json, written-page lines in human output. */
+/** Attach the capture to a mutation outcome: `screenshot` in --json, written-page + warning lines in human output. */
 export function attachScreenshotResult(outcome: CommandOutcome, result: MutationScreenshotResult): CommandOutcome {
   const baseHuman = outcome.human;
+  const warnings = Array.isArray(result.block.warnings)
+    ? (result.block.warnings as Record<string, unknown>[])
+    : undefined;
   return {
     ...outcome,
     body: { ...outcome.body, screenshot: result.block },
     human: (write) => {
       baseHuman?.(write);
       for (const page of result.written) write(writtenPageLine(page));
+      for (const line of captureWarningLines(warnings)) write(line);
     },
   };
 }
