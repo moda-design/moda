@@ -1427,6 +1427,12 @@
           "required": false
         },
         {
+          "flag": "--template",
+          "description": "start from a team template (moda template list): a full copy of that canvas",
+          "takes_value": true,
+          "required": false
+        },
+        {
           "flag": "--timeout",
           "description": "per-command ceiling override, seconds",
           "takes_value": true,
@@ -5977,6 +5983,170 @@
           "description": "override the configured org context for this invocation",
           "takes_value": true,
           "required": false
+        },
+        {
+          "flag": "--pretty",
+          "description": "pretty-print the --json document",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--quiet",
+          "description": "suppress non-essential stderr",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--timeout",
+          "description": "per-command ceiling override, seconds",
+          "takes_value": true,
+          "required": false
+        }
+      ],
+      "markers": {
+        "mutating": false,
+        "destructive": false,
+        "metered": false,
+        "read_lane": false
+      }
+    },
+    {
+      "name": "template list",
+      "description": "the team's template canvases — start recurring work from an approved look, not from scratch",
+      "positionals": [],
+      "flags": [
+        {
+          "flag": "--all",
+          "description": "fetch every page (bounded at 500 items)",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--api-base",
+          "description": "endpoint override (staging/dev)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--cursor",
+          "description": "resume token from a previous page's next_cursor",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--json",
+          "description": "machine output: exactly one compact JSON document on stdout; implies --no-input",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--limit",
+          "description": "page size",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--no-input",
+          "description": "fail instead of prompting (implied by --json)",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-retry",
+          "description": "disable the built-in busy/transport retry",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--org",
+          "description": "override the configured org context for this invocation",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--output",
+          "description": "write the full payload to a file; stdout gets a small summary + preview",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--pretty",
+          "description": "pretty-print the --json document",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--quiet",
+          "description": "suppress non-essential stderr",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--timeout",
+          "description": "per-command ceiling override, seconds",
+          "takes_value": true,
+          "required": false
+        }
+      ],
+      "markers": {
+        "mutating": false,
+        "destructive": false,
+        "metered": false,
+        "read_lane": false
+      }
+    },
+    {
+      "name": "template pull",
+      "description": "write the raw templates payload — the one read whose thumbnail URLs are fetchable — to a file",
+      "positionals": [],
+      "flags": [
+        {
+          "flag": "--api-base",
+          "description": "endpoint override (staging/dev)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--cursor",
+          "description": "resume token from a previous page's next_cursor",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--json",
+          "description": "machine output: exactly one compact JSON document on stdout; implies --no-input",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--limit",
+          "description": "page size",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--no-input",
+          "description": "fail instead of prompting (implied by --json)",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-retry",
+          "description": "disable the built-in busy/transport retry",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--org",
+          "description": "override the configured org context for this invocation",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--output",
+          "description": "output path, e.g. templates.json",
+          "takes_value": true,
+          "required": true
         },
         {
           "flag": "--pretty",

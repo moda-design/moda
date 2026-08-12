@@ -51,6 +51,9 @@ export const endpoints = {
   // /v1/files and /v1/folders were NOT built in the prototype: a recorded parity exception)
   assetsSearch: () => '/v1/assets/search',
 
+  // Team templates (template canvases the team starts new work from)
+  templateList: () => '/v1/templates',
+
   // Brand kits
   brandList: () => '/v1/brand-kits',
   brandShow: (ref: string) => `/v1/brand-kits/${enc(ref)}`,

@@ -109,10 +109,11 @@ allowed-tools: Bash(moda:*), Read, Glob, Grep
 
 ## Workflow
 
-1. **Create + link, within the first minute**: `moda canvas create --name
-   "…" --size 816x1056` (A4: 794x1123; `--pages N` multi-page), then send
-   the user the link right away (`moda canvas share CANVAS_REF`): "follow
-   along live here — it builds up as I work."
+1. **Template check, then create + link**: recurring document type (sales
+   one-pager, product brief, report)? Check team templates, view thumbnails
+   — a fitting one beats scratch (references/templates.md): `moda canvas
+   create --template cvs_… --name "…"`; else `moda canvas create --name "…"
+   --size 816x1056` (A4: 794x1123; `--pages N`). Send the link right away.
 2. **Read the source** with your harness's file-reading/search tools (own
    research; `moda web search`/`moda web read` — references/web.md). Scope
    per references/document-design.md: one dense page, or one system/outline.
@@ -144,7 +145,6 @@ allowed-tools: Bash(moda:*), Read, Glob, Grep
 | references/design-quality.md | typography ladder, imagery, recreate rules |
 | references/edit-code.md | targeted fixes via `moda canvas edit` |
 | references/reading-and-verifying.md | DSL reading, lint/screenshot loop |
-| references/brand.md | a brand kit exists |
-| references/web.md | content needs live web research |
-| references/export.md, references/omni-and-media.md | delivering; metered lanes |
-| references/gotchas.md | anything surprising |
+| references/templates.md | the ask looks like a recurring artifact your team may have a template for |
+| references/brand.md, references/web.md | a brand kit exists; content needs live web research |
+| references/export.md, references/omni-and-media.md, references/gotchas.md | delivering; metered lanes; anything surprising |

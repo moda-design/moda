@@ -139,17 +139,35 @@ export function registerCanvas(program: Command): void {
       .requiredOption('--name <name>', 'canvas name')
       .option('--size <WxH>', 'page size, e.g. 1920x1080')
       .option('--pages <n>', 'initial page count', (v: string) => Number.parseInt(v, 10))
-      .option('--category <category>', 'canvas category (drives export defaults and multi-page semantics)'),
+      .option('--category <category>', 'canvas category (drives export defaults and multi-page semantics)')
+      .option('--template <canvas>', 'start from a team template (moda template list): a full copy of that canvas'),
   )
-    .addHelpText('after', '\nExamples:\n  moda canvas create --name "Q3 deck" --size 1920x1080 --pages 1 --category slides\n  moda canvas create --name "One-pager" --size 816x1056\n\nNot for: adding pages to an existing canvas (moda canvas add-pages), or\nreworking an existing design (moda canvas read, then markup/edit).\n')
+    .addHelpText('after', '\nExamples:\n  moda canvas create --name "Q3 deck" --size 1920x1080 --pages 1 --category slides\n  moda canvas create --name "One-pager" --size 816x1056\n  moda canvas create --name "Q3 QBR" --template cvs_… (copy of a team template; edit the copy)\n\nNot for: adding pages to an existing canvas (moda canvas add-pages), or\nreworking an existing design (moda canvas read, then markup/edit).\n')
     .action(
     wrapAction(async (_args, opts, cmd) => {
       const inv = buildInvocation(cmd);
+      // A template defines its own size, page count, and category — the server rejects the
+      // combination (422), so refuse it locally before spending a round trip.
+      if (typeof opts.template === 'string') {
+        const conflicting = [
+          ...(typeof opts.size === 'string' ? ['--size'] : []),
+          ...(typeof opts.pages === 'number' ? ['--pages'] : []),
+          ...(typeof opts.category === 'string' ? ['--category'] : []),
+        ];
+        if (conflicting.length > 0) {
+          throw CliError.usage(
+            `--template cannot be combined with ${conflicting.join(', ')}.`,
+            'The template defines the page size, page count, and category — drop those flags, or drop --template to build from scratch.',
+          );
+        }
+      }
       const { client } = await authedClient(inv, MUTATION_TIMEOUT_MS);
-      // Server contract: CanvasCreateRequest {name, width, height, page_count, category?}.
+      // Server contract: CanvasCreateRequest {name, width, height, page_count, category?} —
+      // or {name, template_canvas_id} for a template-sourced create (mutually exclusive).
       const size = typeof opts.size === 'string' ? parseSize(opts.size) : undefined;
       const payload = {
         name: opts.name as string,
+        ...(typeof opts.template === 'string' ? { template_canvas_id: opts.template } : {}),
         ...(size !== undefined ? { width: size.width, height: size.height } : {}),
         ...(typeof opts.pages === 'number' ? { page_count: opts.pages } : {}),
         ...(typeof opts.category === 'string' ? { category: opts.category } : {}),

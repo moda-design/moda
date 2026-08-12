@@ -32,6 +32,10 @@ Route the user's request to the right Moda skill and follow it:
   it never does the design work itself).
 - A moda.app canvas URL / share link / `cvs_` id plus a change request →
   use the **moda-edit** skill.
+- A recurring artifact that mentions team templates — "use our template",
+  "our usual QBR format", "what templates do we have" → the matching
+  artifact skill (**moda-deck** / **moda-one-pager** / **moda-social**),
+  which checks the team's templates before designing from scratch.
 
 If the request spans several (e.g. "an on-brand deck"), the artifact skill
 leads (moda-deck) and pulls brand data per its references. If none fit,

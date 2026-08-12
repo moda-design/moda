@@ -115,10 +115,12 @@ allowed-tools: Bash(moda:*), Read, Glob, Grep
    or carousel, one concept (default) or N directions — read
    references/social.md (sizes, safe areas, craft) BEFORE designing;
    platformless one-off → 1080x1080. Animated asks: deliver static, say so.
-2. **Create + link**: `moda canvas create --name "…" --size 1080x1350`
-   with `--category carousel` / `web-ads` / `other` (platformless) /
-   `social`, then send the link immediately ("follow along live here —
-   it builds up as I work").
+2. **Template check, then create + link**: recurring post type (launch,
+   hiring, quote series)? Check team templates, view thumbnails — a fitting
+   one beats scratch (references/templates.md): `moda canvas create
+   --template cvs_… --name "…"`; else `moda canvas create --name "…" --size
+   1080x1350` with `--category carousel` / `web-ads` / `other` (platformless)
+   / `social`. Send the link immediately ("follow along live here").
 3. **Read the design references**: references/markup.md before any markup;
    type ladder per references/design-quality.md. Brand kit in play → `moda
    brand show` and LOOK at its assets first (references/brand.md).
@@ -142,9 +144,7 @@ allowed-tools: Bash(moda:*), Read, Glob, Grep
 | Doc | Load when |
 |---|---|
 | references/social.md | always — sizes, safe areas, craft |
-| references/markup.md | before writing any markup |
-| references/design-quality.md | typography ladder, imagery, shaders |
-| references/brand.md | a brand kit exists |
-| references/edit-code.md | targeted fixes, page duplicate/resize |
-| references/reading-and-verifying.md | DSL reading, lint/screenshot loop |
+| references/markup.md, references/design-quality.md | before any markup; typography ladder, imagery, shaders |
+| references/brand.md, references/templates.md | a brand kit exists; the ask looks like a recurring artifact your team may have a template for |
+| references/edit-code.md, references/reading-and-verifying.md | targeted fixes, page duplicate/resize; DSL reading, lint/screenshot loop |
 | references/export.md, references/omni-and-media.md, references/gotchas.md | delivering; metered lanes; anything surprising |

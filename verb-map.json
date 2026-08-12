@@ -83,6 +83,8 @@
     "moda brand images",
     "moda brand add-image",
     "moda brand remove-image",
+    "moda template list",
+    "moda template pull",
     "moda task start",
     "moda task status",
     "moda task list",
