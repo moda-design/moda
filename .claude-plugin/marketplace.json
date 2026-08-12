@@ -12,7 +12,7 @@
     {
       "name": "moda",
       "source": "./",
-      "description": "Seven skills (moda-deck, moda-one-pager, moda-social, moda-diagram, moda-website, moda-brand, moda-edit) plus the /moda router. Requires the moda CLI; Step 0 in every skill checks it and never installs anything itself."
+      "description": "Eight skills (moda-deck, moda-one-pager, moda-social, moda-diagram, moda-website, moda-brand, moda-edit, moda-help) plus the /moda router. Requires the moda CLI; Step 0 in every skill checks it and never installs anything itself."
     }
   ]
 }

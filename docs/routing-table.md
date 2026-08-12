@@ -3,7 +3,9 @@
 The seven skill descriptions are a mutual-exclusivity contract: for any
 plausible ask, exactly ONE skill claims it. This table is the maintained
 record of that contract — update it in the same commit as any description
-change, and re-verify the rows that touch the changed skill.
+change, and re-verify the rows that touch the changed skill. moda-help
+mirrors this table at runtime: update BOTH in the same commit (validate
+enforces that moda-help names every skill).
 
 | User ask | Skill | Why / boundary rule |
 |---|---|---|
@@ -21,6 +23,7 @@ change, and re-verify the rows that touch the changed skill.
 | "A bar chart of Q3 revenue" (standalone) | moda-diagram | standalone data charts — but destined for an EXISTING deck/document canvas → moda-deck / moda-one-pager / moda-edit |
 | "Build a brand kit from our site" | moda-brand | kit lifecycle |
 | "Here's the canvas URL — make the headline bigger" | moda-edit | existing-canvas change request |
+| "Set up Moda for me" / "what can Moda do?" / "how do I switch orgs" / CLI errors | moda-help | meta-only; never claims authoring asks |
 
 Boundary rules, stated once:
 
