@@ -156,7 +156,9 @@ export function registerMeta(program: Command): void {
     program
       .command('describe [verb...]')
       .description('machine-readable verb schema — all verbs compact, or one verb in full (markers: mutating/destructive/metered/read_lane)'),
-  ).action(
+  )
+    .addHelpText('after', '\nVerb names are space-separated, exactly as typed on the command line:\n  moda describe brand create --json\n  moda describe canvas markup\n')
+    .action(
     wrapAction(async (args, _opts, cmd) => {
       const verbs = collectVerbs(cmd.parent as Command, '');
       if (args.length === 0) {
@@ -179,10 +181,18 @@ export function registerMeta(program: Command): void {
       const wanted = args.join(' ');
       const match = verbs.find((verb) => verb.name === wanted);
       if (match === undefined) {
+        // The observed first-contact guess is dotted grammar (`describe brand.create`) — when
+        // respacing the dots names a real verb, teach the exact retry instead of a verb list.
+        const respaced = wanted.replaceAll('.', ' ');
+        const respacedMatch = respaced !== wanted ? verbs.find((verb) => verb.name === respaced) : undefined;
         const near = verbs.filter((verb) => verb.name.startsWith(`${args[0]} `) || verb.name === args[0]).map((v) => v.name);
         throw CliError.usage(
           `Unknown verb '${wanted}'.`,
-          near.length > 0 ? `Did you mean: ${near.join(', ')}` : 'List all verbs: moda describe --json',
+          respacedMatch !== undefined
+            ? `Verb names are space-separated: moda describe ${respacedMatch.name}`
+            : near.length > 0
+              ? `Did you mean: ${near.join(', ')}`
+              : 'Verb names are space-separated (e.g. moda describe brand create); list all: moda describe --json',
         );
       }
       return {

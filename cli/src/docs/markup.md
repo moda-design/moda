@@ -1,10 +1,12 @@
 # moda canvas markup — XML markup reference (offline copy)
 
-`moda canvas markup CANVAS_REF --file page.xml [--page PAGE_ID] [--mode append|replace]
-[--screenshot out.jpg]` applies XML markup to a page. It is partial-success: elements that fail are skipped and
-reported; the mutation still commits (exit 0 with `requires_repair: true`). `--mode replace`
-is an atomic full-page rewrite — deletion happens only after a clean parse, and it requires a
-revision token (`moda canvas read` first, or `--revision`).
+`moda canvas markup CANVAS_REF --file page.xml --page PAGE_ID [--mode append|replace]
+[--screenshot out.jpg]` applies XML markup to a page. `--page` is required — even on a
+single-page canvas (page ids come from `moda canvas show`/`read`). It is partial-success:
+elements that fail are skipped and reported; the mutation still commits (exit 0 with
+`requires_repair: true`). `--mode replace` is an atomic full-page rewrite — deletion happens
+only after a clean parse, and it requires a revision token (`moda canvas read` first, or
+`--revision`).
 
 ## Root and flow
 

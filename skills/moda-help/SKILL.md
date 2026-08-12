@@ -4,7 +4,10 @@ description: >-
   Moda meta and routing help — NOT a design tool. Use for meta asks
   only: installing or updating Moda, authentication and org switching,
   "what can Moda do?", "which Moda skill or tool should handle X?", CLI
-  troubleshooting (doctor, last-error, typed errors) — or when a Moda
+  troubleshooting (doctor, last-error, typed errors), automation and
+  integration asks ("set up Moda to auto-post/sync/schedule X", connect
+  Moda to another tool, recurring jobs — the automation part only: any
+  artifact to author still routes to its format skill) — or when a Moda
   request doesn't CLEARLY fit any other moda skill (a matching format skill
   always wins; this is the none-fit catcher, never a shortcut). Creating or
   editing designs, decks, documents, sites, graphics, or diagrams is NEVER
@@ -109,8 +112,7 @@ allowed-tools: Bash(moda:*), Read, Glob, Grep
   headless) → `npx skills add moda-design/moda` → `moda doctor` (private
   repo: the README's one-time registry box). **Update**: same two installs
   again — skills are hash-pinned, re-add to update — then `moda doctor`.
-- **Orgs** (ONLY when asked; org = workspace + billing): `moda org list`;
-  stored → `moda org use <org>`; new → `moda auth login`; `moda org current`.
+- **Orgs** (ONLY when asked; org = workspace + billing): Step-0's org-switch flow above.
 - **Troubleshooting**: `moda doctor` first; `moda last-error` re-prints the
   last failure — never re-run a failed write just to see its error.
 
@@ -132,16 +134,14 @@ page is live (website); decorative shapes → social, not diagram.
 - `moda describe <verb> --json` is any verb's ground truth — flags plus the
   markers mutating / destructive / metered / read_lane.
 - Big results: `--output FILE`; a list is a PAGE (`total`/`has_more`; `--all`
-  caps at 500). Copy ids/URLs verbatim. Exports are ask-first. Metered lanes
-  (media/web/task) are normal tools — receipt after, no pre-spend ceremony.
+  caps at 500). Copy ids/URLs verbatim.
 
 ## When nothing fits
-Consult the table above; if a format skill fits after all, load it and
-proceed — don't narrate the detour. Capability unclear? `moda describe
-[verb] --json` is ground truth (`moda docs` for the authoring surface).
-Outside Moda's powers? Say so honestly, offer the nearest thing Moda CAN
-do; ask exactly ONE question, only when the fork is real — never enumerate
-the catalog at the user.
+Consult the table above; a format skill that fits after all wins — load it,
+don't narrate the detour. Capability unclear? `moda describe [verb] --json`
+is ground truth (`moda docs` for authoring). Outside Moda's powers? Say so
+honestly, offer the nearest thing Moda CAN do, and ask exactly ONE
+question, only when the fork is real — never enumerate the catalog.
 
 ## Verbs at a glance (load the format skill for the work)
 Decks/documents/social/diagrams author via `moda canvas markup|edit` +

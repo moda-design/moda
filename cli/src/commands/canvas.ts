@@ -547,7 +547,9 @@ export function registerCanvas(program: Command): void {
       .command('markup <canvas>')
       .description('apply XML markup to a page (append or atomic full-page replace)')
       .requiredOption('--file <path>', "markup file, or '-' for stdin")
-      .requiredOption('--page <page_id>', 'target page (short id or "canvas" for floating nodes)')
+      // A missed --page is re-emitted as a typed error naming the exact retry shape — see
+      // USAGE_HINTS in main.ts (gate finding F6: the raw commander line taught nothing).
+      .requiredOption('--page <page_id>', 'target page (a page id from a read/show, or "canvas" for floating nodes)')
       .option('--mode <mode>', 'append | replace', 'append')
       .option('--revision <token>', 'expected revision (required for --mode replace)')
       .option('--screenshot <path>', SCREENSHOT_FLAG_HELP),

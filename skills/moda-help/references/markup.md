@@ -3,11 +3,11 @@
 `moda canvas markup` is the **only** path for creating content. You pass XML markup describing shapes, text, images, layout containers, and generated graphics; the parser turns it into canvas nodes. It is **partial-success**: elements that fail are skipped and reported in the result's warnings, while the rest render — a committed-but-imperfect apply exits 0 with `requires_repair: true`.
 
 ```
-moda canvas markup CANVAS_REF --file page.xml [--page PAGE_ID] [--mode append|replace] [--screenshot out.jpg]
-moda canvas markup CANVAS_REF --file - < page.xml     # stdin — the agent-ergonomic path
+moda canvas markup CANVAS_REF --file page.xml --page PAGE_ID [--mode append|replace] [--screenshot out.jpg]
+moda canvas markup CANVAS_REF --file - --page PAGE_ID < page.xml     # stdin — the agent-ergonomic path
 ```
 
-- `--page` takes a page short id from your latest `moda canvas read` (or `canvas` for floating, canvas-absolute nodes on a Design canvas).
+- `--page` is **required, even on a fresh single-page canvas** — a page short id from your latest `moda canvas read` (or `canvas` for floating, canvas-absolute nodes on a Design canvas).
 - `--mode replace` is the atomic full-page rewrite: it deletes every node on the page and then adds the markup — deletion happens only after a clean parse, so an interrupted call can never leave the page empty. Default is `append`. Replace requires a revision token: the CLI uses your cached last `moda canvas read` automatically, so read first (or pass `--revision`).
 - `--screenshot PATH` captures the touched page right after the commit — the same capture and files as `moda canvas screenshot -o PATH`, folded into one invocation. Use it when a screenshot is your next step anyway (`--page canvas` falls back to the default capture; a capture failure never changes the mutation's exit code).
 

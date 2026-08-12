@@ -12,12 +12,12 @@ import { existsSync } from 'node:fs';
 import type { Command } from 'commander';
 import type { ApiClient } from '../api/client.ts';
 import { endpoints } from '../api/endpoints.ts';
-import { asObject, str } from '../api/types.ts';
+import { asObject, num, str, strArray, type JsonObject } from '../api/types.ts';
 import { CliError } from '../cliError.ts';
 import { EXIT_OK } from '../output/exitCodes.ts';
 import type { CommandOutcome } from '../output/emit.ts';
+import { PREVIEW_ITEMS, writeResultFile } from '../output/resultFile.ts';
 import { addGlobalFlags, authedClient, buildInvocation, metaBlock, wrapAction, type Invocation } from './runtime.ts';
-import { LIST_ALL_CAP, fetchListPages, listFlagsOf, listOutcome, parseListLimit, parseListOffset } from './listLane.ts';
 import { parseSize } from './canvasShared.ts';
 
 const MEDIA_TIMEOUT_MS = 600_000;
@@ -201,26 +201,99 @@ export function registerMedia(program: Command): void {
   addGlobalFlags(
     media
       .command('models')
-      .description('available media models (the required --model values)')
-      .option('--limit <n>', 'page size', parseListLimit)
-      .option('--offset <n>', 'pagination offset', parseListOffset)
-      .option('--all', `fetch every page (bounded at ${LIST_ALL_CAP} items)`)
+      .description('available media models and their capabilities (the required --model values)')
       .option('--output <file>', 'write the full payload to a file; stdout gets a small summary + preview'),
   ).action(
     wrapAction(async (_args, opts, cmd) => {
       const inv = buildInvocation(cmd);
-      const flags = listFlagsOf(opts);
       const { client } = await authedClient(inv, 30_000);
-      const pages = await fetchListPages(client, endpoints.mediaModels(), {}, flags, 30_000);
-      return listOutcome({
-        operation: 'media.models',
-        pages,
-        flags,
-        emptyHint: 'no models reported',
-        itemLine: (model) => `${str(model, 'id') ?? str(model, 'name') ?? '?'}  ${str(model, 'name') ?? ''}`,
-      });
+      return performMediaModels(client, typeof opts.output === 'string' ? opts.output : undefined);
     }),
   );
+}
+
+/**
+ * `media models` — the capability source the skills defer to. This is NOT a list lane: the
+ * server returns the complete registry in one document — `{image_models: [descriptor…],
+ * video_model_ids: [id…]}` (backend media router) — so there is no pagination and no page
+ * note. The human lane must render the SAME model set the JSON lane carries (the "no models
+ * reported" regression steered real runs into skipping imagery entirely).
+ */
+export async function performMediaModels(client: ApiClient, output?: string): Promise<CommandOutcome> {
+  const response = await client.request({ method: 'GET', path: endpoints.mediaModels(), timeoutMs: 30_000 });
+  const root = asObject(response.body);
+  const imageModels = (Array.isArray(root.image_models) ? root.image_models : []).map(asObject);
+  const videoModelIds = strArray(root, 'video_model_ids');
+  const meta = { ...asObject(root.meta), ...metaBlock({ requestId: response.requestId, durationMs: response.durationMs }) };
+  const lines = [
+    ...imageModels.map(imageModelLine),
+    ...(videoModelIds.length > 0 ? [`video models: ${videoModelIds.join(', ')}`] : []),
+  ];
+  if (output !== undefined) {
+    const written = writeResultFile(output, { ok: true, operation: 'media.models', ...root });
+    const preview = lines.slice(0, PREVIEW_ITEMS);
+    return {
+      body: {
+        ok: true,
+        operation: 'media.models',
+        image_model_count: imageModels.length,
+        video_model_count: videoModelIds.length,
+        ...written,
+        preview,
+        meta,
+      },
+      human: (write) => {
+        write(`${imageModels.length + videoModelIds.length} models → ${written.output} (inspect with jq/grep)`);
+        for (const line of preview) write(line);
+      },
+      exitCode: EXIT_OK,
+    };
+  }
+  return {
+    body: { ok: true, operation: 'media.models', ...root, meta },
+    human: (write) => {
+      if (lines.length === 0) {
+        write('no models reported');
+        return;
+      }
+      for (const line of lines) write(line);
+    },
+    exitCode: EXIT_OK,
+  };
+}
+
+/**
+ * One capability line per image model — id, label, aspect ratios, resolution tiers, refs,
+ * images-per-request cap, extra params (the axes the skills tell agents to read from here).
+ */
+function imageModelLine(model: JsonObject): string {
+  const id = str(model, 'id') ?? str(model, 'name') ?? '?';
+  const label = str(model, 'label') ?? str(model, 'name') ?? '';
+  const caps: string[] = [];
+  const aspectRatios = strArray(model, 'aspect_ratios');
+  if (aspectRatios.length > 0) caps.push(`ar ${aspectRatios.join(',')}`);
+  const resolutions = idList(model.resolutions);
+  if (resolutions.length > 0) caps.push(`res ${resolutions.join(',')}`);
+  if (model.accepts_reference_images === true) {
+    const maxRefs = num(model, 'max_reference_images');
+    caps.push(`refs${maxRefs !== undefined ? ` max ${maxRefs}` : ''}`);
+  }
+  const maxImages = num(model, 'max_num_images');
+  if (maxImages !== undefined) caps.push(`imgs max ${maxImages}`);
+  const controls = idList(model.controls);
+  if (controls.length > 0) caps.push(`params ${controls.join(',')}`);
+  const description = str(model, 'description') ?? '';
+  return (
+    `${id}${label.length > 0 && label !== id ? ` — ${label}` : ''}` +
+    `${caps.length > 0 ? `  [${caps.join('; ')}]` : ''}${description.length > 0 ? `  ${description}` : ''}`
+  );
+}
+
+/** Ids from an array tolerant of BOTH entry shapes: bare string ids or `{id}` descriptor objects. */
+function idList(value: unknown): string[] {
+  return (Array.isArray(value) ? value : [])
+    .map((entry) => (typeof entry === 'string' ? entry : str(asObject(entry), 'id')))
+    .filter((id): id is string => id !== undefined && id.length > 0);
 }
 
 function parseNumImages(value: string): number {
