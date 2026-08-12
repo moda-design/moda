@@ -24,6 +24,8 @@ export interface RequestOptions {
   timeoutMs?: number;
   /** Return raw bytes instead of parsed JSON (downloads). */
   raw?: boolean;
+  /** Non-idempotent create with no server-side key: never auto-retry on transport/5xx. */
+  noRetryTransport?: boolean;
 }
 
 export interface ApiResponse<T> {
@@ -68,7 +70,7 @@ export class ApiClient {
   async request<T = unknown>(op: RequestOptions): Promise<ApiResponse<T>> {
     const sleep = this.opts.sleeper ?? defaultSleep;
     const busySchedule = this.opts.noRetry ? [] : (this.opts.busyBackoffMs ?? DEFAULT_BUSY_BACKOFF_MS);
-    const transportBudget = this.opts.noRetry ? 0 : (this.opts.transportRetries ?? 2);
+    const transportBudget = this.opts.noRetry || op.noRetryTransport === true ? 0 : (this.opts.transportRetries ?? 2);
     const timeoutMs = op.timeoutMs ?? this.opts.defaultTimeoutMs ?? DEFAULT_TIMEOUT_MS;
 
     let busyAttempt = 0;

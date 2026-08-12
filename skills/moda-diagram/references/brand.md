@@ -59,7 +59,7 @@ The auditable brand check no competitor offers — pure read verbs:
 ## Creating and escalating
 
 - `moda brand create --url …` runs Moda's server-side extraction (colors, fonts, logos from a live site). It is **deterministic and unmetered** — it spends no credits (ignore any legacy metered labels in its response envelope while the server sheds them).
-- **Honest gap:** a Brand Kit's GUIDE prose — the written brand rules Moda's own agent honors — is not yet readable through the CLI. `moda brand show` delivers colors, fonts, and logos only; for voice, imagery rules, or layout doctrine beyond those tokens, ask the user rather than inventing brand law.
+- **Read the guide prose before branded work.** A kit's GUIDES are the written brand rules Moda's own agent honors — voice, imagery doctrine, usage law beyond colors/fonts/logos. `moda brand guides KIT_REF` lists them (id, title, description); `moda brand guide KIT_REF GUIDE_ID` returns the full markdown. Read the relevant guide(s) before any branded deliverable and follow them with the same force as the kit's fields; where guides are silent, ask the user rather than inventing brand law.
 - Full brand-**guide** generation — a new identity, multiple creative directions, logo concepts — is creative work for the metered Omni lane: `moda task start --prompt "…"` (see references/omni-and-media.md). Do not try to hand-author a brand identity out of markup primitives.
 
 ## Honest gaps

@@ -156,16 +156,29 @@ export function registerMedia(program: Command): void {
   addGlobalFlags(
     media
       .command('upscale-video <ref_or_path>')
-      .description('upscale a video — not available: the public media lane has no upscale-video endpoint'),
+      .description('upscale a video (metered); accepts a file_ ref, URL, or local path')
+      .option('--resolution <res>', 'target resolution: 720p | 1080p | 1440p | 2160p')
+      .option('-o, --output <path>', 'download the artifact to a local file'),
   ).action(
-    wrapAction(async () => {
-      throw new CliError({
-        type: 'unprocessable',
-        code: 'not_available',
-        message: 'Video upscaling has no public API endpoint — a recorded parity exception in the prototype.',
-        hint: 'Upscale video in the Moda app; image upscaling is available: moda media upscale.',
-        source: 'local',
-      });
+    wrapAction(async (args, opts, cmd) => {
+      const inv = buildInvocation(cmd);
+      const { client } = await authedClient(inv, MEDIA_TIMEOUT_MS);
+      const video = await mediaInput(args[0] as string, client);
+      // Wire field is target_resolution (extra=forbid server-side); the flag stays --resolution.
+      const payload = { video, ...(typeof opts.resolution === 'string' ? { target_resolution: opts.resolution } : {}) };
+      try {
+        return await mediaCall(client, inv, 'media.upscale_video', endpoints.mediaUpscaleVideo(), payload, opts.output as string | undefined);
+      } catch (err) {
+        // Tolerant lane: a bare route 404 means this server predates the endpoint (#9292).
+        if (err instanceof CliError && err.fields.code === 'http_404') {
+          throw new CliError({
+            ...err.fields,
+            message: 'This server predates the video-upscale endpoint.',
+            hint: 'It ships with the next backend deploy; image upscaling works today: moda media upscale.',
+          });
+        }
+        throw err;
+      }
     }),
   );
 
@@ -305,9 +318,15 @@ async function mediaCall(
           ` (metered${typeof usage.model === 'string' ? `, model: ${usage.model}` : ''})`,
       );
       // Read-before-describe surface: snapping adjustments, warnings, and checkpoint resumes.
-      const adjustments = asObject(root.adjustments);
-      for (const [key, value] of Object.entries(adjustments)) {
-        write(`adjusted ${key}: ${typeof value === 'object' ? JSON.stringify(value) : String(value)}`);
+      // adjustments is an object on some verbs and a LIST of entries on others (upscale-video).
+      if (Array.isArray(root.adjustments)) {
+        for (const entry of root.adjustments) {
+          write(`adjusted: ${typeof entry === 'string' ? entry : JSON.stringify(entry)}`);
+        }
+      } else {
+        for (const [key, value] of Object.entries(asObject(root.adjustments))) {
+          write(`adjusted ${key}: ${typeof value === 'object' ? JSON.stringify(value) : String(value)}`);
+        }
       }
       const warnings = Array.isArray(root.warnings) ? root.warnings : [];
       for (const warning of warnings) {

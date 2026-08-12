@@ -98,6 +98,26 @@ function parseCanvasUrl(input: string): ParsedRef {
   );
 }
 
+const CROCKFORD = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
+
+/**
+ * Encode a canvas ref to the cvs_ wire form. cvs_ ids pass through; a bare UUID is encoded as
+ * the ULID-style Crockford-base32 of its 128 bits (26 chars) — the server's encode_id scheme.
+ * Needed where a request TYPE takes only the wire form (POST /v1/remix's canvas_id).
+ */
+export function toCanvasWireId(ref: string): string {
+  if (ref.startsWith('cvs_')) return ref;
+  const hex = ref.replaceAll('-', '');
+  if (!/^[0-9a-fA-F]{32}$/.test(hex)) return ref; // not a UUID — pass through untouched
+  let value = BigInt(`0x${hex}`);
+  let out = '';
+  for (let i = 0; i < 26; i++) {
+    out = CROCKFORD[Number(value & 31n)] + out;
+    value >>= 5n;
+  }
+  return `cvs_${out}`;
+}
+
 /** Short session ids minted by canvas reads (`n7`, `p_a`, `img1`, `anim2`) — pass-through per contract. */
 export const SHORT_ID_RE = /\b(?:n\d+|p_[a-z0-9]+|img\d+|anim\d+)\b/g;
 

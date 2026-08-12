@@ -13,11 +13,10 @@ moda media generate-video --prompt "..." --model M [--duration S] [--aspect-rati
                           [--image REF] [--end-image REF] [--reference REFS...] [--output PATH]
 moda media remove-background FILE_REF|URL|PATH
 moda media upscale FILE_REF|URL|PATH [--scale 2|4]
+moda media upscale-video FILE_REF|URL|PATH [--resolution 720p|1080p|1440p|2160p]
 ```
 
 **`moda media models` is the capability source**: each model's supported aspect ratios, resolution tiers, durations, and extra `--model-params` come from it — read it before passing per-model knobs; never hardcode capabilities from memory.
-
-Video upscaling is not available on this surface — say so plainly if asked; the Moda app is the path.
 
 Results return durable refs that feed markup `image(...)` fills and `src` attributes directly — never a raw URL.
 

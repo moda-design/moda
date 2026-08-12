@@ -110,35 +110,34 @@ in references/website.md governs).
 
 ## Workflow
 
-A site is ONE self-contained HTML page (v1 is static single-page) published
-to `https://<slug>.moda.page`; there is no screenshot/visual-QA verb here.
-**Disclose both up front** when a request implies multiple pages/routes or
-rendered-preview checks: offer anchor-linked sections and live-URL review —
-never let the limits surface as silent degradation mid-build. Site verbs
-are deterministic and free; only `moda web *` and `moda media *` meter.
+A site is a set of routable, self-contained HTML pages published together
+to `https://<slug>.moda.page`. Site verbs are deterministic and free; only
+`moda web *` and `moda media *` meter.
 
 1. **Gather** content with your harness's file-reading/search tools (your
-   own research). Live web facts: `moda web search` / `moda web read` (metered)
-   — references/web.md. For an existing site, `moda site list` +
-   `moda site show` first.
+   own research; `moda web search`/`moda web read` — references/web.md).
+   For an existing site: `moda site list` + `moda site pages` first.
 2. **Read references/website.md before authoring** — structure, styling,
    typography, and the library/embed allowlists (violations silently break
    or fail the publish gate). When a brand kit is in play, `moda brand show`
    it and LOOK at its assets before settling the direction
    (references/brand.md); imagery must be Moda-hosted, never hotlinked.
-3. **Author the page locally**: write one complete, self-contained HTML
-   document (inline styles, mobile-first) to a file, reviewing it against
+3. **Author pages locally**: each page one complete, self-contained HTML
+   document (inline styles, mobile-first), reviewed against
    references/website.md as you go.
-4. **Create**: `moda site create --file page.html --title "…"` — note the
-   site id from the result. Nothing is public yet.
-5. **Publish**: `moda site publish SITE_ID [--slug hint]` — print the live
-   URL. If `review_status` is `pending_review`, tell the user the site is
-   published but held for review and goes live once approved — never present
-   it as already browsable.
-6. **Revise**: edit the local file, `moda site set-content SITE_ID --file
-   page.html`, then `moda site publish SITE_ID` again — saved content does
-   NOT go live until republished (`has_unpublished_changes` flags this).
-7. **Deliver**: end with the live *.moda.page URL ("stays editable —
+4. **Create + build out**: `moda site create --file home.html --title "…"`
+   (the homepage), then `moda site add-page SITE_ID --path /route --file …`
+   per additional page. Nothing is public yet.
+5. **Verify with your own vision**: `moda site screenshot SITE_ID --path
+   /route --viewport desktop` AND `--viewport mobile` — draft renders, up
+   to 3 pages per call. Fix (`set-content --path`), re-capture.
+6. **Publish**: `moda site publish SITE_ID [--slug hint]` — ONE publish
+   covers all pages; print the live URL. `pending_review` = published but
+   held for review, goes live once approved — never call it browsable yet.
+7. **Revise**: edit locally → `moda site set-content SITE_ID --path /route
+   --file …` → screenshot → `moda site publish` again (saved content does
+   NOT go live until republished; `has_unpublished_changes` flags this).
+8. **Deliver**: end with the live *.moda.page URL ("stays editable —
    re-publish after changes"). `moda site unpublish` takes it down if asked.
 
 ## References

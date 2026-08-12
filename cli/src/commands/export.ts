@@ -11,16 +11,16 @@ import { EXIT_OK } from '../output/exitCodes.ts';
 import { addGlobalFlags, authedClient, buildInvocation, metaBlock, wrapAction, type Invocation } from './runtime.ts';
 import { resolveCanvasRef } from './canvasShared.ts';
 
-const SUPPORTED_FORMATS = new Set(['pdf', 'pptx', 'png', 'jpeg']);
-const ANIMATION_FORMATS = new Set(['gif', 'mp4', 'webp']);
+const SUPPORTED_FORMATS = new Set(['pdf', 'pptx', 'png', 'jpeg', 'mp4', 'gif']);
+const UNSUPPORTED_FORMATS = new Set(['webp']);
 const EXPORT_BUDGET_MS = 300_000;
 
 export function registerExport(program: Command): void {
   addGlobalFlags(
     program
       .command('export <canvas>')
-      .description('export a canvas (pdf|pptx|png|jpeg); polls transparently and downloads to -o')
-      .requiredOption('--format <format>', 'pdf | pptx | png | jpeg')
+      .description('export a canvas (pdf|pptx|png|jpeg|mp4|gif); polls transparently and downloads to -o')
+      .requiredOption('--format <format>', 'pdf | pptx | png | jpeg | mp4 | gif')
       .option('-o, --output <path>', 'output path (default <canvas>.<ext> in the output dir)')
       .option('--page <n>', 'single 1-indexed page to export (omit for all pages; multi-page png/jpeg arrive as a zip)', (v: string) => Number.parseInt(v, 10))
       .option('--pixel-ratio <n>', 'pixel ratio 1-4 (raster formats)', (v: string) => Number.parseInt(v, 10))
@@ -29,7 +29,7 @@ export function registerExport(program: Command): void {
   )
     .addHelpText(
       'after',
-      '\nExamples:\n  moda export cvs_123 --format pptx -o deck.pptx\n  moda export cvs_123 --format png --pixel-ratio 2 -o post.png\n\nNot for: quick visual checks while designing (moda canvas screenshot).\nAnimated formats (gif/mp4/webp) have no lane here — say so instead of\nretrying. PDF flattens hyperlinks to text.\n',
+      '\nExamples:\n  moda export cvs_123 --format pptx -o deck.pptx\n  moda export cvs_123 --format mp4 -o motion.mp4   (animated pages only)\n\nNot for: quick visual checks while designing (moda canvas screenshot).\nmp4/gif render one page\'s animation (a still page rejects typed with\nno_animation — deliver a static format + the live link instead). PDF\nflattens hyperlinks to text.\n',
     )
     .action(
     wrapAction(async (args, opts, cmd) => {
@@ -65,18 +65,26 @@ export async function performExport(
   ref: string,
   options: ExportOptions,
 ): Promise<CommandOutcome> {
-  const format = options.format;
-  if (ANIMATION_FORMATS.has(format)) {
+  // Server aliases jpg → jpeg; accept the sibling verbs' spelling here too.
+  const format = options.format === 'jpg' ? 'jpeg' : options.format;
+  if (UNSUPPORTED_FORMATS.has(format)) {
     throw new CliError({
       type: 'unprocessable',
       code: 'unsupported_export',
-      message: `Animation export (${format}) has no server lane yet.`,
-      hint: 'Export gif/mp4/webp from the Moda app; supported here: pdf, pptx, png, jpeg.',
+      message: `webp export has no server lane.`,
+      hint: 'Motion-preserving exports: mp4 or gif. Stills: pdf, pptx, png, jpeg.',
       source: 'local',
     });
   }
   if (!SUPPORTED_FORMATS.has(format)) {
-    throw CliError.usage(`Unsupported --format '${format}'.`, 'Supported: pdf, pptx, png, jpeg.');
+    throw CliError.usage(`Unsupported --format '${format}'.`, 'Supported: pdf, pptx, png, jpeg, mp4, gif.');
+  }
+  if ((format === 'mp4' || format === 'gif') && options.pageNumber === undefined) {
+    // Server-side this is an untyped 400 today — fail it clean and early.
+    throw CliError.usage(
+      `${format} export renders ONE page's animation — pass --page N.`,
+      'Pick the animated page (moda canvas read --summary lists pages).',
+    );
   }
   // Server contract: POST /v1/canvases/{id}/export takes QUERY params (format, page_number,
   // pixel_ratio, flatten, wait), not a JSON body. flatten defaults to True server-side, so
