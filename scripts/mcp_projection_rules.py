@@ -684,7 +684,7 @@ REFERENCE_PASSAGES["reading-and-verifying"] = [
     (
         # The connector has no ask lane yet (VERB_DISPOSITION: pending-server) — until the
         # advisory tool ships there, the honest same-shaped steer is the load_skill pull tier.
-        "Whenever you're unsure of the best approach — before an unfamiliar kind of task, when weighing two ways to do something, or after any failed call — ask Moda itself: `moda ask \"<question>\"` is fast, free, and answers with the exact verbs and references to use, so ask early and often rather than guessing.",
+        "Whenever you're unsure of the best approach — before an unfamiliar kind of task, when weighing two ways to do something, or after any failed call — ask Moda itself: `moda ask \"<question>\"` is fast, free, and answers with the exact verbs and references to use, so ask early and often rather than guessing. Follow-ups keep context automatically — the last session is reused, so just ask the next question; pass `--fresh` to reset. Add `--brand <kit-id>` (from `moda brand list`) to ground a styling answer in that brand kit; without the flag no brand is applied.",
         "Whenever you're unsure of the best approach — before an unfamiliar kind of task, when weighing two ways to do something, or after any failed call — pull the fuller skill reference with `load_skill` rather than guessing.",
     ),
 ]

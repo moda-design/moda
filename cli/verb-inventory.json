@@ -213,9 +213,21 @@
           "required": false
         },
         {
+          "flag": "--brand",
+          "description": "brand kit ref — ground the answer in that kit (palette, fonts, tone); never applied unless passed",
+          "takes_value": true,
+          "required": false
+        },
+        {
           "flag": "--context",
           "description": "extra context for the question — e.g. the failing command and its error output",
           "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--fresh",
+          "description": "start a new session: ignore the remembered one, so this question carries no prior context",
+          "takes_value": false,
           "required": false
         },
         {
@@ -252,6 +264,12 @@
           "flag": "--quiet",
           "description": "suppress non-essential stderr",
           "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--session",
+          "description": "continue a specific session id (from an earlier answer) instead of the remembered one",
+          "takes_value": true,
           "required": false
         },
         {
