@@ -1,5 +1,5 @@
 {
-  "skills_release": "v2026.08.13+dogfood",
+  "skills_release": "v2026.08.13+dogfood.2",
   "authoring": "authored directly in this repo for the private dogfood; the studio skills-src publish pipeline takes over at ship time",
   "cli": {
     "floor": "0.9.0",
