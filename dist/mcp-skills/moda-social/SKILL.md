@@ -113,7 +113,7 @@ description: >-
 2. **Template check, then create + link**: recurring post type (launch,
    hiring, quote series)? Check team templates, view thumbnails — a fitting
    one beats scratch (references/templates.md):
-   `canvas_create(template='cvs_…', name='…')`; else `canvas_create(name='…',
+   `canvas_create(template_canvas_id='cvs_…', name='…')`; else `canvas_create(name='…',
    width=1080, height=1350)` with `category='carousel'` / `'web-ads'` /
    `'other'` (platformless) / `'social'`. Send the link immediately ("follow
    along live here").

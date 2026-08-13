@@ -150,7 +150,7 @@ PASSAGES["skills/moda-deck/SKILL.md"] = [
         "   1 --category slides`. Send the link at once (`moda canvas share CANVAS_REF`).",
         "1. **Template check, then create + link**: recurring deck type (QBR, board,\n"
         "   launch)? Check team templates, view thumbnails — a fitting one beats\n"
-        "   scratch (references/templates.md): `canvas_create(template='cvs_…',\n"
+        "   scratch (references/templates.md): `canvas_create(template_canvas_id='cvs_…',\n"
         "   name='…')`; else `canvas_create(name='…', width=1920, height=1080,\n"
         "   category='slides')`. Send the link at once (`canvas_share`).",
     ),
@@ -196,7 +196,7 @@ PASSAGES["skills/moda-one-pager/SKILL.md"] = [
         "1. **Template check, then create + link**: recurring document type (sales\n"
         "   one-pager, product brief, report)? Check team templates, view thumbnails\n"
         "   — a fitting one beats scratch (references/templates.md):\n"
-        "   `canvas_create(template='cvs_…', name='…')`; else `canvas_create(name='…',\n"
+        "   `canvas_create(template_canvas_id='cvs_…', name='…')`; else `canvas_create(name='…',\n"
         "   width=816, height=1056)` (A4: 794x1123; `page_count=N`). Send the link\n"
         "   right away.",
     ),
@@ -324,7 +324,7 @@ PASSAGES["skills/moda-social/SKILL.md"] = [
         "2. **Template check, then create + link**: recurring post type (launch,\n"
         "   hiring, quote series)? Check team templates, view thumbnails — a fitting\n"
         "   one beats scratch (references/templates.md):\n"
-        "   `canvas_create(template='cvs_…', name='…')`; else `canvas_create(name='…',\n"
+        "   `canvas_create(template_canvas_id='cvs_…', name='…')`; else `canvas_create(name='…',\n"
         "   width=1080, height=1350)` with `category='carousel'` / `'web-ads'` /\n"
         "   `'other'` (platformless) / `'social'`. Send the link immediately (\"follow\n"
         "   along live here\").",
@@ -569,7 +569,7 @@ REFERENCE_PASSAGES["reading-and-verifying"] = [
     ),
     (
         "- **Several deliverables for one project? Group them.** Create a project folder once (`moda drive mkdir \"<project>\"`), place new work in it (`--folder` on `moda canvas create`; `moda drive move` for existing items), and mirror how the user's workspace is already organized (`moda drive tree`) rather than inventing new structure. A design created without `--folder` lands wherever the workspace's default save location points — if the user asks why something isn't where they expected, that's why; `moda drive move` fixes it. `moda drive visibility <ref> private` hides an item from teammates — only when the user asks for private. Files ride the same placement: `moda file upload <path> --folder fld_…` lands an asset in the folder directly, and `moda file list --folder fld_…` / `moda file download file_…` verify what is actually there.",
-        "- **Several deliverables for one project? Group them.** Create a project folder once (`drive_mkdir('<project>')`), place work in it (`drive_move`), and mirror how the user's workspace is already organized (`drive_tree`) rather than inventing new structure. A design created without a folder lands wherever the workspace's default save location points — if the user asks why something isn't where they expected, that's why; `drive_move` fixes it. `drive_visibility(ref, 'private')` hides an item from teammates — only when the user asks for private. Files ride the same placement: `drive_move` a fresh `file_…` into the folder, and `file_list` / `file_show` verify what is actually there.",
+        "- **Several deliverables for one project? Group them.** Create a project folder once (`drive_organize(action='create_folder', name='<project>')`), place work in it (`drive_organize(action='move', item=…, folder=fld_…)`), and mirror how the user's workspace is already organized (`drive_tree`) rather than inventing new structure. A design created without a folder lands wherever the workspace's default save location points — if the user asks why something isn't where they expected, that's why; the move action fixes it. `drive_organize(action='set_visibility', item=…, visibility='private')` hides an item from teammates — only when the user asks for private. Files ride the same placement: move a fresh `file_…` into the folder, and `file_list(folder=…)` verifies what is actually there.",
     ),
     (
         "- Every read refreshes the CLI's cached revision for the canvas. Writes pinned to a stale revision exit 5 with `STALE_REVISION` and commit nothing — the recovery is always: re-read, then re-apply.",
@@ -992,7 +992,7 @@ REFERENCE_PASSAGES["templates"] = [
         "Both accept `--limit` and `--cursor`.",
         "## The browse call\n\n"
         "```\n"
-        "template_list()   # id, name, category, page count, thumbnail — cursor-paginated\n"
+        "template_list()   # id, name, category, page count, tags — cursor-paginated\n"
         "```\n\n"
         "`template_list` is the browse: one deterministic read of the team's\n"
         "templates with enough on each row to judge the candidates.",
@@ -1010,19 +1010,20 @@ REFERENCE_PASSAGES["templates"] = [
         "1. Pre-filter the `template_list` result — category and page count do the\n"
         "   cheap narrowing (a deck ask → `slides` templates; a social ask →\n"
         "   `social`; a one-pager → a 1–2 page document).\n"
-        "2. **View the 2–4 plausible candidates' thumbnails with your own vision**\n"
-        "   before choosing. A missing thumbnail means nothing is rendered yet —\n"
-        "   judge that one on its name, category, and description, or skip it.",
+        "2. **LOOK at the 2–4 plausible candidates with your own vision** before\n"
+        "   choosing — a template IS a canvas, so `canvas_screenshot` each\n"
+        "   candidate. One that renders nothing yet gets judged on its name,\n"
+        "   category, and tags, or skipped.",
     ),
     (
         "Signed thumbnail URLs are use-and-discard: never place one in markup, never\npersist one, never hand one to the user. They expire.",
-        "Thumbnails are for choosing only: never place one in markup, never persist\none, never hand one to the user.",
+        "Candidate screenshots are for choosing only: never place one in markup,\nand never hand one over as a deliverable.",
     ),
     (
         "  it: `moda canvas create --template cvs_… --name \"Q3 QBR — Acme\"`. The\n"
         "  server makes a full copy; `--template` defines the size, page count, and\n"
         "  category, so passing those flags with it is an error.",
-        "  it: `canvas_create(template='cvs_…', name='Q3 QBR — Acme')`. The server\n"
+        "  it: `canvas_create(template_canvas_id='cvs_…', name='Q3 QBR — Acme')`. The server\n"
         "  makes a full copy; the template defines the size, page count, and\n"
         "  category, so passing width/height/page_count/category with it is an\n"
         "  error.",
@@ -1387,15 +1388,15 @@ VERB_DISPOSITION: dict[str, tuple[str, str]] = {
     "moda canvas duplicate": ("duplicate in the Moda app", "app-only"),
     "moda export": ("`export`", "live"),
     "moda file upload": ("`upload`", "live"),
-    "moda file search": ("`file_search`", "pending-server"),
-    "moda file list": ("`file_list`", "pending-server"),
-    "moda file download": ("`file_show` (download link)", "pending-server"),
-    "moda drive mkdir": ("`drive_mkdir`", "pending-server"),
-    "moda drive move": ("`drive_move`", "pending-server"),
-    "moda drive tree": ("`drive_tree`", "pending-server"),
-    "moda drive visibility": ("`drive_visibility`", "pending-server"),
-    "moda template list": ("`template_list`", "pending-server"),
-    "moda template pull": ("`template_list` (thumbnails ride the browse)", "pending-server"),
+    "moda file search": ("`file_search`", "live"),
+    "moda file list": ("`file_list`", "live"),
+    "moda file download": ("`file_list` proves existence; bytes download in the Moda app", "app-only"),
+    "moda drive mkdir": ("`drive_organize(action='create_folder')`", "live"),
+    "moda drive move": ("`drive_organize(action='move')`", "live"),
+    "moda drive tree": ("`drive_tree`", "live"),
+    "moda drive visibility": ("`drive_organize(action='set_visibility')`", "live"),
+    "moda template list": ("`template_list`", "live"),
+    "moda template pull": ("`template_list` + `canvas_screenshot` of candidates", "live"),
     "moda brand list": ("`brand_list`", "live"),
     "moda brand show": ("`brand_show`", "live"),
     "moda brand create": ("create in the Moda app; `brand_list` picks it up", "app-only"),
@@ -1421,8 +1422,8 @@ VERB_DISPOSITION: dict[str, tuple[str, str]] = {
     "moda web search": ("the host's built-in web search", "host-native"),
     "moda web read": ("the host's built-in page reading", "host-native"),
     "moda site create": ("build in the Moda app (moda-website routes)", "app-only"),
-    "moda site list": ("Moda app (site read tools are pending-server)", "app-only"),
-    "moda site pages": ("Moda app", "app-only"),
+    "moda site list": ("`site_list`", "live"),
+    "moda site pages": ("`site_show` (page inventory)", "live"),
     "moda site set-content": ("Moda app", "app-only"),
     "moda site add-page": ("Moda app", "app-only"),
     "moda site delete-page": ("Moda app", "app-only"),
@@ -1471,6 +1472,7 @@ NON_TOOL_TOKENS = {
     "brand_values",
     "brand_tone_of_voice",
     "canvas_crdt_state_corrupt",
+    "template_canvas_id",
     "task_failed",
     "moda_bootstrap",
 }
@@ -1500,9 +1502,9 @@ REFERENCE_PASSAGES["templates"] += [
         "  move on — do not retry it, and do not mention it to the user.",
         "- The server may report this surface as unavailable (a 404), the\n"
         "  `template_list` tool may be missing from this conversation entirely, or\n"
-        "  `template=` may be rejected as an unknown argument — connectors that\n"
-        "  predate the template surface do all three. Treat each exactly like \"no\n"
-        "  templates\" and move on — do not retry it, and do not mention it to the\n"
-        "  user.",
+        "  `template_canvas_id=` may be rejected as an unknown argument —\n"
+        "  connectors that predate the template surface do all three. Treat each\n"
+        "  exactly like \"no templates\" and move on — do not retry it, and do not\n"
+        "  mention it to the user.",
     ),
 ]

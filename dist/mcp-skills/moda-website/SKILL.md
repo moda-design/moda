@@ -7,11 +7,12 @@ description: >-
   page, "put this on the web", or wants an existing moda.page site updated or
   re-published. Moda hosts real, editable sites at public *.moda.page URLs —
   but building and publishing them is not available through this surface's
-  tools: it lives in the Moda app at moda.app. This skill says so honestly,
-  routes the user there, and does the useful prep here (sitemap, copy, brand
-  direction, page mockups on a canvas). For a printable/PDF one-pager use
-  moda-one-pager; for slides use moda-deck. Requires the Moda connector (Step
-  0 checks it; accounts live at moda.app).
+  tools: it lives in the Moda app at moda.app. This skill answers questions
+  about existing sites (publish state, live URL, pages), says the write
+  boundary plainly, routes the user to the app, and does the useful prep here
+  (sitemap, copy, brand direction, page mockups on a canvas). For a
+  printable/PDF one-pager use moda-one-pager; for slides use moda-deck.
+  Requires the Moda connector (Step 0 checks it; accounts live at moda.app).
 ---
 
 # moda-website
@@ -112,9 +113,14 @@ only to the optional mockup step below.
   `https://<slug>.moda.page`. Building, editing, and publishing them happens
   in the Moda app (moda.app), where Moda's agent designs and ships hosted
   sites end to end.
-- The site tools are not available on this surface. Never fake a publish,
-  never invent a `*.moda.page` URL, and never build "a website" as a canvas
-  and present it as hosted.
+- This surface READS sites: `site_list` (each site's publish state and live
+  URL) and `site_show` (one site's metadata, publish state, live URL, and
+  page inventory). Use them to answer "what sites do we have", "is it
+  live", and "what's on it" — and to grab the live or editor URL to hand
+  over.
+- The site WRITE tools are not available here. Never fake a publish, never
+  invent a `*.moda.page` URL, and never build "a website" as a canvas and
+  present it as hosted.
 
 ## Workflow
 
@@ -132,8 +138,9 @@ only to the optional mockup step below.
      settled before the user builds. Share the canvas link the moment it
      exists.
 3. **Deliver**: the prepared material plus the moda.app pointer. An existing
-   `*.moda.page` site to change gets the same routing — the app owns site
-   editing and republishing.
+   `*.moda.page` site to change: `site_list`/`site_show` first — say what it
+   contains and whether it is live, hand over its URL — then the same
+   routing; the app owns site editing and republishing.
 
 ## References
 

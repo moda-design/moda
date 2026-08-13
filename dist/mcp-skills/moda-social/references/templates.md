@@ -18,7 +18,7 @@ card, a novelty graphic).
 ## The browse call
 
 ```
-template_list()   # id, name, category, page count, thumbnail — cursor-paginated
+template_list()   # id, name, category, page count, tags — cursor-paginated
 ```
 
 `template_list` is the browse: one deterministic read of the team's
@@ -32,17 +32,18 @@ discipline as brand logos (references/brand.md):
 1. Pre-filter the `template_list` result — category and page count do the
    cheap narrowing (a deck ask → `slides` templates; a social ask →
    `social`; a one-pager → a 1–2 page document).
-2. **View the 2–4 plausible candidates' thumbnails with your own vision**
-   before choosing. A missing thumbnail means nothing is rendered yet —
-   judge that one on its name, category, and description, or skip it.
+2. **LOOK at the 2–4 plausible candidates with your own vision** before
+   choosing — a template IS a canvas, so `canvas_screenshot` each
+   candidate. One that renders nothing yet gets judged on its name,
+   category, and tags, or skipped.
 
-Thumbnails are for choosing only: never place one in markup, never persist
-one, never hand one to the user.
+Candidate screenshots are for choosing only: never place one in markup,
+and never hand one over as a deliverable.
 
 ## The decision
 
 - **A template that fits the ask beats building from scratch.** Instantiate
-  it: `canvas_create(template='cvs_…', name='Q3 QBR — Acme')`. The server
+  it: `canvas_create(template_canvas_id='cvs_…', name='Q3 QBR — Acme')`. The server
   makes a full copy; the template defines the size, page count, and
   category, so passing width/height/page_count/category with it is an
   error.
@@ -64,9 +65,9 @@ one, never hand one to the user.
   the reply is one line, not an offer to go build a template library.
 - The server may report this surface as unavailable (a 404), the
   `template_list` tool may be missing from this conversation entirely, or
-  `template=` may be rejected as an unknown argument — connectors that
-  predate the template surface do all three. Treat each exactly like "no
-  templates" and move on — do not retry it, and do not mention it to the
-  user.
+  `template_canvas_id=` may be rejected as an unknown argument —
+  connectors that predate the template surface do all three. Treat each
+  exactly like "no templates" and move on — do not retry it, and do not
+  mention it to the user.
 - Templates are created in the Moda app (mark a canvas as a team template);
   there is no tool here that makes one.

@@ -103,7 +103,7 @@ description: >-
 
 1. **Template check, then create + link**: recurring deck type (QBR, board,
    launch)? Check team templates, view thumbnails — a fitting one beats
-   scratch (references/templates.md): `canvas_create(template='cvs_…',
+   scratch (references/templates.md): `canvas_create(template_canvas_id='cvs_…',
    name='…')`; else `canvas_create(name='…', width=1920, height=1080,
    category='slides')`. Send the link at once (`canvas_share`).
 2. **Gather** with the tools this conversation gives you (attached files,
