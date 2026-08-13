@@ -107,6 +107,14 @@ verify loop, metered verbs labeled with cost class and receipt).
   (`release.ts`), inventory parity, and `validate.py` (frontmatter lint,
   shared-block/fan-out integrity, banned-name greps, verb parity, markup
   element completeness, size budgets).
+- `mcp/` + `dist/mcp-skills/` — the MCP-flavored projection of the nine
+  skills for claude.ai Agent Skills upload: `scripts/project-mcp.py`
+  re-speaks every CLI verb as the Moda connector's tools (rules in
+  `scripts/mcp_projection_rules.py`; `mcp/connector-tools.json` is the tool
+  roster). The projection is a committed build artifact — regenerate with
+  `python3 scripts/project-mcp.py build`; CI fails on drift. Per-skill
+  `moda-*.skill.zip` uploads are attached to each release; install steps in
+  `INSTALL-CLAUDE-AI.md`.
 - `docs/cold-test.md` — the acceptance protocol; the cold run IS the test.
 - Manifests: `.claude-plugin/` (marketplace + plugin — the repo IS a Claude
   Code marketplace: `/plugin marketplace add moda-design/moda`),

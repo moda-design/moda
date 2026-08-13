@@ -1,6 +1,11 @@
 node_modules/
-dist/
 *.log
 .moda/context.local.json
 packages/cli-*/bin/moda
 packages/cli-*/bin/moda.exe
+__pycache__/
+# dist/ holds throwaway build artifacts EXCEPT the committed MCP-skills
+# projection, which is a build artifact of scripts/project-mcp.py kept in
+# git (fanout-style) so CI can fail on drift.
+dist/*
+!dist/mcp-skills/
