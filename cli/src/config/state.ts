@@ -192,3 +192,53 @@ export function recordTaskStatus(taskId: string, status: string, env: NodeJS.Pro
   }
   if (changed) writeJson(taskStartsPath(env), ledger);
 }
+
+// --- Ask-session continuity (`moda ask`; server-minted `ask_<uuid>`) ---
+
+/**
+ * The last `moda ask` session id per account, so follow-up questions keep their context without
+ * the caller threading an id. Keyed by the credential account (`host/org`) because the server
+ * binds a session to the minting principal — a foreign id reads as nonexistent (404).
+ *
+ * Not a secret and not a config value: it is the same class of derived, discardable state as the
+ * revision cache. Expiry is NOT mirrored here — the server owns the idle TTL and says so with a
+ * typed 410; duplicating the window locally would only add a constant that can drift.
+ */
+export interface AskSessionEntry {
+  session_id: string;
+  updated_at: string;
+}
+
+type AskSessionStore = Record<string, AskSessionEntry>;
+
+/** Bounded like the task ledger — a long-lived state dir must not grow one entry per account forever. */
+const ASK_SESSION_CAP = 20;
+
+function askSessionsPath(env: NodeJS.ProcessEnv): string {
+  return join(stateDir(env), 'ask-sessions.json');
+}
+
+export function readAskSession(accountKey: string, env: NodeJS.ProcessEnv = process.env): string | undefined {
+  const entry = readJson<AskSessionStore>(askSessionsPath(env), {})[accountKey];
+  return typeof entry?.session_id === 'string' && entry.session_id.length > 0 ? entry.session_id : undefined;
+}
+
+export function writeAskSession(accountKey: string, sessionId: string, env: NodeJS.ProcessEnv = process.env): void {
+  const store = readJson<AskSessionStore>(askSessionsPath(env), {});
+  store[accountKey] = { session_id: sessionId, updated_at: new Date().toISOString() };
+  const keys = Object.keys(store);
+  if (keys.length > ASK_SESSION_CAP) {
+    keys
+      .sort((a, b) => (store[a]?.updated_at ?? '').localeCompare(store[b]?.updated_at ?? ''))
+      .slice(0, keys.length - ASK_SESSION_CAP)
+      .forEach((k) => delete store[k]);
+  }
+  writeJson(askSessionsPath(env), store);
+}
+
+export function clearAskSession(accountKey: string, env: NodeJS.ProcessEnv = process.env): void {
+  const store = readJson<AskSessionStore>(askSessionsPath(env), {});
+  if (store[accountKey] === undefined) return;
+  delete store[accountKey];
+  writeJson(askSessionsPath(env), store);
+}
