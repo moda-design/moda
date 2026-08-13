@@ -16,11 +16,14 @@
  * none — and binds to the minting principal. Follow-ups reuse it automatically from state so a
  * conversation just works; `--fresh` starts over and `--session <id>` continues a named one.
  * The server owns expiry (24h idle → typed 410 `session_expired`); this CLI never mirrors that
- * window, it just recovers from the typed answer.
+ * window, it just recovers from the typed answer. An id the server cannot resolve — unknown,
+ * malformed, or another principal's — is the typed 404 `session_not_found`.
  *
  * Brand grounding (v1.1): `--brand <kit-id>` sends `brand_kit_ref` so the answer is grounded in
  * that kit's palette, fonts, tone, and imagery. Opt-in ONLY — never inferred, and deliberately
  * NOT defaulted from the `.moda/` brand context: asking without the flag asks with no brand.
+ * An unresolvable ref is the typed 404 `brand_kit_not_found`; a key without the `brand_kits:read`
+ * scope is a 403.
  *
  * Tolerant posture (#9292 class): this CLI can ship before the endpoint deploys — a BARE
  * route 404 (code `http_404`, no server error envelope) means the server predates /v1/ask
@@ -209,25 +212,34 @@ function ask(
 /**
  * Why a session id failed, when that failure is one this CLI may silently recover from.
  *
- * The server does NOT type these narrowly: an unknown/foreign session and a missing brand kit
- * both envelope as `not_found` (only expiry has its own code, `session_expired` at 410), and the
- * route's flag gate 404s as plain "Not Found" too. So the message is the only discriminator —
- * matched against the server's own wording ("Unknown session_id…"). A bare route 404 is code
- * `http_404`, never `not_found`, so the server-predates lane cannot be mistaken for this one.
+ * The typed code is the discriminator: `session_expired` (410) and `session_not_found` (404),
+ * both `retryable: false` in the server's catalogue. The message match behind it is the
+ * compatibility lane for a server deployed before studio #9557 typed these — back then an
+ * unknown session, a missing brand kit, and the route's own flag gate ALL enveloped as the
+ * generic `not_found`, so the server's own wording ("Unknown session_id…") was the only signal.
+ * A bare route 404 is code `http_404`, never `not_found`, so the server-predates lane cannot be
+ * mistaken for either.
  */
 function staleSessionKind(err: unknown, retryUnknown: boolean): 'expired' | 'unknown' | undefined {
   if (!(err instanceof CliError)) return undefined;
   const { code, message } = err.fields;
   if (code === 'session_expired') return 'expired';
-  if (retryUnknown && code === 'not_found' && message.toLowerCase().includes('session_id')) return 'unknown';
+  if (!retryUnknown) return undefined;
+  if (code === 'session_not_found') return 'unknown';
+  if (code === 'not_found' && message.toLowerCase().includes('session_id')) return 'unknown';
   return undefined;
 }
 
-/** A --brand call's kit failures are opaque server-side (`not_found` / a scope 403) — name the fix. */
+/**
+ * Name the fix for a --brand call's kit failures: `brand_kit_not_found` (404 — a foreign,
+ * deleted, or gate-hidden ref all read identically by design) and the `brand_kits:read` scope
+ * 403. The generic `not_found` + message match behind the typed code is the same pre-#9557
+ * compatibility lane as the session codes above.
+ */
 function rethrowBrandKitHint(err: unknown): void {
   if (!(err instanceof CliError) || err.fields.hint !== undefined) return;
   const { code, message } = err.fields;
-  if (code === 'not_found' && message.toLowerCase().includes('brand kit')) {
+  if (code === 'brand_kit_not_found' || (code === 'not_found' && message.toLowerCase().includes('brand kit'))) {
     throw new CliError({ ...err.fields, hint: 'List the kits you can reach with: moda brand list' });
   }
   if (code === 'permission' && message.includes('brand_kits:read')) {

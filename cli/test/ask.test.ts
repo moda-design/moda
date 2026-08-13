@@ -271,14 +271,19 @@ describe('ask sessions (v2 continuity)', () => {
     expect(readAskSession(ACCOUNT, env)).toBe('ask_reborn');
   });
 
-  test('a 404 on the REMEMBERED id recovers the same way; a second failure is not retried again', async () => {
-    const unknown = () =>
-      new Response(
-        JSON.stringify({ error: { type: 'not_found', code: 'not_found', message: 'Unknown session_id. Omit session_id to start a new session.' } }),
-        { status: 404, headers: { 'Content-Type': 'application/json' } },
-      );
+  /** The typed 404 (studio #9557): `session_not_found`, retryable:false, existence-hiding. */
+  function sessionNotFound(code = 'session_not_found') {
+    return new Response(
+      JSON.stringify({
+        error: { type: 'not_found', code, message: 'Unknown session_id. Omit session_id to start a new session.', retryable: false },
+      }),
+      { status: 404, headers: { 'Content-Type': 'application/json' } },
+    );
+  }
+
+  test('a session_not_found 404 on the REMEMBERED id recovers the same way; a second failure is not retried again', async () => {
     const { base, calls } = serve((_req, body) =>
-      body.session_id !== undefined ? unknown() : Response.json({ answer: 'a', session_id: 'ask_fresh', usage: RECEIPT }),
+      body.session_id !== undefined ? sessionNotFound() : Response.json({ answer: 'a', session_id: 'ask_fresh', usage: RECEIPT }),
     );
     const { note, lines } = notices();
     writeAskSession(ACCOUNT, 'ask_wiped', env);
@@ -289,29 +294,36 @@ describe('ask sessions (v2 continuity)', () => {
 
     // The retry itself is never retried: a server that 404s the session-less call fails typed.
     server?.stop(true);
-    const always = serve(() => unknown());
+    const always = serve(() => sessionNotFound());
     await expect(performAsk(client(always.base), { question: 'q', accountKey: ACCOUNT, env })).rejects.toThrow(CliError);
     expect(always.calls.length).toBe(2);
   });
 
-  test('a 404 on an EXPLICIT --session id fails typed instead of silently answering elsewhere', async () => {
-    const { base, calls } = serve(() =>
-      new Response(
-        JSON.stringify({ error: { type: 'not_found', code: 'not_found', message: 'Unknown session_id. Omit session_id to start a new session.' } }),
-        { status: 404, headers: { 'Content-Type': 'application/json' } },
-      ),
+  test('a pre-#9557 server that sends the untyped not_found still recovers, on the message wording', async () => {
+    const { base, calls } = serve((_req, body) =>
+      body.session_id !== undefined ? sessionNotFound('not_found') : Response.json({ answer: 'a', session_id: 'ask_fresh', usage: RECEIPT }),
     );
+    const { note, lines } = notices();
+    writeAskSession(ACCOUNT, 'ask_wiped', env);
+    await performAsk(client(base), { question: 'q', accountKey: ACCOUNT, env, note });
+    expect(calls.length).toBe(2);
+    expect(lines).toEqual(['previous ask session is no longer available — started a new one']);
+    expect(readAskSession(ACCOUNT, env)).toBe('ask_fresh');
+  });
+
+  test('a session_not_found on an EXPLICIT --session id fails typed instead of silently answering elsewhere', async () => {
+    const { base, calls } = serve(() => sessionNotFound());
     try {
       await performAsk(client(base), { question: 'q', sessionId: 'ask_typo', accountKey: ACCOUNT, env });
       expect.unreachable();
     } catch (err) {
-      expect((err as CliError).fields.code).toBe('not_found');
+      expect((err as CliError).fields.code).toBe('session_not_found');
     }
     expect(calls.length).toBe(1);
     expect(readAskSession(ACCOUNT, env)).toBeUndefined();
   });
 
-  test("a 404 that is NOT about a session (route gate, brand kit) never triggers the fresh retry", async () => {
+  test("a 404 that is NOT about a session (the route's own flag gate) never triggers the fresh retry", async () => {
     const { base, calls } = serve(() =>
       new Response(JSON.stringify({ error: { type: 'not_found', code: 'not_found', message: 'Not Found' } }), {
         status: 404,
@@ -320,6 +332,24 @@ describe('ask sessions (v2 continuity)', () => {
     );
     writeAskSession(ACCOUNT, 'ask_kept', env);
     await expect(performAsk(client(base), { question: 'q', accountKey: ACCOUNT, env })).rejects.toThrow(CliError);
+    expect(calls.length).toBe(1);
+    expect(readAskSession(ACCOUNT, env)).toBe('ask_kept');
+  });
+
+  test('a brand_kit_not_found 404 never spends the session retry — the two 404s are separate lanes', async () => {
+    const { base, calls } = serve(() =>
+      new Response(
+        JSON.stringify({ error: { type: 'not_found', code: 'brand_kit_not_found', message: 'Brand kit not found', retryable: false } }),
+        { status: 404, headers: { 'Content-Type': 'application/json' } },
+      ),
+    );
+    writeAskSession(ACCOUNT, 'ask_kept', env);
+    try {
+      await performAsk(client(base), { question: 'q', brand: 'bk_nope', accountKey: ACCOUNT, env });
+      expect.unreachable();
+    } catch (err) {
+      expect((err as CliError).fields.code).toBe('brand_kit_not_found');
+    }
     expect(calls.length).toBe(1);
     expect(readAskSession(ACCOUNT, env)).toBe('ask_kept');
   });
@@ -342,7 +372,28 @@ describe('ask --brand (v1.1 brand grounding — opt-in only)', () => {
     expect(Object.keys(calls[1]?.body ?? {})).toEqual(['question']);
   });
 
-  test('an unknown kit surfaces the server 404 plainly and names moda brand list', async () => {
+  test('an unresolvable kit surfaces the typed brand_kit_not_found plainly and names moda brand list', async () => {
+    const { base } = serve(() =>
+      new Response(
+        JSON.stringify({ error: { type: 'not_found', code: 'brand_kit_not_found', message: 'Brand kit not found', retryable: false } }),
+        { status: 404, headers: { 'Content-Type': 'application/json' } },
+      ),
+    );
+    try {
+      await performAsk(client(base), { question: 'q', brand: 'bk_nope' });
+      expect.unreachable();
+    } catch (err) {
+      const fields = (err as CliError).fields;
+      expect(fields.code).toBe('brand_kit_not_found');
+      expect(fields.message).toBe('Brand kit not found');
+      // Not retryable — the CLI derives that from the 404/not_found type today, which agrees
+      // with the envelope's own `retryable: false`; api/errors.ts does not yet read that field.
+      expect(fields.retryable).toBe(false);
+      expect(fields.hint).toContain('moda brand list');
+    }
+  });
+
+  test('a pre-#9557 server that sends the untyped not_found still gets the hint, on the message wording', async () => {
     const { base } = serve(() =>
       new Response(JSON.stringify({ error: { type: 'not_found', code: 'not_found', message: 'Brand kit not found' } }), {
         status: 404,
@@ -353,10 +404,7 @@ describe('ask --brand (v1.1 brand grounding — opt-in only)', () => {
       await performAsk(client(base), { question: 'q', brand: 'bk_nope' });
       expect.unreachable();
     } catch (err) {
-      const fields = (err as CliError).fields;
-      expect(fields.code).toBe('not_found');
-      expect(fields.message).toBe('Brand kit not found');
-      expect(fields.hint).toContain('moda brand list');
+      expect((err as CliError).fields.hint).toContain('moda brand list');
     }
   });
 
