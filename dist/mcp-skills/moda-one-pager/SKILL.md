@@ -107,7 +107,7 @@ description: >-
 1. **Template check, then create + link**: recurring document type (sales
    one-pager, product brief, report)? Check team templates, view thumbnails
    — a fitting one beats scratch (references/templates.md):
-   `canvas_create(template='cvs_…', name='…')`; else `canvas_create(name='…',
+   `canvas_create(template_canvas_id='cvs_…', name='…')`; else `canvas_create(name='…',
    width=816, height=1056)` (A4: 794x1123; `page_count=N`). Send the link
    right away.
 2. **Read the source** with the tools this conversation gives you (attached
