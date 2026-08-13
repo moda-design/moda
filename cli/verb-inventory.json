@@ -1913,7 +1913,7 @@
         },
         {
           "flag": "--source",
-          "description": "source canvas: cvs_ id, UUID, or share token",
+          "description": "source canvas: cvs_ id, UUID, share token, or pasted canvas/share URL",
           "takes_value": true,
           "required": true
         },

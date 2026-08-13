@@ -31,6 +31,7 @@ import {
   cacheFromResponse,
   chooseRevision,
   mutationOutcome,
+  normalizeImportSource,
   parseSize,
   passthroughOutcome,
   readFileArg,
@@ -323,7 +324,7 @@ export function registerCanvas(program: Command): void {
     canvas
       .command('import-pages <canvas>')
       .description('import pages from another canvas (team-accessible or share token); appends after the last page')
-      .requiredOption('--source <ref>', 'source canvas: cvs_ id, UUID, or share token')
+      .requiredOption('--source <ref>', 'source canvas: cvs_ id, UUID, share token, or pasted canvas/share URL')
       .option('--pages <ids...>', 'source page ids (short p-refs from a SOURCE read, or real ids); omit = all pages')
       .option('--revision <token>', 'expected revision (advisory on appends)'),
   ).action(
@@ -335,7 +336,7 @@ export function registerCanvas(program: Command): void {
         throw CliError.usage('--pages needs at least one source page id — omit it to import every page.');
       }
       const payload = {
-        source: opts.source as string,
+        source: normalizeImportSource(opts.source as string),
         ...(Array.isArray(opts.pages) ? { page_ids: opts.pages as string[] } : {}),
         ...(typeof opts.revision === 'string' ? { expected_revision: opts.revision } : {}),
       };
