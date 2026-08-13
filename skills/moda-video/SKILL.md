@@ -123,8 +123,9 @@ allowed-tools: Bash(moda:*), Read, Glob, Grep
    --page N`. User files → `moda file upload` (local paths also upload
    themselves as media inputs).
 3. **Pick the model from the registry**: `moda media models` for the
-   current ids; route by the strengths table in references/video.md; knobs
-   snap and `adjustments` reports what ran.
+   capability cards (bare ids on an older server); route by the strengths
+   table in references/video.md; knobs snap and `adjustments` reports what
+   ran.
 4. **Spend checkpoint, then generate** (references/video.md): explicit
    `--duration`, smallest resolution that serves, balance check, one
    matter-of-fact spend line — then `moda media generate-video` with
