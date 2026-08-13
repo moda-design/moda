@@ -31,6 +31,10 @@ jobs:
         run: bun scripts/build.ts
       - name: Stamp npm packages + place binaries
         run: bun scripts/package-npm.ts
+      - name: MCP projection check + claude.ai skill ZIPs (attached to the release like the binaries)
+        run: |
+          python3 scripts/project-mcp.py check
+          python3 scripts/project-mcp.py zips
       - name: npm pack (attached to the release; nothing published during dogfood)
         run: |
           mkdir -p dist

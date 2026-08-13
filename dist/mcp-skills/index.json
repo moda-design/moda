@@ -1,0 +1,156 @@
+{
+  "comment": "Machine-readable manifest of the MCP-flavored skills projection. Consumed by the studio-side load_skill lane; regenerate with scripts/project-mcp.py build.",
+  "format": "claude-agent-skill",
+  "skills": [
+    {
+      "name": "moda-deck",
+      "description": "Create a real, editable slide deck on Moda from a brief, a document, or the current repo. Use when the user asks for a deck, slides, a presentation, pitch deck, keynote, QBR, board update, sales/client deck, launch deck, or \"turn this doc/repo/notes into slides\". Produces designed pages on a Moda canvas (live URL, stays editable) and exports native PPTX with real shapes and text layers, or a text-layer PDF — not screenshots pasted into python-pptx. Requires the Moda connector (Step 0 checks it; accounts live at moda.app).",
+      "files": [
+        "moda-deck/SKILL.md",
+        "moda-deck/references/markup.md",
+        "moda-deck/references/edit-code.md",
+        "moda-deck/references/reading-and-verifying.md",
+        "moda-deck/references/gotchas.md",
+        "moda-deck/references/design-quality.md",
+        "moda-deck/references/brand.md",
+        "moda-deck/references/export.md",
+        "moda-deck/references/omni-and-media.md",
+        "moda-deck/references/deck-design.md",
+        "moda-deck/references/deck-playbooks.md",
+        "moda-deck/references/charts.md",
+        "moda-deck/references/templates.md"
+      ]
+    },
+    {
+      "name": "moda-one-pager",
+      "description": "Design a one-pager, PDF report, handout, flyer, or printable document on Moda. Use when the user asks for a one-pager, single-page summary, PDF, report, brief, handout, fact sheet, leave-behind, or \"make this markdown/README look designed\", or an infographic. Multi-page documents belong here too — a 12-page report, guide, whitepaper, or proposal — as do print pieces: posters, flyers, menus, resumes, certificates, invitations, business cards (slides go to moda-deck; social/banner graphics to moda-social). Produces designed US-Letter (or A4) pages on a live Moda canvas and exports a real PDF with selectable text (hyperlinks flatten to plain text in the PDF). Requires the Moda connector (Step 0 checks it; accounts live at moda.app).",
+      "files": [
+        "moda-one-pager/SKILL.md",
+        "moda-one-pager/references/markup.md",
+        "moda-one-pager/references/edit-code.md",
+        "moda-one-pager/references/reading-and-verifying.md",
+        "moda-one-pager/references/gotchas.md",
+        "moda-one-pager/references/design-quality.md",
+        "moda-one-pager/references/brand.md",
+        "moda-one-pager/references/export.md",
+        "moda-one-pager/references/omni-and-media.md",
+        "moda-one-pager/references/document-design.md",
+        "moda-one-pager/references/charts.md",
+        "moda-one-pager/references/templates.md"
+      ]
+    },
+    {
+      "name": "moda-brand",
+      "description": "Fetch and apply Moda brand kits so every design is on-brand (kit creation itself lives in the Moda app — this skill routes it). Use when the user says on-brand, brand kit, brand colors/fonts/logo, \"use our brand\", \"match our site\", rebrand, or wants a brand kit created from a website URL, or wants an existing canvas audited against the brand. Reads kit palette/fonts/logos deterministically and hands them to the other moda skills. Kits, not renders: a brand-led motion ask (\"using the Moda brand kit, make a video\") or anything rendered to mp4/gif → moda-video leads and pulls the kit itself. Requires the Moda connector (Step 0 checks it; accounts live at moda.app).",
+      "files": [
+        "moda-brand/SKILL.md",
+        "moda-brand/references/brand.md",
+        "moda-brand/references/gotchas.md",
+        "moda-brand/references/markup.md",
+        "moda-brand/references/design-quality.md",
+        "moda-brand/references/charts.md",
+        "moda-brand/references/edit-code.md",
+        "moda-brand/references/omni-and-media.md",
+        "moda-brand/references/reading-and-verifying.md"
+      ]
+    },
+    {
+      "name": "moda-edit",
+      "description": "Make precise edits to an existing Moda canvas from its URL or share link — reword or restyle text, recolor, realign, resize, swap an image, add or delete a section, fix a slide someone touched in the editor. Use when the user pastes a moda.app canvas or share URL (or a cvs_ id) and asks for changes, or to revise a design a previous moda skill or Moda's AI built. Deterministic: reads canvas state, applies targeted markup/code edits, verifies with lint and screenshots. Requires the Moda connector (Step 0 checks it; accounts live at moda.app).",
+      "files": [
+        "moda-edit/SKILL.md",
+        "moda-edit/references/edit-code.md",
+        "moda-edit/references/reading-and-verifying.md",
+        "moda-edit/references/gotchas.md",
+        "moda-edit/references/markup.md",
+        "moda-edit/references/design-quality.md",
+        "moda-edit/references/brand.md",
+        "moda-edit/references/charts.md",
+        "moda-edit/references/omni-and-media.md"
+      ]
+    },
+    {
+      "name": "moda-website",
+      "description": "Route website asks to Moda's hosted-site builder, and prepare everything that can be prepared here. Use when the user asks for a website, site, web page, landing page, marketing site, portfolio site, homepage, coming-soon page, \"put this on the web\", or wants an existing moda.page site updated or re-published. Moda hosts real, editable sites at public *.moda.page URLs — but building and publishing them is not available through this surface's tools: it lives in the Moda app at moda.app. This skill says so honestly, routes the user there, and does the useful prep here (sitemap, copy, brand direction, page mockups on a canvas). For a printable/PDF one-pager use moda-one-pager; for slides use moda-deck. Requires the Moda connector (Step 0 checks it; accounts live at moda.app).",
+      "files": [
+        "moda-website/SKILL.md",
+        "moda-website/references/brand.md",
+        "moda-website/references/diagram.md",
+        "moda-website/references/markup.md",
+        "moda-website/references/design-quality.md",
+        "moda-website/references/charts.md",
+        "moda-website/references/edit-code.md",
+        "moda-website/references/omni-and-media.md",
+        "moda-website/references/reading-and-verifying.md",
+        "moda-website/references/gotchas.md"
+      ]
+    },
+    {
+      "name": "moda-social",
+      "description": "Design social media creative and one-off graphics on Moda: organic posts, carousels, story/reel covers, static social ads, display banners, profile headers (Instagram, LinkedIn, TikTok, Facebook, X, YouTube) — plus simple standalone graphics that aren't a deck/document/diagram/website: quote cards, single-image visuals, ad-hoc designs with no platform attached. Use for a social post, carousel, story, platform creative, static ad, banner ad, channel header/cover, quote card, or \"a simple graphic of/for X\". Produces platform- or purpose-sized pages on a live Moda canvas, exporting png/jpeg or pdf (multi-page carousel → zip). Stills only: an ANIMATED ad/post or anything delivered as gif/mp4 → moda-video. Slide decks → moda-deck; printable flyers, posters, PDFs → moda-one-pager; live hosted pages → moda-website. Requires the Moda connector (Step 0 checks it; accounts live at moda.app).",
+      "files": [
+        "moda-social/SKILL.md",
+        "moda-social/references/social.md",
+        "moda-social/references/markup.md",
+        "moda-social/references/edit-code.md",
+        "moda-social/references/reading-and-verifying.md",
+        "moda-social/references/gotchas.md",
+        "moda-social/references/design-quality.md",
+        "moda-social/references/brand.md",
+        "moda-social/references/export.md",
+        "moda-social/references/omni-and-media.md",
+        "moda-social/references/charts.md",
+        "moda-social/references/templates.md"
+      ]
+    },
+    {
+      "name": "moda-diagram",
+      "description": "Design STRUCTURAL visuals on Moda — boxes-and-arrows intents only: (1) diagrams and flowcharts (process, org chart, architecture, decision tree, swimlane, workflow), (2) 2x2 matrices, quadrant charts, market maps, and standalone data charts (bar/line/pie graphics), and (3) static UI wireframes and app/site screen mockups. A simple graphic that merely uses shapes — a quote card, a decorative visual, a circle with a caption — is moda-social, not a diagram. Produces anchored-connector diagrams, charts, and screen layouts on a live Moda canvas and exports png or pdf. A mockup is a picture of an interface — for a live hosted page use moda-website; a diagram or chart destined for an existing deck/document canvas stays with moda-deck, moda-one-pager, or moda-edit. Requires the Moda connector (Step 0 checks it; accounts live at moda.app).",
+      "files": [
+        "moda-diagram/SKILL.md",
+        "moda-diagram/references/diagram.md",
+        "moda-diagram/references/markup.md",
+        "moda-diagram/references/edit-code.md",
+        "moda-diagram/references/reading-and-verifying.md",
+        "moda-diagram/references/gotchas.md",
+        "moda-diagram/references/design-quality.md",
+        "moda-diagram/references/brand.md",
+        "moda-diagram/references/export.md",
+        "moda-diagram/references/charts.md",
+        "moda-diagram/references/omni-and-media.md"
+      ]
+    },
+    {
+      "name": "moda-video",
+      "description": "Make video and motion on Moda: short generated clips (text-to-video, image-to-video from a logo, photo, or canvas frame, reference-guided), brand stingers, animated posts and ads, logo animations, video upscaling, and vector-native motion (animated shader fills, animation-canvas exports). Use for \"make a video\", a GIF or mp4, an animated ad/post/ banner, a motion graphic, animating a logo/image/design, or upscaling a video. moda-video owns anything that renders to mp4/gif — an animated social post is this skill for the motion (moda-social owns still sizes and formats). Still posts/carousels/banners → moda-social; slide decks → moda-deck; live sites → moda-website; edits to an existing canvas that stay still → moda-edit. Video generation is metered (spends Moda credits); canvas motion authoring is free (motion files export from the Moda app). Requires the Moda connector (Step 0 checks it; accounts live at moda.app).",
+      "files": [
+        "moda-video/SKILL.md",
+        "moda-video/references/video.md",
+        "moda-video/references/markup.md",
+        "moda-video/references/edit-code.md",
+        "moda-video/references/reading-and-verifying.md",
+        "moda-video/references/gotchas.md",
+        "moda-video/references/design-quality.md",
+        "moda-video/references/brand.md",
+        "moda-video/references/export.md",
+        "moda-video/references/charts.md",
+        "moda-video/references/omni-and-media.md"
+      ]
+    },
+    {
+      "name": "moda-help",
+      "description": "Moda meta and routing help — NOT a design tool. Use for meta asks only: connecting Moda to Claude, account/team/workspace questions, \"what can Moda do?\", \"which Moda skill or tool should handle X?\", troubleshooting failed Moda tool calls (typed errors), automation and integration asks (\"set up Moda to auto-post/sync/schedule X\", connect Moda to another tool, recurring jobs — the automation part only: any artifact to author still routes to its format skill) — or when a Moda request doesn't CLEARLY fit any other moda skill (a matching format skill always wins; this is the none-fit catcher, never a shortcut). Creating or editing designs, decks, documents, sites, graphics, videos, or diagrams is NEVER this skill — load the format skill (moda-deck, moda-one-pager, moda-social, moda-diagram, moda-website, moda-video, moda-brand, moda-edit). Requires the Moda connector (Step 0 checks it).",
+      "files": [
+        "moda-help/SKILL.md",
+        "moda-help/references/brand.md",
+        "moda-help/references/gotchas.md",
+        "moda-help/references/markup.md",
+        "moda-help/references/design-quality.md",
+        "moda-help/references/charts.md",
+        "moda-help/references/edit-code.md",
+        "moda-help/references/omni-and-media.md",
+        "moda-help/references/reading-and-verifying.md"
+      ]
+    }
+  ]
+}

@@ -25,18 +25,21 @@ if (present.length === 0) {
   process.exit(1);
 }
 
+// claude.ai Agent Skills ZIPs (scripts/project-mcp.py zips) ride the release like the binaries.
+const skillZips = readdirSync(DIST).filter((f) => f.endsWith('.skill.zip'));
+
 // SHA256SUMS in `sha256sum` format so `sha256sum -c SHA256SUMS` verifies downloads.
 const lines: string[] = [];
-for (const name of present) {
+for (const name of [...present, ...skillZips]) {
   const bytes = new Uint8Array(await Bun.file(join(DIST, name)).arrayBuffer());
   const digest = createHash('sha256').update(bytes).digest('hex');
   lines.push(`${digest}  ${name}`);
 }
 writeFileSync(join(DIST, 'SHA256SUMS'), `${lines.join('\n')}\n`, 'utf8');
-console.error(`SHA256SUMS written (${present.length} artifacts)`);
+console.error(`SHA256SUMS written (${present.length + skillZips.length} artifacts)`);
 
 const npmTarballs = readdirSync(DIST).filter((f) => f.endsWith('.tgz'));
-const assets = [...present, 'SHA256SUMS', ...npmTarballs].map((name) => join(DIST, name));
+const assets = [...present, 'SHA256SUMS', ...npmTarballs, ...skillZips].map((name) => join(DIST, name));
 
 if (dryRun) {
   console.error(`dry run — would upload: ${assets.join(', ')}`);
