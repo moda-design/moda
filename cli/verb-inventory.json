@@ -1848,7 +1848,7 @@
     },
     {
       "name": "canvas import-pages",
-      "description": "import pages from another canvas (team-accessible or share token); appends after the last page",
+      "description": "import pages from another canvas (team-accessible, share token, or pasted URL); appends after the last page",
       "positionals": [
         {
           "name": "canvas",
@@ -1913,7 +1913,7 @@
         },
         {
           "flag": "--source",
-          "description": "source canvas: cvs_ id, UUID, or share token",
+          "description": "source canvas: cvs_ id, UUID, share token, or pasted canvas/share URL",
           "takes_value": true,
           "required": true
         },

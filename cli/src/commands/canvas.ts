@@ -31,6 +31,7 @@ import {
   cacheFromResponse,
   chooseRevision,
   mutationOutcome,
+  normalizeImportSource,
   parseSize,
   passthroughOutcome,
   readFileArg,
@@ -322,20 +323,23 @@ export function registerCanvas(program: Command): void {
   addGlobalFlags(
     canvas
       .command('import-pages <canvas>')
-      .description('import pages from another canvas (team-accessible or share token); appends after the last page')
-      .requiredOption('--source <ref>', 'source canvas: cvs_ id, UUID, or share token')
+      .description('import pages from another canvas (team-accessible, share token, or pasted URL); appends after the last page')
+      .requiredOption('--source <ref>', 'source canvas: cvs_ id, UUID, share token, or pasted canvas/share URL')
       .option('--pages <ids...>', 'source page ids (short p-refs from a SOURCE read, or real ids); omit = all pages')
       .option('--revision <token>', 'expected revision (advisory on appends)'),
   ).action(
     wrapAction(async (args, opts, cmd) => {
       const inv = buildInvocation(cmd);
-      const { client } = await authedClient(inv, MUTATION_TIMEOUT_MS);
-      const ref = await resolveCanvasRef(args[0] as string, client);
+      // Local input validation first — a bad --source/--pages must fail before the target
+      // resolution's possible share-link round-trip spends a network call.
+      const source = normalizeImportSource(opts.source as string);
       if (Array.isArray(opts.pages) && (opts.pages as string[]).length === 0) {
         throw CliError.usage('--pages needs at least one source page id — omit it to import every page.');
       }
+      const { client } = await authedClient(inv, MUTATION_TIMEOUT_MS);
+      const ref = await resolveCanvasRef(args[0] as string, client);
       const payload = {
-        source: opts.source as string,
+        source,
         ...(Array.isArray(opts.pages) ? { page_ids: opts.pages as string[] } : {}),
         ...(typeof opts.revision === 'string' ? { expected_revision: opts.revision } : {}),
       };

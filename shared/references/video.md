@@ -119,9 +119,9 @@ then animate it.
   exports and move in mp4/gif.
 - Keyframed motion lives on an animation canvas: `moda canvas create
   --name "…" --size 1920x1080 --category animation`, author the layout via
-  markup, then drive motion through `moda canvas edit`
-  (`create('animation', …)` / `update` — references/edit-code.md; existing
-  tracks read back under `## Animations`, references/reading-and-verifying.md).
+  markup, then drive motion through the `motion` timeline API inside
+  `moda canvas edit` scripts — full shapes in "The motion timeline API"
+  below. Author it from that section; don't discover it by probing.
 - Export per page: `moda export CANVAS_REF --format mp4|gif --page N` —
   mp4/gif REQUIRE `--page`, and a page with NO animation rejects typed
   `no_animation` (that is the honest answer: deliver a still + the link).
@@ -135,6 +135,129 @@ returns a durable `file_` ref, and every media input takes one. Generate →
 or canvas export → generate → upscale. Never retype or reconstruct a ref;
 copy it verbatim from the result. Chain the CHEAP order: iterate small,
 upscale once, at the end, on the winner.
+
+## The motion timeline API — author, don't probe
+
+Keyframed motion is authored inside a `moda canvas edit` script through the
+`motion` global. It only applies on a canvas whose category is `animation` —
+on any other canvas every motion call is dropped with a
+`timeline_motion_non_animation` warning, so create the animation canvas
+first (workflow 4). The general edit contract (batches, revisions, warnings)
+is references/edit-code.md; this section is the motion surface itself.
+
+**Entry point** — page ids are the short `p_` ids from your latest read:
+
+```
+motion.page('p_a', { durationMs: 6000 }, (t) => {
+  t.tween('n7', 'opacity', [0, 1], { startMs: 0, durationMs: 400, easing: 'easeOut' });
+  t.effect('n7', 'scale-in', { startMs: 0, durationMs: 400 });
+  t.recipe('n9', 'recipe-rise', { at: 300 });
+  t.stagger(['n3', 'n4', 'n5'], { at: 600, each: 120, animate: (m) => m.effect('scale-in') });
+});
+```
+
+The options object and the callback are each optional:
+`motion.page('p_a', { durationMs: 6000 })` sets duration only.
+
+**Track creators** (each returns the new track id — `t.recipe` and
+`t.stagger` return an ARRAY of ids; one track drives ONE node — pass node
+arrays only to `t.stagger`):
+
+- `t.tween(target, path, [from, to], opts?)` — two-point ramp. Ramp length =
+  `durationMs`, else `endMs − startMs`, else it runs from `startMs` to the
+  page end.
+- `t.keyframes(target, path, [{ tMs, value, easing? }, …], opts?)` — `tMs`
+  is RELATIVE to the track's `startMs`; values are finite numbers; a bad
+  entry rejects the whole array.
+- `t.colorTween(target, path, [fromColor, toColor], opts?)` /
+  `t.colorKeyframes(target, path, [{ tMs, value: '#…' }, …], opts?)` —
+  colors NEVER ride scalar verbs. Color paths: `fill`, `stroke`,
+  `shadowColor`, `innerShadowColor`, `effects[id=…].color` (page
+  background: `fill` only).
+- `t.motionPath(node, [{ tMs, value: {x,y}|[x,y], inTangent?, outTangent? }],
+  opts?)` — curved travel; tangents are spatial-bézier offsets from the
+  point. Don't also give that node override scalar x/y tracks.
+- `t.distortTilt(node, [{ tMs, value: { rotXDeg, rotYDeg, distance } }], …)` /
+  `t.distortSkew(node, [{ tMs, value: { skewXDeg, skewYDeg } }], …)` — 3D
+  card twist / shear on box shapes.
+- `t.effect(node, presetId, opts?)` — one preset from the roster below.
+- `t.recipe(node, recipeId, opts?)` — a grouped entrance/exit; expands into
+  several tracks and returns their ids (it ignores `params` and `id`; tune
+  the expanded tracks via `t.update`).
+- `t.stagger(nodes, { animate: (m) => …, each?, at?, groupId? })` — runs
+  `animate` once per node with member-bound `m.tween/keyframes/effect/
+  procedural/compute/shaderClock`, offsetting each member by `each` ms.
+- `t.procedural(node, 'lfo'|'wiggle'|'spring'|'clock', outputs, params?,
+  opts?)` — endless motion; a missing required param fails with its name.
+- `t.shaderClock(node, { param?, from?, to?, durationMs? })` — drives a fill
+  shader knob in a loop (defaults: `time`, 0→20 over 45 s).
+- `t.compute(target, outputs, codeString, opts?)` — a custom code driver for
+  what the verbs above can't say.
+
+**Managing what exists**: `t.update(trackId, changes)` (startMs/endMs/
+description/params/blend/driver), `t.clearTrack(trackId)`,
+`t.clearTarget(node)`, `t.clear()` (whole page), `t.setDuration(ms)`.
+Node lifetimes:
+`t.setLifetime(node, { startMs, endMs })` hides the node outside the window
+(array of windows for re-appearances; LEAF nodes only — a group/container is
+rejected, set lifetimes on its leaves); `t.clearLifetime(node)` undoes it.
+Existing tracks read back in the canvas DSL's animations block with short
+`anim` ids (references/reading-and-verifying.md) — those ids are what
+`t.update('anim7', …)` and `t.clearTrack('anim7')` take.
+
+**The shared options bag** (every track creator): `startMs` (alias `at`),
+`endMs`, `loop: 'none'|'loop'|'pingpong'|'hold'`, `periodMs`, `offsetMs`,
+`rate`, `pivot: 'center'|'origin'` (center is the default),
+`blend: 'add'|'multiply'` (composes top-level SCALAR paths only; presets and
+recipes own their own blend), `params`, `description`, `id` (single-track
+creators only). Two options are NOT bag-wide: `durationMs` (alias
+`duration`) is read by `tween`, `colorTween`, `effect`, `recipe`, and
+`shaderClock`; a bag-level `easing` only by `tween` and `colorTween` — every
+keyframe verb takes easing PER KEYFRAME instead. Easing values: `linear`,
+`easeIn`, `easeOut`, `easeInOut`, `easeInCubic`, `easeOutCubic`,
+`easeInOutCubic`, `easeOutQuint`, `easeInOutQuint`, `easeInBack`,
+`easeOutBack`, `easeInOutBack`, `easeOutBounce`, or
+`'cubic-bezier(x1, y1, x2, y2)'`. The hold contract: a track that ends
+before the page does (an explicit `durationMs`, or keyframes that stop
+early) HOLDS its final value to the page end — set `endMs` only when you
+want a snap-back window. A `tween` with neither `durationMs` nor `endMs`
+ramps from `startMs` all the way to the page end.
+
+**Paths** (scalar verbs): top-level node properties — `x`, `y`, `opacity`,
+`rotation`, `scale`, `scaleX`, `scaleY`, `width`, `height`, `cornerRadius`,
+`strokeWidth`, `shadowBlur`, `shadowOpacity`, `trimPathStart`,
+`trimPathEnd`, `dashOffset`, and friends — plus one-level nested
+(`layerBlur.radius`, `fillShaderParams.<knob>`) and the list-by-id forms
+`effects[id=…].<field>` and `shaderEffects[id=…].params.<knob>`. `position`
+is the vec2 channel — use `t.motionPath`. A wrong path fails at authoring
+with a precise warning; read it instead of retrying blind.
+
+**Preset and recipe rosters** (an unknown id fails with the full current
+roster in the warning — the surface is self-listing; trust that list over
+this one if they ever disagree):
+
+- `t.effect`: `position-slide-in`, `position-slide-out`, `position-custom`,
+  `scale-in/-out/-custom`, `rotate-in/-out/-custom`, `size-in/-out/-custom`,
+  `opacity-fade-in/-out`, `opacity-custom`,
+  `pulse`, `float`, `bob`, `breathe`, `shake`, `spin`,
+  `text-kinetic`, `scramble`, `count-up`, `draw-on`, `marching-ants`,
+  `shadow-pulse`, `gradient-rotate`, `corner-morph`, `wobble`, `heartbeat`.
+- `t.recipe` (every id carries the `recipe-` prefix): `recipe-slide-in`,
+  `recipe-rise`, `recipe-drop`, `recipe-pop-in`, `recipe-burst-in`,
+  `recipe-fly-in`, `recipe-spin-in`, `recipe-typewriter`,
+  `recipe-reveal-word`, `recipe-reveal-line`, `recipe-fade-word`,
+  `recipe-slide-word`, `recipe-rise-line`, `recipe-scale-word`,
+  `recipe-slide-out`, `recipe-pop-out`, `recipe-spin-out`, `recipe-fly-out`.
+- The app panel's names are NOT these ids: there is no `fade-in` or
+  `rise-in` — fades are `opacity-fade-in`/`opacity-fade-out`, grouped
+  entrances/exits are the `recipe-*` ids. Page backgrounds are app-panel
+  territory: `t.effect`/`t.recipe` refuse a page-background target (its
+  fill still animates via `t.colorTween('page-background', 'fill', …)`).
+
+**Order of work**: author the layout first (markup), then add motion in a
+LATER edit call — a preset that bakes against the node's live content
+(text presets; any recipe with requirements) refuses a node created in the
+same edit batch. Static pass, then motion pass.
 
 ## Prompt craft for short brand clips
 

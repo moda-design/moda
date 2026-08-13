@@ -64,6 +64,8 @@ const URL_PATHS_BY_KIND: Partial<Record<RefKind, string[][]>> = {
 
 const UUID_RE = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
 const WIRE_ID_RE = /^([a-z]{2,5})_([0-9A-Za-z]{10,40})$/;
+/** Pasted URLs keep whatever scheme casing the clipboard carried (`HTTPS://…` is a valid URL). */
+export const URL_SCHEME_RE = /^https?:\/\//i;
 
 export interface ParsedRef {
   kind: RefKind;
@@ -101,7 +103,7 @@ export function parseRef(input: string, expected: RefKind): ParsedRef {
     }
   }
 
-  if (URL_PATHS_BY_KIND[expected] !== undefined && (trimmed.startsWith('http://') || trimmed.startsWith('https://'))) {
+  if (URL_PATHS_BY_KIND[expected] !== undefined && URL_SCHEME_RE.test(trimmed)) {
     return parseAppUrl(trimmed, expected);
   }
 

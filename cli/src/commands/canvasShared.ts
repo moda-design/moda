@@ -5,10 +5,25 @@ import { endpoints } from '../api/endpoints.ts';
 import { asObject, str } from '../api/types.ts';
 import { CliError } from '../cliError.ts';
 import { readRevisionEntry, updateRevisionOnly, writeRevisionEntry } from '../config/state.ts';
-import { extractShortIds, parseRef } from '../refs.ts';
+import { extractShortIds, parseRef, URL_SCHEME_RE } from '../refs.ts';
 import { EXIT_OK } from '../output/exitCodes.ts';
 import type { CommandOutcome } from '../output/emit.ts';
 import { metaBlock, type Invocation } from './runtime.ts';
+
+/**
+ * Normalize an import-pages `--source` value. The server field takes a cvs_ id, a UUID, or a
+ * bare share TOKEN — anything else falls down its share-token path and 404s with a misleading
+ * share-link message. Pasted URLs therefore resolve client-side through the same refs.ts
+ * machinery as positional CANVAS_REF args (#23): a canvas URL yields its id, a /s/ share URL
+ * yields its bare token. Non-URL inputs pass through untouched (a bare share token is not
+ * parseable as a ref, so `parseRef` must only see URLs here).
+ */
+export function normalizeImportSource(input: string): string {
+  const trimmed = input.trim();
+  if (!URL_SCHEME_RE.test(trimmed)) return trimmed;
+  const parsed = parseRef(trimmed, 'canvas');
+  return parsed.shareToken ?? parsed.ref;
+}
 
 /** Resolve a CANVAS_REF argument to the wire ref, resolving share URLs server-side first. */
 export async function resolveCanvasRef(input: string, client: ApiClient): Promise<string> {
