@@ -1102,14 +1102,12 @@ REFERENCE_PASSAGES["social"] = [
         "1080×1080 sized to purpose, `category='other'`, deliver png (pdf on request)",
     ),
     (
-        "- Adapting a design to another platform size: there is **no page-resize\n"
-        "  verb**. Add a page at the target size (`moda canvas add-pages CANVAS_REF\n"
-        "  --count 1 --size WxH`), copy the elements over with edit code\n"
-        "  `duplicate(ids, { destinationPageId })` (references/edit-code.md), then",
-        "- Adapting a design to another platform size: there is **no page-resize\n"
-        "  tool**. Add a page at the target size in `canvas_edit` code\n"
-        "  (`create('page', { width, height })`), copy the elements over with\n"
-        "  `duplicate(ids, { destinationPageId })` (references/edit-code.md), then",
+        "  user wants BOTH sizes kept (`moda canvas add-pages CANVAS_REF --count 1\n"
+        "  --size WxH`), copy the elements over with edit code\n"
+        "  `duplicate(ids, { destinationPageId })`, then reposition and re-scale",
+        "  user wants BOTH sizes kept (add the page in `canvas_edit` code:\n"
+        "  `create('page', { width, height })`), copy the elements over with\n"
+        "  `duplicate(ids, { destinationPageId })`, then reposition and re-scale",
     ),
 ]
 

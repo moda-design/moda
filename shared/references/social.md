@@ -127,9 +127,14 @@ depth: two stacked rectangles, the back one offset 6–8px at low opacity.
   that shapes can't rebuild: `moda media generate-image` with the reference
   attached (metered) for a clean background carrying its palette and
   texture, then compose on top. Copy over a photo always gets a scrim.
-- Adapting a design to another platform size: there is **no page-resize
-  verb**. Add a page at the target size (`moda canvas add-pages CANVAS_REF
-  --count 1 --size WxH`), copy the elements over with edit code
-  `duplicate(ids, { destinationPageId })` (references/edit-code.md), then
-  reposition and re-scale each element by hand — never let a composition
-  squish, and re-check type against the ladder floor at the new size.
+- Adapting a design to another platform size: **resize in place** — follow
+  the page resize recipe in references/edit-code.md (group the page's
+  top-level nodes, `update(pageId, …)` to the new size, uniform-scale the
+  group); it preserves the composition via group-scale, balancing leftover
+  space as margins when the aspect ratio changes. Never create a new
+  canvas just to change size. Add a page at the target size only when the
+  user wants BOTH sizes kept (`moda canvas add-pages CANVAS_REF --count 1
+  --size WxH`), copy the elements over with edit code
+  `duplicate(ids, { destinationPageId })`, then reposition and re-scale
+  each element by hand. Either way: never let a composition squish, and
+  re-check type against the ladder floor at the new size.
