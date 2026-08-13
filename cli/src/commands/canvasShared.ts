@@ -5,7 +5,7 @@ import { endpoints } from '../api/endpoints.ts';
 import { asObject, str } from '../api/types.ts';
 import { CliError } from '../cliError.ts';
 import { readRevisionEntry, updateRevisionOnly, writeRevisionEntry } from '../config/state.ts';
-import { extractShortIds, parseRef } from '../refs.ts';
+import { extractShortIds, parseRef, URL_SCHEME_RE } from '../refs.ts';
 import { EXIT_OK } from '../output/exitCodes.ts';
 import type { CommandOutcome } from '../output/emit.ts';
 import { metaBlock, type Invocation } from './runtime.ts';
@@ -20,7 +20,7 @@ import { metaBlock, type Invocation } from './runtime.ts';
  */
 export function normalizeImportSource(input: string): string {
   const trimmed = input.trim();
-  if (!trimmed.startsWith('http://') && !trimmed.startsWith('https://')) return trimmed;
+  if (!URL_SCHEME_RE.test(trimmed)) return trimmed;
   const parsed = parseRef(trimmed, 'canvas');
   return parsed.shareToken ?? parsed.ref;
 }

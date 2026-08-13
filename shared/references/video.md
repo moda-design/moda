@@ -145,8 +145,7 @@ is references/edit-code.md; this section is the motion surface itself.
 **Entry point** — page ids are the short `p_` ids from your latest read:
 
 ```
-motion.page('p_a', { durationMs: 6000 });      // set page duration only
-motion.page('p_a', (t) => {
+motion.page('p_a', { durationMs: 6000 }, (t) => {
   t.tween('n7', 'opacity', [0, 1], { startMs: 0, durationMs: 400, easing: 'easeOut' });
   t.effect('n7', 'scale-in', { startMs: 0, durationMs: 400 });
   t.recipe('n9', 'recipe-rise', { at: 300 });
@@ -154,8 +153,12 @@ motion.page('p_a', (t) => {
 });
 ```
 
-**Track creators** (each returns a track id; one track drives ONE node —
-arrays only via `t.stagger`):
+The options object and the callback are each optional:
+`motion.page('p_a', { durationMs: 6000 })` sets duration only.
+
+**Track creators** (each returns the new track id — `t.recipe` and
+`t.stagger` return an ARRAY of ids; one track drives ONE node — pass node
+arrays only to `t.stagger`):
 
 - `t.tween(target, path, [from, to], opts?)` — two-point ramp. Ramp length =
   `durationMs`, else `endMs − startMs`, else it runs from `startMs` to the
@@ -199,17 +202,23 @@ Existing tracks read back in the canvas DSL's animations block with short
 `anim` ids (references/reading-and-verifying.md) — those ids are what
 `t.update('anim7', …)` and `t.clearTrack('anim7')` take.
 
-**The shared options bag** (every creator): `startMs` (alias `at`), `endMs`,
-`durationMs`, `easing`, `loop: 'none'|'loop'|'pingpong'|'hold'`, `periodMs`,
-`offsetMs`, `rate`, `pivot: 'center'|'origin'` (center is the default),
+**The shared options bag** (every track creator): `startMs` (alias `at`),
+`endMs`, `loop: 'none'|'loop'|'pingpong'|'hold'`, `periodMs`, `offsetMs`,
+`rate`, `pivot: 'center'|'origin'` (center is the default),
 `blend: 'add'|'multiply'` (composes top-level SCALAR paths only; presets and
 recipes own their own blend), `params`, `description`, `id` (single-track
-creators only). Easing: `linear`, `easeIn`, `easeOut`, `easeInOut`,
-`easeInCubic`, `easeOutCubic`, `easeInOutCubic`, `easeOutQuint`,
-`easeInOutQuint`, `easeInBack`, `easeOutBack`, `easeInOutBack`,
-`easeOutBounce`, or `'cubic-bezier(x1, y1, x2, y2)'`. The hold contract: a
-track without `endMs` HOLDS its final value to the page end — set `endMs`
-only when you want a snap-back window.
+creators only). Two options are NOT bag-wide: `durationMs` (alias
+`duration`) is read by `tween`, `colorTween`, `effect`, `recipe`, and
+`shaderClock`; a bag-level `easing` only by `tween` and `colorTween` — every
+keyframe verb takes easing PER KEYFRAME instead. Easing values: `linear`,
+`easeIn`, `easeOut`, `easeInOut`, `easeInCubic`, `easeOutCubic`,
+`easeInOutCubic`, `easeOutQuint`, `easeInOutQuint`, `easeInBack`,
+`easeOutBack`, `easeInOutBack`, `easeOutBounce`, or
+`'cubic-bezier(x1, y1, x2, y2)'`. The hold contract: a track that ends
+before the page does (an explicit `durationMs`, or keyframes that stop
+early) HOLDS its final value to the page end — set `endMs` only when you
+want a snap-back window. A `tween` with neither `durationMs` nor `endMs`
+ramps from `startMs` all the way to the page end.
 
 **Paths** (scalar verbs): top-level node properties — `x`, `y`, `opacity`,
 `rotation`, `scale`, `scaleX`, `scaleY`, `width`, `height`, `cornerRadius`,
@@ -239,9 +248,8 @@ this one if they ever disagree):
 - The app panel's names are NOT these ids: there is no `fade-in` or
   `rise-in` — fades are `opacity-fade-in`/`opacity-fade-out`, grouped
   entrances/exits are the `recipe-*` ids. Page backgrounds are app-panel
-  territory: `t.effect`/`t.recipe` refuse a page-background target (its fill
-  still animates via `t.colorTween('page-background', 'fill', …)` or
-  `t.shaderClock`).
+  territory: `t.effect`/`t.recipe` refuse a page-background target (its
+  fill still animates via `t.colorTween('page-background', 'fill', …)`).
 
 **Order of work**: author the layout first (markup), then add motion in a
 LATER edit call — a preset that bakes against the node's live content

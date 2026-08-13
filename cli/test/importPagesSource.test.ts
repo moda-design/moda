@@ -25,7 +25,9 @@ interface Captured {
   body: Record<string, unknown>;
 }
 
-function serve(respond: (req: Request, url: URL) => Response | Promise<Response>): { base: string; calls: Captured[] } {
+function serve(
+  respond: (body: Record<string, unknown>, url: URL) => Response | Promise<Response>,
+): { base: string; calls: Captured[] } {
   const calls: Captured[] = [];
   server = Bun.serve({
     hostname: '127.0.0.1',
@@ -34,7 +36,7 @@ function serve(respond: (req: Request, url: URL) => Response | Promise<Response>
       const url = new URL(req.url);
       const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
       calls.push({ method: req.method, path: url.pathname, body });
-      return respond(req, url);
+      return respond(body, url);
     },
   });
   return { base: `http://127.0.0.1:${server.port}`, calls };
@@ -81,6 +83,11 @@ describe('normalizeImportSource (unit)', () => {
     expect(normalizeImportSource(`https://moda.app/c/${SOURCE_WIRE}`)).toBe(SOURCE_WIRE);
   });
 
+  test('query strings and uppercase schemes still parse (clipboard realities)', () => {
+    expect(normalizeImportSource(`https://moda.app/canvas/${SOURCE_UUID}?page=2`)).toBe(SOURCE_UUID);
+    expect(normalizeImportSource(`HTTPS://moda.app/c/${SOURCE_WIRE}`)).toBe(SOURCE_WIRE);
+  });
+
   test('a pasted /s/<token> share URL yields the BARE token (accurate server error copy)', () => {
     expect(normalizeImportSource('https://moda.app/s/tok_abc123')).toBe('tok_abc123');
   });
@@ -100,13 +107,15 @@ describe('canvas import-pages --source wiring', () => {
   });
 
   test('a pasted share URL sends the bare token, so a share-link 404 names the real token', async () => {
-    const { base, calls } = serve(() =>
+    // The stub ECHOES the source it received into the error copy — the assertions below only
+    // pass when the CLI sent the bare token, not the raw URL (the pre-fix failure mode).
+    const { base, calls } = serve((body) =>
       Response.json(
         {
           error: {
             type: 'not_found',
             code: 'file_not_found',
-            message: 'Share link not found or has been deleted (token: tok_abc123)',
+            message: `Share link not found or has been deleted (token: ${String(body.source)})`,
           },
         },
         { status: 404 },
@@ -136,6 +145,17 @@ describe('canvas import-pages --source wiring', () => {
     expect(calls).toHaveLength(0);
     const error = (JSON.parse(stdout) as Record<string, unknown>).error as Record<string, unknown>;
     expect(error.code).toBe('usage');
+  });
+
+  test('a bad --source fails before the TARGET share-URL resolution round-trip', async () => {
+    const { base, calls } = serve(() => importedOk());
+    const { code } = await runCli([
+      'canvas', 'import-pages', 'https://moda.app/s/target_tok',
+      '--source', 'https://moda.app/brand-kit/not-a-canvas-url',
+      '--json', '--api-base', base,
+    ]);
+    expect(code).toBe(2);
+    expect(calls).toHaveLength(0); // no /v1/share_links/resolve spent on a doomed invocation
   });
 
   test('a bare share token still passes through verbatim', async () => {

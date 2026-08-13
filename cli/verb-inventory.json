@@ -1848,7 +1848,7 @@
     },
     {
       "name": "canvas import-pages",
-      "description": "import pages from another canvas (team-accessible or share token); appends after the last page",
+      "description": "import pages from another canvas (team-accessible, share token, or pasted URL); appends after the last page",
       "positionals": [
         {
           "name": "canvas",

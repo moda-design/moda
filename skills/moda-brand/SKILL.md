@@ -6,7 +6,7 @@ description: >-
   "use our brand", "match our site", rebrand, or wants a brand kit created from
   a website URL, or wants an existing canvas audited against the brand. Reads
   kit palette/fonts/logos deterministically and hands them to the other moda
-  skills. Kit plumbing only: a brand-led motion ask ("using the moda brand
+  skills. Kits, not renders: a brand-led motion ask ("using the moda brand
   kit, make a video") or anything rendered to mp4/gif → moda-video leads and
   pulls the kit itself. Requires the moda CLI and a Moda account (Step 0
   checks both; it never installs anything itself).
