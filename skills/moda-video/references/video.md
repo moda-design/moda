@@ -24,13 +24,16 @@ that takes a video as input is `moda media upscale-video`.
 
 ## Model choice — registry-driven
 
-`moda media models` prints the current video model ids (`video models: …`).
-The id list is the only roster — never hardcode it. Video capability
-envelopes (durations, resolutions, aspect ratios, modes) are enforced
-server-side: your knobs SNAP to the nearest supported value and the result's
-`applied` + `adjustments` fields report what actually ran; an unsupported
-mode fails typed, naming the models that can do it. Read those instead of
-guessing.
+`moda media models` prints one capability card per video model — its modes
+(text→video / image→video / reference→video) with duration, resolution, and
+aspect envelopes, reference caps, billing basis in plain words, and the
+`--model-params` controls. An older server prints bare ids instead
+(`video models: …`). That registry output is the only roster — never
+hardcode it, and read capabilities from the cards, not world knowledge. The
+same envelopes are enforced server-side: your knobs SNAP to the nearest
+supported value and the result's `applied` + `adjustments` fields report
+what actually ran; an unsupported mode fails typed, naming the models that
+can do it. Read those instead of guessing.
 
 Strengths of the current roster, one line each, to route the choice (defer
 to the registry when it disagrees):

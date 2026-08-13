@@ -211,20 +211,27 @@ export function registerMedia(program: Command): void {
 /**
  * `media models` — the capability source the skills defer to. This is NOT a list lane: the
  * server returns the complete registry in one document — `{image_models: [descriptor…],
- * video_model_ids: [id…]}` (backend media router) — so there is no pagination and no page
- * note. The human lane must render the SAME model set the JSON lane carries (the "no models
- * reported" regression steered real runs into skipping imagery entirely).
+ * video_models: [descriptor…], video_model_ids: [id…]}` (backend media router) — so there is
+ * no pagination and no page note. The human lane must render the SAME model set the JSON lane
+ * carries (the "no models reported" regression steered real runs into skipping imagery
+ * entirely). A server that predates `video_models` still sends `video_model_ids`; render
+ * exactly the bare id line for it — never invent capability fields the server did not state.
  */
 export async function performMediaModels(client: ApiClient, output?: string): Promise<CommandOutcome> {
   const response = await client.request({ method: 'GET', path: endpoints.mediaModels(), timeoutMs: 30_000 });
   const root = asObject(response.body);
   const imageModels = (Array.isArray(root.image_models) ? root.image_models : []).map(asObject);
+  const videoModels = (Array.isArray(root.video_models) ? root.video_models : []).map(asObject);
   const videoModelIds = strArray(root, 'video_model_ids');
+  const videoModelCount = videoModels.length > 0 ? videoModels.length : videoModelIds.length;
   const meta = { ...asObject(root.meta), ...metaBlock({ requestId: response.requestId, durationMs: response.durationMs }) };
-  const lines = [
-    ...imageModels.map(imageModelLine),
-    ...(videoModelIds.length > 0 ? [`video models: ${videoModelIds.join(', ')}`] : []),
-  ];
+  const videoLines =
+    videoModels.length > 0
+      ? videoModels.flatMap(videoModelCard)
+      : videoModelIds.length > 0
+        ? [`video models: ${videoModelIds.join(', ')}`]
+        : [];
+  const lines = [...imageModels.map(imageModelLine), ...videoLines];
   if (output !== undefined) {
     const written = writeResultFile(output, { ok: true, operation: 'media.models', ...root });
     const preview = lines.slice(0, PREVIEW_ITEMS);
@@ -233,13 +240,13 @@ export async function performMediaModels(client: ApiClient, output?: string): Pr
         ok: true,
         operation: 'media.models',
         image_model_count: imageModels.length,
-        video_model_count: videoModelIds.length,
+        video_model_count: videoModelCount,
         ...written,
         preview,
         meta,
       },
       human: (write) => {
-        write(`${imageModels.length + videoModelIds.length} models → ${written.output} (inspect with jq/grep)`);
+        write(`${imageModels.length + videoModelCount} models → ${written.output} (inspect with jq/grep)`);
         for (const line of preview) write(line);
       },
       exitCode: EXIT_OK,
@@ -283,6 +290,118 @@ function imageModelLine(model: JsonObject): string {
     `${id}${label.length > 0 && label !== id ? ` — ${label}` : ''}` +
     `${caps.length > 0 ? `  [${caps.join('; ')}]` : ''}${description.length > 0 ? `  ${description}` : ''}`
   );
+}
+
+/**
+ * One capability card per video model — header line mirroring imageModelLine (id, label,
+ * audio/seed, description) plus one indented line per supported generation mode and one for
+ * the --model-params controls. Renders ONLY what the payload states (PublicVideoModelDescriptor,
+ * backend video_registry.py): an absent mode is unsupported, an empty aspect/resolution list is
+ * a control the mode does not have, and a null billing basis renders nothing.
+ */
+function videoModelCard(model: JsonObject): string[] {
+  const id = str(model, 'id') ?? '?';
+  const label = str(model, 'label') ?? '';
+  const caps: string[] = [];
+  if (model.supports_generate_audio === true) {
+    caps.push(`audio yes (${model.generate_audio_default === true ? 'on' : 'off'} by default)`);
+  } else if (model.supports_generate_audio === false) {
+    caps.push('audio no');
+  }
+  if (model.supports_seed === true) caps.push('seed');
+  const description = str(model, 'description') ?? '';
+  const lines = [
+    `${id}${label.length > 0 && label !== id ? ` — ${label}` : ''}` +
+      `${caps.length > 0 ? `  [${caps.join('; ')}]` : ''}${description.length > 0 ? `  ${description}` : ''}`,
+  ];
+  const modes = asObject(model.modes);
+  for (const [name, key] of [
+    ['text→video', 'text_to_video'],
+    ['image→video', 'image_to_video'],
+    ['reference→video', 'reference_to_video'],
+  ] as const) {
+    const capability = modes[key];
+    if (capability === null || capability === undefined) continue;
+    const segments = videoModeSegments(asObject(capability));
+    lines.push(`  ${name}${segments.length > 0 ? `: ${segments.join('; ')}` : ''}`);
+  }
+  const params = (Array.isArray(model.model_params) ? model.model_params : [])
+    .map((param) => str(asObject(param), 'id'))
+    .filter((paramId): paramId is string => paramId !== undefined && paramId.length > 0);
+  if (params.length > 0) lines.push(`  params (--model-params): ${params.join(', ')}`);
+  return lines;
+}
+
+/** One mode's envelope: duration, aspect, resolution, input caps, billing — in plain words. */
+function videoModeSegments(capability: JsonObject): string[] {
+  const segments: string[] = [];
+  const duration = videoDurationText(asObject(capability.duration_seconds));
+  if (duration !== undefined) segments.push(duration);
+  const aspectRatios = strArray(capability, 'aspect_ratios');
+  if (aspectRatios.length > 0) {
+    const defaultAspect = str(capability, 'default_aspect_ratio');
+    segments.push(`ar ${aspectRatios.join(',')}${defaultAspect !== undefined ? ` (default ${defaultAspect})` : ''}`);
+  }
+  const resolutions = strArray(capability, 'resolutions');
+  if (resolutions.length > 0) {
+    const defaultResolution = str(capability, 'default_resolution');
+    segments.push(`res ${resolutions.join(',')}${defaultResolution !== undefined ? ` (default ${defaultResolution})` : ''}`);
+  }
+  if (capability.supports_end_image === true) segments.push('end image ok');
+  const maxReferenceImages = num(capability, 'max_reference_images');
+  if (maxReferenceImages !== undefined && maxReferenceImages > 0) segments.push(`ref images max ${maxReferenceImages}`);
+  if (capability.reference_videos !== null && capability.reference_videos !== undefined) {
+    segments.push(referenceVideosText(asObject(capability.reference_videos)));
+  }
+  segments.push(...videoBillingSegments(asObject(capability.billing)));
+  return segments;
+}
+
+/** Clip-length envelope: exact legal lengths where enumerated, a range otherwise. */
+function videoDurationText(duration: JsonObject): string | undefined {
+  const allowed = (Array.isArray(duration.allowed_seconds) ? duration.allowed_seconds : []).filter(
+    (value): value is number => typeof value === 'number',
+  );
+  const min = num(duration, 'min_seconds');
+  const max = num(duration, 'max_seconds');
+  let envelope: string | undefined;
+  if (allowed.length > 0) envelope = `${allowed.join('/')}s`;
+  else if (min !== undefined && max !== undefined) envelope = min === max ? `${min}s` : `${min}–${max}s`;
+  if (envelope === undefined) return undefined;
+  const notes: string[] = [];
+  if (typeof duration.default === 'number') notes.push(`default ${duration.default}s`);
+  else if (duration.default === 'auto') notes.push('default auto');
+  if (duration.supports_auto === true && duration.default !== 'auto') notes.push('auto ok');
+  return notes.length > 0 ? `${envelope} (${notes.join(', ')})` : envelope;
+}
+
+/** The reference-VIDEO (video-to-video) envelope, where a mode has one. */
+function referenceVideosText(referenceVideos: JsonObject): string {
+  const maxCount = num(referenceVideos, 'max_count');
+  const minEach = num(referenceVideos, 'min_seconds_each');
+  const maxEach = num(referenceVideos, 'max_seconds_each');
+  const maxTotal = num(referenceVideos, 'max_total_seconds');
+  const notes: string[] = [];
+  if (minEach !== undefined && maxEach !== undefined) notes.push(`${minEach}–${maxEach}s each`);
+  if (maxTotal !== undefined) notes.push(`≤${maxTotal}s total`);
+  if (referenceVideos.input_duration_billed === true) notes.push('input time billed');
+  const multiplier = num(referenceVideos, 'price_multiplier');
+  if (multiplier !== undefined && multiplier !== 1) notes.push(`×${multiplier} price`);
+  const head = `ref videos${maxCount !== undefined ? ` max ${maxCount}` : ''}`;
+  return notes.length > 0 ? `${head} (${notes.join(', ')})` : head;
+}
+
+/** Billing basis in plain words; a null basis states nothing rather than guessing. */
+function videoBillingSegments(billing: JsonObject): string[] {
+  const segments: string[] = [];
+  const basis = str(billing, 'basis');
+  if (basis === 'second') segments.push('priced per second');
+  else if (basis === 'megapixel_second') segments.push('priced by resolution × duration');
+  else if (basis !== undefined) segments.push(`priced per ${basis}`);
+  if (billing.audio_priced_separately === true) segments.push('audio billed separately');
+  const higherRateResolutions = strArray(billing, 'higher_rate_resolutions');
+  if (higherRateResolutions.length > 0) segments.push(`higher rate at ${higherRateResolutions.join(',')}`);
+  return segments;
 }
 
 /** Ids from an array tolerant of BOTH entry shapes: bare string ids or `{id}` descriptor objects. */
