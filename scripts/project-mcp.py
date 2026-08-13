@@ -10,6 +10,8 @@ maintained AS CODE (scripts/mcp_projection_rules.py), never by hand-editing
 the output:
 
   build   regenerate dist/mcp-skills/** from skills-src + the rules
+          (skill payloads, index.json, and verb-dispositions.json — the
+          machine-readable VERB_DISPOSITION export for server-side consumers)
   check   regenerate in memory and fail on any drift from the committed
           output, dead rules, unmapped verbs, or banned-surface leaks
   zips    package dist/mcp-skills/<skill>/ into dist/<skill>.skill.zip
@@ -83,7 +85,7 @@ def apply_generics(text: str, fired: set[str]) -> str:
 
 RESIDUAL_VERB = re.compile(
     r"\bmoda\s+(?:canvas|brand|media|task|site|web|file|drive|template|export|account|auth|org|doctor"
-    r"|describe|last-error|docs|update|version|completion|context)\b"
+    r"|describe|last-error|docs|update|version|completion|context|ask)\b"
 )
 
 
@@ -232,6 +234,25 @@ def build_outputs() -> dict[str, str]:
     }
     outputs["index.json"] = json.dumps(index, indent=2, ensure_ascii=False) + "\n"
     scan_output("dist/mcp-skills/index.json", outputs["index.json"], roster)
+
+    # The bilingual dictionary export (stable schema v1 — documented in the
+    # mcp_projection_rules.py module docstring): VERB_DISPOSITION, verbatim, for
+    # server-side consumers (the studio advisory `ask` service). Deliberately NOT
+    # run through scan_output — CLI verbs are this file's keys by design; it
+    # exists to translate them.
+    for verb, (_, status) in sorted(rules.VERB_DISPOSITION.items()):
+        if status not in rules.DISPOSITION_STATUSES:
+            fail("mcp_projection_rules.VERB_DISPOSITION", f"unknown status {status!r} on {verb!r} — add it to DISPOSITION_STATUSES")
+    dispositions = {
+        "comment": "Bilingual CLI↔connector verb dictionary: every `moda <verb>` used in skills-src, mapped to its connector equivalent or authored prose remedy (backticks mark code tokens). Verbatim export of VERB_DISPOSITION in scripts/mcp_projection_rules.py — schema documented there; stable within schema_version 1. Regenerate with scripts/project-mcp.py build.",
+        "schema_version": 1,
+        "statuses": rules.DISPOSITION_STATUSES,
+        "dispositions": {
+            verb: {"target": target, "status": status}
+            for verb, (target, status) in sorted(rules.VERB_DISPOSITION.items())
+        },
+    }
+    outputs["verb-dispositions.json"] = json.dumps(dispositions, indent=2, ensure_ascii=False) + "\n"
     return outputs
 
 

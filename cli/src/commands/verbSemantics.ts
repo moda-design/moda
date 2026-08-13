@@ -62,6 +62,9 @@ const SEMANTICS: Record<string, VerbSemantics> = {
   'account costs': {},
   'account status': {},
   'account usage': {},
+  // Free advisory Q&A: a read (usage.class "assisted", zero credits); returns no revision
+  // token, so it carries no read_lane marker.
+  'ask': {},
   'auth login': {},
   'auth logout': {},
   'auth status': {},

@@ -44,6 +44,7 @@
     "moda org use",
     "moda org current",
     "moda describe",
+    "moda ask",
     "moda last-error",
     "moda context show",
     "moda context set",

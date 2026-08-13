@@ -144,3 +144,5 @@ Three verbs turn existing work into your starting point instead of recreating it
 | 7 | Server/transport | safe to retry | mutations carry idempotency keys — a re-run cannot double-apply |
 
 If a failure's output got swallowed or truncated by your harness, do NOT re-run the failed write just to see the error: `moda last-error` re-prints the last failure's full error envelope (type, code, message, hint, request id).
+
+Whenever you're unsure of the best approach — before an unfamiliar kind of task, when weighing two ways to do something, or after any failed call — ask Moda itself: `moda ask "<question>"` is fast, free, and answers with the exact verbs and references to use, so ask early and often rather than guessing.

@@ -2,6 +2,7 @@
 import { Command, CommanderError } from 'commander';
 import { CliError, type CliErrorFields } from './cliError.ts';
 import { registerAccount } from './commands/account.ts';
+import { registerAsk } from './commands/ask.ts';
 import { registerAuth } from './commands/auth.ts';
 import { registerBrand } from './commands/brand.ts';
 import { registerCanvas } from './commands/canvas.ts';
@@ -35,6 +36,7 @@ export function buildProgram(onErrorOutput?: (text: string) => void): Command {
   if (onErrorOutput !== undefined) program.configureOutput({ writeErr: onErrorOutput });
 
   registerMeta(program);
+  registerAsk(program);
   registerContext(program);
   registerOrg(program);
   registerAuth(program);
