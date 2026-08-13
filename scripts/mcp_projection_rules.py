@@ -12,6 +12,23 @@ Two rule classes:
 VERB_DISPOSITION is the audit table: every `moda <verb>` that appears in
 skills-src must have a row (mapped, folded, pending-server, host-native,
 app-only, or replaced) — an unlisted verb fails the build.
+
+JSON export (dist/mcp-skills/verb-dispositions.json) — STABLE SCHEMA v1:
+the projection build emits VERB_DISPOSITION machine-readably next to
+index.json, as the bilingual CLI↔connector dictionary the studio advisory
+(ask) service consumes — per-surface allowed vocabulary plus the authored
+remedy text for cross-surface questions. Shape:
+
+    {"comment": str, "schema_version": 1,
+     "statuses": {status: meaning},                # DISPOSITION_STATUSES below
+     "dispositions": {"moda <verb>": {"target": str, "status": str}}}
+
+`target` is the verbatim authored mapping/remedy text — backticks mark code
+tokens (connector tool names and call shapes). Keys are sorted and the file
+is deterministic, so the projection byte-identity gate
+(scripts/project-mcp.py check) covers it. Evolution within schema_version 1
+is additive only (new statuses, new top-level fields); renaming or removing
+a field bumps schema_version.
 """
 
 from __future__ import annotations
@@ -663,6 +680,12 @@ REFERENCE_PASSAGES["reading-and-verifying"] = [
         "| Payment/quota/rate | Credits or plan caps | no | surface the hint (top-up / wait) |\n"
         "| Server/transport | Transient | safe to retry | mutations carry idempotency keys — a re-run cannot double-apply |\n\n"
         "A failure's full typed envelope (type, code, message, hint) rides the tool result itself — read it there; never re-run a failed write just to see its error again.",
+    ),
+    (
+        # The connector has no ask lane yet (VERB_DISPOSITION: pending-server) — until the
+        # advisory tool ships there, the honest same-shaped steer is the load_skill pull tier.
+        "Whenever you're unsure of the best approach — before an unfamiliar kind of task, when weighing two ways to do something, or after any failed call — ask Moda itself: `moda ask \"<question>\"` is fast, free, and answers with the exact verbs and references to use, so ask early and often rather than guessing.",
+        "Whenever you're unsure of the best approach — before an unfamiliar kind of task, when weighing two ways to do something, or after any failed call — pull the fuller skill reference with `load_skill` rather than guessing.",
     ),
 ]
 
@@ -1361,6 +1384,19 @@ OUTPUT_BANS: list[tuple[re.Pattern[str], str]] = [
 # errors). "prose" rows are not verbs (line-wrap or wildcard artifacts).
 # --------------------------------------------------------------------------
 
+# Machine-readable legend for the JSON export (schema documented in the module
+# docstring). Every VERB_DISPOSITION status must be a key here — the build
+# fails on an unknown status, so the exported vocabulary stays closed.
+DISPOSITION_STATUSES: dict[str, str] = {
+    "live": "maps to a shipped connector tool (target names it)",
+    "folded": "rides another connector tool or parameter (target shows the call shape)",
+    "pending-server": "planned connector surface not yet shipped; target is the best-guess name or the honest interim remedy",
+    "host-native": "the chat host itself provides the capability",
+    "app-only": "the Moda app owns it; target says where",
+    "replaced": "Step-0/lifecycle machinery replaced by moda_bootstrap or typed errors",
+    "prose": "not a real verb — a line-wrap or wildcard artifact of the source scan",
+}
+
 VERB_DISPOSITION: dict[str, tuple[str, str]] = {
     "moda doctor": ("`moda_bootstrap`", "replaced"),
     "moda auth login": ("connector OAuth (claude.ai Settings → Connectors)", "replaced"),
@@ -1369,6 +1405,7 @@ VERB_DISPOSITION: dict[str, tuple[str, str]] = {
     "moda org current": ("`moda_bootstrap`", "replaced"),
     "moda account status": ("`moda_bootstrap` (plan + credits)", "replaced"),
     "moda describe": ("tool descriptions/schemas", "replaced"),
+    "moda ask": ("an advisory ask lane is planned for this surface; meanwhile `load_skill` pulls the full skill references", "pending-server"),
     "moda docs": ("the skill references themselves", "replaced"),
     "moda last-error": ("typed error on the tool result", "replaced"),
     "moda canvas create": ("`canvas_create`", "live"),

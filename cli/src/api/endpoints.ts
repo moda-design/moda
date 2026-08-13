@@ -82,6 +82,9 @@ export const endpoints = {
   webSearch: () => '/v1/web/search',
   webRead: () => '/v1/web/read',
 
+  // Ask (free advisory lane — cited product answers, usage class "assisted", zero credits)
+  ask: () => '/v1/ask',
+
   // Websites (deterministic static-site lane — v1: single-page HTML sites on *.moda.page)
   websiteList: () => '/v1/websites',
   websiteCreate: () => '/v1/websites',

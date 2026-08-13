@@ -139,3 +139,5 @@ Existing work should still be your starting point instead of recreating it by ha
 | Server/transport | Transient | safe to retry | mutations carry idempotency keys — a re-run cannot double-apply |
 
 A failure's full typed envelope (type, code, message, hint) rides the tool result itself — read it there; never re-run a failed write just to see its error again.
+
+Whenever you're unsure of the best approach — before an unfamiliar kind of task, when weighing two ways to do something, or after any failed call — pull the fuller skill reference with `load_skill` rather than guessing.

@@ -1,0 +1,315 @@
+{
+  "comment": "Bilingual CLI↔connector verb dictionary: every `moda <verb>` used in skills-src, mapped to its connector equivalent or authored prose remedy (backticks mark code tokens). Verbatim export of VERB_DISPOSITION in scripts/mcp_projection_rules.py — schema documented there; stable within schema_version 1. Regenerate with scripts/project-mcp.py build.",
+  "schema_version": 1,
+  "statuses": {
+    "live": "maps to a shipped connector tool (target names it)",
+    "folded": "rides another connector tool or parameter (target shows the call shape)",
+    "pending-server": "planned connector surface not yet shipped; target is the best-guess name or the honest interim remedy",
+    "host-native": "the chat host itself provides the capability",
+    "app-only": "the Moda app owns it; target says where",
+    "replaced": "Step-0/lifecycle machinery replaced by moda_bootstrap or typed errors",
+    "prose": "not a real verb — a line-wrap or wildcard artifact of the source scan"
+  },
+  "dispositions": {
+    "moda account status": {
+      "target": "`moda_bootstrap` (plan + credits)",
+      "status": "replaced"
+    },
+    "moda ask": {
+      "target": "an advisory ask lane is planned for this surface; meanwhile `load_skill` pulls the full skill references",
+      "status": "pending-server"
+    },
+    "moda auth login": {
+      "target": "connector OAuth (claude.ai Settings → Connectors)",
+      "status": "replaced"
+    },
+    "moda brand": {
+      "target": "`brand_list`/`brand_show`",
+      "status": "prose"
+    },
+    "moda brand add-image": {
+      "target": "manage in the Moda app",
+      "status": "app-only"
+    },
+    "moda brand create": {
+      "target": "create in the Moda app; `brand_list` picks it up",
+      "status": "app-only"
+    },
+    "moda brand guide": {
+      "target": "voice/tone/values on `brand_show`; guides in-app",
+      "status": "app-only"
+    },
+    "moda brand guides": {
+      "target": "voice/tone/values on `brand_show`; guides in-app",
+      "status": "app-only"
+    },
+    "moda brand images": {
+      "target": "manage in the Moda app",
+      "status": "app-only"
+    },
+    "moda brand list": {
+      "target": "`brand_list`",
+      "status": "live"
+    },
+    "moda brand pull": {
+      "target": "`brand_show` (model-safe read; full doc in-app)",
+      "status": "app-only"
+    },
+    "moda brand remove-image": {
+      "target": "manage in the Moda app",
+      "status": "app-only"
+    },
+    "moda brand show": {
+      "target": "`brand_show`",
+      "status": "live"
+    },
+    "moda brand update": {
+      "target": "edit in the Moda app's brand-kit editor",
+      "status": "app-only"
+    },
+    "moda brand use": {
+      "target": "defaults live in the Moda app",
+      "status": "app-only"
+    },
+    "moda canvas add-pages": {
+      "target": "`canvas_edit` code `create('page', …)`",
+      "status": "folded"
+    },
+    "moda canvas create": {
+      "target": "`canvas_create`",
+      "status": "live"
+    },
+    "moda canvas delete-items": {
+      "target": "`canvas_delete(ids=[…])`",
+      "status": "live"
+    },
+    "moda canvas duplicate": {
+      "target": "duplicate in the Moda app",
+      "status": "app-only"
+    },
+    "moda canvas edit": {
+      "target": "`canvas_edit`",
+      "status": "live"
+    },
+    "moda canvas import-pages": {
+      "target": "copy in the Moda app",
+      "status": "app-only"
+    },
+    "moda canvas import-pptx": {
+      "target": "import in the Moda app",
+      "status": "app-only"
+    },
+    "moda canvas instructions": {
+      "target": "`guidance` on the read result",
+      "status": "folded"
+    },
+    "moda canvas lint": {
+      "target": "`canvas_read(lint=true)`",
+      "status": "folded"
+    },
+    "moda canvas markup": {
+      "target": "`canvas_apply_markup`",
+      "status": "live"
+    },
+    "moda canvas open": {
+      "target": "hand over the canvas link (no local browser)",
+      "status": "app-only"
+    },
+    "moda canvas read": {
+      "target": "`canvas_read`",
+      "status": "live"
+    },
+    "moda canvas screenshot": {
+      "target": "`canvas_screenshot`",
+      "status": "live"
+    },
+    "moda canvas share": {
+      "target": "`canvas_share`",
+      "status": "live"
+    },
+    "moda canvas show": {
+      "target": "`canvas_read(summary=true)`",
+      "status": "folded"
+    },
+    "moda describe": {
+      "target": "tool descriptions/schemas",
+      "status": "replaced"
+    },
+    "moda docs": {
+      "target": "the skill references themselves",
+      "status": "replaced"
+    },
+    "moda doctor": {
+      "target": "`moda_bootstrap`",
+      "status": "replaced"
+    },
+    "moda drive mkdir": {
+      "target": "`drive_organize(action='create_folder')`",
+      "status": "live"
+    },
+    "moda drive move": {
+      "target": "`drive_organize(action='move')`",
+      "status": "live"
+    },
+    "moda drive tree": {
+      "target": "`drive_tree`",
+      "status": "live"
+    },
+    "moda drive visibility": {
+      "target": "`drive_organize(action='set_visibility')`",
+      "status": "live"
+    },
+    "moda export": {
+      "target": "`export`",
+      "status": "live"
+    },
+    "moda file download": {
+      "target": "`file_list` proves existence; bytes download in the Moda app",
+      "status": "app-only"
+    },
+    "moda file list": {
+      "target": "`file_list`",
+      "status": "live"
+    },
+    "moda file search": {
+      "target": "`file_search`",
+      "status": "live"
+    },
+    "moda file upload": {
+      "target": "`upload`",
+      "status": "live"
+    },
+    "moda last-error": {
+      "target": "typed error on the tool result",
+      "status": "replaced"
+    },
+    "moda media": {
+      "target": "the `media_*` tools",
+      "status": "prose"
+    },
+    "moda media edit-image": {
+      "target": "`media_generate_image(source_images=[…])`",
+      "status": "folded"
+    },
+    "moda media generate-image": {
+      "target": "`media_generate_image`",
+      "status": "live"
+    },
+    "moda media generate-video": {
+      "target": "`media_generate_video`",
+      "status": "live"
+    },
+    "moda media models": {
+      "target": "model registry embedded in media tool descriptions",
+      "status": "folded"
+    },
+    "moda media remove-background": {
+      "target": "`media_generate_image(source_images=[…])`",
+      "status": "folded"
+    },
+    "moda media upscale": {
+      "target": "`media_upscale`",
+      "status": "live"
+    },
+    "moda media upscale-video": {
+      "target": "`media_upscale(kind='video')`",
+      "status": "folded"
+    },
+    "moda org current": {
+      "target": "`moda_bootstrap`",
+      "status": "replaced"
+    },
+    "moda org list": {
+      "target": "`moda_bootstrap` teams + per-call `team`",
+      "status": "replaced"
+    },
+    "moda org use": {
+      "target": "per-call `team` argument",
+      "status": "replaced"
+    },
+    "moda site": {
+      "target": "Moda app",
+      "status": "prose"
+    },
+    "moda site add-page": {
+      "target": "Moda app",
+      "status": "app-only"
+    },
+    "moda site create": {
+      "target": "build in the Moda app (moda-website routes)",
+      "status": "app-only"
+    },
+    "moda site delete-page": {
+      "target": "Moda app",
+      "status": "app-only"
+    },
+    "moda site list": {
+      "target": "`site_list`",
+      "status": "live"
+    },
+    "moda site pages": {
+      "target": "`site_show` (page inventory)",
+      "status": "live"
+    },
+    "moda site publish": {
+      "target": "Moda app",
+      "status": "app-only"
+    },
+    "moda site screenshot": {
+      "target": "Moda app",
+      "status": "app-only"
+    },
+    "moda site set-content": {
+      "target": "Moda app",
+      "status": "app-only"
+    },
+    "moda site unpublish": {
+      "target": "Moda app",
+      "status": "app-only"
+    },
+    "moda skill": {
+      "target": "(prose: 'moda skill')",
+      "status": "prose"
+    },
+    "moda skills": {
+      "target": "(prose: 'moda skills')",
+      "status": "prose"
+    },
+    "moda task cancel": {
+      "target": "`task_cancel`",
+      "status": "live"
+    },
+    "moda task list": {
+      "target": "poll the handle you hold with `task_status`",
+      "status": "folded"
+    },
+    "moda task start": {
+      "target": "`task_start`",
+      "status": "live"
+    },
+    "moda task status": {
+      "target": "`task_status`",
+      "status": "live"
+    },
+    "moda template list": {
+      "target": "`template_list`",
+      "status": "live"
+    },
+    "moda template pull": {
+      "target": "`template_list` + `canvas_screenshot` of candidates",
+      "status": "live"
+    },
+    "moda web": {
+      "target": "host-native browsing",
+      "status": "prose"
+    },
+    "moda web read": {
+      "target": "the host's built-in page reading",
+      "status": "host-native"
+    },
+    "moda web search": {
+      "target": "the host's built-in web search",
+      "status": "host-native"
+    }
+  }
+}
