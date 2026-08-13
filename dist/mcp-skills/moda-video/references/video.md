@@ -7,9 +7,9 @@ that renders to mp4/gif**:
    image-to-video from a start frame, reference-guided video, upscaling.
    The deliverable is a video file; there is no canvas link.
 2. **Vector-native motion** — an animation canvas (or animated shader
-   fills), authored here, rendering live at the canvas link. The link is
-   the handoff; the mp4/gif file itself exports from the Moda app, not
-   this surface — say so plainly when a file is the ask.
+   fills) exported with `export(format='mp4'|'gif')`. Deterministic, free
+   to author, precise; the live canvas link is the handoff and the file
+   is format-implied.
 
 Route by what the ask needs: cinematic/photographic motion, a logo brought
 to life, "make a video" → generated. Crisp type, exact brand geometry,
@@ -85,7 +85,7 @@ changed knob — tweak the prompt or pass `seed` on models that accept one.
 
 **1. Brand stinger** — "a short video with our logo" (the classic ask):
 
-1. Step-0 found the kit: `brand_show(brand_ref)` → durable `file_` refs
+1. Step-0 found the kit: `brand_show(brand_kit_ref)` → durable `file_` refs
    for the logos; verify the variant in place per references/brand.md and
    pick the one that fits the concept.
 2. Pick the model from the registry; image-to-video with the logo as the
@@ -116,17 +116,18 @@ then animate it.
 **4. Vector-native motion** — when precision beats generation:
 
 - Animated shader fills are the cheap premium lever on ANY canvas: author
-  per references/design-quality.md (motion is automatic) — shaders freeze
-  in static exports and move live at the canvas link.
+  per references/design-quality.md (motion is automatic), then
+  `export(canvas_ref, format='mp4', page=N)` — shaders freeze in static
+  exports and move in mp4/gif.
 - Keyframed motion lives on an animation canvas:
   `canvas_create(name='…', width=1920, height=1080, category='animation')`,
   author the layout via markup, then drive motion through the `motion`
   timeline API inside `canvas_edit` scripts — full shapes in "The motion
   timeline API" below. Author it from that section; don't discover it by
   probing.
-- The mp4/gif file itself exports from the Moda app, not this surface —
-  deliver the live canvas link (the motion plays there) and say where the
-  file export lives; never fake or improvise a motion file.
+- Export per page: `export(canvas_ref, format='mp4'|'gif', page=N)` —
+  mp4/gif REQUIRE `page`, and a page with NO animation rejects typed
+  `no_animation` (that is the honest answer: deliver a still + the link).
 - Choreography beyond what you can author confidently → escalate to
   `task_start` (metered) rather than thrashing; the canvas link keeps
   the user in the loop either way.
@@ -299,8 +300,7 @@ it never disappears:
 
 - Media-lane results: the file link is the deliverable (plus the usage
   receipt as information). Hand it over promptly; never show raw JSON.
-- Canvas-motion results: the live link IS the deliverable here — the
-  motion plays at the link, and everything stays editable in the app
-  (motion-file exports live there too).
+- Canvas-motion results: live link FIRST (it never depends on the export),
+  then the mp4/gif; everything stays editable in the app.
 - Offer the enhance step (upscale) once, briefly, for hero deliverables;
   no nagging.

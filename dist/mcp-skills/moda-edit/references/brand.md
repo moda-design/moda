@@ -6,7 +6,7 @@ A brand kit is Moda's canonical record of a brand: palette, font families, logo 
 
 ```
 brand_list()            # kits in the workspace (name, id, default marker)
-brand_show(brand_ref)   # model-safe summary: palette, fonts, voice, logo refs
+brand_show(brand_kit_ref)   # model-safe summary: palette, fonts, voice, logo refs
 ```
 
 Kit creation, updates, defaults, and image management are not available on this surface — they live in the Moda app's brand-kit editor (`brand_show` returns the kit's app link to hand over).
@@ -27,7 +27,7 @@ Hex codes and font names don't tell you what the brand LOOKS like. Before the
 concept step of any net-new design that uses a kit — deck cover, one-pager,
 social — and before placing any logo:
 
-1. `brand_show(brand_ref)` for the kit's logo `file_` refs and their
+1. `brand_show(brand_kit_ref)` for the kit's logo `file_` refs and their
    labeled roles/variants (asset preview links don't exist on this
    surface).
 2. Place the plausible logo variant on the working canvas by `file_` ref,
@@ -45,7 +45,7 @@ and off-brand-imagery output happens.
 
 The auditable brand check no competitor offers — pure read verbs:
 
-1. `brand_show(brand_ref)` — the reference tokens.
+1. `brand_show(brand_kit_ref)` — the reference tokens.
 2. `canvas_read(canvas_ref)` — every node's fills, strokes, fonts, and the `## Vars` legend.
 3. `canvas_read(canvas_ref, lint=true)` — catches undersized logos and contrast defects.
 4. Compare and report pass/fail per element:

@@ -11,9 +11,9 @@ description: >-
   skill for the motion (moda-social owns still sizes and formats). Still
   posts/carousels/banners → moda-social; slide decks → moda-deck; live sites →
   moda-website; edits to an existing canvas that stay still → moda-edit. Video
-  generation is metered (spends Moda credits); canvas motion authoring is free
-  (motion files export from the Moda app). Requires the Moda connector (Step 0
-  checks it; accounts live at moda.app).
+  generation is metered (spends Moda credits); canvas motion authoring and
+  mp4/gif export are free. Requires the Moda connector (Step 0 checks it;
+  accounts live at moda.app).
 ---
 
 # moda-video
@@ -29,9 +29,10 @@ description: >-
      account; accounts live at moda.app), wait for them, then call
      `moda_bootstrap` again. Never fake Moda output while disconnected; no
      Mermaid/HTML/prose stand-in replaces the stop.
-   - Several teams listed and the user names one: pass that team on each tool
-     call — team decides whose workspace and billing everything lands in.
-     Never switch teams on your own initiative.
+   - Several teams listed and the user names one: pass that team on the tools
+     that take a `team` argument (the create/list/write/upload/media/task
+     lanes; read tools follow the canvas) — team decides whose workspace and
+     billing everything lands in. Never switch teams on your own initiative.
    - Any entitlement gate (e.g. the account cannot author canvases yet): relay
      the result's actionable hint verbatim and stop. Never retry in a loop.
    - Note the plan and remaining credits it reports (metered tools spend them;
@@ -108,12 +109,10 @@ description: >-
 1. **Route the lane** — read references/video.md BEFORE anything else:
    generated video (the metered media tools) for cinematic/photographic
    motion and "make a video" asks; vector-native (animation canvas or
-   shader fills — authored here, delivered as the live canvas link; the
-   mp4/gif file itself exports from the Moda app, not this surface) for
-   crisp type, exact brand geometry, and loops. A generated-video ask IS
-   format words — the motion file is the deliverable, not a ceremony
-   violation.
-2. **Gather the start assets**: brand kit in play → `brand_show(brand_ref)`
+   shader fills → `export(format='mp4'|'gif', page=N)`) for crisp type,
+   exact brand geometry, and loops. A video ask IS format words — the
+   motion file is the deliverable, not a ceremony violation.
+2. **Gather the start assets**: brand kit in play → `brand_show(brand_kit_ref)`
    for durable logo `file_` refs (references/brand.md — verify the variant
    in place with a screenshot; asset previews don't exist on this surface).
    A canvas frame → `export(canvas_ref, format='png', page=N)`. User
@@ -141,6 +140,6 @@ description: >-
 | references/video.md | always — lanes, models, spend checkpoint, workflows, prompt craft |
 | references/omni-and-media.md | metered-lane rules, video knob semantics, task-lane escalation |
 | references/brand.md | a brand kit exists — logo refs, variant choice, guides |
-| references/export.md | any canvas export (frames; png/pdf stills) |
+| references/export.md | any canvas export (frames, mp4/gif ceremony, `page` rules) |
 | references/markup.md, references/design-quality.md, references/edit-code.md | vector-native motion: authoring, shader fills, animation edits |
 | references/reading-and-verifying.md, references/gotchas.md | reading canvases, degraded verify; no-video-on-canvas and other traps |

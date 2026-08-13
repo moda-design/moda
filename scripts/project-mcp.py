@@ -95,9 +95,14 @@ def scan_output(name: str, text: str, roster: set[str]) -> None:
         for pattern, label in rules.OUTPUT_BANS:
             if pattern.search(line):
                 fail(name, f"line {i}: banned on this surface ({label}): {line.strip()[:100]!r}")
-        for tool in re.findall(r"\b(?:moda|canvas|media|brand|task|file|drive|template|website)_[a-z_]+\b", line):
+        for tool in sorted(set(re.findall(r"\b(?:moda|canvas|media|brand|task|file|drive|template|website)_[a-z_]+\b", line))):
             if tool not in roster and tool not in rules.NON_TOOL_TOKENS:
                 fail(name, f"line {i}: unknown connector tool {tool!r} (not in mcp/connector-tools.json)")
+    # Second pass over the raw text: RESIDUAL_VERB's \s+ crosses newlines, so
+    # an invocation wrapped across a line break can't slip past the line scan.
+    for m in RESIDUAL_VERB.finditer(text):
+        if "\n" in m.group(0):
+            fail(name, f"unprojected CLI invocation wrapped across lines: {m.group(0)!r}")
 
 
 # ---------------------------------------------------------------- frontmatter
@@ -109,6 +114,9 @@ def project_frontmatter(skill: str, text: str) -> tuple[str, str, str]:
         fail(skill, "missing frontmatter")
         return "", "", text
     end = text.find("\n---\n", 4)
+    if end == -1:
+        fail(skill, "unterminated frontmatter")
+        return "", "", text
     block, body = text[4:end], text[end + 5 :]
     fields: dict[str, str] = {}
     key = None
@@ -119,7 +127,7 @@ def project_frontmatter(skill: str, text: str) -> tuple[str, str, str]:
             fields[key] = m.group(2).strip()
         elif key and line.startswith((" ", "\t")):
             fields[key] = (fields[key] + " " + line.strip()).strip()
-    desc = fields.get("description", "").removeprefix(">-").strip()
+    desc = fields.get("description", "").removeprefix(">-").removeprefix(">").strip()
     desc = apply_passages(f"{skill} (description)", desc, rules.DESCRIPTION_RULES.get(skill, []))
     if len(desc) > 1024:
         fail(skill, f"projected description too long ({len(desc)} chars > 1024)")
@@ -163,14 +171,17 @@ def build_outputs() -> dict[str, str]:
         override = ROOT / "mcp" / "overrides" / f"{skill}.SKILL.md"
         if override.exists():
             text = read(override)
-            text = text.replace("<!--MCP:STEP0-->", step0_mcp).replace("<!--MCP:UX-RULES-->", ux_mcp)
+            for marker, replacement in [("<!--MCP:STEP0-->", step0_mcp), ("<!--MCP:UX-RULES-->", ux_mcp)]:
+                if text.count(marker) != 1:
+                    fail(str(override), f"expected exactly one {marker} marker, found {text.count(marker)}")
+                text = text.replace(marker, replacement)
             if "<!--" in text:
                 fail(str(override), "unresolved MCP marker")
             fm, _, body = project_frontmatter(skill, text)
         else:
             src = read(ROOT / "skills" / skill / "SKILL.md")
-            if step0_cli not in src or ux_cli not in src:
-                fail(f"skills/{skill}/SKILL.md", "shared Step-0/UX block not embedded byte-identically — run validate.py first")
+            if src.count(step0_cli) != 1 or src.count(ux_cli) != 1:
+                fail(f"skills/{skill}/SKILL.md", "shared Step-0/UX block not embedded byte-identically exactly once — run validate.py first")
                 continue
             src = src.replace(step0_cli, step0_mcp).replace(ux_cli, ux_mcp)
             fm, _, body = project_frontmatter(skill, src)
@@ -187,13 +198,13 @@ def build_outputs() -> dict[str, str]:
         scan_output(f"dist/mcp-skills/{name}", text, roster)
         if name.endswith("SKILL.md"):
             skill = name.split("/")[0]
-            for ref in set(re.findall(r"references/([a-z-]+)\.md", text)):
+            for ref in sorted(set(re.findall(r"references/([a-z-]+)\.md", text))):
                 if f"{skill}/references/{ref}.md" not in outputs:
                     fail(f"dist/mcp-skills/{name}", f"mentions references/{ref}.md which does not ship in this skill's payload")
     for skill in rules.SKILLS:
         for ref in rules.MCP_REFERENCES[skill]:
             text = outputs.get(f"{skill}/references/{ref}.md", "")
-            for mention in set(re.findall(r"references/([a-z-]+)\.md", text)):
+            for mention in sorted(set(re.findall(r"references/([a-z-]+)\.md", text))):
                 if f"{skill}/references/{mention}.md" not in outputs:
                     fail(
                         f"dist/mcp-skills/{skill}/references/{ref}.md",
@@ -208,7 +219,7 @@ def build_outputs() -> dict[str, str]:
     audit_source_coverage()
 
     index = {
-        "comment": "Machine-readable manifest of the MCP-flavored skills projection. Consumed by the studio-side load_skill lane; regenerate with scripts/project-mcp.py build.",
+        "comment": "Machine-readable manifest of the connector-flavored skills projection — stable per-skill paths for server-side consumption (e.g. registering these skills into the studio connector's load_skill registry). Regenerate with scripts/project-mcp.py build.",
         "format": "claude-agent-skill",
         "skills": [
             {
@@ -220,6 +231,7 @@ def build_outputs() -> dict[str, str]:
         ],
     }
     outputs["index.json"] = json.dumps(index, indent=2, ensure_ascii=False) + "\n"
+    scan_output("dist/mcp-skills/index.json", outputs["index.json"], roster)
     return outputs
 
 
@@ -303,9 +315,12 @@ def roster_warnings() -> None:
         return
     names = set(re.findall(r'name="([a-z_]+)"', read(manifest)))
     doc = json.loads(read(ROSTER_PATH))
+    # Warnings only: the local checkout can be on any branch, so a mismatch
+    # here must not redden `check` (CI has no studio checkout at all). The
+    # hard gate is `audit-server`, run against the intended manifest.
     for tool in doc["live"]:
         if tool not in names:
-            fail("mcp/connector-tools.json", f"live tool {tool!r} missing from the studio manifest — the projection teaches a tool that no longer exists")
+            print(f"warning: live tool {tool!r} missing from the local studio manifest — verify against studio origin/main (audit-server is the hard gate)")
     for tool in doc["pending_server"]:
         if tool not in names:
             print(f"warning: pending-server tool {tool!r} not in the studio manifest yet (run audit-server when the parity wave lands)")
@@ -356,6 +371,7 @@ def cmd_zips(out_dir: Path) -> int:
                 # Deterministic timestamps so re-releases of identical content hash identically.
                 info = zipfile.ZipInfo(f"{skill}/{path.relative_to(skill_dir)}", date_time=(2026, 1, 1, 0, 0, 0))
                 info.external_attr = 0o644 << 16
+                info.compress_type = zipfile.ZIP_DEFLATED
                 zf.writestr(info, read(path))
         dest.write_bytes(buf.getvalue())
         built.append(dest.name)
@@ -380,21 +396,40 @@ def report() -> int:
     return 1
 
 
+def _flag_value(args: list[str], flag: str) -> str | None:
+    """Value of `flag` in args; unknown flags and a missing value fail loudly."""
+    value = None
+    rest = args[1:]
+    while rest:
+        token = rest.pop(0)
+        if token == flag:
+            if not rest:
+                print(f"project-mcp: {flag} requires a value")
+                raise SystemExit(2)
+            value = rest.pop(0)
+        else:
+            print(f"project-mcp: unknown argument {token!r} for {args[0]}")
+            raise SystemExit(2)
+    return value
+
+
 def main() -> int:
     args = sys.argv[1:]
     cmd = args[0] if args else "check"
+    if cmd in ("build", "check", "table") and len(args) > 1:
+        print(f"project-mcp: {cmd} takes no arguments")
+        return 2
     if cmd == "build":
         return cmd_build()
     if cmd == "check":
         return cmd_check()
     if cmd == "zips":
-        out = Path(args[args.index("--out") + 1]) if "--out" in args else ROOT / "dist"
-        return cmd_zips(out)
+        out = _flag_value(args, "--out")
+        return cmd_zips(Path(out) if out else ROOT / "dist")
     if cmd == "table":
         return cmd_table()
     if cmd == "audit-server":
-        root = args[args.index("--studio-root") + 1] if "--studio-root" in args else None
-        return cmd_audit_server(root)
+        return cmd_audit_server(_flag_value(args, "--studio-root"))
     print(__doc__)
     return 2
 

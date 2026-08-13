@@ -92,13 +92,7 @@ DESCRIPTION_RULES: dict[str, list[tuple[str, str] | tuple[str, str, int]]] = {
         ),
         _CLI_TAIL,
     ],
-    "moda-video": [
-        (
-            "canvas motion authoring and mp4/gif export are free.",
-            "canvas motion authoring is free (motion files export from the Moda app).",
-        ),
-        _CLI_TAIL,
-    ],
+    "moda-video": [_CLI_TAIL],
 }
 
 # --------------------------------------------------------------------------
@@ -182,8 +176,9 @@ PASSAGES["skills/moda-deck/SKILL.md"] = [
     ),
     (
         "PPTX/PDF too?\"): `moda export CANVAS_REF --format pptx|pdf -o …`.",
-        "PPTX/PDF too?\"): `export(canvas_ref, format='pptx'|'pdf')` — hand over\n"
-        "   the download link it returns.",
+        "PPTX/PDF too?\"): `export(canvas_ref, format='pptx'|'pdf')` (PDF: add\n"
+        "   `flatten=false` for real text layers) — hand over the download link it\n"
+        "   returns.",
     ),
     (
         "| references/brand.md, references/web.md | a brand kit exists; content needs live web research |\n",
@@ -222,8 +217,9 @@ PASSAGES["skills/moda-one-pager/SKILL.md"] = [
         "a PDF/print artifact — format words win, so export (`moda export\n"
         "   --format pdf`); otherwise offer once (\"Want this as a PDF too?\").",
         "a PDF/print artifact — format words win, so export\n"
-        "   (`export(format='pdf')`) and hand over the download link; otherwise\n"
-        "   offer once (\"Want this as a PDF too?\").",
+        "   (`export(format='pdf', flatten=false)` — flatten=false keeps real text\n"
+        "   layers) and hand over the download link; otherwise offer once (\"Want\n"
+        "   this as a PDF too?\").",
     ),
     (
         "| references/brand.md, references/web.md | a brand kit exists; content needs live web research |\n",
@@ -237,7 +233,7 @@ PASSAGES["skills/moda-brand/SKILL.md"] = [
         "  — a model-safe summary: palette, font references, logo file references,\n"
         "  never signed URLs. `moda brand pull BRAND_REF --output brand.json` for the\n"
         "  full document; `moda brand use BRAND_REF` to persist a default.",
-        "- **List / read**: `brand_list`, then `brand_show(brand_ref)` — a model-safe\n"
+        "- **List / read**: `brand_list`, then `brand_show(brand_kit_ref)` — a model-safe\n"
         "  summary: palette, font references, logo file references, never signed\n"
         "  URLs. The full kit document and the workspace default live in the Moda\n"
         "  app (the kit's app link rides the `brand_show` result).",
@@ -382,11 +378,9 @@ PASSAGES["skills/moda-video/SKILL.md"] = [
         "1. **Route the lane** — read references/video.md BEFORE anything else:\n"
         "   generated video (the metered media tools) for cinematic/photographic\n"
         "   motion and \"make a video\" asks; vector-native (animation canvas or\n"
-        "   shader fills — authored here, delivered as the live canvas link; the\n"
-        "   mp4/gif file itself exports from the Moda app, not this surface) for\n"
-        "   crisp type, exact brand geometry, and loops. A generated-video ask IS\n"
-        "   format words — the motion file is the deliverable, not a ceremony\n"
-        "   violation.",
+        "   shader fills → `export(format='mp4'|'gif', page=N)`) for crisp type,\n"
+        "   exact brand geometry, and loops. A video ask IS format words — the\n"
+        "   motion file is the deliverable, not a ceremony violation.",
     ),
     (
         "2. **Gather the start assets**: brand kit in play → `moda brand show\n"
@@ -394,7 +388,7 @@ PASSAGES["skills/moda-video/SKILL.md"] = [
         "   (references/brand.md). A canvas frame → `moda export --format png\n"
         "   --page N`. User files → `moda file upload` (local paths also upload\n"
         "   themselves as media inputs).",
-        "2. **Gather the start assets**: brand kit in play → `brand_show(brand_ref)`\n"
+        "2. **Gather the start assets**: brand kit in play → `brand_show(brand_kit_ref)`\n"
         "   for durable logo `file_` refs (references/brand.md — verify the variant\n"
         "   in place with a screenshot; asset previews don't exist on this surface).\n"
         "   A canvas frame → `export(canvas_ref, format='png', page=N)`. User\n"
@@ -427,7 +421,7 @@ PASSAGES["skills/moda-video/SKILL.md"] = [
     ),
     (
         "| references/export.md | any canvas export (frames, mp4/gif ceremony, --page rules) |",
-        "| references/export.md | any canvas export (frames; png/pdf stills) |",
+        "| references/export.md | any canvas export (frames, mp4/gif ceremony, `page` rules) |",
     ),
 ]
 
@@ -681,7 +675,8 @@ REFERENCE_PASSAGES["export"] = [
         "```",
         "# `export` — deliverable files\n\n"
         "```\n"
-        "export(canvas_ref, format='pdf'|'pptx'|'png'|'jpeg', page=N, pixel_ratio=1..4)\n"
+        "export(canvas_ref, format='pdf'|'pptx'|'png'|'jpeg'|'mp4'|'gif',   # mp4/gif REQUIRE page\n"
+        "       page=N, pixel_ratio=1..4, flatten=…)\n"
         "```",
     ),
     (
@@ -696,14 +691,15 @@ REFERENCE_PASSAGES["export"] = [
         "  answer, deliver a still + the live link). When an animated canvas gets a\n"
         "  static-file request, offer the motion file too.",
         "- **Shader fills and animations freeze in static exports** (png/jpeg/pdf/\n"
-        "  pptx) — they render live in-app. Motion-preserving mp4/gif files are not\n"
-        "  available on this surface: they export from the Moda app. When an\n"
-        "  animated canvas gets a static-file request, deliver the still + the live\n"
-        "  link and point the user to the app for the motion file.",
+        "  pptx) — they render live in-app. The motion-preserving exports are\n"
+        "  `format='mp4'` and `format='gif'` (one page's animation per file; a page\n"
+        "  with NO animation rejects typed `no_animation` — that is the honest\n"
+        "  answer, deliver a still + the live link). When an animated canvas gets a\n"
+        "  static-file request, offer the motion file too.",
     ),
     (
         " `--flatten` degrades PDF to raster; use it only when the user asks.",
-        "",
+        " **PDF exports need `flatten=false`** — the server default (`flatten=true`) rasterizes the PDF; pass `flatten=false` on every PDF export unless the user explicitly wants a flat raster file.",
     ),
     (
         "- **Read the `warnings[]` on a completed export.** The CLI prints each as a `warning: …` line (and carries them in `--json`): quality caveats about a file that still succeeded",
@@ -731,7 +727,7 @@ REFERENCE_PASSAGES["export"] = [
     ),
     (
         "- **`--format webp` is rejected with a typed error** — it has no server lane. Say so plainly instead of retrying; the supported stills are pdf, pptx, png, jpeg.",
-        "- **`format='webp'` is rejected with a typed error** — it has no server lane. Say so plainly instead of retrying; the supported formats here are pdf, pptx, png, jpeg.",
+        "- **`format='webp'` is rejected with a typed error** — it has no server lane. Say so plainly instead of retrying; the supported stills are pdf, pptx, png, jpeg.",
     ),
     (
         "```\n"
@@ -768,7 +764,7 @@ REFERENCE_PASSAGES["gotchas"] = [
     ),
     (
         "animated shader fills move on any canvas, and `moda export --format mp4|gif --page N` delivers the motion (the moda-video skill owns these workflows). Preset animations on ordinary canvases are still app-only; for choreography beyond what you can author confidently, escalate to `moda task start` (metered) or hand the user the canvas link.",
-        "animated shader fills move on any canvas, and the motion plays live at the canvas link (mp4/gif files export from the Moda app, not this surface — the moda-video skill owns these workflows). Preset animations on ordinary canvases are still app-only; for choreography beyond what you can author confidently, escalate to `task_start` (metered) or hand the user the canvas link.",
+        "animated shader fills move on any canvas, and `export(format='mp4'|'gif', page=N)` delivers the motion (the moda-video skill owns these workflows). Preset animations on ordinary canvases are still app-only; for choreography beyond what you can author confidently, escalate to `task_start` (metered) or hand the user the canvas link.",
     ),
     (
         "(or canvas-absolute only with `--page canvas` on a Design canvas)",
@@ -776,7 +772,7 @@ REFERENCE_PASSAGES["gotchas"] = [
     ),
     (
         "Video files exist on this surface only as inputs/outputs of the metered `moda media` video verbs and of the page-animation exports (`moda export --format mp4|gif --page N` — a page with no animation rejects typed `no_animation`).",
-        "Video files exist on this surface only as inputs/outputs of the metered media video tools (page-animation mp4/gif files export from the Moda app).",
+        "Video files exist on this surface only as inputs/outputs of the metered media video tools and of the page-animation exports (`export(format='mp4'|'gif', page=N)` — a page with no animation rejects typed `no_animation`).",
     ),
     (
         "```\nCORRECT — use the deletion verb:\nmoda canvas delete-items CANVAS_REF n7\n```",
@@ -813,7 +809,7 @@ REFERENCE_PASSAGES["design-quality"] = [
     ),
     (
         "Shaders animate LIVE in-app and FREEZE to one frame in static exports — offer `moda export --format mp4|gif` as the motion-preserving file at handoff.",
-        "Shaders animate LIVE in-app and FREEZE to one frame in static exports — the live canvas link carries the motion (mp4/gif files export from the Moda app; point there at handoff when motion matters).",
+        "Shaders animate LIVE in-app and FREEZE to one frame in static exports — offer `export(format='mp4'|'gif')` as the motion-preserving file at handoff.",
     ),
 ]
 
@@ -836,7 +832,7 @@ REFERENCE_PASSAGES["brand"] = [
         "## Tools\n\n"
         "```\n"
         "brand_list()            # kits in the workspace (name, id, default marker)\n"
-        "brand_show(brand_ref)   # model-safe summary: palette, fonts, voice, logo refs\n"
+        "brand_show(brand_kit_ref)   # model-safe summary: palette, fonts, voice, logo refs\n"
         "```\n\n"
         "Kit creation, updates, defaults, and image management are not available on this surface — they live in the Moda app's brand-kit editor (`brand_show` returns the kit's app link to hand over).\n\n"
         "`brand_show` returns colors, fonts, voice fields, and per-logo durable `file_` references — never signed preview URLs (they don't exist on this surface). The `file_` ref is the only thing that ever goes into markup or media inputs — refs resolve server-side; never retype a URL or a hex you think you remember.",
@@ -857,7 +853,7 @@ REFERENCE_PASSAGES["brand"] = [
         "Once per session per kit is enough. Skipping this is how wrong-logo-variant\n"
         "and off-brand-imagery output happens.\n\n"
         "Budget rule: `moda brand show --json` is the token read; use `pull` only when you need the preview URLs, extract the fields you need (`jq`), and never read the whole `brand.json` into context.",
-        "1. `brand_show(brand_ref)` for the kit's logo `file_` refs and their\n"
+        "1. `brand_show(brand_kit_ref)` for the kit's logo `file_` refs and their\n"
         "   labeled roles/variants (asset preview links don't exist on this\n"
         "   surface).\n"
         "2. Place the plausible logo variant on the working canvas by `file_` ref,\n"
@@ -874,7 +870,7 @@ REFERENCE_PASSAGES["brand"] = [
         "1. `moda brand show BRAND_REF --json` — the reference tokens.\n"
         "2. `moda canvas read CANVAS_REF` — every node's fills, strokes, fonts, and the `## Vars` legend.\n"
         "3. `moda canvas lint CANVAS_REF` — catches undersized logos and contrast defects.",
-        "1. `brand_show(brand_ref)` — the reference tokens.\n"
+        "1. `brand_show(brand_kit_ref)` — the reference tokens.\n"
         "2. `canvas_read(canvas_ref)` — every node's fills, strokes, fonts, and the `## Vars` legend.\n"
         "3. `canvas_read(canvas_ref, lint=true)` — catches undersized logos and contrast defects.",
     ),
@@ -1067,8 +1063,8 @@ REFERENCE_PASSAGES["social"] = [
         "export.md's `--page` rules) and the metered `moda media` lane generates\n"
         "video.",
         "or \"make it a video\" ask routes to the moda-video skill — Moda DOES ship\n"
-        "motion: animation canvases play their motion live at the canvas link\n"
-        "(mp4/gif files export from the Moda app) and the metered media tools\n"
+        "motion: `export(format='mp4'|'gif')` renders a page's animation (per\n"
+        "export.md's `page` rules) and the metered media tools\n"
         "generate video.",
     ),
     (
@@ -1146,9 +1142,9 @@ REFERENCE_PASSAGES["video"] = [
         "   image-to-video from a start frame, reference-guided video, upscaling.\n"
         "   The deliverable is a video file; there is no canvas link.\n"
         "2. **Vector-native motion** — an animation canvas (or animated shader\n"
-        "   fills), authored here, rendering live at the canvas link. The link is\n"
-        "   the handoff; the mp4/gif file itself exports from the Moda app, not\n"
-        "   this surface — say so plainly when a file is the ask.",
+        "   fills) exported with `export(format='mp4'|'gif')`. Deterministic, free\n"
+        "   to author, precise; the live canvas link is the handoff and the file\n"
+        "   is format-implied.",
     ),
     (
         "There is no video-to-video edit and no source-video input; the only verb\n"
@@ -1207,7 +1203,7 @@ REFERENCE_PASSAGES["video"] = [
         "3. Spend checkpoint, generate, read `applied`/`adjustments`.\n"
         "4. Deliver the file path + receipt; offer `moda media upscale-video` for\n"
         "   the final cut.",
-        "1. Step-0 found the kit: `brand_show(brand_ref)` → durable `file_` refs\n"
+        "1. Step-0 found the kit: `brand_show(brand_kit_ref)` → durable `file_` refs\n"
         "   for the logos; verify the variant in place per references/brand.md and\n"
         "   pick the one that fits the concept.\n"
         "2. Pick the model from the registry; image-to-video with the logo as the\n"
@@ -1257,17 +1253,18 @@ REFERENCE_PASSAGES["video"] = [
         "  `moda task start` (metered) rather than thrashing; the canvas link keeps\n"
         "  the user in the loop either way.",
         "- Animated shader fills are the cheap premium lever on ANY canvas: author\n"
-        "  per references/design-quality.md (motion is automatic) — shaders freeze\n"
-        "  in static exports and move live at the canvas link.\n"
+        "  per references/design-quality.md (motion is automatic), then\n"
+        "  `export(canvas_ref, format='mp4', page=N)` — shaders freeze in static\n"
+        "  exports and move in mp4/gif.\n"
         "- Keyframed motion lives on an animation canvas:\n"
         "  `canvas_create(name='…', width=1920, height=1080, category='animation')`,\n"
         "  author the layout via markup, then drive motion through the `motion`\n"
         "  timeline API inside `canvas_edit` scripts — full shapes in \"The motion\n"
         "  timeline API\" below. Author it from that section; don't discover it by\n"
         "  probing.\n"
-        "- The mp4/gif file itself exports from the Moda app, not this surface —\n"
-        "  deliver the live canvas link (the motion plays there) and say where the\n"
-        "  file export lives; never fake or improvise a motion file.\n"
+        "- Export per page: `export(canvas_ref, format='mp4'|'gif', page=N)` —\n"
+        "  mp4/gif REQUIRE `page`, and a page with NO animation rejects typed\n"
+        "  `no_animation` (that is the honest answer: deliver a still + the link).\n"
         "- Choreography beyond what you can author confidently → escalate to\n"
         "  `task_start` (metered) rather than thrashing; the canvas link keeps\n"
         "  the user in the loop either way.",
@@ -1313,9 +1310,8 @@ REFERENCE_PASSAGES["video"] = [
     (
         "- Canvas-motion results: live link FIRST (it never depends on the export),\n"
         "  then the mp4/gif; everything stays editable in the app.",
-        "- Canvas-motion results: the live link IS the deliverable here — the\n"
-        "  motion plays at the link, and everything stays editable in the app\n"
-        "  (motion-file exports live there too).",
+        "- Canvas-motion results: live link FIRST (it never depends on the export),\n"
+        "  then the mp4/gif; everything stays editable in the app.",
     ),
 ]
 
@@ -1467,7 +1463,6 @@ DESCRIPTION_RULES["moda-brand"].insert(
 # (parameter names, result fields, typed error codes).
 NON_TOOL_TOKENS = {
     "canvas_ref",
-    "brand_ref",
     "brand_kit_ref",
     "task_ref",
     "canvas_name",
@@ -1484,5 +1479,30 @@ REFERENCE_PASSAGES["video"] += [
     (
         "it — describe the soundtrack in the prompt (`--generate-audio` requests it\nexplicitly).",
         "it — describe the soundtrack in the prompt (`generate_audio` requests it\nexplicitly).",
+    ),
+]
+
+# Review round 1 follow-ups (projection-only fixes).
+REFERENCE_PASSAGES["deck-design"] += [
+    # Upstream deck-design.md predates the template surface; the projection
+    # ships templates.md in the same payload, so remove the contradiction.
+    (
+        "Every slide is designed from scratch with `moda canvas markup` — there are no templates on this surface, so every slide is yours to compose.",
+        "Every slide is designed from scratch with `canvas_apply_markup` — when no team template fits (references/templates.md), every slide is yours to compose.",
+    ),
+]
+REFERENCE_PASSAGES["templates"] += [
+    # The template tools are pending-server: teach the model what their
+    # absence looks like so step 1 degrades to "no templates", not a stall.
+    (
+        "- The server may report this surface as unavailable (a 404) on an account\n"
+        "  where it is not enabled yet. Treat that exactly like \"no templates\" and\n"
+        "  move on — do not retry it, and do not mention it to the user.",
+        "- The server may report this surface as unavailable (a 404), the\n"
+        "  `template_list` tool may be missing from this conversation entirely, or\n"
+        "  `template=` may be rejected as an unknown argument — connectors that\n"
+        "  predate the template surface do all three. Treat each exactly like \"no\n"
+        "  templates\" and move on — do not retry it, and do not mention it to the\n"
+        "  user.",
     ),
 ]

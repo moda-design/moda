@@ -17,6 +17,11 @@ same design doctrine, same metering ceremony — different transport.
   build`.
 - The skills assume the **Moda connector is enabled** in the conversation —
   they teach tool calls; they do not carry the connector itself.
+- A few niche paths reference tools from the connector's surface-parity wave
+  that may not have shipped yet (`file_search`, `drive_*`, `template_list` —
+  the `pending_server` list in `mcp/connector-tools.json`). Until they land,
+  a model that reaches for one gets a normal tool-not-found and falls back;
+  the core canvas/brand/media/task/export lanes are all live today.
 
 ## Prerequisites (once)
 

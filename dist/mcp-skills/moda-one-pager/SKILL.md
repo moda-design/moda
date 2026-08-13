@@ -27,9 +27,10 @@ description: >-
      account; accounts live at moda.app), wait for them, then call
      `moda_bootstrap` again. Never fake Moda output while disconnected; no
      Mermaid/HTML/prose stand-in replaces the stop.
-   - Several teams listed and the user names one: pass that team on each tool
-     call — team decides whose workspace and billing everything lands in.
-     Never switch teams on your own initiative.
+   - Several teams listed and the user names one: pass that team on the tools
+     that take a `team` argument (the create/list/write/upload/media/task
+     lanes; read tools follow the canvas) — team decides whose workspace and
+     billing everything lands in. Never switch teams on your own initiative.
    - Any entitlement gate (e.g. the account cannot author canvases yet): relay
      the result's actionable hint verbatim and stop. Never retry in a loop.
    - Note the plan and remaining credits it reports (metered tools spend them;
@@ -130,8 +131,9 @@ description: >-
    zones, clipped text.
 7. **Deliver**: the live link IS the handoff. This lane's asks usually name
    a PDF/print artifact — format words win, so export
-   (`export(format='pdf')`) and hand over the download link; otherwise
-   offer once ("Want this as a PDF too?").
+   (`export(format='pdf', flatten=false)` — flatten=false keeps real text
+   layers) and hand over the download link; otherwise offer once ("Want
+   this as a PDF too?").
 
 ## References
 

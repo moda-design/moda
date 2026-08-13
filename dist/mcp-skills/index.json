@@ -1,5 +1,5 @@
 {
-  "comment": "Machine-readable manifest of the MCP-flavored skills projection. Consumed by the studio-side load_skill lane; regenerate with scripts/project-mcp.py build.",
+  "comment": "Machine-readable manifest of the connector-flavored skills projection — stable per-skill paths for server-side consumption (e.g. registering these skills into the studio connector's load_skill registry). Regenerate with scripts/project-mcp.py build.",
   "format": "claude-agent-skill",
   "skills": [
     {
@@ -122,7 +122,7 @@
     },
     {
       "name": "moda-video",
-      "description": "Make video and motion on Moda: short generated clips (text-to-video, image-to-video from a logo, photo, or canvas frame, reference-guided), brand stingers, animated posts and ads, logo animations, video upscaling, and vector-native motion (animated shader fills, animation-canvas exports). Use for \"make a video\", a GIF or mp4, an animated ad/post/ banner, a motion graphic, animating a logo/image/design, or upscaling a video. moda-video owns anything that renders to mp4/gif — an animated social post is this skill for the motion (moda-social owns still sizes and formats). Still posts/carousels/banners → moda-social; slide decks → moda-deck; live sites → moda-website; edits to an existing canvas that stay still → moda-edit. Video generation is metered (spends Moda credits); canvas motion authoring is free (motion files export from the Moda app). Requires the Moda connector (Step 0 checks it; accounts live at moda.app).",
+      "description": "Make video and motion on Moda: short generated clips (text-to-video, image-to-video from a logo, photo, or canvas frame, reference-guided), brand stingers, animated posts and ads, logo animations, video upscaling, and vector-native motion (animated shader fills, animation-canvas exports). Use for \"make a video\", a GIF or mp4, an animated ad/post/ banner, a motion graphic, animating a logo/image/design, or upscaling a video. moda-video owns anything that renders to mp4/gif — an animated social post is this skill for the motion (moda-social owns still sizes and formats). Still posts/carousels/banners → moda-social; slide decks → moda-deck; live sites → moda-website; edits to an existing canvas that stay still → moda-edit. Video generation is metered (spends Moda credits); canvas motion authoring and mp4/gif export are free. Requires the Moda connector (Step 0 checks it; accounts live at moda.app).",
       "files": [
         "moda-video/SKILL.md",
         "moda-video/references/video.md",
@@ -139,7 +139,7 @@
     },
     {
       "name": "moda-help",
-      "description": "Moda meta and routing help — NOT a design tool. Use for meta asks only: connecting Moda to Claude, account/team/workspace questions, \"what can Moda do?\", \"which Moda skill or tool should handle X?\", troubleshooting failed Moda tool calls (typed errors), automation and integration asks (\"set up Moda to auto-post/sync/schedule X\", connect Moda to another tool, recurring jobs — the automation part only: any artifact to author still routes to its format skill) — or when a Moda request doesn't CLEARLY fit any other moda skill (a matching format skill always wins; this is the none-fit catcher, never a shortcut). Creating or editing designs, decks, documents, sites, graphics, videos, or diagrams is NEVER this skill — load the format skill (moda-deck, moda-one-pager, moda-social, moda-diagram, moda-website, moda-video, moda-brand, moda-edit). Requires the Moda connector (Step 0 checks it).",
+      "description": "Moda meta and routing help — NOT a design tool. Use for meta asks only: connecting Moda to Claude, account/team/workspace questions, \"what can Moda do?\", \"which Moda skill or tool should handle X?\", troubleshooting failed Moda tool calls (typed errors), automation and integration asks (\"set up Moda to auto-post/sync/schedule X\", connect Moda to another tool, recurring jobs — the automation part only: any artifact to author still routes to its format skill) — or when a Moda request doesn't CLEARLY fit any other moda skill (a matching format skill always wins; this is the none-fit catcher, never a shortcut). Creating or editing designs, decks, documents, sites, graphics, videos, or diagrams is NEVER this skill — load the format skill (moda-deck, moda-one-pager, moda-social, moda-diagram, moda-website, moda-video, moda-brand, moda-edit). Requires the Moda connector (Step 0 checks it; accounts live at moda.app).",
       "files": [
         "moda-help/SKILL.md",
         "moda-help/references/brand.md",

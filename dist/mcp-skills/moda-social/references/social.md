@@ -11,8 +11,8 @@ Single formats: pass `page=N` or keep the canvas single-page.
 **Motion belongs to moda-video**: this skill's deliverables are stills
 (png/jpeg/pdf; webp has no lane anywhere). An animated ad, motion graphic,
 or "make it a video" ask routes to the moda-video skill — Moda DOES ship
-motion: animation canvases play their motion live at the canvas link
-(mp4/gif files export from the Moda app) and the metered media tools
+motion: `export(format='mp4'|'gif')` renders a page's animation (per
+export.md's `page` rules) and the metered media tools
 generate video. When motion comes up mid-build here, hand the motion to moda-video
 and keep the still formats' sizing/safe-area rules from this document.
 Never fake motion or silently deliver a static file for an animated ask.

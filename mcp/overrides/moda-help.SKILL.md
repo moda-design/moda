@@ -13,7 +13,7 @@ description: >-
   graphics, videos, or diagrams is NEVER this skill — load the format skill
   (moda-deck, moda-one-pager, moda-social, moda-diagram, moda-website,
   moda-video, moda-brand, moda-edit). Requires the Moda connector (Step 0
-  checks it).
+  checks it; accounts live at moda.app).
 ---
 
 # moda-help

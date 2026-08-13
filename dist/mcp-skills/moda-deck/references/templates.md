@@ -62,8 +62,11 @@ one, never hand one to the user.
 
 - The team may not have templates yet: an empty list is a normal answer, and
   the reply is one line, not an offer to go build a template library.
-- The server may report this surface as unavailable (a 404) on an account
-  where it is not enabled yet. Treat that exactly like "no templates" and
-  move on — do not retry it, and do not mention it to the user.
+- The server may report this surface as unavailable (a 404), the
+  `template_list` tool may be missing from this conversation entirely, or
+  `template=` may be rejected as an unknown argument — connectors that
+  predate the template surface do all three. Treat each exactly like "no
+  templates" and move on — do not retry it, and do not mention it to the
+  user.
 - Templates are created in the Moda app (mark a canvas as a team template);
   there is no tool here that makes one.

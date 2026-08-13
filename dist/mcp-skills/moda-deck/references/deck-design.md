@@ -1,6 +1,6 @@
 # Deck design — making slides good
 
-Every slide is designed from scratch with `canvas_apply_markup` — there are no templates on this surface, so every slide is yours to compose. Plan **6–12 slides unless the user names a count** (put the agreed count in your plan before creating pages).
+Every slide is designed from scratch with `canvas_apply_markup` — when no team template fits (references/templates.md), every slide is yours to compose. Plan **6–12 slides unless the user names a count** (put the agreed count in your plan before creating pages).
 
 ## Start with a concept, not a layout
 
