@@ -30,7 +30,8 @@ describe('file fallback', () => {
     const backend = new FileKeychain(env);
     await backend.store(keychainAccount('https://api.moda.app', 'org_1'), SECRET);
     const path = join(env.MODA_CONFIG_DIR as string, 'credentials.json');
-    expect(statSync(path).mode & 0o777).toBe(0o600);
+    // POSIX-only: Windows has no mode bits (the win32 describe below covers what it does instead).
+    if (process.platform !== 'win32') expect(statSync(path).mode & 0o777).toBe(0o600);
     const read = await backend.read('api.moda.app/org_1');
     expect(read?.key).toBe(SECRET.key);
     expect(read?.org).toBe('org_1');
@@ -85,7 +86,10 @@ describe('win32 (injected platform — covered from the POSIX runner)', () => {
       spy.mockRestore();
     }
     expect(written.join('')).toContain('mode 0600');
-    expect(statSync(join(env.MODA_CONFIG_DIR as string, 'credentials.json')).mode & 0o777).toBe(0o600);
+    // The claim is only checkable where the host filesystem HAS mode bits.
+    if (process.platform !== 'win32') {
+      expect(statSync(join(env.MODA_CONFIG_DIR as string, 'credentials.json')).mode & 0o777).toBe(0o600);
+    }
   });
 
   test('credentials land under APPDATA, not a dotfolder in the user profile', async () => {
@@ -100,6 +104,7 @@ describe('win32 (injected platform — covered from the POSIX runner)', () => {
 
 describe('macOS backend via shim (argv discipline)', () => {
   test('store passes the secret via argv to `security` (never a shell), read round-trips', async () => {
+    if (process.platform === 'win32') return; // the shim is a #!/bin/sh script
     const env = tempEnv();
     const bin = mkdtempSync(join(tmpdir(), 'moda-shim-'));
     const log = join(bin, 'calls.log');

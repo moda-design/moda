@@ -3,7 +3,7 @@
  * and `--output FILE` big-result routing on canvas read / task list / web read.
  */
 import { afterEach, describe, expect, test } from 'bun:test';
-import { mkdtempSync, readFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { ApiClient } from '../src/api/client.ts';
@@ -254,10 +254,14 @@ describe('--output big-result routing', () => {
       apiBase: base,
       apiKey: 'moda_live_testkey000000',
       sleeper: async () => {},
-      env: { MODA_STATE_DIR: '/tmp/moda-proto-io' },
+      env: { MODA_STATE_DIR: mkdtempSync(join(tmpdir(), 'moda-proto-io-state-')) },
     });
+    // Unwritable on every platform: the output's parent directory is an existing FILE, so the
+    // mkdir fails. (`/proc/...` was Linux-only — on Windows it resolves to a creatable path.)
+    const blocker = join(mkdtempSync(join(tmpdir(), 'moda-proto-io-')), 'blocker');
+    writeFileSync(blocker, 'not a directory');
     try {
-      await performWebRead(client, 'https://example.com', { output: '/proc/1/nope/page.json' });
+      await performWebRead(client, 'https://example.com', { output: join(blocker, 'page.json') });
       expect.unreachable();
     } catch (err) {
       const fields = (err as CliError).fields;

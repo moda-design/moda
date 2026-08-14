@@ -217,7 +217,11 @@ function check(name: string, condition: boolean, detail?: string): void {
     const credPath = join(baseEnv.MODA_CONFIG_DIR as string, 'credentials.json');
     check('credential stored in fallback file', existsSync(credPath));
     if (existsSync(credPath)) {
-      check('credentials file mode 0600', (statSync(credPath).mode & 0o777) === 0o600);
+      // POSIX-only: Windows has no mode bits — the file's protection there is the profile ACL,
+      // and `auth login` says so instead of claiming 0600 (cli/src/auth/keychain.ts).
+      if (process.platform !== 'win32') {
+        check('credentials file mode 0600', (statSync(credPath).mode & 0o777) === 0o600);
+      }
       check('credentials file holds the key + org', readFileSync(credPath, 'utf8').includes('org_STUB'));
     }
   }

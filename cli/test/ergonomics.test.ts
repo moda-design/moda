@@ -105,10 +105,15 @@ describe('last-error security (review blocking finding)', () => {
     expect(raw).not.toContain('moda_live_deadbeef4321aa');
     expect(raw).not.toContain('SUPERSECRETSIG');
     expect(raw).toContain('[REDACTED]');
-    expect(statSync(join(dir, 'last-error.json')).mode & 0o777).toBe(0o600);
+    // Mode bits are POSIX-only — on Windows the file is protected by the user-profile ACL and
+    // node's chmod cannot express 0600. The redaction above is what carries the secret there.
+    if (process.platform !== 'win32') {
+      expect(statSync(join(dir, 'last-error.json')).mode & 0o777).toBe(0o600);
+    }
   });
 
   test('a pre-existing world-readable file is chmodded down on the next persist', () => {
+    if (process.platform === 'win32') return; // no POSIX mode bits to widen or narrow
     const dir = mkdtempSync(join(tmpdir(), 'moda-lasterr-chmod-'));
     const env = { MODA_STATE_DIR: dir };
     writeFileSync(join(dir, 'last-error.json'), '{}', { mode: 0o644 });
