@@ -13,7 +13,10 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 
 const ROOT = resolve(import.meta.dir, '..');
-const BIN = process.env.MODA_BIN ?? join(ROOT, 'dist', 'moda-host');
+// Same literal as scripts/build.ts `hostArtifact` (that module builds on import, so it cannot
+// be imported for the constant): the Windows host binary carries the `.exe` suffix.
+const HOST_ARTIFACT = process.platform === 'win32' ? 'moda-host.exe' : 'moda-host';
+const BIN = process.env.MODA_BIN ?? join(ROOT, 'dist', HOST_ARTIFACT);
 if (!existsSync(BIN)) {
   console.error(`missing binary ${BIN} — run: bun scripts/build.ts --host`);
   process.exit(1);
@@ -21,9 +24,20 @@ if (!existsSync(BIN)) {
 
 const STUB_KEY = `moda_live_${'ab'.repeat(32)}`;
 const scratch = mkdtempSync(join(tmpdir(), 'moda-prove-'));
+/**
+ * The child env is deliberately scrubbed so the proof cannot borrow the developer's real config.
+ * Windows still needs its profile/system variables — a child without SystemRoot loses winsock
+ * (every request fails) and one without USERPROFILE has no homedir() — so those pass through.
+ */
+const WINDOWS_PASSTHROUGH = ['SystemRoot', 'SystemDrive', 'windir', 'USERPROFILE', 'TEMP', 'TMP', 'ComSpec'];
 const baseEnv: Record<string, string> = {
   PATH: process.env.PATH ?? '',
   HOME: process.env.HOME ?? '',
+  ...(process.platform === 'win32'
+    ? Object.fromEntries(
+        WINDOWS_PASSTHROUGH.filter((k) => process.env[k] !== undefined).map((k) => [k, process.env[k] as string]),
+      )
+    : {}),
   MODA_CONFIG_DIR: join(scratch, 'config'),
   MODA_STATE_DIR: join(scratch, 'state'),
   MODA_KEYCHAIN: 'file',
@@ -203,7 +217,11 @@ function check(name: string, condition: boolean, detail?: string): void {
     const credPath = join(baseEnv.MODA_CONFIG_DIR as string, 'credentials.json');
     check('credential stored in fallback file', existsSync(credPath));
     if (existsSync(credPath)) {
-      check('credentials file mode 0600', (statSync(credPath).mode & 0o777) === 0o600);
+      // POSIX-only: Windows has no mode bits — the file's protection there is the profile ACL,
+      // and `auth login` says so instead of claiming 0600 (cli/src/auth/keychain.ts).
+      if (process.platform !== 'win32') {
+        check('credentials file mode 0600', (statSync(credPath).mode & 0o777) === 0o600);
+      }
       check('credentials file holds the key + org', readFileSync(credPath, 'utf8').includes('org_STUB'));
     }
   }

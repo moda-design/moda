@@ -5,6 +5,12 @@
  *
  * Every keychain subprocess gets a hard timeout (locked keyrings hang) and falls back cleanly.
  * MODA_KEYCHAIN=file forces the fallback (tests, headless boxes).
+ *
+ * Windows has NO shell-out backend, on purpose: Credential Manager's CLI (`cmdkey`) can write
+ * and list credentials but never prints a stored secret back, so it cannot serve a read path —
+ * a real backend there means DPAPI/CredRead, i.e. FFI or a PowerShell crypto shim. Windows
+ * therefore uses the file backend, whose protection is the user-profile ACL rather than a mode
+ * bit; `writeAll` says exactly that instead of claiming 0600.
  */
 import { chmodSync, mkdirSync, openSync, closeSync, readFileSync, statSync, unlinkSync, writeSync } from 'node:fs';
 import { dirname } from 'node:path';
@@ -65,6 +71,7 @@ async function exec(
   return { code, stdout, stderr, timedOut };
 }
 
+/** POSIX-only probe — only the darwin/linux branches of selectKeychainBackend reach it. */
 async function commandExists(name: string, env: NodeJS.ProcessEnv): Promise<boolean> {
   const result = await exec(['/bin/sh', '-c', `command -v ${name}`], { timeoutMs: PROBE_TIMEOUT_MS, env });
   return result.code === 0 && !result.timedOut;
@@ -156,14 +163,16 @@ type CredentialsFile = Record<string, StoredCredential>;
 export class FileKeychain implements KeychainBackend {
   readonly name = 'file' as const;
   private readonly env: NodeJS.ProcessEnv;
+  private readonly platform: NodeJS.Platform;
   private warned = false;
 
-  constructor(env: NodeJS.ProcessEnv = process.env) {
+  constructor(env: NodeJS.ProcessEnv = process.env, platform: NodeJS.Platform = process.platform) {
     this.env = env;
+    this.platform = platform;
   }
 
   private path(): string {
-    return credentialsFilePath(this.env);
+    return credentialsFilePath(this.env, this.platform);
   }
 
   private readAll(): CredentialsFile {
@@ -184,11 +193,17 @@ export class FileKeychain implements KeychainBackend {
     } finally {
       closeSync(fd);
     }
-    const mode = statSync(path).mode & 0o777;
-    if (mode !== 0o600) chmodSync(path, 0o600);
+    // Windows has no POSIX mode bits — node's chmod only toggles the read-only flag there, so
+    // enforcing 0600 would be a no-op that reads like a guarantee. Skip it and say so instead.
+    if (this.platform !== 'win32') {
+      const mode = statSync(path).mode & 0o777;
+      if (mode !== 0o600) chmodSync(path, 0o600);
+    }
     if (!this.warned) {
       this.warned = true;
-      process.stderr.write(`moda: no OS keychain available — credential stored in ${path} (mode 0600).\n`);
+      const protection =
+        this.platform === 'win32' ? 'protected by your Windows user-profile ACL, not a mode bit' : 'mode 0600';
+      process.stderr.write(`moda: no OS keychain available — credential stored in ${path} (${protection}).\n`);
     }
   }
 
@@ -237,26 +252,33 @@ function parseSecret(raw: string): StoredCredential | undefined {
 }
 
 /** Pick the backend for this host: OS keychain when the probe passes, file fallback otherwise. */
-export async function selectKeychainBackend(env: NodeJS.ProcessEnv = process.env): Promise<KeychainBackend> {
-  if (env.MODA_KEYCHAIN === 'file') return new FileKeychain(env);
+export async function selectKeychainBackend(
+  env: NodeJS.ProcessEnv = process.env,
+  platform: NodeJS.Platform = process.platform,
+): Promise<KeychainBackend> {
+  if (env.MODA_KEYCHAIN === 'file') return new FileKeychain(env, platform);
   if (env.MODA_KEYCHAIN === 'macos') return new MacKeychain(env);
   if (env.MODA_KEYCHAIN === 'secret-tool') return new SecretToolKeychain();
-  if (process.platform === 'darwin') {
+  if (platform === 'darwin') {
     if (await commandExists('security', env)) return new MacKeychain(env);
-    return new FileKeychain(env);
+    return new FileKeychain(env, platform);
   }
-  if (process.platform === 'linux') {
-    if (!(await commandExists('secret-tool', env))) return new FileKeychain(env);
-    if (env.DBUS_SESSION_BUS_ADDRESS === undefined || env.DBUS_SESSION_BUS_ADDRESS === '') return new FileKeychain(env);
+  if (platform === 'linux') {
+    if (!(await commandExists('secret-tool', env))) return new FileKeychain(env, platform);
+    if (env.DBUS_SESSION_BUS_ADDRESS === undefined || env.DBUS_SESSION_BUS_ADDRESS === '') {
+      return new FileKeychain(env, platform);
+    }
     // Probe must not hang (headless boxes with locked keyrings do) — 2s timeout ⇒ fallback.
     const probe = await exec(['secret-tool', 'search', 'service', KEYCHAIN_SERVICE], {
       timeoutMs: PROBE_TIMEOUT_MS,
       env,
     });
-    if (probe.timedOut) return new FileKeychain(env);
+    if (probe.timedOut) return new FileKeychain(env, platform);
     return new SecretToolKeychain();
   }
-  return new FileKeychain(env);
+  // Windows and every other platform: the file backend (see the module header for why Windows
+  // has no shell-out backend). No POSIX probe runs here — `commandExists` shells out to /bin/sh.
+  return new FileKeychain(env, platform);
 }
 
 export function keychainAccount(apiBase: string, org: string): string {

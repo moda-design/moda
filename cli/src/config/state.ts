@@ -118,6 +118,10 @@ function lastErrorPath(env: NodeJS.ProcessEnv): string {
  * Persist the --json error envelope of a nonzero exit. Best-effort — never throws. The
  * envelope is REDACTED before it touches disk (signed URLs, moda_live_ keys) and the file is
  * owner-only (0600): error bodies can quote request payloads and signed artifact URLs.
+ *
+ * On Windows the mode bits do not exist — node's chmod only toggles read-only there, so the
+ * file's protection is the user-profile ACL. The redaction, not the mode, is what carries the
+ * secret on that platform.
  */
 export function persistLastError(doc: Record<string, unknown>, env: NodeJS.ProcessEnv = process.env): void {
   try {

@@ -27,7 +27,7 @@ jobs:
       - name: Typecheck + tests
         working-directory: cli
         run: bun run typecheck && bun test
-      - name: Build matrix (darwin-arm64, darwin-x64, linux-x64, linux-arm64)
+      - name: Build matrix (darwin-arm64, darwin-x64, linux-x64, linux-arm64, win32-x64)
         run: bun scripts/build.ts
       - name: Stamp npm packages + place binaries
         run: bun scripts/package-npm.ts
@@ -38,7 +38,7 @@ jobs:
       - name: npm pack (tarballs attached to the release alongside the binaries)
         run: |
           mkdir -p dist
-          for pkg in packages/moda packages/cli-darwin-arm64 packages/cli-darwin-x64 packages/cli-linux-x64 packages/cli-linux-arm64; do
+          for pkg in packages/moda packages/cli-darwin-arm64 packages/cli-darwin-x64 packages/cli-linux-x64 packages/cli-linux-arm64 packages/cli-win32-x64; do
             (cd "$pkg" && npm pack --pack-destination "$GITHUB_WORKSPACE/dist")
           done
       - name: Checksums + GitHub Release
@@ -51,6 +51,6 @@ jobs:
         run: |
           echo "@moda-design:registry=https://npm.pkg.github.com" > ~/.npmrc
           echo "//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}" >> ~/.npmrc
-          for pkg in packages/cli-darwin-arm64 packages/cli-darwin-x64 packages/cli-linux-x64 packages/cli-linux-arm64 packages/moda; do
+          for pkg in packages/cli-darwin-arm64 packages/cli-darwin-x64 packages/cli-linux-x64 packages/cli-linux-arm64 packages/cli-win32-x64 packages/moda; do
             (cd "$pkg" && npm publish)
           done

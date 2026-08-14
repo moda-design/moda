@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'bun:test';
+import { describe, expect, spyOn, test } from 'bun:test';
 import { chmodSync, mkdirSync, mkdtempSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -30,7 +30,8 @@ describe('file fallback', () => {
     const backend = new FileKeychain(env);
     await backend.store(keychainAccount('https://api.moda.app', 'org_1'), SECRET);
     const path = join(env.MODA_CONFIG_DIR as string, 'credentials.json');
-    expect(statSync(path).mode & 0o777).toBe(0o600);
+    // POSIX-only: Windows has no mode bits (the win32 describe below covers what it does instead).
+    if (process.platform !== 'win32') expect(statSync(path).mode & 0o777).toBe(0o600);
     const read = await backend.read('api.moda.app/org_1');
     expect(read?.key).toBe(SECRET.key);
     expect(read?.org).toBe('org_1');
@@ -48,8 +49,62 @@ describe('file fallback', () => {
   });
 });
 
+describe('win32 (injected platform — covered from the POSIX runner)', () => {
+  test('selects the file backend without probing for a POSIX keychain CLI', async () => {
+    const backend = await selectKeychainBackend(tempEnv(), 'win32');
+    expect(backend.name).toBe('file');
+  });
+
+  test('the fallback warning claims an ACL, never a mode bit Windows cannot set', async () => {
+    const env = tempEnv();
+    const written: string[] = [];
+    const spy = spyOn(process.stderr, 'write').mockImplementation(((chunk: string | Uint8Array) => {
+      written.push(typeof chunk === 'string' ? chunk : new TextDecoder().decode(chunk));
+      return true;
+    }) as typeof process.stderr.write);
+    try {
+      await new FileKeychain(env, 'win32').store('api.moda.app/org_1', SECRET);
+    } finally {
+      spy.mockRestore();
+    }
+    const warning = written.join('');
+    expect(warning).toContain('no OS keychain available');
+    expect(warning).toContain('Windows user-profile ACL');
+    expect(warning).not.toContain('0600');
+  });
+
+  test('POSIX still gets the 0600 claim, and it is true', async () => {
+    const env = tempEnv();
+    const written: string[] = [];
+    const spy = spyOn(process.stderr, 'write').mockImplementation(((chunk: string | Uint8Array) => {
+      written.push(typeof chunk === 'string' ? chunk : new TextDecoder().decode(chunk));
+      return true;
+    }) as typeof process.stderr.write);
+    try {
+      await new FileKeychain(env, 'linux').store('api.moda.app/org_1', SECRET);
+    } finally {
+      spy.mockRestore();
+    }
+    expect(written.join('')).toContain('mode 0600');
+    // The claim is only checkable where the host filesystem HAS mode bits.
+    if (process.platform !== 'win32') {
+      expect(statSync(join(env.MODA_CONFIG_DIR as string, 'credentials.json')).mode & 0o777).toBe(0o600);
+    }
+  });
+
+  test('credentials land under APPDATA, not a dotfolder in the user profile', async () => {
+    const root = mkdtempSync(join(tmpdir(), 'moda-appdata-'));
+    const env: NodeJS.ProcessEnv = { APPDATA: root };
+    const backend = new FileKeychain(env, 'win32');
+    await backend.store('api.moda.app/org_1', SECRET);
+    expect(readFileSync(join(root, 'moda', 'credentials.json'), 'utf8')).toContain(SECRET.key);
+    expect((await backend.read('api.moda.app/org_1'))?.key).toBe(SECRET.key);
+  });
+});
+
 describe('macOS backend via shim (argv discipline)', () => {
   test('store passes the secret via argv to `security` (never a shell), read round-trips', async () => {
+    if (process.platform === 'win32') return; // the shim is a #!/bin/sh script
     const env = tempEnv();
     const bin = mkdtempSync(join(tmpdir(), 'moda-shim-'));
     const log = join(bin, 'calls.log');
