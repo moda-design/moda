@@ -420,16 +420,14 @@ PASSAGES["skills/moda-video/SKILL.md"] = [
         "   in `media_generate_video`'s own description; route by the strengths",
     ),
     (
-        "4. **Draft cheap, verify, then commit** (references/video.md): the ladder is\n"
-        "   the DEFAULT — draft on `veo-3.1-lite` (4 s, 720p, silent, ~$0.12), read\n"
-        "   `applied`/`adjustments`/`warnings`, fix the PROMPT, then spend on the\n"
-        "   hero render. Every pass takes the spend checkpoint: explicit\n"
-        "   `--duration`, the smallest resolution that serves, one spend line.",
-        "4. **Draft cheap, verify, then commit** (references/video.md): the ladder is\n"
-        "   the DEFAULT — draft on `veo-3.1-lite` (4 s, 720p, silent, ~$0.12), read\n"
-        "   `applied`/`adjustments`/`warnings`, fix the PROMPT, then spend on the\n"
-        "   hero render. Every pass takes the spend checkpoint: explicit\n"
-        "   `duration_seconds`, the smallest resolution that serves, one spend line\n"
+        "4. **Draft cheap, verify, then commit** (references/video.md): the ladder\n"
+        "   is the DEFAULT — draft on `veo-3.1-lite` (4 s, 720p, silent, ~$0.12),\n"
+        "   fix the PROMPT, then spend on the hero render. Every pass: explicit\n"
+        "   `--duration`, smallest resolution that serves, one spend line.",
+        "4. **Draft cheap, verify, then commit** (references/video.md): the ladder\n"
+        "   is the DEFAULT — draft on `veo-3.1-lite` (4 s, 720p, silent, ~$0.12),\n"
+        "   fix the PROMPT, then spend on the hero render. Every pass: explicit\n"
+        "   `duration_seconds`, smallest resolution that serves, one spend line\n"
         "   (`quote=true` is the free preflight).",
     ),
     (
@@ -1813,12 +1811,10 @@ PASSAGES["skills/moda-video/SKILL.md"] += [
     (
         "5. **Look at what you made** — `moda media video-frames file_… -o frames/`\n"
         "   is FREE and the only way to SEE a render: judge the frames against the\n"
-        "   brief, then regenerate with a revised prompt or accept. Read\n"
-        "   `applied`/`adjustments`/`warnings` too; no vision, no claimed look.",
+        "   brief, regenerate or accept; `applied`/`warnings` too — no claimed look.",
         "5. **Look at what you made** — `media_video_frames(video='file_…')` is FREE\n"
         "   and the only way to SEE a render: judge the frames against the brief,\n"
-        "   then regenerate with a revised prompt or accept. Read\n"
-        "   `applied`/`adjustments`/`warnings` too; no vision, no claimed look.",
+        "   regenerate or accept; `applied`/`warnings` too — no claimed look.",
     ),
 ]
 

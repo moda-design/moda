@@ -122,31 +122,16 @@ description: >-
    in `media_generate_video`'s own description; route by the strengths
    table in references/video.md; knobs snap and `adjustments` reports what
    ran.
-<<<<<<< HEAD
-4. **Draft cheap, verify, then commit** (references/video.md): the ladder is
-   the DEFAULT — draft on `veo-3.1-lite` (4 s, 720p, silent, ~$0.12), read
-   `applied`/`adjustments`/`warnings`, fix the PROMPT, then spend on the
-   hero render. Every pass takes the spend checkpoint: explicit
-   `duration_seconds`, the smallest resolution that serves, one spend line
+4. **Draft cheap, verify, then commit** (references/video.md): the ladder
+   is the DEFAULT — draft on `veo-3.1-lite` (4 s, 720p, silent, ~$0.12),
+   fix the PROMPT, then spend on the hero render. Every pass: explicit
+   `duration_seconds`, smallest resolution that serves, one spend line
    (`quote=true` is the free preflight).
-5. **Verify honestly**: no frame-inspection verb exists — view the clip only
-   if your harness has vision, and say so plainly when it can't.
-6. **Enhance and deliver**: `media_upscale` on the winner only; the result
-   link + usage receipt, and the live canvas link FIRST when one exists.
-=======
-4. **Spend checkpoint, then generate** (references/video.md): explicit
-   `duration_seconds`, smallest resolution that serves, balance check
-   (`quote=true` is the free preflight), one matter-of-fact spend line —
-   then `media_generate_video` with `start_image` / `reference_images` /
-   `end_image` as the workflow dictates.
 5. **Look at what you made** — `media_video_frames(video='file_…')` is FREE
    and the only way to SEE a render: judge the frames against the brief,
-   then regenerate with a revised prompt or accept. Read
-   `applied`/`adjustments`/`warnings` too; no vision, no claimed look.
-6. **Enhance and deliver**: `media_upscale` on the winner only; deliver
-   the result link + usage receipt (plus the live canvas link whenever a
-   canvas was involved — link first, always).
->>>>>>> 612bead (cli + skills: close the video loop — a frame-read verb and background renders)
+   regenerate or accept; `applied`/`warnings` too — no claimed look.
+6. **Enhance and deliver**: `media_upscale` on the winner only; the result
+   link + usage receipt, and the live canvas link FIRST when one exists.
 
 ## References
 
