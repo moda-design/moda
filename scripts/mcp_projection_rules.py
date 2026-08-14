@@ -146,8 +146,8 @@ PASSAGES["shared/ux-rules.md"] = [
         "  anyway, call `canvas_screenshot` right after the mutation.",
     ),
     (
-        "- Metered lanes (`moda media *`, `moda web *`, `moda task start`) are normal",
-        "- Metered lanes (the `media_*` tools and `task_start`) are normal",
+        "- Metered lanes (`moda media *`, `moda web *`, `moda task start`) are the",
+        "- Metered lanes (the `media_*` tools and `task_start`) are the",
     ),
     (
         "  authoring: \"follow along live here — it builds up as I work.\" In an\n"
@@ -262,7 +262,7 @@ PASSAGES["skills/moda-brand/SKILL.md"] = [
         "  `canvas_read(lint=true)` + token comparison against `brand_show`,",
     ),
     (
-        "- **Create** (deterministic, no credits — two paths): `moda brand create\n"
+        "- **Create** (deterministic — two paths): `moda brand create\n"
         "  --url https://…` runs server-side extraction (the fast path when a website\n"
         "  exists); no website → build manually from fields: `moda brand create\n"
         "  --name \"Acme\" --color '#0F172A:Primary' --font 'Inter:title' --logo\n"
@@ -420,15 +420,14 @@ PASSAGES["skills/moda-video/SKILL.md"] = [
         "   in `media_generate_video`'s own description; route by the strengths",
     ),
     (
-        "4. **Draft cheap, verify, then commit** (references/video.md): the ladder\n"
-        "   is the DEFAULT — draft on `veo-3.1-lite` (4 s, 720p, silent, ~$0.12),\n"
-        "   fix the PROMPT, then spend on the hero render. Every pass: explicit\n"
-        "   `--duration`, smallest resolution that serves, one spend line.",
-        "4. **Draft cheap, verify, then commit** (references/video.md): the ladder\n"
-        "   is the DEFAULT — draft on `veo-3.1-lite` (4 s, 720p, silent, ~$0.12),\n"
-        "   fix the PROMPT, then spend on the hero render. Every pass: explicit\n"
-        "   `duration_seconds`, smallest resolution that serves, one spend line\n"
-        "   (`quote=true` is the free preflight).",
+        "4. **Draft fast, verify, then commit** (references/video.md): the ladder\n"
+        "   is the DEFAULT — draft on `veo-3.1-lite` (4 s, 720p, silent), fix the\n"
+        "   PROMPT, then take the hero render on the model the ask deserves. Every\n"
+        "   pass: explicit `--duration`, the resolution the pass needs.",
+        "4. **Draft fast, verify, then commit** (references/video.md): the ladder\n"
+        "   is the DEFAULT — draft on `veo-3.1-lite` (4 s, 720p, silent), fix the\n"
+        "   PROMPT, then take the hero render on the model the ask deserves. Every\n"
+        "   pass: explicit `duration_seconds`, the resolution the pass needs.",
     ),
     (
         "6. **Enhance and deliver**: `moda media upscale-video` on the winner only;\n"
@@ -896,7 +895,7 @@ REFERENCE_PASSAGES["brand"] = [
         "3. `canvas_read(canvas_ref, lint=true)` — catches undersized logos and contrast defects.",
     ),
     (
-        "Two creation paths, both **deterministic and unmetered** (no credits; ignore any legacy metered labels in the response envelope while the server sheds them):\n\n"
+        "Two creation paths, both **deterministic and unmetered** (ignore any legacy metered labels in the response envelope while the server sheds them):\n\n"
         "- **URL extraction — the fast path.** `moda brand create --url …` runs Moda's server-side extraction (colors, fonts, logos from a live site). Prefer it whenever the brand has a website: it captures more than the user would dictate.\n"
         "- **Manual build — for brands without a website** (or when the user already holds the ground truth: a style guide, a logo file, exact hexes). `moda brand create --name \"Acme\" --color '#0F172A:Primary' --color '#F97316:Accent' --font 'Inter:title:600' --logo FILE_REF`. Upload logos first (`moda file upload logo.png` → `file_` ref). For a rich palette, a kit file beats a wall of flags: write `kit.json` (`{\"name\", \"colors\": [{\"color\",\"label\"}], \"fonts\": [{\"family\",\"label\",\"weight\"}], \"logo_file_ids\": []}`) and run `moda brand create --from-file kit.json`. Exactly one path per create — never both `--url` and manual fields.",
         "Kit creation is not available on this surface — it lives in the Moda app at moda.app, free, with two paths worth explaining to the user:\n\n"
@@ -927,6 +926,14 @@ REFERENCE_PASSAGES["brand"] = [
 ]
 
 REFERENCE_PASSAGES["omni-and-media"] = [
+    # The metered-lane posture. Same content both sides — only the lane names
+    # and the failure shape are transport-specific (no exit codes here).
+    (
+        "These are the metered lanes — `moda media *`, `moda web *`, and `moda task start` — and they are the QUALITY levers on this surface. Generated imagery, footage, research, and Moda's own designer are how good work gets made: reach for them wherever they serve the deliverable, never ask permission first, and report the usage receipt after each call as information (`usage.class: \"metered\"` on the response). Cost is a topic only when the USER raises it.\n\n"
+        "The one fact worth carrying: a metered call can fail the billing precheck — exit 6, the quota lane (`insufficient_credits` and friends) — which means the TEAM is out of credits or has hit a plan cap, not that you did something wrong. Say so plainly, surface the hint verbatim, and stop — never retry it, and never quietly drop the quality lever and deliver the lesser thing instead.",
+        "These are the metered lanes — the `media_*` tools and `task_start` — and they are the QUALITY levers on this surface. Generated imagery, footage, and Moda's own designer are how good work gets made: reach for them wherever they serve the deliverable, never ask permission first, and report the usage receipt after each call as information (`usage.class: \"metered\"` on the response). Cost is a topic only when the USER raises it.\n\n"
+        "The one fact worth carrying: a metered call can fail the billing precheck (`insufficient_credits` and friends), which means the TEAM is out of credits or has hit a plan cap, not that you did something wrong. Say so plainly, surface the hint verbatim, and stop — never retry it, and never quietly drop the quality lever and deliver the lesser thing instead.",
+    ),
     (
         "## `moda media` — raw media operations (all metered)\n\n"
         "```\n"
@@ -1131,12 +1138,11 @@ REFERENCE_PASSAGES["diagram"] = [
     (
         "  blocks. Icons come from `<image icon=\"query\"/>` or `moda file search\n"
         "  --kind icon` (the shared packs ARE the stock icon library); product\n"
-        "  screenshots from uploads or `moda media generate-image` (metered — say\n"
-        "  so first).",
+        "  screenshots from uploads or `moda media generate-image`.",
         "  blocks. Icons come from `<image icon=\"query\"/>` or\n"
         "  `file_search(kind='icon')` (the shared packs ARE the stock icon\n"
-        "  library); product screenshots from uploads or `media_generate_image`\n"
-        "  (metered — say so first).",
+        "  library); product screenshots from uploads or\n"
+        "  `media_generate_image`.",
     ),
     (
         "Lint after each section (`moda canvas lint` — overlapping-node and contrast\n"
@@ -1191,19 +1197,14 @@ REFERENCE_PASSAGES["video"] = [
         "world knowledge.",
     ),
     (
-        "Video is the most expensive metered verb on this surface. Before each\n"
-        "`moda media generate-video` / `upscale-video` call:\n\n"
-        "1. **Pin the duration explicitly** (`--duration N`). Duration is the",
-        "Video is the most expensive metered spend on this surface. Before each\n"
-        "`media_generate_video` / `media_upscale` call:\n\n"
-        "1. **Pin the duration explicitly** (`duration_seconds`). Duration is the",
-    ),
-    (
-        "3. **Check the balance covers it** (Step-0's `moda account status` note; a\n"
-        "   shortfall fails the precheck with exit 6 — surface its hint verbatim).",
-        "3. **Check the balance covers it** (Step-0's bootstrap credit note, or a\n"
-        "   free `quote=true` preflight; a shortfall fails the precheck typed —\n"
-        "   surface its hint verbatim).",
+        "Video knobs snap server-side, so state them rather than letting the server\n"
+        "choose for you. Before each `moda media generate-video` / `upscale-video`\n"
+        "call:\n\n"
+        "1. **Pin the duration explicitly** (`--duration N`). Omitting it lets the",
+        "Video knobs snap server-side, so state them rather than letting the server\n"
+        "choose for you. Before each `media_generate_video` / `media_upscale`\n"
+        "call:\n\n"
+        "1. **Pin the duration explicitly** (`duration_seconds`). Omitting it lets the",
     ),
     (
         "Re-runs are safe: media calls carry idempotency keys, so re-running the\n"
@@ -1224,7 +1225,7 @@ REFERENCE_PASSAGES["video"] = [
         "   --model M --image file_… --duration 6 --resolution 720p -o stinger.mp4`.\n"
         "   Reference-guided (`--reference`) fits when the logo should GUIDE style\n"
         "   rather than be frame one.\n"
-        "3. Spend checkpoint, generate, read `applied`/`adjustments`.\n"
+        "3. Pin the knobs, generate, read `applied`/`adjustments`.\n"
         "4. Frame-check it with `moda media video-frames`, then deliver the file\n"
         "   path + receipt; offer `moda media upscale-video` for the final cut.",
         "1. Step-0 found the kit: `brand_show(brand_kit_ref)` → durable `file_` refs\n"
@@ -1235,17 +1236,17 @@ REFERENCE_PASSAGES["video"] = [
         "   start_image='file_…', duration_seconds=6, resolution='720p')`.\n"
         "   Reference-guided (`reference_images`) fits when the logo should GUIDE\n"
         "   style rather than be frame one.\n"
-        "3. Spend checkpoint, generate, read `applied`/`adjustments`.\n"
+        "3. Pin the knobs, generate, read `applied`/`adjustments`.\n"
         "4. Frame-check it with `media_video_frames`, then deliver the result link\n"
         "   + receipt; offer `media_upscale` for the final cut.",
     ),
     (
         "**2. Quick text-to-video** — a prompt-only clip: registry pick (default\n"
-        "model unless the ask demands quality/length/control), spend checkpoint,\n"
+        "model unless the ask demands quality/length/control), pin the knobs,\n"
         "`moda media generate-video --prompt \"…\" --model M --duration N -o clip.mp4`,\n"
         "frame-check, deliver.",
         "**2. Quick text-to-video** — a prompt-only clip: registry pick (default\n"
-        "model unless the ask demands quality/length/control), spend checkpoint,\n"
+        "model unless the ask demands quality/length/control), pin the knobs,\n"
         "`media_generate_video(prompt, model, duration_seconds=N)`,\n"
         "frame-check, deliver.",
     ),
@@ -1261,7 +1262,7 @@ REFERENCE_PASSAGES["video"] = [
         "4. Deliver BOTH: the live canvas link (still editable) and the motion file.",
     ),
     (
-        "- Animated shader fills are the cheap premium lever on ANY canvas: author\n"
+        "- Animated shader fills are the instant premium lever on ANY canvas: author\n"
         "  per references/design-quality.md (motion is automatic), then\n"
         "  `moda export CANVAS_REF --format mp4 --page N` — shaders freeze in static\n"
         "  exports and move in mp4/gif.\n"
@@ -1276,7 +1277,7 @@ REFERENCE_PASSAGES["video"] = [
         "- Choreography beyond what you can author confidently → escalate to\n"
         "  `moda task start` (metered) rather than thrashing; the canvas link keeps\n"
         "  the user in the loop either way.",
-        "- Animated shader fills are the cheap premium lever on ANY canvas: author\n"
+        "- Animated shader fills are the instant premium lever on ANY canvas: author\n"
         "  per references/design-quality.md (motion is automatic), then\n"
         "  `export(canvas_ref, format='mp4', page=N)` — shaders freeze in static\n"
         "  exports and move in mp4/gif.\n"
@@ -1298,13 +1299,13 @@ REFERENCE_PASSAGES["video"] = [
         "returns a durable `file_` ref, and every media input takes one. Generate →\n"
         "`moda media upscale-video file_… --resolution 1080p -o final.mp4` → deliver;\n"
         "or canvas export → generate → upscale. Never retype or reconstruct a ref;\n"
-        "copy it verbatim from the result. Chain the CHEAP order: iterate small,\n"
+        "copy it verbatim from the result. Chain in that order: iterate small,\n"
         "upscale once, at the end, on the winner.",
         "**5. The enhance chain** — refs are the chain handles: every media result\n"
         "returns a durable `file_` ref, and every media input takes one. Generate →\n"
         "`media_upscale(source='file_…', kind='video', target_resolution='1080p')`\n"
         "→ deliver; or canvas export → generate → upscale. Never retype or\n"
-        "reconstruct a ref; copy it verbatim from the result. Chain the CHEAP\n"
+        "reconstruct a ref; copy it verbatim from the result. Chain in that\n"
         "order: iterate small, upscale once, at the end, on the winner.",
     ),
     (
@@ -1716,14 +1717,14 @@ REFERENCE_PASSAGES["motion-recipes"] = [
     (
         "`--model seedance-2.0-fast` instead when the beat needs Seedance's controls\n"
         "in the draft (an `--end-image` morph, a non-16:9 ratio, `--reference` product\n"
-        "boards): it is 80% of Seedance 2.0's price at the same 4–15 s envelope, but\n"
-        "$0.2419/s at 720p is eight times a silent Lite second, so drop to\n"
-        "`--resolution 480p` while drafting",
+        "boards): it is 80% of Seedance 2.0's price at the same 4–15 s envelope, and\n"
+        "its price is metered on frame AREA, so `--resolution 480p` is the natural\n"
+        "draft size on it.",
         "`model='seedance-2.0-fast'` instead when the beat needs Seedance's controls\n"
         "in the draft (an `end_image` morph, a non-16:9 ratio, `reference_images`\n"
         "product boards): it is 80% of Seedance 2.0's price at the same 4–15 s\n"
-        "envelope, but $0.2419/s at 720p is eight times a silent Lite second, so drop\n"
-        "to `resolution='480p'` while drafting",
+        "envelope, and its price is metered on frame AREA, so `resolution='480p'` is\n"
+        "the natural draft size on it.",
     ),
     (
         "each result (duration and resolution snap silently), look at the clips if\n"
@@ -1736,23 +1737,35 @@ REFERENCE_PASSAGES["motion-recipes"] = [
         "needs a changed knob (`seed` where the model takes one, or a changed prompt).",
     ),
     (
-        "  `--duration`, smallest resolution that serves, one matter-of-fact line",
-        "  `duration_seconds`, smallest resolution that serves, one matter-of-fact line",
+        "  `--duration`, the resolution the pass needs, one matter-of-fact line about",
+        "  `duration_seconds`, the resolution the pass needs, one matter-of-fact line about",
+    ),
+    (
+        "Run all three drafts in the same pass (`--no-wait`, then collect): you see the",
+        "Run all three drafts in the same pass (submit with `wait=false`, then collect): you see the",
     ),
 ]
 
 REFERENCE_PASSAGES["video"] += [
     (
         "1. **Draft.** Shortest legal duration, smallest resolution that shows the\n"
-        "   idea, silent wherever silence is a price axis, on the cheap lane:\n"
+        "   idea, silent wherever silence is a price axis, on the fast lane:\n"
         "   `--model veo-3.1-lite --duration 4 --resolution 720p --no-generate-audio`\n"
-        "   bills $0.03/s — a 4 s look for $0.12, against $1.60 for the same idea\n"
-        "   rendered 8 s at $0.20/s on Veo 3.1.",
+        "   comes back in a fraction of a hero render's wait, so you SEE the idea\n"
+        "   while you can still change it.",
         "1. **Draft.** Shortest legal duration, smallest resolution that shows the\n"
-        "   idea, silent wherever silence is a price axis, on the cheap lane:\n"
+        "   idea, silent wherever silence is a price axis, on the fast lane:\n"
         "   `model='veo-3.1-lite', duration_seconds=4, resolution='720p',\n"
-        "   generate_audio=false` bills $0.03/s — a 4 s look for $0.12, against\n"
-        "   $1.60 for the same idea rendered 8 s at $0.20/s on Veo 3.1.",
+        "   generate_audio=false` comes back in a fraction of a hero render's\n"
+        "   wait, so you SEE the idea while you can still change it.",
+    ),
+    (
+        "   `warnings`; look at the frames (`moda media video-frames`, free). A draft",
+        "   `warnings`; look at the frames (`media_video_frames`, free). A draft",
+    ),
+    (
+        "(the `--no-wait` best-of-N pattern in references/omni-and-media.md) and keep",
+        "(the background-render best-of-N pattern in references/omni-and-media.md) and keep",
     ),
 ]
 

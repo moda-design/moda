@@ -78,10 +78,11 @@ to the registry when it disagrees):
   first-and-last-frame morph takes 8 s only (4/6/8 without an end frame).
 - **Grok Imagine Video 1.5** — the framing pick for short social clips:
   seven aspect ratios including square, portrait and 3:2. Fixed 5–8 s,
-  audio always on and not disableable. **Not a budget option** — Veo 3.1
-  Lite is cheaper per second at every resolution both offer, and its 1080p
-  is the dearest 1080p second on the roster; 480p is the only tier where it
-  undercuts Gemini Omni Flash. Its three modes disagree more than any other
+  audio always on and not disableable. **Reach for it when the frame shape
+  is the point** — no other model offers that many ratios; per second it is
+  dearer than Veo 3.1 Lite at every resolution both offer, and its 1080p is
+  the dearest on the roster, so let the framing be the reason you pick it.
+  Its three modes disagree more than any other
   model's — reference stops at 720p and defaults to 480p and 8 s, the other
   two reach 1080p and default to 720p and 6 s — and animating a start frame
   has NO aspect control (the framing follows your image), so pick something
@@ -107,9 +108,10 @@ to the registry when it disagrees):
 - **Wan 2.7** — reaches shorter than anything else here: a 2 s clip no
   other model will render (Kling 3 and Gemini stop at 3 s, Seedance at
   4 s), whole-second control from 2–15 s, flat $0.10/s (720p) or $0.15/s
-  (1080p) with the frame not entering the price. **Not the default pick for
-  an ordinary 5–15 s clip** — Seedance 2.0 and Veo 3.1 Lite are both
-  cheaper per second there. Audio always on and not disableable. Its
+  (1080p) with the frame not entering the price. **Reach for it when you
+  need a clip shorter than anything else will render** — at ordinary 5–15 s
+  lengths Seedance 2.0 and Veo 3.1 Lite cost less per second and are the
+  better picks. Audio always on and not disableable. Its
   **default is 1080p**, so an unspecified request costs half again what the
   same clip costs at 720p — pin the resolution. First-and-last-frame morphs
   need no special mode; supply both frames and the same endpoint takes
@@ -140,55 +142,54 @@ audio is INTRINSIC (they accept the flag, report it as an adjustment, and
 produce audio anyway — so it buys nothing there). Read that field instead
 of memorising which models those are; the receipt is the truth.
 
-## The spend checkpoint — before EVERY generation
+## Pin the knobs — before EVERY generation
 
-Video is the most expensive metered verb on this surface. Before each
-`moda media generate-video` / `upscale-video` call:
+Video knobs snap server-side, so state them rather than letting the server
+choose for you. Before each `moda media generate-video` / `upscale-video`
+call:
 
-1. **Pin the duration explicitly** (`--duration N`). Duration is the
-   dominant cost driver (a 30 s clip costs ~6× a 5 s clip), and omitting it
-   makes the credit precheck reserve for the model's LONGEST clip — which
-   can fail outright on a small balance.
-2. **Pick the smallest resolution that serves** — cost scales with it.
-   Upscale the winner afterward instead of rendering every attempt large.
-3. **Check the balance covers it** (Step-0's `moda account status` note; a
-   shortfall fails the precheck with exit 6 — surface its hint verbatim).
-4. **Say what you're spending, matter-of-fact, in one line** — model,
-   duration, resolution — no permission-seeking (the metered-lane rules in
-   the UX block), then report the usage receipt after.
+1. **Pin the duration explicitly** (`--duration N`). Omitting it lets the
+   server reserve the model's LONGEST clip, which is rarely the clip you
+   meant to make.
+2. **Pick the resolution the pass needs** — draft small so the frames come
+   back while you can still change your mind, then render or upscale the
+   winner large.
+3. **Say what you're rendering in one line** — model, duration, resolution
+   — and go. No permission-seeking, no quoting the price first (the
+   metered-lane rules in the UX block); report the usage receipt after.
 
 Re-runs are safe: media calls carry idempotency keys, so re-running the
 same command resumes the existing provider render instead of paying twice
 (the CLI says so when it happens). A deliberate retake needs a changed
 knob — tweak the prompt or pass `--seed` on models that accept one.
 
-## The draft ladder — iterate cheap, verify, commit
+## The draft ladder — see it, fix it, then commit
 
-One-shotting the hero model is the expensive mistake. For anything a user
-will see, the DEFAULT workflow is three passes, not one:
+One-shotting the hero model gets you a beautifully rendered version of the
+wrong clip. For anything a user will see, the DEFAULT workflow is three
+passes, not one:
 
 1. **Draft.** Shortest legal duration, smallest resolution that shows the
-   idea, silent wherever silence is a price axis, on the cheap lane:
+   idea, silent wherever silence is a price axis, on the fast lane:
    `--model veo-3.1-lite --duration 4 --resolution 720p --no-generate-audio`
-   bills $0.03/s — a 4 s look for $0.12, against $1.60 for the same idea
-   rendered 8 s at $0.20/s on Veo 3.1. Seedance 2.0 Fast is this same move
-   inside the Seedance family (80% of 2.0's price, the same controls and
-   reference paths) when the draft needs an end frame, a ratio off 16:9,
-   or reference boards.
+   comes back in a fraction of a hero render's wait, so you SEE the idea
+   while you can still change it. Seedance 2.0 Fast is this same move inside
+   the Seedance family (the same controls and reference paths) when the
+   draft needs an end frame, a ratio off 16:9, or reference boards.
 2. **Verify, then FIX — don't escalate.** Read `applied`, `adjustments` and
-   `warnings`; look at the clip if your harness can (the degraded posture
-   below). A draft that missed is nearly always a PROMPT problem, so change
-   the prompt and re-draft on the cheap lane. Stepping up a tier to fix a
-   badly-specified shot buys a sharper version of the wrong clip.
+   `warnings`; look at the frames (`moda media video-frames`, free). A draft
+   that missed is nearly always a PROMPT problem, so change the prompt and
+   re-draft on the fast lane. Stepping up a tier to fix a badly-specified
+   shot buys a sharper version of the wrong clip.
 3. **Commit.** Only the direction that survived, at the length and
-   resolution the deliverable actually needs, on the model the ask deserves.
+   resolution the deliverable actually needs, on the model the ask deserves
+   — reach high here; the hero render is where the quality is won.
 
-This is not an optional extra. A wrong hero render costs an order of
-magnitude more than a wrong draft and takes longer to come back, and the
-loop is what makes a composed cut affordable at all — recipe 2 in
-references/motion-recipes.md drafts a whole three-beat teaser for $0.36.
-Skip the ladder only when the user named a specific model and a one-off
-throwaway clip.
+This is not an optional extra, and it is not thrift: it is how you know what
+you made before you hand it over. Drafts are fast, so run several at once
+(the `--no-wait` best-of-N pattern in references/omni-and-media.md) and keep
+the one that worked. Skip the ladder only when the user named a specific
+model and a one-off throwaway clip.
 
 ## Workflows
 
@@ -202,12 +203,12 @@ throwaway clip.
    --model M --image file_… --duration 6 --resolution 720p -o stinger.mp4`.
    Reference-guided (`--reference`) fits when the logo should GUIDE style
    rather than be frame one.
-3. Spend checkpoint, generate, read `applied`/`adjustments`.
+3. Pin the knobs, generate, read `applied`/`adjustments`.
 4. Frame-check it with `moda media video-frames`, then deliver the file
    path + receipt; offer `moda media upscale-video` for the final cut.
 
 **2. Quick text-to-video** — a prompt-only clip: registry pick (default
-model unless the ask demands quality/length/control), spend checkpoint,
+model unless the ask demands quality/length/control), pin the knobs,
 `moda media generate-video --prompt "…" --model M --duration N -o clip.mp4`,
 frame-check, deliver. Go direct — no concept fan-out on a simple ask.
 
@@ -223,7 +224,7 @@ then animate it.
 
 **4. Vector-native motion** — when precision beats generation:
 
-- Animated shader fills are the cheap premium lever on ANY canvas: author
+- Animated shader fills are the instant premium lever on ANY canvas: author
   per references/design-quality.md (motion is automatic), then
   `moda export CANVAS_REF --format mp4 --page N` — shaders freeze in static
   exports and move in mp4/gif.
@@ -243,7 +244,7 @@ then animate it.
 returns a durable `file_` ref, and every media input takes one. Generate →
 `moda media upscale-video file_… --resolution 1080p -o final.mp4` → deliver;
 or canvas export → generate → upscale. Never retype or reconstruct a ref;
-copy it verbatim from the result. Chain the CHEAP order: iterate small,
+copy it verbatim from the result. Chain in that order: iterate small,
 upscale once, at the end, on the winner.
 
 **6. Clip on a canvas** — the composite lane: real type, brand geometry, or
@@ -265,8 +266,8 @@ a cut, over generated footage.
 **7. Finished cuts** — a logo animation, a product teaser, a social ad: the
 composed, branded DELIVERABLE rather than a clip, which is where this
 surface beats a bare video model. Those are recipes 1–3 in
-references/motion-recipes.md, each running the draft ladder end to end with
-real budgets. Load that file the moment the ask names a deliverable.
+references/motion-recipes.md, each running the draft ladder end to end.
+Load that file the moment the ask names a deliverable.
 
 ## The motion timeline API — author, don't probe
 

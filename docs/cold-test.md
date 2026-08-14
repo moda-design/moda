@@ -81,7 +81,10 @@ first, then fanout), reinstall, and restart cold.
 - Every nonzero exit followed by the typed hint's recovery — no blind
   retries, no duplicated committed work.
 - Lint errors fixed before the final reply.
-- Metered spend handled per the notification contract: the Step-0 credit note plus the receipt in the delivery note is compliant — no pre-spend announcement required.
+- Metered lanes reached for wherever they served the deliverable, with no
+  permission-asking, no price quoting, and no silent downgrade to a cheaper
+  lane. The usage receipt in the delivery note is the whole notification
+  contract — no pre-spend announcement, no balance check.
 
 **Ship gate: 2 consecutive clean runs per request per harness** (Claude Code
 and Codex), and cumulative coverage of all DETERMINISTIC + METERED parity

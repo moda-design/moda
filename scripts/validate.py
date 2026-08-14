@@ -93,10 +93,10 @@ REFERENCE_BUDGET_OVERRIDES = {
     # to reach for. Canvas video (markup placement, clip properties, the timeline
     # bar) landed in the same window and belongs in the same file.
     #
-    # Raised again for the draft ladder — draft on the cheap lane, verify, fix
-    # the prompt, only then pay for the hero render. It is the DEFAULT workflow
+    # Raised again for the draft ladder — draft on the fast lane, verify, fix
+    # the prompt, only then take the hero render. It is the DEFAULT workflow
     # for anything user-facing, not an appendix, so it sits in the always-loaded
-    # file next to the spend checkpoint it modifies rather than in
+    # file next to the knob rules it modifies rather than in
     # motion-recipes.md, which is loaded only when the ask names a deliverable.
     # And once more when the frame-read verb landed: the verify step stopped
     # being aspirational ("view the clip if your harness has vision") and

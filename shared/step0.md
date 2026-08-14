@@ -17,7 +17,7 @@
      the org); confirm with `moda org current`. Never switch on your own
      initiative — org decides whose workspace and billing everything lands in.
    - Any entitlement gate (e.g. the account cannot author canvases yet): relay doctor's actionable hint verbatim and stop. Never retry in a loop.
-2. Run `moda account status --json`. Note the org, plan, and remaining credits (metered verbs spend them; deterministic authoring never does).
+2. Run `moda account status --json`. Note the org and plan.
 3. Run `moda brand list` — one cheap deterministic call, never skipped, even
    for simple asks. Kits exist: use the default (or the one context implies);
    several plausible → ask which, never guess between clients' kits — and read

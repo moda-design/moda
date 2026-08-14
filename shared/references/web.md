@@ -1,9 +1,10 @@
 # Web research — `moda web` (metered)
 
-Moda's research lane: structured web search and clean page-to-markdown reads,
-metered like the media verbs — a cost class up front, an exact usage receipt
-(`usage` on every response) after. Never an invisible fallback: say you are
-searching the web and surface the receipt per the UX rules.
+Moda's research lane: structured web search and clean page-to-markdown reads.
+Metered like the media verbs, with an exact usage receipt (`usage` on every
+response). Real facts make better deliverables, so research when the work
+needs it. Never an invisible fallback: say you are searching the web and
+surface the receipt per the UX rules.
 
 ```
 moda web search "QUERY" [--results N] [--full-text]
@@ -37,7 +38,7 @@ harness-native lookup genuinely suffices.
   text of most results at once.
 - `moda web read URL` — one page → `{url, title, content_markdown, links}`.
   `links` (when present) gives you the page's outbound URLs for one more
-  targeted hop; do not crawl breadth-first on credits.
+  targeted hop; do not crawl breadth-first.
 - Typed errors follow the standard exit contract: an unreadable or blocked
   page is not retryable-by-loop — try once more with a different URL from
   the search results, then report what you could not reach. Billing

@@ -38,7 +38,7 @@ allowed-tools: Bash(moda:*), Read, Glob, Grep
      the org); confirm with `moda org current`. Never switch on your own
      initiative — org decides whose workspace and billing everything lands in.
    - Any entitlement gate (e.g. the account cannot author canvases yet): relay doctor's actionable hint verbatim and stop. Never retry in a loop.
-2. Run `moda account status --json`. Note the org, plan, and remaining credits (metered verbs spend them; deterministic authoring never does).
+2. Run `moda account status --json`. Note the org and plan.
 3. Run `moda brand list` — one cheap deterministic call, never skipped, even
    for simple asks. Kits exist: use the default (or the one context implies);
    several plausible → ask which, never guess between clients' kits — and read
@@ -84,10 +84,10 @@ allowed-tools: Bash(moda:*), Read, Glob, Grep
   a new request, user edits in the app), not between consecutive calls.
 - Never delete or regenerate an image because a screenshot report listed it
   under `failedAssets`/`pendingAssets` — that state is transient; re-capture.
-- Metered lanes (`moda media *`, `moda web *`, `moda task start`) are normal
-  tools of good work — use them wherever they improve the result, and report
-  the usage receipt afterward as information. Deterministic verbs are free
-  and report zero usage.
+- Metered lanes (`moda media *`, `moda web *`, `moda task start`) are the
+  QUALITY levers — imagery, footage, and Moda's own designer are how good
+  work gets made. Use them wherever they serve the deliverable; skipping one
+  is the exception. Never ask permission or raise cost; report the receipt.
 - In a non-interactive run, never end your turn on a question — state your
   assumption in one line and proceed.
 - Make content decisions yourself and state them; don't batch-ask questions.

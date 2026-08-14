@@ -1,6 +1,8 @@
 # The metered lanes — media generation and the Omni escalation
 
-Everything in this document spends Moda credits — spend them where they make the work better. Media generation is a normal part of doing good design, not a lane to justify or apologize for: use it wherever it improves the result, and report the usage receipt after each call as information (`usage.class: "metered"` on the response; exact credits enrich asynchronously on account usage).
+These are the metered lanes — the `media_*` tools and `task_start` — and they are the QUALITY levers on this surface. Generated imagery, footage, and Moda's own designer are how good work gets made: reach for them wherever they serve the deliverable, never ask permission first, and report the usage receipt after each call as information (`usage.class: "metered"` on the response). Cost is a topic only when the USER raises it.
+
+The one fact worth carrying: a metered call can fail the billing precheck (`insufficient_credits` and friends), which means the TEAM is out of credits or has hit a plan cap, not that you did something wrong. Say so plainly, surface the hint verbatim, and stop — never retry it, and never quietly drop the quality lever and deliver the lesser thing instead.
 
 ## The `media_*` tools — raw media operations (all metered)
 
@@ -45,8 +47,8 @@ Results return durable refs that feed markup `image(...)` fills and `src` attrib
 ### Video rules
 
 - Same verbatim-prompt and required-model rules. Video models (e.g. Veo 3.1 / Veo 3.1 Fast / Veo 3.1 Lite, Seedance 2.0/2.5, Gemini Omni Flash, Kling 3, Wan 2.7 — the registry is the roster, not this list) differ in modes (text / start-image / reference-to-video), durations, resolutions, and native audio. `media_generate_video`'s description carries the video model cards; the per-model envelope is enforced server-side — knobs snap (read `applied`/`adjustments`), and an unsupported mode fails typed, naming the models that can do it. The moda-video skill owns model routing and the video workflows.
-- **Always pass an explicit duration** — duration is the dominant cost driver (a 30s clip costs ~6× a 5s clip), and omitting it forces the credit precheck to reserve for the model's longest clip, which can fail outright on a small balance.
-- Requested duration/resolution/shape SNAP to the nearest supported value; the result reports what was `applied` and each `adjustment` — read them before describing the output. Snapping can round upward and cost more.
+- **Always pass an explicit duration** — omitting it lets the server reserve the model's LONGEST clip, which is rarely the clip you meant to make.
+- Requested duration/resolution/shape SNAP to the nearest supported value; the result reports what was `applied` and each `adjustment` — read them before describing the output. Snapping can round upward.
 - Never ask a video model to render precise text, prices, or CTA/legal copy. Keep on-screen text minimal, design exact text into the start frame, go vector-native, or composite over the clip on an animation canvas and export mp4/gif (the moda-video skill owns all three moves).
 - There is no video-to-video editing, and reference VIDEO input exists only on the models whose cards declare it. A canvas DOES take video via `<video src="file_…"/>` markup, but its static exports render blank (see gotchas.md).
 - **Look at what you generated.** `media_video_frames(video='file_…')` samples still frames out of a clip and returns them as images you can actually LOOK at. FREE, uncharged, and nothing is added to the library. A `file_` ref is not an image: this is the only way to know a render matches the brief, so call it before describing or delivering a generated clip. `count` (1–8) surveys the clip evenly, `timestamps_ms` inspects moments you name (one or the other, never both), and it takes team files only — upload first, an http(s) URL is refused. An empty frame list means Moda could not DECODE the file, not that the video is bad; a `frames_partial` warning means you saw only part of the clip. The moda-video skill owns the full loop.
@@ -73,11 +75,11 @@ task_status(task_ref)            task_cancel(task_ref)
 - Brand-guide generation (a new identity — see references/brand.md).
 - Motion choreography beyond the deterministic lane (motion v3 via `canvas_edit` on an animation-category canvas covers the basics; preset animations on ordinary canvases remain app-only).
 
-**When NOT to escalate:** anything you can author deterministically. You are the agent; a known layout with known content is your job, free, and faster to iterate on.
+**When NOT to escalate:** anything you can author deterministically. You are the agent; a known layout with known content is your job, and faster to iterate on.
 
 ### Task-lane rules
 
-- A task delegates the whole job and spends accordingly — mention, matter-of-fact, that you're starting one (no permission-seeking), and report the receipt after.
+- A task delegates the whole job — mention, matter-of-fact, that you're starting one (no permission-seeking), and report the receipt after.
 - `task_start` is idempotent: an identical re-run replays the already-started task instead of spending again — within the server's idempotency window (the result says so when it detects the replay). A deliberate new attempt — e.g. after `task_failed` — takes a fresh `repeat_token`.
 - Omit `canvas_ref` for net-new work — the task creates and designs its own canvas. Pass it only when the job must land on an existing one; a running task **owns its canvas** — your writes fail typed as busy until it finishes. Recovery: poll the task handle you hold with `task_status`, then wait or `task_cancel`.
 - Pass `brand_kit_ref` rather than restating colors/fonts/logos in the prompt — the resolved kit owns them. Put the slide/page count in `number_of_slides` or the prompt explicitly.
