@@ -2,7 +2,7 @@
 """Repo-local validation for the Moda skills package.
 
 Checks (mirrors skills-and-distribution.md section 3, adapted to the
-dogfood-authored repo):
+repo):
 
 1. Frontmatter lint (name matches directory, description, argument-hint,
    allowed-tools restricted to Bash(moda:*) + read-only file tools).

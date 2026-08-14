@@ -1,16 +1,23 @@
-# Installing (private dogfood)
+# Installing
 
-This repo is **private**. Every install path below rides your existing GitHub
-auth (`gh auth login` / git SSH); nothing here is published anywhere.
+Two pieces: the **skills** (what teaches your agent) and the **moda CLI**
+(what it drives). Install both.
+
+> **npm publish is pending launch.** `@moda-design/moda` is served from
+> GitHub Packages today, not npmjs.com, so `npm i -g @moda-design/moda` needs
+> the one-time registry wiring in the README's one-time setup box. Any GitHub
+> account works — the scope is read-only package access. The checksum-verified
+> binary path in section 2 needs no npm at all.
 
 ## 1. Install the skills
 
 | Harness | One-liner (you run it; the agent never installs) |
 |---|---|
 | Claude Code | `/plugin marketplace add moda-design/moda` then `/plugin install moda@moda` |
-| Codex CLI | `npx skills add moda-design/moda` (drops into `~/.agents/skills/`; rides git auth) — fallback: `git clone git@github.com:moda-design/moda && cd moda && ./setup` |
+| Codex CLI | `npx skills add moda-design/moda` (drops into `~/.agents/skills/`) — fallback: `git clone https://github.com/moda-design/moda && cd moda && ./setup` |
 | Cursor | `npx skills add moda-design/moda`, or clone + `./setup` |
-| Anything with a shell | `git clone git@github.com:moda-design/moda && cd moda && ./setup` |
+| Anything with a shell | `git clone https://github.com/moda-design/moda && cd moda && ./setup` |
+| claude.ai | Agent Skills uploads — see [INSTALL-CLAUDE-AI.md](INSTALL-CLAUDE-AI.md) |
 
 `setup` copies the skill directories and **prints** the CLI install command
 below — it never runs it.
@@ -20,12 +27,13 @@ plugin only — other harnesses invoke the skills directly. Its routing table is
 convenience; the cross-skill arbitration rules travel inside every skill's
 shared UX rules, so no harness depends on the router being present.
 
-## 2. Install the moda CLI (pinned command)
+## 2. Install the moda CLI
 
-The dogfood channel is GitHub Releases on this repo (`github-private`); npm
-and Homebrew come at publish. Release artifacts are named
-`moda-<platform>-<arch>` (`moda-linux-x64`, `moda-linux-arm64`,
-`moda-darwin-x64`, `moda-darwin-arm64`) plus a `SHA256SUMS` file. Run exactly:
+The package path is `npm i -g @moda-design/moda` (see the note at the top).
+The rest of this section is the **no-npm, checksum-verified** path: GitHub
+Releases on this repo. Release artifacts are named `moda-<platform>-<arch>`
+(`moda-linux-x64`, `moda-linux-arm64`, `moda-darwin-x64`,
+`moda-darwin-arm64`) plus a `SHA256SUMS` file. Run exactly:
 
 ```sh
 gh release download --repo moda-design/moda -p "moda-$(uname -s | tr '[:upper:]' '[:lower:]')-$(uname -m | sed 's/x86_64/x64/; s/aarch64/arm64/')" -p SHA256SUMS -D /tmp/moda-dl

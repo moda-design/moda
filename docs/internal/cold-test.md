@@ -1,5 +1,8 @@
 # Cold-test protocol — the acceptance run IS the test
 
+> Maintainer doc. This is the internal acceptance protocol for skill changes;
+> it is not a user-facing guide.
+
 The skills in this repo are accepted only by cold-session runs. No unit test
 substitutes for a fresh agent, a fresh machine, and a scripted request with
 zero coaching.
@@ -13,14 +16,14 @@ A machine, container, or user account with:
 - the harness (Claude Code; separately Codex) authenticated to its own model
   provider only.
 
-A Moda test account on the dogfood team exists (canvas-tools enablement on,
-credits available) but is not logged in anywhere. Pre-merge local-stack
-variant: identical, pointed at the worktree server via the CLI's API-base
+A dedicated Moda test account (canvas-tools enablement on, credits
+available) exists but is not logged in anywhere. Pre-merge local-stack
+variant: identical, pointed at a local server via the CLI's API-base
 override.
 
 ## Script (per run, per harness)
 
-1. Operator pastes the install line(s) from INSTALL.md section 1, runs them,
+1. Operator pastes the install line(s) from `../../INSTALL.md` section 1, runs them,
    starts a **new session**.
 2. Operator pastes ONE acceptance request verbatim. The three scripted
    requests (each run picks one; all three must pass before ship):
@@ -70,9 +73,8 @@ first, then fanout), reinstall, and restart cold.
 - Export artifact + checksum.
 - Credit-ledger delta and per-call receipts for every metered verb — they
   must equal the receipts the agent surfaced.
-- A scoring sheet mapping the run's verbs onto the omni-parity
-  DETERMINISTIC + METERED rows exercised (studio:
-  docs/roadmap/moda-for-agents/omni-parity.md).
+- A scoring sheet mapping the run's verbs onto the DETERMINISTIC + METERED
+  parity rows exercised (the server-side parity matrix).
 
 ## Pass bar
 

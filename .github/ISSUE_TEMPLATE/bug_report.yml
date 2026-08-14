@@ -1,0 +1,25 @@
+name: Bug report
+description: Something in the moda CLI or the skills behaved wrong.
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What did you ask for, and what did you get?
+      description: The prompt you gave your agent (or the CLI command you ran) and the actual result.
+    validations:
+      required: true
+  - type: textarea
+    id: doctor
+    attributes:
+      label: Output of `moda doctor --json`
+      description: Redact anything you would rather not share — it never prints credentials.
+      render: json
+  - type: input
+    id: harness
+    attributes:
+      label: Harness
+      placeholder: Claude Code / Codex / Cursor / claude.ai / other
+  - type: markdown
+    attributes:
+      value: "Security issue? Do not file it here — see [SECURITY.md](../blob/main/SECURITY.md)."

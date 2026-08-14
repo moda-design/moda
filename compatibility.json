@@ -1,10 +1,10 @@
 {
-  "skills_release": "v2026.08.14+dogfood.9",
-  "authoring": "authored directly in this repo for the private dogfood; the studio skills-src publish pipeline takes over at ship time",
+  "skills_release": "v2026.08.14+preview.9",
+  "authoring": "skill text is authored directly in this repo; a server-side publish pipeline takes over at ship time",
   "cli": {
     "floor": "0.14.0",
     "tested_through": "0.14.x",
-    "install_channel": "github-private",
+    "install_channel": "github-packages",
     "note": "moda doctor reads this file's range when a skill runs Step 0: below the floor it stops the skill and prints the pinned upgrade command."
   }
 }

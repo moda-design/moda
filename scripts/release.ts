@@ -1,7 +1,7 @@
 /**
  * Release assembly (cli-repo-plan §1.4): checksums + GitHub Release upload. Run by
  * release.yml on a v<semver> tag; runnable locally with `gh auth` for a dry run
- * (`--dry-run` skips the gh call). Signing/attestation is a pre-publish gate, not dogfood.
+ * (`--dry-run` skips the gh call). Signing/attestation is a pre-publish gate.
  */
 import { existsSync, readdirSync, writeFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
@@ -47,7 +47,7 @@ if (dryRun) {
 }
 
 const proc = Bun.spawn(
-  ['gh', 'release', 'create', tag, ...assets, '--title', `moda ${tag}`, '--notes', `moda CLI ${tag} (dogfood; private repo — install via \`gh release download\`)`],
+  ['gh', 'release', 'create', tag, ...assets, '--title', `moda ${tag}`, '--notes', `moda CLI ${tag} — install: \`npm i -g @moda-design/moda\` (see the README's one-time setup box until the npm publish lands), or download the platform binary below and verify it against \`SHA256SUMS\`.`],
   { cwd: ROOT, stdout: 'inherit', stderr: 'inherit' },
 );
 process.exit(await proc.exited);

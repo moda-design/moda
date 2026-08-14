@@ -9,7 +9,7 @@ filesystem step is replaced by link handoffs. This script is that projection,
 maintained AS CODE (scripts/mcp_projection_rules.py), never by hand-editing
 the output:
 
-  build   regenerate dist/mcp-skills/** from skills-src + the rules
+  build   regenerate dist/mcp-skills/** from the skill sources + the rules
           (skill payloads, index.json, and verb-dispositions.json — the
           machine-readable VERB_DISPOSITION export for server-side consumers)
   check   regenerate in memory and fail on any drift from the committed
@@ -18,7 +18,7 @@ the output:
           (one skill folder per ZIP — the claude.ai upload format)
   table   print the CLI-verb → connector-tool mapping table (PR bodies)
   audit-server --studio-root PATH
-          strict roster reconciliation against a nullframe-studio checkout's
+          strict roster reconciliation against a server-repo checkout's
           connector manifest (pending-server names included) — run when the
           connector surface-parity wave lands
 
@@ -217,7 +217,7 @@ def build_outputs() -> dict[str, str]:
     for d in dead:
         fail("mcp_projection_rules.GENERIC", f"dead rule (never fired): {d!r}")
 
-    # Source-coverage audit: every CLI invocation in skills-src is consumed.
+    # Source-coverage audit: every CLI invocation in the skill sources is consumed.
     audit_source_coverage()
 
     index = {
@@ -244,7 +244,7 @@ def build_outputs() -> dict[str, str]:
         if status not in rules.DISPOSITION_STATUSES:
             fail("mcp_projection_rules.VERB_DISPOSITION", f"unknown status {status!r} on {verb!r} — add it to DISPOSITION_STATUSES")
     dispositions = {
-        "comment": "Bilingual CLI↔connector verb dictionary: every `moda <verb>` used in skills-src, mapped to its connector equivalent or authored prose remedy (backticks mark code tokens). Verbatim export of VERB_DISPOSITION in scripts/mcp_projection_rules.py — schema documented there; stable within schema_version 1. Regenerate with scripts/project-mcp.py build.",
+        "comment": "Bilingual CLI↔connector verb dictionary: every `moda <verb>` used in the skill sources, mapped to its connector equivalent or authored prose remedy (backticks mark code tokens). Verbatim export of VERB_DISPOSITION in scripts/mcp_projection_rules.py — schema documented there; stable within schema_version 1. Regenerate with scripts/project-mcp.py build.",
         "schema_version": 1,
         "statuses": rules.DISPOSITION_STATUSES,
         "dispositions": {
@@ -273,7 +273,7 @@ def _description_of(skill_md: str) -> str:
 
 
 def audit_source_coverage() -> None:
-    """Every `moda <verb>` in skills-src must be mapped or explicitly exempted."""
+    """Every `moda <verb>` in the skill sources must be mapped or explicitly exempted."""
     known = set(rules.VERB_DISPOSITION)
     seen: set[str] = set()
     for pattern in ["skills/*/SKILL.md", "shared/*.md", "shared/references/*.md"]:
@@ -287,7 +287,7 @@ def audit_source_coverage() -> None:
                 else:
                     seen.add(inv)
     for verb in sorted(known - seen):
-        fail("mcp_projection_rules.VERB_DISPOSITION", f"dead disposition (verb no longer appears in skills-src): {verb!r}")
+        fail("mcp_projection_rules.VERB_DISPOSITION", f"dead disposition (verb no longer appears in the skill sources): {verb!r}")
 
 
 # ---------------------------------------------------------------- commands
