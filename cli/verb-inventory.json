@@ -4911,6 +4911,12 @@
           "required": false
         },
         {
+          "flag": "--reference-video",
+          "description": "reference clips (models whose card shows 'ref videos'): file_ refs, URLs, or local paths — count and length caps are per-model; the input's own running time is billed on top",
+          "takes_value": true,
+          "required": false
+        },
+        {
           "flag": "--resolution",
           "description": "per-model resolution tier (see the model's capability line)",
           "takes_value": true,

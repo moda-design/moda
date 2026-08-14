@@ -1,8 +1,9 @@
 {
-  "comment": "The connector tool roster the MCP-flavored skills projection is allowed to teach. `live` mirrors backend/moda_connector/tools/__init__.py MANIFEST on nullframe-studio origin/main — including tools the skills don't currently teach (load_skill, drive_delete), so the output scanner accepts any manifest name and `audit-server` proves the whole roster against the real manifest. The surface-parity wave (studio #9466) is MERGED: its names are live and were reconciled here (drive_organize replaced the drive_mkdir/move/visibility guesses; canvas_create's template param landed as template_canvas_id; file_show did not ship — file bytes stay app-side). If a manifest name ever changes, rename it here and in scripts/mcp_projection_rules.py in the same commit.",
+  "comment": "The connector tool roster the MCP-flavored skills projection is allowed to teach. `live` mirrors backend/moda_connector/tools/__init__.py MANIFEST on nullframe-studio origin/main — including tools the skills don't currently teach (load_skill, ask_expert, drive_delete), so the output scanner accepts any manifest name and `audit-server` proves the whole roster against the real manifest. The surface-parity wave (studio #9466) is MERGED: its names are live and were reconciled here (drive_organize replaced the drive_mkdir/move/visibility guesses; canvas_create's template param landed as template_canvas_id; file_show did not ship — file bytes stay app-side). If a manifest name ever changes, rename it here and in scripts/mcp_projection_rules.py in the same commit.",
   "live": [
     "moda_bootstrap",
     "load_skill",
+    "ask_expert",
     "canvas_list",
     "canvas_search",
     "canvas_create",

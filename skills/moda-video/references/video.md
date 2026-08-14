@@ -17,10 +17,20 @@ UI/diagram motion, looping background texture → vector-native. A video ask
 IS format words — the motion file is the deliverable, so exporting or
 downloading it is compliant, never a ceremony violation.
 
-Hard boundaries (see references/gotchas.md): a canvas never takes video —
-no video fills, no compositing text over a generated clip on a canvas.
-There is no video-to-video edit and no source-video input; the only verb
-that takes a video as input is `moda media upscale-video`.
+Canvases DO take video (see references/markup.md and references/gotchas.md):
+`<video src="file_…"/>` places a clip as a video fill, and on an animation
+canvas `t.video` sequences clips on the page timeline — so compositing type
+over a clip and cutting two shots together are real moves. The catch is
+delivery: static exports (png/pdf/pptx) of a video-filled node render BLANK
+today (no poster frame yet; placement warns `video_poster_unavailable`), so
+deliver canvas-video work as an mp4/gif export or as the standalone clip,
+never as a still. Route by the deliverable: a raw clip with no design over
+it stays in the media lane; type, brand geometry, or a cut belongs on an
+animation canvas exported to mp4/gif.
+
+There is no video-to-video edit and no source-video input for GENERATION
+except reference video on the models whose cards declare it; the only verb
+that takes a video as its subject is `moda media upscale-video`.
 
 ## Model choice — registry-driven
 
@@ -39,9 +49,19 @@ Strengths of the current roster, one line each, to route the choice (defer
 to the registry when it disagrees):
 
 - **Gemini Omni Flash** — the default: strong quality/cost for ordinary
-  text- and image-to-video, coherent motion, native audio.
+  text- and image-to-video, coherent motion, 3–10 s. **720p is its only
+  resolution on all three modes** (a 1080p ask snaps down and is reported),
+  and its audio is INTRINSIC — nothing can silence it, so steer the
+  soundtrack through the prompt. No seed.
 - **Seedance 2.0** — the control pick: end frames, square/portrait/cinema
-  aspect ratios beyond 16:9/9:16, seeds, reference-heavy product work.
+  aspect ratios beyond 16:9/9:16, seeds, reference-heavy product work,
+  including reference VIDEO (up to 3 clips, 2–15 s each, 15 s combined, and
+  they discount the call to 0.6× — though the input clips' own running time
+  bills on top).
+- **Seedance 2.0 Fast** — 2.0's iteration lane: the same controls,
+  envelope and reference paths — including the same 3 reference clips — at
+  80% of the price, capped at 720p and taking no seed. Explore here, then
+  re-run the keeper on 2.0 for the taller frame.
 - **Seedance 2.5** — the long-form pick: up to ~30 s in ONE native shot and
   large reference boards (address them in the prompt as `@Image1`,
   `@Image2`, …). Costs meaningfully more per second than 2.0 — use 2.0 when
@@ -52,11 +72,71 @@ to the registry when it disagrees):
 - **Veo 3.1 Fast** — the iteration pick: the same envelope at roughly half
   the price and latency; try a direction here before committing a pricier
   model.
+- **Veo 3.1 Lite** — the cheapest second on the roster: the same Veo
+  envelope again, a third of Fast's rate, with 1080p as its ceiling.
+  Unlike the other two tiers, 1080p costs more here than 720p, and its
+  first-and-last-frame morph takes 8 s only (4/6/8 without an end frame).
+- **Grok Imagine Video 1.5** — the framing pick for short social clips:
+  seven aspect ratios including square, portrait and 3:2. Fixed 5–8 s,
+  audio always on and not disableable. **Not a budget option** — Veo 3.1
+  Lite is cheaper per second at every resolution both offer, and its 1080p
+  is the dearest 1080p second on the roster; 480p is the only tier where it
+  undercuts Gemini Omni Flash. Its three modes disagree more than any other
+  model's — reference stops at 720p and defaults to 480p and 8 s, the other
+  two reach 1080p and default to 720p and 6 s — and animating a start frame
+  has NO aspect control (the framing follows your image), so pick something
+  else when a ratio is non-negotiable. Only model that charges per
+  reference image ($0.01 each, 1–7) on top of the clip; address them in the
+  prompt as `<IMAGE_0>`, `<IMAGE_1>`, …
+- **Kling 3 Standard / Pro / 4K** — a quality lane of its own, and the one
+  family where the TIER IS THE RESOLUTION: 4K is a separate model, not a
+  setting, so the output size is the entry you pick. Asking `kling-3-4k`
+  for `4k` is honoured; asking either other tier for any size is dropped
+  and reported, because their pages state no output resolution. Shared
+  envelope: any whole 3–15 s, landscape/square/portrait, an optional end
+  frame on the same call as the start frame, native audio you can actually
+  turn off, no seed, prompts capped at 2500 characters. Audio is a price
+  axis on Standard and Pro (silent is a third cheaper) and free on 4K, so
+  leave it on there. Standard is the entry point, Pro the same envelope
+  rendered sharper for a third more, 4K five times a silent Standard second
+  — final take, not exploration. The family ships a non-empty negative
+  prompt by default and we clear it, so what you write is what the model
+  gets: put anything to avoid in the prompt itself, there is no
+  negative-prompt knob. `shot_type` picks one continuous take
+  (`customize`, default) or model-chosen shot division (`intelligent`).
+- **Wan 2.7** — reaches shorter than anything else here: a 2 s clip no
+  other model will render (Kling 3 and Gemini stop at 3 s, Seedance at
+  4 s), whole-second control from 2–15 s, flat $0.10/s (720p) or $0.15/s
+  (1080p) with the frame not entering the price. **Not the default pick for
+  an ordinary 5–15 s clip** — Seedance 2.0 and Veo 3.1 Lite are both
+  cheaper per second there. Audio always on and not disableable. Its
+  **default is 1080p**, so an unspecified request costs half again what the
+  same clip costs at 720p — pin the resolution. First-and-last-frame morphs
+  need no special mode; supply both frames and the same endpoint takes
+  them, at the same lengths. Animating a start frame has NO aspect control,
+  the same caveat Grok and Seedance 2.5 carry. Its reference mode is the
+  odd one: it stops at 10 s (2 clips, 2–10 s each) and charges the SAME
+  $0.10/s at 1080p as at 720p, so the taller frame costs nothing there — as
+  on Veo 3.1 and Veo 3.1 Fast, which likewise fold 720p and 1080p into one
+  rate and step only at 4K. fal bills each input clip's own running time on
+  top of the output's, so an 8 s clip driving a 3 s render bills 11 s.
 
-Native audio: current models generate audio by default where they support
-it — describe the soundtrack in the prompt (`--generate-audio` requests it
-explicitly). On some models audio is its own price axis; the receipt is the
-truth.
+**Reference video** rides `--reference-video <ref-or-url>` (repeatable; the
+wire field is `reference_videos`), and only models whose card shows "ref
+videos" accept any. Clip count, per-clip and combined length caps, price
+multiplier, and whether the input's running time bills are all per-model —
+read them off the card, and a 422 names the whole envelope back to you.
+Each clip also lands as a durable file in the team's library.
+
+Native audio: every audio-capable model on the roster generates audio by
+DEFAULT — describe the soundtrack in the prompt, and `--generate-audio`
+only re-states that default explicitly. Whether audio can be turned OFF at
+all is per-model, and the card is the answer: `moda media models` reports
+`generate_audio_controllable`, which the human card renders as "audio
+always on" for the models where audio is INTRINSIC (a request to disable it
+is accepted, reported as an adjustment, and produces audio anyway). Read
+that field instead of memorising which models those are. On some models
+audio is its own price axis; the receipt is the truth.
 
 ## The spend checkpoint — before EVERY generation
 
@@ -136,6 +216,22 @@ or canvas export → generate → upscale. Never retype or reconstruct a ref;
 copy it verbatim from the result. Chain the CHEAP order: iterate small,
 upscale once, at the end, on the winner.
 
+**6. Clip on a canvas** — the composite lane: real type, brand geometry, or
+a cut, over generated footage.
+
+1. Get the clip into the team's files: `moda file upload clip.mp4` (or a
+   generated result's `file_` ref, already durable).
+2. Animation canvas, then place it:
+   `<video src="file_…" width="1920" height="1080" fit="cover"/>` via
+   `moda canvas markup` (references/markup.md). Layer text and shapes over
+   it like any other element — the clip is a fill on a rectangle.
+3. Sequence with `t.video(node, { startMs })` inside `motion.page(...)`;
+   trim/speed/loop go on the fill through `update()`
+   (references/edit-code.md).
+4. Deliver `moda export CANVAS_REF --format mp4 --page N` plus the live
+   link. Do NOT deliver a png/pdf of a video-filled page — it renders the
+   clip blank today (`video_poster_unavailable`); say so if asked for one.
+
 ## The motion timeline API — author, don't probe
 
 Keyframed motion is authored inside a `moda canvas edit` script through the
@@ -193,6 +289,15 @@ arrays only to `t.stagger`):
   shader knob in a loop (defaults: `time`, 0→20 over 45 s).
 - `t.compute(target, outputs, codeString, opts?)` — a custom code driver for
   what the verbs above can't say.
+- `t.video(node, { startMs, endMs })` — place a video-fill node's clip bar
+  (`timeline.video` in full). The bar is the clip's LIFETIME on the page;
+  N bars at different `startMs` across N clips IS a cut. `endMs` defaults to
+  the trimmed clip's length clamped to the page. One bar per node — calling
+  it again REPLACES that node's bar, which is also how you retime one. Trim,
+  speed and loop are NOT options here: they live on the fill, and passing
+  `offsetMs`/`rate`/`loop` is a hard error naming the fill field instead
+  (references/edit-code.md). Set the fill first, then place the bar — the
+  bar re-derives from the fill on every call.
 
 **Managing what exists**: `t.update(trackId, changes)` (startMs/endMs/
 description/params/blend/driver), `t.clearTrack(trackId)`,
@@ -266,11 +371,11 @@ same edit batch. Static pass, then motion pass.
   start frame must be preserved.
 - One idea per clip. A stinger is 4–8 s: one motion arc (reveal, bloom,
   orbit, dissolve-in), not a storyboard. Name the brand palette and mood.
-- **Never ask a video model to render precise text**, prices, or CTAs — and
-  there is no canvas compositing over video to fix it afterward. Keep
+- **Never ask a video model to render precise text**, prices, or CTAs. Keep
   on-screen text minimal; when crisp type or an exact lockup is the point,
-  design it INTO the start frame (workflow 3) or go vector-native
-  (workflow 4).
+  design it INTO the start frame (workflow 3), go vector-native
+  (workflow 4), or place the clip on an animation canvas and lay real text
+  over it (workflow 6) — the mp4/gif export is the deliverable there.
 - Loops: ask for a seamless loop explicitly and keep the motion contained;
   end-frame models can morph back to the opening frame (pass the start
   image as `--end-image` on a model that supports end frames).

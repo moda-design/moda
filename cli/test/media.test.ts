@@ -13,9 +13,11 @@
 import { afterEach, describe, expect, test } from 'bun:test';
 import { mkdtempSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import { ApiClient } from '../src/api/client.ts';
 import { performMediaModels } from '../src/commands/media.ts';
+
+const MAIN = resolve(import.meta.dir, '../src/main.ts');
 
 let server: ReturnType<typeof Bun.serve> | undefined;
 
@@ -27,6 +29,45 @@ function serve(body: unknown): { base: string } {
   });
   return { base: `http://127.0.0.1:${server.port}` };
 }
+
+/** Capture the outbound JSON body of a one-shot media call driven through the real program. */
+function captureBody(response: unknown): { base: string; calls: Record<string, unknown>[] } {
+  const calls: Record<string, unknown>[] = [];
+  server = Bun.serve({
+    hostname: '127.0.0.1',
+    port: 0,
+    fetch: async (req) => {
+      calls.push((await req.json().catch(() => ({}))) as Record<string, unknown>);
+      return Response.json(response);
+    },
+  });
+  return { base: `http://127.0.0.1:${server.port}`, calls };
+}
+
+async function runCli(args: string[], base: string): Promise<number> {
+  const scratch = mkdtempSync(join(tmpdir(), 'moda-media-cli-'));
+  const proc = Bun.spawn(['bun', MAIN, ...args], {
+    stdout: 'pipe',
+    stderr: 'pipe',
+    env: {
+      ...process.env,
+      MODA_NO_UPDATE_CHECK: '1',
+      MODA_CONFIG_DIR: join(scratch, 'config'),
+      MODA_STATE_DIR: join(scratch, 'state'),
+      MODA_API_KEY: 'moda_live_testkey000000',
+      MODA_API_BASE: base,
+    },
+  });
+  const [code] = await Promise.all([proc.exited, new Response(proc.stdout).text(), new Response(proc.stderr).text()]);
+  return code;
+}
+
+/** Minimal generate-video success envelope — enough for the CLI to render an outcome. */
+const VIDEO_RESULT = {
+  operation: 'media.generate_video',
+  result: { file_id: 'file_01HZX9K2ABCDEFGHJKMNPQRSTV', url: 'https://example.test/clip.mp4' },
+  usage: { credits: 1 },
+};
 
 afterEach(() => {
   server?.stop(true);
@@ -293,6 +334,26 @@ describe('media models — human/JSON model-set parity (gate finding F4)', () =>
     expect(lines.join('\n')).not.toContain('video models:');
   });
 
+  test('an intrinsic-audio model says so instead of implying a knob that cannot be turned off', async () => {
+    const { base } = serve({
+      image_models: [],
+      video_models: [
+        // Gemini Omni Flash / Grok 1.5 / Wan 2.7 shape: audio supported, on by default, NOT controllable.
+        { ...VEO_CARD, id: 'intrinsic', label: 'Intrinsic', generate_audio_controllable: false },
+        { ...VEO_CARD, id: 'controllable', label: 'Controllable', generate_audio_controllable: true },
+        // A server that predates the field must keep the old wording, not gain "always on".
+        { ...VEO_CARD, id: 'legacy', label: 'Legacy' },
+      ],
+      video_model_ids: ['intrinsic', 'controllable', 'legacy'],
+    });
+    const lines = humanLines(await performMediaModels(client(base)));
+    expect(lines.find((l) => l.startsWith('intrinsic'))).toStartWith('intrinsic — Intrinsic  [audio always on; seed]');
+    expect(lines.find((l) => l.startsWith('controllable'))).toStartWith(
+      'controllable — Controllable  [audio yes (on by default); seed]',
+    );
+    expect(lines.find((l) => l.startsWith('legacy'))).toStartWith('legacy — Legacy  [audio yes (on by default); seed]');
+  });
+
   test('audio-off and no-audio models state it on the header line', async () => {
     const { base } = serve({
       image_models: [],
@@ -329,6 +390,48 @@ describe('media models — human/JSON model-set parity (gate finding F4)', () =>
     expect(onDisk.video_models).toEqual(VIDEO_MODELS);
     const lines = humanLines(outcome);
     expect(lines[0]).toBe(`5 models → ${out} (inspect with jq/grep)`);
+  });
+
+  test('generate-video: --reference-video rides the wire as reference_videos', async () => {
+    const { base, calls } = captureBody(VIDEO_RESULT);
+    const code = await runCli(
+      ['media', 'generate-video', '--prompt', 'a slow orbit', '--model', 'seedance-2.0', '--reference-video', 'file_01HZX9K2ABCDEFGHJKMNPQRSTV', '--json'],
+      base,
+    );
+    expect(code).toBe(0);
+    expect(calls[0]?.reference_videos).toEqual(['file_01HZX9K2ABCDEFGHJKMNPQRSTV']);
+  });
+
+  test('generate-video: repeated --reference-video values arrive in order, uncapped by the client', async () => {
+    const { base, calls } = captureBody(VIDEO_RESULT);
+    const code = await runCli(
+      [
+        'media', 'generate-video', '--prompt', 'a slow orbit', '--model', 'seedance-2.0',
+        '--reference-video', 'file_01HZX9K2ABCDEFGHJKMNPQRSTV', 'https://example.test/a.mp4', 'https://example.test/b.mp4',
+        '--json',
+      ],
+      base,
+    );
+    expect(code).toBe(0);
+    // Per-model count caps are the server's to enforce (and to name in its 422) — the CLI must not
+    // pre-judge them, or a model added with a higher cap becomes unreachable from this lane.
+    expect(calls[0]?.reference_videos).toEqual([
+      'file_01HZX9K2ABCDEFGHJKMNPQRSTV',
+      'https://example.test/a.mp4',
+      'https://example.test/b.mp4',
+    ]);
+  });
+
+  test('generate-video: the key is absent entirely when no --reference-video is passed', async () => {
+    const { base, calls } = captureBody(VIDEO_RESULT);
+    const code = await runCli(
+      ['media', 'generate-video', '--prompt', 'a slow orbit', '--model', 'seedance-2.0', '--json'],
+      base,
+    );
+    expect(code).toBe(0);
+    // `extra="forbid"` on GenerateVideoRequest tolerates a missing key but not a null one.
+    expect(calls[0]).not.toHaveProperty('reference_videos');
+    expect(calls[0]?.prompt).toBe('a slow orbit');
   });
 
   test('--output routes the full registry to the file; the envelope keeps counts + a bounded preview', async () => {

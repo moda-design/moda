@@ -30,6 +30,16 @@ canvas_edit(canvas_ref, code, page=PAGE_ID, expected_revision=…)
 - `Math` — a frozen facade (the raw global is withheld).
 - `remove()` — **BLOCKED**: throws, nothing applies. Use `canvas_delete(ids=[…])`.
 
+## Video clips — the fill owns playback, the bar owns placement
+
+A clip reaches a canvas only through `<video src="file_…"/>` markup (references/markup.md): `create('rectangle', {fillVideoSrc})` strips the video props with a `create_video_fill_ignored` warning, because placement has to run the server-side ref resolver.
+
+- **Writable on a placed clip** via `update(id, …)`: `fillVideoTrimStartMs`, `fillVideoTrimEndMs`, `fillVideoMuted`, `fillVideoVolume` (0–1), `fillVideoPlaybackRate` (0.1–4), `fillVideoLoop`. Trim off the readable `fillVideoDurationMs` — "the middle 3 s of this 8 s clip" is one call.
+- `null` clears a numeric field back to its default: `update(id, {fillVideoTrimEndMs: null})` restores the clip's full length.
+- Bad values are ERRORS naming the field and its range, never clamped or dropped — a window outside `[0, fillVideoDurationMs]`, an inverted window (`trimEnd <= trimStart`), an out-of-range volume or rate, or any of these on a node with no video fill. Only the bounds a patch actually writes are range-checked, so a clip left with an out-of-range trim can still be muted or re-rated.
+- `fillVideoSrc`, `fillVideoAssetId`, `fillVideoPosterSrc`, `fillVideoNaturalDimensions`, `fillVideoDurationMs` and `fillVideoHasAudio` are NOT writable — the first four belong to the ref resolver (swapping a source is placement: place a new `<video>`), the last two are facts read off the file.
+- **`t.video(node, {startMs, endMs})`** (`timeline.video`, inside `motion.page(…)` on an animation canvas) places that clip's bar. The bar is the clip's LIFETIME on the page — outside it the node is HIDDEN, not frozen on a poster — and N bars at different `startMs` IS a cut. `endMs` defaults to the trimmed clip's length clamped to the page. One bar per node: calling it again REPLACES that node's bar (also how you retime one). Its only options are `startMs` (alias `at`), `endMs`, `description`; `offsetMs`, `rate` and `loop` are hard errors redirecting to `fillVideoTrimStartMs`, `fillVideoPlaybackRate` and `fillVideoLoop`. Set the fill FIRST — the bar re-derives from it on every call. Drop one with `t.clearTrack(id)`.
+
 ## Tables — `create('table', props)` / `update(id, changes)`
 
 Table structure is the one *shaped* (non-scalar) patch, so a reconciler runs on every table update: it pads a jagged `cells` array, mints missing cell ids, refits `rows`/`columns` to the grid, rewrites `width`/`height` to the axis sums, and remaps header metadata. It repairs and **warns** rather than rejecting — read the warnings.
