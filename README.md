@@ -211,5 +211,7 @@ Integration tests run against a live API base: set `MODA_API_BASE` +
 - [SECURITY.md](SECURITY.md) — how to report a vulnerability. Please don't
   open a public issue for one.
 - Issues are welcome for bugs and rough edges in the skills or the CLI.
+- [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md) — the open-source
+  libraries bundled into the compiled CLI, with their license texts.
 
 Moda itself lives at [moda.app](https://moda.app).
