@@ -21,6 +21,11 @@ how to use it well, and the harness manifests that install both.
 
 ## Install
 
+> **Early access.** Moda for Agents is rolling out workspace by workspace. If
+> `moda doctor` reports your workspace doesn't have API access yet, the
+> install is fine — access just hasn't reached your workspace. Watch
+> [moda.app](https://moda.app) for the open rollout.
+
 Paste this to your agent — it runs everything:
 
 ```
