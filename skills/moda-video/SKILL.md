@@ -113,9 +113,10 @@ allowed-tools: Bash(moda:*), Read, Glob, Grep
 
 1. **Route the lane** — read references/video.md BEFORE anything else:
    generated video (metered `moda media`) for cinematic/photographic
-   motion and "make a video" asks; vector-native (animation canvas or
-   shader fills → `moda export --format mp4|gif --page N`) for crisp type,
-   exact brand geometry, and loops. A video ask IS format words — the
+   motion; vector-native (animation canvas or shader fills → `moda export
+   --format mp4|gif --page N`) for crisp type and exact brand geometry; a
+   composed deliverable (logo animation, teaser, social ad) → the recipes
+   in references/motion-recipes.md. A video ask IS format words — the
    motion file is the deliverable, not a ceremony violation.
 2. **Gather the start assets**: brand kit in play → `moda brand show
    BRAND_REF --json` for durable logo `file_` refs, and LOOK at them first
@@ -126,22 +127,22 @@ allowed-tools: Bash(moda:*), Read, Glob, Grep
    capability cards (bare ids on an older server); route by the strengths
    table in references/video.md; knobs snap and `adjustments` reports what
    ran.
-4. **Spend checkpoint, then generate** (references/video.md): explicit
-   `--duration`, smallest resolution that serves, balance check, one
-   matter-of-fact spend line — then `moda media generate-video` with
-   `--image` / `--reference` / `--end-image` as the workflow dictates.
-5. **Verify — degraded posture**: no frame-inspection verb exists; read
-   `applied`/`adjustments`/`warnings`, view the clip only if your harness
-   has vision, and say so honestly when it can't (references/video.md).
+4. **Draft cheap, verify, then commit** (references/video.md): the ladder is
+   the DEFAULT — draft on `veo-3.1-lite` (4 s, 720p, silent, ~$0.12), read
+   `applied`/`adjustments`/`warnings`, fix the PROMPT, then spend on the
+   hero render. Every pass takes the spend checkpoint: explicit
+   `--duration`, the smallest resolution that serves, one spend line.
+5. **Verify honestly**: no frame-inspection verb exists — view the clip only
+   if your harness has vision, and say so plainly when it can't.
 6. **Enhance and deliver**: `moda media upscale-video` on the winner only;
-   deliver the file path + usage receipt (plus the live canvas link
-   whenever a canvas was involved — link first, always).
+   file path + usage receipt, and the live canvas link FIRST when one exists.
 
 ## References
 
 | Doc | Load when |
 |---|---|
-| references/video.md | always — lanes, models, spend checkpoint, workflows, prompt craft |
+| references/video.md | always — lanes, models, spend checkpoint, draft ladder, workflows, prompt craft |
+| references/motion-recipes.md, references/social.md | a composed deliverable — logo animation, product teaser, social ad (with platform sizes and safe areas) |
 | references/omni-and-media.md | metered-lane rules, video knob semantics, task-lane escalation |
 | references/brand.md | a brand kit exists — logo refs, variant choice, guides |
 | references/export.md | any canvas export (frames, mp4/gif ceremony, --page rules) |

@@ -74,8 +74,8 @@ EXPECTED_REFERENCES: dict[str, list[str]] = {
         "brand", "export", "charts", "omni-and-media",
     ],
     "moda-video": [
-        "video", "markup", "edit-code", "reading-and-verifying", "gotchas", "design-quality",
-        "brand", "export", "charts", "omni-and-media",
+        "video", "motion-recipes", "markup", "edit-code", "reading-and-verifying", "gotchas",
+        "design-quality", "brand", "export", "charts", "omni-and-media", "social",
     ],
 }
 
@@ -92,7 +92,13 @@ REFERENCE_BUDGET_OVERRIDES = {
     # print, since the registry states envelopes and prices but not which model
     # to reach for. Canvas video (markup placement, clip properties, the timeline
     # bar) landed in the same window and belongs in the same file.
-    "video": 420,
+    #
+    # Raised again for the draft ladder — draft on the cheap lane, verify, fix
+    # the prompt, only then pay for the hero render. It is the DEFAULT workflow
+    # for anything user-facing, not an appendix, so it sits in the always-loaded
+    # file next to the spend checkpoint it modifies rather than in
+    # motion-recipes.md, which is loaded only when the ask names a deliverable.
+    "video": 450,
 }
 
 # The 24 markupParser.ts dispatch elements (content is the root).

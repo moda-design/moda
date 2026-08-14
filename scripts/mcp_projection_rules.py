@@ -86,8 +86,8 @@ MCP_REFERENCES: dict[str, list[str]] = {
         "brand", "export", "charts", "omni-and-media",
     ],
     "moda-video": [
-        "video", "markup", "edit-code", "reading-and-verifying", "gotchas", "design-quality",
-        "brand", "export", "charts", "omni-and-media",
+        "video", "motion-recipes", "markup", "edit-code", "reading-and-verifying", "gotchas",
+        "design-quality", "brand", "export", "charts", "omni-and-media", "social",
     ],
 }
 
@@ -388,16 +388,18 @@ PASSAGES["skills/moda-video/SKILL.md"] = [
     (
         "1. **Route the lane** — read references/video.md BEFORE anything else:\n"
         "   generated video (metered `moda media`) for cinematic/photographic\n"
-        "   motion and \"make a video\" asks; vector-native (animation canvas or\n"
-        "   shader fills → `moda export --format mp4|gif --page N`) for crisp type,\n"
-        "   exact brand geometry, and loops. A video ask IS format words — the\n"
+        "   motion; vector-native (animation canvas or shader fills → `moda export\n"
+        "   --format mp4|gif --page N`) for crisp type and exact brand geometry; a\n"
+        "   composed deliverable (logo animation, teaser, social ad) → the recipes\n"
+        "   in references/motion-recipes.md. A video ask IS format words — the\n"
         "   motion file is the deliverable, not a ceremony violation.",
         "1. **Route the lane** — read references/video.md BEFORE anything else:\n"
         "   generated video (the metered media tools) for cinematic/photographic\n"
-        "   motion and \"make a video\" asks; vector-native (animation canvas or\n"
-        "   shader fills → `export(format='mp4'|'gif', page=N)`) for crisp type,\n"
-        "   exact brand geometry, and loops. A video ask IS format words — the\n"
-        "   motion file is the deliverable, not a ceremony violation.",
+        "   motion; vector-native (animation canvas or shader fills →\n"
+        "   `export(format='mp4'|'gif', page=N)`) for crisp type and exact brand\n"
+        "   geometry; a composed deliverable (logo animation, teaser, social ad)\n"
+        "   → the recipes in references/motion-recipes.md. A video ask IS format\n"
+        "   words — the motion file is the deliverable, not a ceremony violation.",
     ),
     (
         "2. **Gather the start assets**: brand kit in play → `moda brand show\n"
@@ -418,23 +420,23 @@ PASSAGES["skills/moda-video/SKILL.md"] = [
         "   in `media_generate_video`'s own description; route by the strengths",
     ),
     (
-        "4. **Spend checkpoint, then generate** (references/video.md): explicit\n"
-        "   `--duration`, smallest resolution that serves, balance check, one\n"
-        "   matter-of-fact spend line — then `moda media generate-video` with\n"
-        "   `--image` / `--reference` / `--end-image` as the workflow dictates.",
-        "4. **Spend checkpoint, then generate** (references/video.md): explicit\n"
-        "   `duration_seconds`, smallest resolution that serves, balance check\n"
-        "   (`quote=true` is the free preflight), one matter-of-fact spend line —\n"
-        "   then `media_generate_video` with `start_image` / `reference_images` /\n"
-        "   `end_image` as the workflow dictates.",
+        "4. **Draft cheap, verify, then commit** (references/video.md): the ladder is\n"
+        "   the DEFAULT — draft on `veo-3.1-lite` (4 s, 720p, silent, ~$0.12), read\n"
+        "   `applied`/`adjustments`/`warnings`, fix the PROMPT, then spend on the\n"
+        "   hero render. Every pass takes the spend checkpoint: explicit\n"
+        "   `--duration`, the smallest resolution that serves, one spend line.",
+        "4. **Draft cheap, verify, then commit** (references/video.md): the ladder is\n"
+        "   the DEFAULT — draft on `veo-3.1-lite` (4 s, 720p, silent, ~$0.12), read\n"
+        "   `applied`/`adjustments`/`warnings`, fix the PROMPT, then spend on the\n"
+        "   hero render. Every pass takes the spend checkpoint: explicit\n"
+        "   `duration_seconds`, the smallest resolution that serves, one spend line\n"
+        "   (`quote=true` is the free preflight).",
     ),
     (
         "6. **Enhance and deliver**: `moda media upscale-video` on the winner only;\n"
-        "   deliver the file path + usage receipt (plus the live canvas link\n"
-        "   whenever a canvas was involved — link first, always).",
-        "6. **Enhance and deliver**: `media_upscale` on the winner only; deliver\n"
-        "   the result link + usage receipt (plus the live canvas link whenever a\n"
-        "   canvas was involved — link first, always).",
+        "   file path + usage receipt, and the live canvas link FIRST when one exists.",
+        "6. **Enhance and deliver**: `media_upscale` on the winner only; the result\n"
+        "   link + usage receipt, and the live canvas link FIRST when one exists.",
     ),
     (
         "| references/export.md | any canvas export (frames, mp4/gif ceremony, --page rules) |",
@@ -1606,5 +1608,166 @@ REFERENCE_PASSAGES["templates"] += [
         "  connectors that predate the template surface do all three. Treat each\n"
         "  exactly like \"no templates\" and move on — do not retry it, and do not\n"
         "  mention it to the user.",
+    ),
+]
+
+# --------------------------------------------------------------------------
+# The finished-cut recipes. Every step is a real call, so nearly every line
+# of this reference moves: the file is a recipe book, not commentary.
+# --------------------------------------------------------------------------
+
+REFERENCE_PASSAGES["motion-recipes"] = [
+    (
+        "`--no-generate-audio` on every draft), Veo 3.1 Fast **$0.10/s**, Veo 3.1",
+        "`generate_audio=false` on every draft), Veo 3.1 Fast **$0.10/s**, Veo 3.1",
+    ),
+    (
+        "it. `moda media models` is the authority when any of that has moved.",
+        "it. The capability cards embedded in `media_generate_video`'s own\ndescription are the authority when any of that has moved.",
+    ),
+    (
+        "1. **Brand first.** Step 0 listed the kits; `moda brand show BRAND_REF --json`\n"
+        "   gives the logo `file_` refs, the palette, and the font families — and you\n"
+        "   LOOK at the logo variants before placing one (references/brand.md). Copy\n"
+        "   hex values from that read, never from memory.",
+        "1. **Brand first.** Step 0 listed the kits; `brand_show(brand_kit_ref)`\n"
+        "   gives the logo `file_` refs, the palette, and the font families — and you\n"
+        "   verify the logo variants before placing one (references/brand.md). Copy\n"
+        "   hex values from that read, never from memory.",
+    ),
+    (
+        "   only on `--category animation`; on any other canvas every `motion` call is",
+        "   only on `category='animation'`; on any other canvas every `motion` call is",
+    ),
+    # --- the four markup blocks and the three edit blocks -----------------
+    (
+        "moda canvas create --name \"Acme stinger\" --size 1920x1080 --pages 1 --category animation\n"
+        "moda canvas read CANVAS_REF          # page short id (p_a) and, after markup, node ids\n",
+        "canvas_create(name='Acme stinger', width=1920, height=1080, category='animation')\n"
+        "canvas_read(canvas_ref)   # page short id (p_a) and, after markup, node ids\n",
+    ),
+    (
+        "moda canvas create --name \"Product teaser\" --size 1920x1080 --pages 1 --category animation",
+        "canvas_create(name='Product teaser', width=1920, height=1080, category='animation')",
+    ),
+    (
+        "moda canvas create --name \"Spring ad — 9:16\" --size 1080x1920 --pages 1 --category animation",
+        "canvas_create(name='Spring ad — 9:16', width=1080, height=1920, category='animation')",
+    ),
+    (
+        "moda canvas markup CANVAS_REF --file - --page p_a --mode replace <<'XML'",
+        "canvas_apply_markup(canvas_ref, page='p_a', mode='replace_page_nodes', markup='''",
+    ),
+    (
+        "moda canvas markup CANVAS_REF --file - --page p_a <<'XML'",
+        "canvas_apply_markup(canvas_ref, page='p_a', markup='''",
+        3,
+    ),
+    ("</content>\nXML\n", "</content>\n''')\n", 4),
+    (
+        "moda canvas edit CANVAS_REF --file - <<'JS'",
+        "canvas_edit(canvas_ref, code='''",
+        3,
+    ),
+    ("});\nJS\n", "});\n''')\n", 3),
+    # --- the exports ------------------------------------------------------
+    (
+        "moda export CANVAS_REF --format gif --page 1 -o stinger.gif",
+        "export(canvas_ref, format='gif', page=1)",
+    ),
+    (
+        "moda export CANVAS_REF --format mp4 --page 1 -o ad-9x16.mp4\n"
+        "moda export CANVAS_REF --format mp4 --page 2 -o ad-1x1.mp4",
+        "export(canvas_ref, format='mp4', page=1)   # the 9:16 page\n"
+        "export(canvas_ref, format='mp4', page=2)   # the 1:1 page",
+    ),
+    (
+        "**7. Deliver.** `moda export CANVAS_REF --format mp4 --page 1 -o teaser.mp4`,",
+        "**7. Deliver.** `export(canvas_ref, format='mp4', page=1)`,",
+    ),
+    (
+        "export per page, since mp4/gif require `--page`:",
+        "export per page, since mp4/gif require `page`:",
+    ),
+    # --- the three generations -------------------------------------------
+    (
+        "moda media generate-video --prompt \"Abstract slow light sweep across a deep navy field, soft volumetric haze, no text, no logos, no people, seamless loop\" \\\n"
+        "  --model veo-3.1-lite --duration 4 --resolution 720p --no-generate-audio -o backdrop-draft.mp4",
+        "media_generate_video(\n"
+        "  prompt='Abstract slow light sweep across a deep navy field, soft volumetric haze, no text, no logos, no people, seamless loop',\n"
+        "  model='veo-3.1-lite', duration_seconds=4, resolution='720p', generate_audio=false)",
+    ),
+    (
+        "moda media generate-video --prompt \"Slow push-in on the product on a matte concrete surface, soft window light, shallow depth of field, no text\" \\\n"
+        "  --model veo-3.1-lite --image file_… --duration 4 --resolution 720p --no-generate-audio -o beat1-draft.mp4",
+        "media_generate_video(\n"
+        "  prompt='Slow push-in on the product on a matte concrete surface, soft window light, shallow depth of field, no text',\n"
+        "  model='veo-3.1-lite', start_image='file_…', duration_seconds=4, resolution='720p', generate_audio=false)",
+    ),
+    (
+        "moda media generate-video --prompt \"Slow vertical drift over sunlit fabric texture, warm morning light, gentle parallax, no text, no faces\" \\\n"
+        "  --model veo-3.1-lite --duration 4 --resolution 720p --aspect-ratio 9:16 --no-generate-audio -o ad-draft.mp4",
+        "media_generate_video(\n"
+        "  prompt='Slow vertical drift over sunlit fabric texture, warm morning light, gentle parallax, no text, no faces',\n"
+        "  model='veo-3.1-lite', duration_seconds=4, resolution='720p', aspect_ratio='9:16', generate_audio=false)",
+    ),
+    # --- the prose that names knobs --------------------------------------
+    (
+        "`moda media upscale-video` if the backdrop is the hero and 1080p is not\n"
+        "enough.",
+        "`media_upscale` if the backdrop is the hero and 1080p is not enough.",
+    ),
+    (
+        "`adjustments`; view it if your harness has vision), fix the prompt if the",
+        "`adjustments`; view it if your environment can), fix the prompt if the",
+    ),
+    (
+        "**1. Get the stills in.** `moda file upload shot-front.jpg` returns a durable\n"
+        "`file_` ref (a local path passed straight to a media flag uploads itself too,\n"
+        "but an explicit upload gives you the ref to reuse across beats).",
+        "**1. Get the stills in.** The `upload` tool returns a durable `file_` ref for\n"
+        "each product still; those refs are what every beat below starts from (an\n"
+        "http(s) image URL also works as a `start_image`).",
+    ),
+    (
+        "`--model seedance-2.0-fast` instead when the beat needs Seedance's controls\n"
+        "in the draft (an `--end-image` morph, a non-16:9 ratio, `--reference` product\n"
+        "boards): it is 80% of Seedance 2.0's price at the same 4–15 s envelope, but\n"
+        "$0.2419/s at 720p is eight times a silent Lite second, so drop to\n"
+        "`--resolution 480p` while drafting",
+        "`model='seedance-2.0-fast'` instead when the beat needs Seedance's controls\n"
+        "in the draft (an `end_image` morph, a non-16:9 ratio, `reference_images`\n"
+        "product boards): it is 80% of Seedance 2.0's price at the same 4–15 s\n"
+        "envelope, but $0.2419/s at 720p is eight times a silent Lite second, so drop\n"
+        "to `resolution='480p'` while drafting",
+    ),
+    (
+        "each result (duration and resolution snap silently), look at the clips if\n"
+        "your harness can, and fix the losing prompts. Re-running an unchanged command\n"
+        "resumes the same render instead of paying twice — a real retake needs a\n"
+        "changed knob (`--seed` where the model takes one, or a changed prompt).",
+        "each result (duration and resolution snap silently), look at the clips if\n"
+        "your environment can, and fix the losing prompts. Re-calling with the SAME\n"
+        "arguments resumes the same render instead of paying twice — a real retake\n"
+        "needs a changed knob (`seed` where the model takes one, or a changed prompt).",
+    ),
+    (
+        "  `--duration`, smallest resolution that serves, one matter-of-fact line",
+        "  `duration_seconds`, smallest resolution that serves, one matter-of-fact line",
+    ),
+]
+
+REFERENCE_PASSAGES["video"] += [
+    (
+        "1. **Draft.** Shortest legal duration, smallest resolution that shows the\n"
+        "   idea, silent wherever silence is a price axis, on the cheap lane:\n"
+        "   `--model veo-3.1-lite --duration 4 --resolution 720p --no-generate-audio`\n"
+        "   bills $0.03/s — a 4 s look for $0.12, against $1.60 for the same idea\n"
+        "   rendered 8 s at $0.20/s on Veo 3.1.",
+        "1. **Draft.** Shortest legal duration, smallest resolution that shows the\n"
+        "   idea, silent wherever silence is a price axis, on the cheap lane:\n"
+        "   `model='veo-3.1-lite', duration_seconds=4, resolution='720p',\n"
+        "   generate_audio=false` bills $0.03/s — a 4 s look for $0.12, against\n"
+        "   $1.60 for the same idea rendered 8 s at $0.20/s on Veo 3.1.",
     ),
 ]
