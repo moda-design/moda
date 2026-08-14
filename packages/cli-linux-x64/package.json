@@ -1,6 +1,6 @@
 {
   "name": "@moda-design/cli-linux-x64",
-  "version": "0.14.0",
+  "version": "0.15.0",
   "description": "moda CLI binary for linux-x64. Installed automatically by the 'moda' wrapper package.",
   "license": "Apache-2.0",
   "repository": "github:moda-design/moda",
