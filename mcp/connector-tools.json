@@ -1,5 +1,5 @@
 {
-  "comment": "The connector tool roster the MCP-flavored skills projection is allowed to teach. `live` mirrors backend/moda_connector/tools/__init__.py MANIFEST on nullframe-studio origin/main — including tools the skills don't currently teach (load_skill, ask_expert, drive_delete), so the output scanner accepts any manifest name and `audit-server` proves the whole roster against the real manifest. The surface-parity wave (studio #9466) is MERGED: its names are live and were reconciled here (drive_organize replaced the drive_mkdir/move/visibility guesses; canvas_create's template param landed as template_canvas_id; file_show did not ship — file bytes stay app-side). If a manifest name ever changes, rename it here and in scripts/mcp_projection_rules.py in the same commit.",
+  "comment": "The connector tool roster the MCP-flavored skills projection is allowed to teach. `live` mirrors backend/moda_connector/tools/__init__.py MANIFEST on nullframe-studio origin/main — including tools the skills don't currently teach (load_skill, ask_expert, drive_delete), so the output scanner accepts any manifest name and `audit-server` proves the whole roster against the real manifest. The surface-parity wave (studio #9466) is MERGED: its names are live and were reconciled here (drive_organize replaced the drive_mkdir/move/visibility guesses; canvas_create's template param landed as template_canvas_id; file_show did not ship — file bytes stay app-side). If a manifest name ever changes, rename it here and in scripts/mcp_projection_rules.py in the same commit. `media_video_frames` (the video verify lane) is pending-server until studio #9603 merges — the projection teaches it because the CLI verb it mirrors ships here first; move it to `live` when that PR lands.",
   "live": [
     "moda_bootstrap",
     "load_skill",
@@ -33,7 +33,9 @@
     "site_list",
     "site_show"
   ],
-  "pending_server": [],
+  "pending_server": [
+    "media_video_frames"
+  ],
   "pending_params": {},
   "omitted_families": {
     "site (write)": "Hosted-site authoring/publishing is app-only on this surface; moda-website routes to moda.app. Site READS are live via site_list/site_show.",

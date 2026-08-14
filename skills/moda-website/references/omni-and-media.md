@@ -14,6 +14,7 @@ moda media generate-video --prompt "..." --model M [--duration S] [--aspect-rati
 moda media remove-background FILE_REF|URL|PATH
 moda media upscale FILE_REF|URL|PATH [--scale 2|4]
 moda media upscale-video FILE_REF|URL|PATH [--resolution 720p|1080p|1440p|2160p]
+moda media video-frames FILE_REF|PATH [--count N | --timestamps MS...] [-o DIR]   # FREE
 ```
 
 **`moda media models` is the capability source**: each model's supported aspect ratios, resolution tiers, durations, and extra `--model-params` come from it — read it before passing per-model knobs; never hardcode capabilities from memory.
@@ -48,6 +49,8 @@ Results return durable refs that feed markup `image(...)` fills and `src` attrib
 - Requested duration/resolution/shape SNAP to the nearest supported value; the result reports what was `applied` and each `adjustment` — read them before describing the output. Snapping can round upward and cost more.
 - Never ask a video model to render precise text, prices, or CTA/legal copy. Keep on-screen text minimal, design exact text into the start frame, go vector-native, or composite over the clip on an animation canvas and export mp4/gif (the moda-video skill owns all three moves).
 - There is no video-to-video editing, and reference VIDEO input exists only on the models whose cards declare it. A canvas DOES take video via `<video src="file_…"/>` markup, but its static exports render blank (see gotchas.md).
+- **Look at what you generated.** `moda media video-frames FILE_REF -o frames/` samples still frames out of a clip and writes them where you can see them — FREE, uncharged, nothing added to the library. A `file_` ref is not an image: this is the only way to know a render matches the brief, so run it before describing or delivering a generated clip. `--count N` (1–8) surveys evenly, `--timestamps MS...` inspects named moments (one or the other, never both), and it reads team files only — a local path uploads itself first, a remote URL does not. An empty frame list means Moda could not DECODE the file, not that the video is bad; a `frames_partial` warning means you saw only part of the clip. The moda-video skill owns the full loop.
+- **Several drafts at once — the best-of-N pattern.** `moda media generate-video --no-wait` submits the render and returns a `task_id` immediately instead of holding the call open for minutes, so N drafts can run in parallel instead of one after another. Collect each with `moda task status TASK_REF --wait`, frame-check them, pick the direction that worked, and render only that one at final length/resolution on the model the ask deserves. Nothing is charged until a poll collects a finished video — an abandoned task costs nothing — and a background render takes durable inputs only (`file_` refs or local paths, never an http(s) URL), because collection re-resolves them minutes later. A failed or canceled render still exits 0: read the `status`.
 
 ## Imagery is a default quality lever
 

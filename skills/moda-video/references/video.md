@@ -203,13 +203,13 @@ throwaway clip.
    Reference-guided (`--reference`) fits when the logo should GUIDE style
    rather than be frame one.
 3. Spend checkpoint, generate, read `applied`/`adjustments`.
-4. Deliver the file path + receipt; offer `moda media upscale-video` for
-   the final cut.
+4. Frame-check it with `moda media video-frames`, then deliver the file
+   path + receipt; offer `moda media upscale-video` for the final cut.
 
 **2. Quick text-to-video** — a prompt-only clip: registry pick (default
 model unless the ask demands quality/length/control), spend checkpoint,
 `moda media generate-video --prompt "…" --model M --duration N -o clip.mp4`,
-verify, deliver. Go direct — no concept fan-out on a simple ask.
+frame-check, deliver. Go direct — no concept fan-out on a simple ask.
 
 **3. Canvas frame → motion** — the canvas-native bridge no raw video tool
 has: design the EXACT first frame with full brand and typography control,
@@ -416,20 +416,30 @@ same edit batch. Static pass, then motion pass.
   end-frame models can morph back to the opening frame (pass the start
   image as `--end-image` on a model that supports end frames).
 
-## Verifying video — the degraded posture
+## Verifying video — look at the frames
 
-There is NO frame-inspection verb on this surface. Verification degrades —
-it never disappears:
+`moda media video-frames FILE_REF -o frames/` samples still frames out of a
+clip and writes them where you can LOOK at them. FREE, and the only way to
+see what a render actually made — a `file_` ref is not an image. Never tell
+a user a generated clip is right without looking first.
 
-- Download the result (`-o`), and read `applied`, `adjustments`, and
-  `warnings` before describing the output — snapping may have changed
+- The loop is generate → frames → judge them against the brief →
+  regenerate with a revised prompt, or accept. Read `applied`,
+  `adjustments`, and `warnings` in the same pass: snapping may have changed
   duration, resolution, or shape.
-- Reviewing the pixels assumes a harness that can view media. If yours can
-  (extract stills/frames with local tooling and LOOK), review the first
-  frame, one mid frame, and the last. If it cannot, say so once — "I can't
-  view the clip in this environment; verified the applied parameters and
-  left the visual check to you" — and never claim you watched what you
-  could not see (same rule as references/reading-and-verifying.md).
+- `--count N` (1–8, default 4) surveys the clip evenly, first and last
+  frame always included; `--timestamps MS…` inspects moments you name, read
+  off the `duration_ms` the previous call reported. One or the other.
+- An EMPTY frame list (`no_frames_decoded`) means Moda could not DECODE the
+  file, NOT that the video is bad — never regenerate on it. A
+  `frames_partial` warning means you saw only PART of the clip: judge what
+  those frames show, say so, and sample again before calling it right.
+- Looking still needs a harness with vision. If yours has none, say so once
+  — "I can't view the frames here; verified the applied parameters and left
+  the visual check to you" — and never claim you watched what you could not
+  see (references/reading-and-verifying.md).
+- Several drafts at once, each frame-checked before you commit to one, is
+  the `--no-wait` pattern in references/omni-and-media.md.
 - Canvas-motion exports: a screenshot shows ONE static frame — check
   layout/brand there, and state that the motion itself needs eyes on the
   mp4/gif or the live canvas.

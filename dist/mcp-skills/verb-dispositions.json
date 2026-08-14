@@ -215,6 +215,10 @@
       "target": "`media_upscale(kind='video')`",
       "status": "folded"
     },
+    "moda media video-frames": {
+      "target": "`media_video_frames`",
+      "status": "pending-server"
+    },
     "moda org current": {
       "target": "`moda_bootstrap`",
       "status": "replaced"

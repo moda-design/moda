@@ -98,6 +98,10 @@ const SEMANTICS: Record<string, VerbSemantics> = {
   'file show': {},
   'last-error': {},
   'media models': {},
+  // The one FREE verb in the media lane: it decodes a file the caller already owns, mints
+  // nothing, and is charged nothing (`usage.class: "deterministic"`). Marking it metered would
+  // steer every harness that gates on the marker away from the verify step.
+  'media video-frames': {},
   'media upscale-video': { metered: true, mutating: true },
   'org current': {},
   'org list': {},

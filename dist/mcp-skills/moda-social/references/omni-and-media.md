@@ -12,6 +12,7 @@ media_generate_video(prompt, model, duration_seconds=…, aspect_ratio=…, reso
                      reference_images=[…], model_params=…)
 media_upscale(source, kind='image', scale=2|4)
 media_upscale(source, kind='video', target_resolution='720p'|'1080p'|'1440p'|'2160p')
+media_video_frames(video, count=…, timestamps_ms=[…])   # FREE
 ```
 
 Generative image editing and background removal ride `media_generate_image`: pass the image in `source_images` and describe the complete edit ("remove the background" included).
@@ -48,6 +49,8 @@ Results return durable refs that feed markup `image(...)` fills and `src` attrib
 - Requested duration/resolution/shape SNAP to the nearest supported value; the result reports what was `applied` and each `adjustment` — read them before describing the output. Snapping can round upward and cost more.
 - Never ask a video model to render precise text, prices, or CTA/legal copy. Keep on-screen text minimal, design exact text into the start frame, go vector-native, or composite over the clip on an animation canvas and export mp4/gif (the moda-video skill owns all three moves).
 - There is no video-to-video editing, and reference VIDEO input exists only on the models whose cards declare it. A canvas DOES take video via `<video src="file_…"/>` markup, but its static exports render blank (see gotchas.md).
+- **Look at what you generated.** `media_video_frames(video='file_…')` samples still frames out of a clip and returns them as images you can actually LOOK at. FREE, uncharged, and nothing is added to the library. A `file_` ref is not an image: this is the only way to know a render matches the brief, so call it before describing or delivering a generated clip. `count` (1–8) surveys the clip evenly, `timestamps_ms` inspects moments you name (one or the other, never both), and it takes team files only — upload first, an http(s) URL is refused. An empty frame list means Moda could not DECODE the file, not that the video is bad; a `frames_partial` warning means you saw only part of the clip. The moda-video skill owns the full loop.
+- **Several drafts at once — the best-of-N pattern.** `media_generate_video(…, wait=false)` submits the render and hands back a task handle immediately instead of holding the call open for minutes, so N drafts can run in parallel instead of one after another. Collect each with `task_status(task_ref)` — poll no faster than the `retry_after_seconds` it reports — then frame-check them, pick the direction that worked, and render only that one at final length/resolution on the model the ask deserves. Nothing is charged until a poll collects a finished video, so an abandoned task costs nothing; a background render takes durable `file_` refs only, never an http(s) URL, because collection re-resolves its inputs minutes later. A render the provider gave up on comes back as a terminal status rather than an error — read the `status`.
 
 ## Imagery is a default quality lever
 

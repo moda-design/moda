@@ -7,7 +7,7 @@
  * verbs return `result`; every response carries the metered usage receipt.
  */
 import { mkdirSync, writeFileSync } from 'node:fs';
-import { dirname } from 'node:path';
+import { dirname, join } from 'node:path';
 import { existsSync } from 'node:fs';
 import type { Command } from 'commander';
 import type { ApiClient } from '../api/client.ts';
@@ -19,8 +19,14 @@ import type { CommandOutcome } from '../output/emit.ts';
 import { PREVIEW_ITEMS, writeResultFile } from '../output/resultFile.ts';
 import { addGlobalFlags, authedClient, buildInvocation, metaBlock, wrapAction, type Invocation } from './runtime.ts';
 import { parseSize } from './canvasShared.ts';
+import { detectImageFormat, resolveScreenshotPath } from './screenshotFiles.ts';
 
 const MEDIA_TIMEOUT_MS = 600_000;
+/** A frame read decodes an existing file — it never waits on a provider render. */
+const FRAMES_TIMEOUT_MS = 120_000;
+/** Server bounds (backend app/core/utils/video_frames.py MIN/MAX_FRAME_COUNT). */
+const MIN_FRAME_COUNT = 1;
+const MAX_FRAME_COUNT = 8;
 
 export function registerMedia(program: Command): void {
   const media = program.command('media').description('metered media generation — burns Moda credits, receipts on every response');
@@ -97,7 +103,7 @@ export function registerMedia(program: Command): void {
   addGlobalFlags(
     media
       .command('generate-video')
-      .description('generate a video (metered; the provider render runs within this call)')
+      .description('generate a video (metered; the render runs inside this call unless --no-wait)')
       .requiredOption('--prompt <prompt>', 'generation prompt')
       .requiredOption('--model <model>', 'model id (see: moda media models)')
       .option('--image <ref>', 'first-frame image: file_ ref, URL, or local path')
@@ -120,11 +126,20 @@ export function registerMedia(program: Command): void {
       )
       .option('--seed <n>', 'deterministic seed', (v: string) => Number.parseInt(v, 10))
       .option('--model-params <json>', 'per-model extra params as a JSON object', parseModelParams)
+      .option(
+        '--no-wait',
+        'submit the render and return a task_id immediately instead of holding the call open for ' +
+          'minutes — poll it with `moda task status TASK_REF [--wait]`. Nothing is charged until a ' +
+          'poll collects the finished video, and every input must be a file_ ref or a local path ' +
+          '(no http(s) URLs). This is how you run several drafts at once',
+      )
       .option('-o, --output <path>', 'download the artifact to a local file'),
   ).action(
     wrapAction(async (_args, opts, cmd) => {
       const inv = buildInvocation(cmd);
-      const { client } = await authedClient(inv, MEDIA_TIMEOUT_MS);
+      const background = opts.wait === false;
+      if (background) rejectRemoteInputsForBackground(opts);
+      const { client } = await authedClient(inv, background ? FRAMES_TIMEOUT_MS : MEDIA_TIMEOUT_MS);
       const payload = {
         prompt: opts.prompt as string,
         model: opts.model as string,
@@ -151,8 +166,50 @@ export function registerMedia(program: Command): void {
         ...(typeof opts.generateAudio === 'boolean' ? { generate_audio: opts.generateAudio } : {}),
         ...(typeof opts.seed === 'number' && Number.isFinite(opts.seed) ? { seed: opts.seed } : {}),
         ...(opts.modelParams !== undefined ? { model_params: opts.modelParams } : {}),
+        // Sent ONLY to ask for the background lane. `wait: true` is the server default, and the
+        // request model forbids unknown fields — a server predating #9603 would 422 on the key
+        // even when it carries the value it already implements.
+        ...(background ? { wait: false } : {}),
       };
+      if (background) {
+        // `-o` names a file for an artifact that does not exist yet. Silently ignoring it would
+        // leave a run believing the clip is on disk; say where the file actually comes from.
+        if (typeof opts.output === 'string') {
+          inv.note('--no-wait has no artifact to download yet — collect it first, then: moda file download FILE_REF -o …');
+        }
+        return startBackgroundVideo(client, inv, payload);
+      }
       return mediaCall(client, inv, 'media.generate_video', endpoints.mediaGenerateVideo(), payload, opts.output as string | undefined);
+    }),
+  );
+
+  addGlobalFlags(
+    media
+      .command('video-frames <ref_or_path>')
+      .description('sample still frames from a video and LOOK at them (free) — closes the generate loop')
+      .option('--count <n>', `frames sampled evenly across the clip, ${MIN_FRAME_COUNT}-${MAX_FRAME_COUNT} (default 4; first and last always included)`, parseFrameCount)
+      .option(
+        '--timestamps <ms...>',
+        `exact moments to sample, in milliseconds (max ${MAX_FRAME_COUNT}) — read them off the ` +
+          'duration_ms a previous call reported. Out-of-range values clamp to the clip. Cannot be combined with --count',
+        parseTimestampMs,
+      )
+      .option('-o, --output <path>', 'write the frames to disk: output file (single frame) or directory'),
+  )
+    .addHelpText(
+      'after',
+      '\nExamples:\n  moda media video-frames file_123\n  moda media video-frames file_123 --count 6 -o frames/\n  moda media video-frames file_123 --timestamps 0 2500 -o frames/\n\nFree, and the only way to see what a generated clip contains — a file_ ref is\nnot an image. An empty frames list means Moda could not DECODE the file, not\nthat the video is bad: never regenerate on it. Canvas pages: moda canvas\nscreenshot.\n',
+    )
+    .action(
+    wrapAction(async (args, opts, cmd) => {
+      const inv = buildInvocation(cmd);
+      const { client } = await authedClient(inv, FRAMES_TIMEOUT_MS);
+      return performVideoFrames(client, inv, {
+        input: args[0] as string,
+        count: opts.count as number | undefined,
+        timestampsMs: opts.timestamps as number[] | undefined,
+        output: opts.output as string | undefined,
+      });
     }),
   );
 
@@ -437,6 +494,247 @@ function idList(value: unknown): string[] {
   return (Array.isArray(value) ? value : [])
     .map((entry) => (typeof entry === 'string' ? entry : str(asObject(entry), 'id')))
     .filter((id): id is string => id !== undefined && id.length > 0);
+}
+
+/**
+ * `moda media video-frames` — the verify lane (server: POST /v1/media/video-frames, studio #9603).
+ *
+ * A READ, not a generation: uncharged (`usage.class: "deterministic"`), nothing is minted in the
+ * team's library, and the frames come back inline as JPEG data URLs the way the canvas screenshot
+ * lane returns page captures. It exists because every generate verb hands back a `file_` ref no
+ * model can see; this is the only verb on the surface that returns pixels of a video.
+ */
+export async function performVideoFrames(
+  client: ApiClient,
+  inv: Invocation,
+  options: { input: string; count?: number; timestampsMs?: number[]; output?: string },
+): Promise<CommandOutcome> {
+  if (options.count !== undefined && options.timestampsMs !== undefined) {
+    // The server rejects the pair (422) rather than picking one; fail it locally with the reason,
+    // before spending a round trip (and before a local path uploads itself).
+    throw CliError.usage(
+      'Pass --count OR --timestamps, not both.',
+      'An explicit list of moments is its own count — drop --count.',
+    );
+  }
+  // Team files only. The generate verbs take a remote URL because a render needs source footage;
+  // a frame READ that took one would be an open decode-anything-on-the-internet endpoint, so the
+  // server refuses it (422). Say that here rather than spending the round trip to hear it.
+  if (options.input.startsWith('http://') || options.input.startsWith('https://')) {
+    throw CliError.usage(
+      `video-frames reads team files only — '${options.input}' is a URL.`,
+      'Bring it into the library first: moda file upload --from-url URL (or pass a local path, which uploads itself).',
+    );
+  }
+  const video = await mediaInput(options.input, client);
+  // Wire field is `video`, matching the connector tool's argument and the `upscale-video`
+  // sibling — the request model is `extra="forbid"`, so the name is not a tolerant guess.
+  const payload = {
+    video,
+    ...(options.count !== undefined ? { count: options.count } : {}),
+    ...(options.timestampsMs !== undefined ? { timestamps_ms: options.timestampsMs } : {}),
+  };
+  const response = await client
+    .request({ method: 'POST', path: endpoints.mediaVideoFrames(), body: payload, timeoutMs: FRAMES_TIMEOUT_MS })
+    .catch((err: unknown) =>
+      rethrowRoutePredates(
+        err,
+        'This server predates the video-frames endpoint.',
+        'It ships with the next backend deploy; until then read applied/adjustments/warnings and say the visual check is outstanding.',
+      ),
+    );
+  const root = asObject(response.body);
+  const videoInfo = asObject(root.video);
+  const frames = (Array.isArray(root.frames) ? root.frames : []).map(asObject);
+  const warnings = Array.isArray(root.warnings) ? root.warnings.map(asObject) : [];
+  const written = options.output !== undefined ? writeFrames(frames, options.output, inv) : [];
+  const durationMs = num(videoInfo, 'duration_ms');
+  const width = num(videoInfo, 'width');
+  const height = num(videoInfo, 'height');
+  const hasAudio = videoInfo.has_audio;
+  return {
+    body: {
+      ok: true,
+      operation: 'media.video_frames',
+      // Free by contract — the receipt says `deterministic`, and nothing here burns credits.
+      metered: false,
+      ...root,
+      ...(written.length > 0 ? { output: written.map((frame) => frame.path) } : {}),
+      meta: { ...asObject(root.meta), ...metaBlock({ requestId: response.requestId, durationMs: response.durationMs }) },
+    },
+    human: (write) => {
+      const facts = [
+        durationMs !== undefined ? `${(durationMs / 1000).toFixed(1)}s` : 'duration unknown',
+        width !== undefined && height !== undefined ? `${width}x${height}` : 'size unknown',
+        typeof hasAudio === 'boolean' ? `audio: ${hasAudio ? 'yes' : 'no'}` : 'audio unknown',
+      ];
+      write(`${frames.length} frame(s) — ${facts.join(' · ')} (free)`);
+      // The moments themselves, so a follow-up --timestamps ask is written off real numbers.
+      if (frames.length > 0 && written.length === 0) {
+        write(`frames at: ${frames.map((frame) => frameSeconds(frame)).join(', ')}`);
+      }
+      for (const frame of written) write(`${frame.label} → ${frame.path}`);
+      for (const warning of warnings) {
+        write(`warning: ${str(warning, 'message') ?? str(warning, 'code') ?? JSON.stringify(warning)}`);
+      }
+      if (frames.length > 0 && options.output === undefined) {
+        // Without -o the bytes stay in the JSON envelope, which no terminal reader can see. Say
+        // where to send them rather than letting a run conclude "verified" from a summary line.
+        write('(re-run with -o DIR to write the frames and LOOK at them)');
+      }
+    },
+    exitCode: EXIT_OK,
+  };
+}
+
+function frameSeconds(frame: JsonObject): string {
+  const ms = num(frame, 'timestamp_ms');
+  return ms !== undefined ? `${(ms / 1000).toFixed(1)}s` : '?';
+}
+
+/**
+ * Write the sampled frames to disk with the screenshot lane's naming rules: `-o` is the output
+ * FILE when the strip holds exactly one frame, and a directory otherwise (`0500ms.jpg`, sorted
+ * by name because the timestamp is zero-padded). Format comes from the bytes, not the extension.
+ */
+function writeFrames(
+  frames: JsonObject[],
+  output: string,
+  inv: Invocation,
+): { label: string; path: string }[] {
+  const written: { label: string; path: string }[] = [];
+  frames.forEach((frame, index) => {
+    const dataUrl = str(frame, 'data_url');
+    if (dataUrl === undefined) return;
+    const comma = dataUrl.indexOf(',');
+    const bytes = new Uint8Array(Buffer.from(comma >= 0 ? dataUrl.slice(comma + 1) : dataUrl, 'base64'));
+    const format = detectImageFormat({
+      bytes,
+      declaredFormat: str(frame, 'mime_type'),
+      dataUrlMime: comma >= 0 ? /^data:([^;,]+)/.exec(dataUrl)?.[1] : undefined,
+    });
+    const ms = num(frame, 'timestamp_ms');
+    const label = ms !== undefined ? `${String(ms).padStart(6, '0')}ms` : `frame-${index + 1}`;
+    const named = resolveScreenshotPath({
+      format,
+      explicitPath: frames.length === 1 ? output : undefined,
+      stem: join(output, label),
+    });
+    if (named.warning !== undefined) inv.note(named.warning);
+    mkdirSync(dirname(named.path), { recursive: true });
+    writeFileSync(named.path, bytes);
+    written.push({ label, path: named.path });
+  });
+  return written;
+}
+
+/**
+ * `--no-wait` start: the render is submitted and the call returns a task handle instead of
+ * holding the request open for the whole render. Nothing is charged here — the charge lands on
+ * the poll that collects the finished video, so an abandoned task costs nothing.
+ */
+async function startBackgroundVideo(
+  client: ApiClient,
+  inv: Invocation,
+  payload: Record<string, unknown>,
+): Promise<CommandOutcome> {
+  const response = await client
+    .request({
+      method: 'POST',
+      path: endpoints.mediaGenerateVideo(),
+      body: payload,
+      idempotency: {
+        command: 'media.generate_video',
+        canvas: '',
+        expectedRevision: undefined,
+        payload: JSON.stringify(payload),
+      },
+      timeoutMs: FRAMES_TIMEOUT_MS,
+    })
+    // A server predating #9603 rejects the unknown `wait` key with a 422 (the request model
+    // forbids extras) rather than a route 404 — so rethrowRoutePredates cannot see it. Name the
+    // real cause only when the rejection is actually about this field.
+    .catch((err: unknown) => {
+      throw backgroundUnsupported(err);
+    });
+  const root = asObject(response.body);
+  const taskId = str(root, 'task_id');
+  const retryAfterMs = num(root, 'retry_after_ms');
+  return {
+    body: {
+      ok: true,
+      operation: 'media.generate_video',
+      metered: true,
+      ...root,
+      meta: { ...asObject(root.meta), ...metaBlock({ requestId: response.requestId, durationMs: response.durationMs }) },
+    },
+    human: (write) => {
+      write(
+        `render started: ${taskId ?? '(no task id)'} (${str(root, 'status') ?? 'queued'}` +
+          `${retryAfterMs !== undefined ? `, poll in ~${Math.round(retryAfterMs / 1000)}s` : ''})`,
+      );
+      write(`nothing charged yet — collect it: moda task status ${taskId ?? 'TASK_REF'} --wait`);
+      for (const entry of Array.isArray(root.adjustments) ? root.adjustments : []) {
+        write(`adjusted: ${typeof entry === 'string' ? entry : JSON.stringify(entry)}`);
+      }
+    },
+    exitCode: EXIT_OK,
+  };
+}
+
+/** Re-throw a `--no-wait` rejection, naming the server-predates cause when that is what it is. */
+function backgroundUnsupported(err: unknown): unknown {
+  if (!(err instanceof CliError) || err.fields.status !== 422 || err.fields.hint !== undefined) return err;
+  const evidence = `${err.fields.message} ${JSON.stringify(err.fields.details ?? {})}`;
+  if (!/\bwait\b/.test(evidence)) return err;
+  return new CliError({
+    ...err.fields,
+    hint: 'This server predates background video renders — drop --no-wait and let the render run inside the call.',
+  });
+}
+
+/**
+ * `--no-wait` takes durable inputs only. Collection re-resolves the inputs minutes later, and a
+ * remote URL can expire, rotate, or serve different bytes by then — so the server refuses one
+ * (422). Local paths are fine: they upload themselves to a `file_` ref before the call.
+ */
+function rejectRemoteInputsForBackground(opts: Record<string, unknown>): void {
+  const inputs = [
+    opts.image,
+    opts.endImage,
+    ...(Array.isArray(opts.reference) ? opts.reference : []),
+    ...(Array.isArray(opts.referenceVideo) ? opts.referenceVideo : []),
+  ].filter((value): value is string => typeof value === 'string');
+  const remote = inputs.filter((value) => value.startsWith('http://') || value.startsWith('https://'));
+  if (remote.length === 0) return;
+  throw CliError.usage(
+    `--no-wait takes durable inputs only, but ${remote.join(', ')} ${remote.length === 1 ? 'is' : 'are'} a remote URL.`,
+    'A background render re-resolves its inputs when it is collected, and a URL can change by then. ' +
+      'Upload them first (moda file upload --from-url URL) and pass the file_ refs, or drop --no-wait.',
+  );
+}
+
+function parseFrameCount(value: string): number {
+  const parsed = Number.parseInt(value, 10);
+  if (!/^\d+$/.test(value.trim()) || parsed < MIN_FRAME_COUNT || parsed > MAX_FRAME_COUNT) {
+    throw CliError.usage(
+      `Invalid --count value '${value}' — expected an integer between ${MIN_FRAME_COUNT} and ${MAX_FRAME_COUNT}.`,
+    );
+  }
+  return parsed;
+}
+
+/** Variadic collector: commander calls this once per value with the accumulated list. */
+function parseTimestampMs(value: string, previous: number[] | undefined): number[] {
+  const parsed = Number.parseInt(value, 10);
+  if (!/^\d+$/.test(value.trim())) {
+    throw CliError.usage(`Invalid --timestamps value '${value}' — expected a whole number of milliseconds.`);
+  }
+  const list = [...(previous ?? []), parsed];
+  if (list.length > MAX_FRAME_COUNT) {
+    throw CliError.usage(`--timestamps takes at most ${MAX_FRAME_COUNT} moments.`);
+  }
+  return list;
 }
 
 function parseNumImages(value: string): number {

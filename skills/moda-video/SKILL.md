@@ -127,13 +127,13 @@ allowed-tools: Bash(moda:*), Read, Glob, Grep
    capability cards (bare ids on an older server); route by the strengths
    table in references/video.md; knobs snap and `adjustments` reports what
    ran.
-4. **Draft cheap, verify, then commit** (references/video.md): the ladder is
-   the DEFAULT — draft on `veo-3.1-lite` (4 s, 720p, silent, ~$0.12), read
-   `applied`/`adjustments`/`warnings`, fix the PROMPT, then spend on the
-   hero render. Every pass takes the spend checkpoint: explicit
-   `--duration`, the smallest resolution that serves, one spend line.
-5. **Verify honestly**: no frame-inspection verb exists — view the clip only
-   if your harness has vision, and say so plainly when it can't.
+4. **Draft cheap, verify, then commit** (references/video.md): the ladder
+   is the DEFAULT — draft on `veo-3.1-lite` (4 s, 720p, silent, ~$0.12),
+   fix the PROMPT, then spend on the hero render. Every pass: explicit
+   `--duration`, smallest resolution that serves, one spend line.
+5. **Look at what you made** — `moda media video-frames file_… -o frames/`
+   is FREE and the only way to SEE a render: judge the frames against the
+   brief, regenerate or accept; `applied`/`warnings` too — no claimed look.
 6. **Enhance and deliver**: `moda media upscale-video` on the winner only;
    file path + usage receipt, and the live canvas link FIRST when one exists.
 
