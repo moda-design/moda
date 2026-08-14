@@ -126,6 +126,7 @@
       "files": [
         "moda-video/SKILL.md",
         "moda-video/references/video.md",
+        "moda-video/references/motion-recipes.md",
         "moda-video/references/markup.md",
         "moda-video/references/edit-code.md",
         "moda-video/references/reading-and-verifying.md",
@@ -134,7 +135,8 @@
         "moda-video/references/brand.md",
         "moda-video/references/export.md",
         "moda-video/references/charts.md",
-        "moda-video/references/omni-and-media.md"
+        "moda-video/references/omni-and-media.md",
+        "moda-video/references/social.md"
       ]
     },
     {

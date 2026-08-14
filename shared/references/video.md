@@ -162,6 +162,34 @@ same command resumes the existing provider render instead of paying twice
 (the CLI says so when it happens). A deliberate retake needs a changed
 knob — tweak the prompt or pass `--seed` on models that accept one.
 
+## The draft ladder — iterate cheap, verify, commit
+
+One-shotting the hero model is the expensive mistake. For anything a user
+will see, the DEFAULT workflow is three passes, not one:
+
+1. **Draft.** Shortest legal duration, smallest resolution that shows the
+   idea, silent wherever silence is a price axis, on the cheap lane:
+   `--model veo-3.1-lite --duration 4 --resolution 720p --no-generate-audio`
+   bills $0.03/s — a 4 s look for $0.12, against $1.60 for the same idea
+   rendered 8 s at $0.20/s on Veo 3.1. Seedance 2.0 Fast is this same move
+   inside the Seedance family (80% of 2.0's price, the same controls and
+   reference paths) when the draft needs an end frame, a ratio off 16:9,
+   or reference boards.
+2. **Verify, then FIX — don't escalate.** Read `applied`, `adjustments` and
+   `warnings`; look at the clip if your harness can (the degraded posture
+   below). A draft that missed is nearly always a PROMPT problem, so change
+   the prompt and re-draft on the cheap lane. Stepping up a tier to fix a
+   badly-specified shot buys a sharper version of the wrong clip.
+3. **Commit.** Only the direction that survived, at the length and
+   resolution the deliverable actually needs, on the model the ask deserves.
+
+This is not an optional extra. A wrong hero render costs an order of
+magnitude more than a wrong draft and takes longer to come back, and the
+loop is what makes a composed cut affordable at all — recipe 2 in
+references/motion-recipes.md drafts a whole three-beat teaser for $0.36.
+Skip the ladder only when the user named a specific model and a one-off
+throwaway clip.
+
 ## Workflows
 
 **1. Brand stinger** — "a short video with our logo" (the classic ask):
@@ -233,6 +261,12 @@ a cut, over generated footage.
 4. Deliver `moda export CANVAS_REF --format mp4 --page N` plus the live
    link. Do NOT deliver a png/pdf of a video-filled page — it renders the
    clip blank today (`video_poster_unavailable`); say so if asked for one.
+
+**7. Finished cuts** — a logo animation, a product teaser, a social ad: the
+composed, branded DELIVERABLE rather than a clip, which is where this
+surface beats a bare video model. Those are recipes 1–3 in
+references/motion-recipes.md, each running the draft ladder end to end with
+real budgets. Load that file the moment the ask names a deliverable.
 
 ## The motion timeline API — author, don't probe
 
