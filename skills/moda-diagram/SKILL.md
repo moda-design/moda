@@ -26,7 +26,7 @@ allowed-tools: Bash(moda:*), Read, Glob, Grep
      `version.below_minimum`), or update required: STOP — your stop reply
      MUST quote the install command verbatim (the pinned command doctor
      prints; CLI missing entirely: `npm i -g @moda-design/moda`; a 401 =
-     registry auth missing — the README's one-time setup box). Never stop
+     a stale private-registry override in their npm config). Never stop
      without the command; no Mermaid/HTML/prose stand-in replaces the
      stop. Wait for the user to run it, then re-run doctor. Never install
      or update anything yourself, never pipe curl to sh, and never sudo.
