@@ -4,7 +4,7 @@
   "cli": {
     "floor": "0.14.0",
     "tested_through": "0.15.x",
-    "install_channel": "github-packages",
+    "install_channel": "npmjs-public",
     "note": "moda doctor reads this file's range when a skill runs Step 0: below the floor it stops the skill and prints the pinned upgrade command."
   }
 }
