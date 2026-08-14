@@ -118,8 +118,9 @@ describe('moda media video-frames — the verify lane', () => {
 
     expect(code).toBe(0);
     expect(calls[0]?.path).toBe('/v1/media/video-frames');
-    // The wire field is `file` and it takes the ref verbatim — no count when none was asked for.
-    expect(calls[0]?.body).toEqual({ file: FILE_REF });
+    // The wire field is `video` (the connector tool's argument name, and `upscale-video`'s) and
+    // it takes the ref verbatim — no count when none was asked for.
+    expect(calls[0]?.body).toEqual({ video: FILE_REF });
     expect(stdout).toContain('3 frame(s)');
     expect(stdout).toContain('6.0s');
     expect(stdout).toContain('1280x720');
@@ -160,11 +161,11 @@ describe('moda media video-frames — the verify lane', () => {
   test('--count travels as count; --timestamps travels as timestamps_ms', async () => {
     const { base, calls } = route(() => ({ body: framesEnvelope([frame(0)]) }));
     expect((await runCli(['media', 'video-frames', FILE_REF, '--count', '6'], base)).code).toBe(0);
-    expect(calls[0]?.body).toEqual({ file: FILE_REF, count: 6 });
+    expect(calls[0]?.body).toEqual({ video: FILE_REF, count: 6 });
 
     const second = route(() => ({ body: framesEnvelope([frame(0)]) }));
     expect((await runCli(['media', 'video-frames', FILE_REF, '--timestamps', '0', '2500'], second.base)).code).toBe(0);
-    expect(second.calls[0]?.body).toEqual({ file: FILE_REF, timestamps_ms: [0, 2500] });
+    expect(second.calls[0]?.body).toEqual({ video: FILE_REF, timestamps_ms: [0, 2500] });
   });
 
   test('--count with --timestamps is refused locally — the server rejects the pair, so never spend the trip', async () => {

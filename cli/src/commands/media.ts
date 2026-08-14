@@ -527,8 +527,10 @@ export async function performVideoFrames(
     );
   }
   const video = await mediaInput(options.input, client);
+  // Wire field is `video`, matching the connector tool's argument and the `upscale-video`
+  // sibling — the request model is `extra="forbid"`, so the name is not a tolerant guess.
   const payload = {
-    file: video,
+    video,
     ...(options.count !== undefined ? { count: options.count } : {}),
     ...(options.timestampsMs !== undefined ? { timestamps_ms: options.timestampsMs } : {}),
   };
