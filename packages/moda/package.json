@@ -2,7 +2,7 @@
   "name": "@moda-design/moda",
   "version": "0.14.0",
   "description": "The moda CLI — drive Moda as a deterministic artifact runtime from any agent harness.",
-  "license": "UNLICENSED",
+  "license": "Apache-2.0",
   "repository": "github:moda-design/moda",
   "bin": {
     "moda": "bin/moda.js"

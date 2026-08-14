@@ -215,3 +215,7 @@ Integration tests run against a live API base: set `MODA_API_BASE` +
   libraries bundled into the compiled CLI, with their license texts.
 
 Moda itself lives at [moda.app](https://moda.app).
+
+## License
+
+[Apache-2.0](LICENSE) © Nullframe, Inc. (Moda). Bundled third-party licenses are listed in [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
