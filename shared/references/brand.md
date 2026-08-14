@@ -63,7 +63,7 @@ The auditable brand check no competitor offers — pure read verbs:
 
 ## Creating and escalating
 
-Two creation paths, both **deterministic and unmetered** (no credits; ignore any legacy metered labels in the response envelope while the server sheds them):
+Two creation paths, both **deterministic and unmetered** (ignore any legacy metered labels in the response envelope while the server sheds them):
 
 - **URL extraction — the fast path.** `moda brand create --url …` runs Moda's server-side extraction (colors, fonts, logos from a live site). Prefer it whenever the brand has a website: it captures more than the user would dictate.
 - **Manual build — for brands without a website** (or when the user already holds the ground truth: a style guide, a logo file, exact hexes). `moda brand create --name "Acme" --color '#0F172A:Primary' --color '#F97316:Accent' --font 'Inter:title:600' --logo FILE_REF`. Upload logos first (`moda file upload logo.png` → `file_` ref). For a rich palette, a kit file beats a wall of flags: write `kit.json` (`{"name", "colors": [{"color","label"}], "fonts": [{"family","label","weight"}], "logo_file_ids": []}`) and run `moda brand create --from-file kit.json`. Exactly one path per create — never both `--url` and manual fields.

@@ -105,7 +105,7 @@ edge-to-edge — only text, logos, CTAs, and focal points must stay inside.
 - **Display banners**: one message; hierarchy hook → brand → CTA with brand
   and CTA both visible; the CTA is always button-shaped and the
   highest-contrast element ("See the demo", never "Learn more"). Photography
-  is expensive at these sizes — prefer solid color, gradients, shapes, type,
+  rarely reads at these sizes — prefer solid color, gradients, shapes, type,
   and `<generate>` patterns; a product silhouette over scenic imagery.
 - **LinkedIn banners**: person-first when a name is given (name as the hero
   lockup; the company supports). Company-led only on request: logo + one
@@ -114,9 +114,9 @@ edge-to-edge — only text, logos, CTAs, and focal points must stay inside.
 ## Generated backgrounds
 
 `<generate>` (grammar and limits in references/markup.md) makes dot grids,
-rings, and hatching cheaper than imagery. Keep the pattern the backdrop:
+rings, and hatching without reaching for imagery. Keep the pattern the backdrop:
 confine it to a quadrant, strip, or radial source; contrast it against the
-content (round dots behind hard-edged slabs) rather than echoing it. Cheap
+content (round dots behind hard-edged slabs) rather than echoing it. Instant
 depth: two stacked rectangles, the back one offset 6–8px at low opacity.
 
 ## Style references and resizing
@@ -125,7 +125,7 @@ depth: two stacked rectangles, the back one offset 6–8px at low opacity.
   rebuild its layout, type treatment, and palette) or a **content image** (a
   clean photo — place it as subject matter). Complex reference backgrounds
   that shapes can't rebuild: `media_generate_image` with the reference
-  attached (metered) for a clean background carrying its palette and
+  attached, for a clean background carrying its palette and
   texture, then compose on top. Copy over a photo always gets a scrim.
 - Adapting a design to another platform size: **resize in place** — follow
   the page resize recipe in references/edit-code.md (group the page's

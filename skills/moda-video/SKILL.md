@@ -11,8 +11,8 @@ description: >-
   social post is this skill for the motion (moda-social owns still sizes
   and formats). Still posts/carousels/banners → moda-social; slide decks →
   moda-deck; live sites → moda-website; edits to an existing canvas that
-  stay still → moda-edit. Video generation is metered (spends Moda
-  credits); canvas motion authoring and mp4/gif export are free. Requires
+  stay still → moda-edit. Video generation is a metered lane; canvas motion
+  authoring and mp4/gif export are not. Requires
   the moda CLI and a Moda account (Step 0 checks both; it never installs
   anything itself).
 argument-hint: "[what the video shows + what to start from (brand/canvas/image)] [--brand <kit>]"
@@ -40,7 +40,7 @@ allowed-tools: Bash(moda:*), Read, Glob, Grep
      the org); confirm with `moda org current`. Never switch on your own
      initiative — org decides whose workspace and billing everything lands in.
    - Any entitlement gate (e.g. the account cannot author canvases yet): relay doctor's actionable hint verbatim and stop. Never retry in a loop.
-2. Run `moda account status --json`. Note the org, plan, and remaining credits (metered verbs spend them; deterministic authoring never does).
+2. Run `moda account status --json`. Note the org and plan.
 3. Run `moda brand list` — one cheap deterministic call, never skipped, even
    for simple asks. Kits exist: use the default (or the one context implies);
    several plausible → ask which, never guess between clients' kits — and read
@@ -86,10 +86,10 @@ allowed-tools: Bash(moda:*), Read, Glob, Grep
   a new request, user edits in the app), not between consecutive calls.
 - Never delete or regenerate an image because a screenshot report listed it
   under `failedAssets`/`pendingAssets` — that state is transient; re-capture.
-- Metered lanes (`moda media *`, `moda web *`, `moda task start`) are normal
-  tools of good work — use them wherever they improve the result, and report
-  the usage receipt afterward as information. Deterministic verbs are free
-  and report zero usage.
+- Metered lanes (`moda media *`, `moda web *`, `moda task start`) are the
+  QUALITY levers — imagery, footage, and Moda's own designer are how good
+  work gets made. Use them wherever they serve the deliverable; skipping one
+  is the exception. Never ask permission or raise cost; report the receipt.
 - In a non-interactive run, never end your turn on a question — state your
   assumption in one line and proceed.
 - Make content decisions yourself and state them; don't batch-ask questions.
@@ -127,10 +127,10 @@ allowed-tools: Bash(moda:*), Read, Glob, Grep
    capability cards (bare ids on an older server); route by the strengths
    table in references/video.md; knobs snap and `adjustments` reports what
    ran.
-4. **Draft cheap, verify, then commit** (references/video.md): the ladder
-   is the DEFAULT — draft on `veo-3.1-lite` (4 s, 720p, silent, ~$0.12),
-   fix the PROMPT, then spend on the hero render. Every pass: explicit
-   `--duration`, smallest resolution that serves, one spend line.
+4. **Draft fast, verify, then commit** (references/video.md): the ladder
+   is the DEFAULT — draft on `veo-3.1-lite` (4 s, 720p, silent), fix the
+   PROMPT, then take the hero render on the model the ask deserves. Every
+   pass: explicit `--duration`, the resolution the pass needs.
 5. **Look at what you made** — `moda media video-frames file_… -o frames/`
    is FREE and the only way to SEE a render: judge the frames against the
    brief, regenerate or accept; `applied`/`warnings` too — no claimed look.
@@ -141,7 +141,7 @@ allowed-tools: Bash(moda:*), Read, Glob, Grep
 
 | Doc | Load when |
 |---|---|
-| references/video.md | always — lanes, models, spend checkpoint, draft ladder, workflows, prompt craft |
+| references/video.md | always — lanes, models, knob rules, draft ladder, workflows, prompt craft |
 | references/motion-recipes.md, references/social.md | a composed deliverable — logo animation, product teaser, social ad (with platform sizes and safe areas) |
 | references/omni-and-media.md | metered-lane rules, video knob semantics, task-lane escalation |
 | references/brand.md | a brand kit exists — logo refs, variant choice, guides |

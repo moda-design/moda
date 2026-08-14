@@ -11,9 +11,9 @@ logo animation", "a teaser for this product", "an ad for Reels". A
 prompt-only clip stays in references/video.md workflow 2 — do not pad a
 simple ask with a canvas.
 
-references/video.md is the prerequisite (lanes, the model roster, the spend
-checkpoint, the draft ladder). Every recipe here RUNS that ladder rather than
-one-shotting the hero model, and quotes real registry rates: Veo 3.1 Lite is
+references/video.md is the prerequisite (lanes, the model roster, the knob
+rules, the draft ladder). Every recipe here RUNS that ladder rather than
+one-shotting the hero model. Registry rates for the lanes below: Veo 3.1 Lite is
 **$0.03/s silent at 720p** (its audio default bills $0.05/s, so pass
 `--no-generate-audio` on every draft), Veo 3.1 Fast **$0.10/s**, Veo 3.1
 **$0.20/s** (720p and 1080p share that rate; audio doubles it), Seedance 2.0
@@ -31,7 +31,7 @@ it. `moda media models` is the authority when any of that has moved.
    dropped with `timeline_motion_non_animation`. Read the canvas once after
    creating it — the page short id (`p_a`) that every markup and motion call
    takes comes from that read, and so do the node ids the motion pass needs.
-3. **Draft the footage cheap, verify, fix, then take the hero render.**
+3. **Draft the footage fast, verify, fix, then take the hero render.**
 4. **Place clips with `<video>` markup, then layer real type over them.**
    `<video>` is the only way a clip reaches a canvas (references/markup.md);
    the clip is a fill on a rectangle, so z-order and opacity come free.
@@ -80,19 +80,19 @@ A logo built from vetted vector shapes can also DRAW itself on with
 paths, so a stroked mark writes on stroke by stroke.
 
 **1b. Logo over generated motion (metered).** Same canvas; the backdrop is a
-clip. Draft it on the cheap lane first:
+clip. Draft it on the fast lane first:
 
 ```
 moda media generate-video --prompt "Abstract slow light sweep across a deep navy field, soft volumetric haze, no text, no logos, no people, seamless loop" \
   --model veo-3.1-lite --duration 4 --resolution 720p --no-generate-audio -o backdrop-draft.mp4
 ```
 
-That draft costs **4 s × $0.03/s = $0.12**. Verify it (read `applied` and
+That draft is 4 s at 720p, silent. Verify it (read `applied` and
 `adjustments`; view it if your harness has vision), fix the prompt if the
 motion is wrong, and only then commit: the same prompt at 8 s and 1080p on
-Veo 3.1 Lite is `8 × $0.05 = $0.40`, or on Veo 3.1 for cinematic quality
-`8 × $0.20 = $1.60` (silent — audio would double that, and a stinger under
-someone else's soundtrack does not need it).
+Veo 3.1 Lite, or on Veo 3.1 when the backdrop carries the piece and deserves
+cinematic quality (silent — a stinger under someone else's soundtrack does
+not need audio).
 
 Place the keeper under the logo, muted, sized to the page:
 
@@ -116,14 +116,14 @@ enough.
 ## Recipe 2 — Product teaser
 
 Product stills → image-to-video beats → a cut on the timeline → brand type
-over it → mp4. Three beats and 8–12 seconds is the shape; more beats is more
-spend and rarely a better teaser.
+over it → mp4. Three beats and 8–12 seconds is the shape; more beats rarely
+makes a better teaser.
 
 **1. Get the stills in.** `moda file upload shot-front.jpg` returns a durable
 `file_` ref (a local path passed straight to a media flag uploads itself too,
 but an explicit upload gives you the ref to reuse across beats).
 
-**2. Draft every beat on the cheap lane, in one pass.** One prompt per beat,
+**2. Draft every beat on the fast lane, in one pass.** One prompt per beat,
 each naming the ONE motion it does — a push-in, an orbit, a rack focus:
 
 ```
@@ -131,17 +131,15 @@ moda media generate-video --prompt "Slow push-in on the product on a matte concr
   --model veo-3.1-lite --image file_… --duration 4 --resolution 720p --no-generate-audio -o beat1-draft.mp4
 ```
 
-Three of those cost **3 × 4 s × $0.03/s = $0.36** — the whole draft cut for
-less than half of ONE 8-second render on Veo 3.1 Fast ($0.80), and under a
-quarter of one on Veo 3.1 ($1.60). Reach for
+Run all three drafts in the same pass (`--no-wait`, then collect): you see the
+WHOLE cut before committing to any beat of it, which is the point. Reach for
 `--model seedance-2.0-fast` instead when the beat needs Seedance's controls
 in the draft (an `--end-image` morph, a non-16:9 ratio, `--reference` product
-boards): it is 80% of Seedance 2.0's price at the same 4–15 s envelope, but
-$0.2419/s at 720p is eight times a silent Lite second, so drop to
-`--resolution 480p` while drafting — its price is metered on frame area, so
-the smaller frame is a real saving, not a rounding one.
+boards): it is 80% of Seedance 2.0's price at the same 4–15 s envelope, and
+its price is metered on frame AREA, so `--resolution 480p` is the natural
+draft size on it.
 
-**3. Verify before you spend again.** Read `applied` and `adjustments` on
+**3. Verify before the hero render.** Read `applied` and `adjustments` on
 each result (duration and resolution snap silently), look at the clips if
 your harness can, and fix the losing prompts. Re-running an unchanged command
 resumes the same render instead of paying twice — a real retake needs a
@@ -218,10 +216,10 @@ moda media generate-video --prompt "Slow vertical drift over sunlit fabric textu
   --model veo-3.1-lite --duration 4 --resolution 720p --aspect-ratio 9:16 --no-generate-audio -o ad-draft.mp4
 ```
 
-**$0.12 for the draft.** Verify, fix, then take the hero render at the length
-the ad needs (a 6-second feed spot on Veo 3.1 Lite at 1080p is `6 × $0.05 =
-$0.30`). Keep it silent unless the ad is genuinely sound-on: feeds autoplay
-muted, and on every Veo tier audio is a price axis.
+Verify, fix, then take the hero render at the length the ad needs — a
+6-second feed spot on Veo 3.1 Lite at 1080p is the usual shape. Keep it
+silent unless the ad is genuinely sound-on: feeds autoplay muted, and on
+every Veo tier audio is a price axis.
 
 **3. Compose inside the safe zone.** Footage full-bleed to the edges, type
 and CTA inside — on 1080×1920 that is x 120–840, y 252–1742 for a normal
@@ -272,8 +270,8 @@ moda export CANVAS_REF --format mp4 --page 2 -o ad-1x1.mp4
 ```
 
 Reuse the SAME clip across sizes wherever the framing survives the crop —
-re-generating per platform multiplies the spend for footage the viewer reads
-identically.
+re-generating per platform buys nothing when the viewer reads the footage
+identically. Re-generate when the crop actually breaks the composition.
 
 ## What every recipe inherits
 
@@ -287,6 +285,6 @@ identically.
   type over the clip; that is the whole point of these recipes.
 - **One bar per node.** Calling `t.video` again on the same node REPLACES its
   bar (which is also how you retime one).
-- **Spend the checkpoint every time** (references/video.md): explicit
-  `--duration`, smallest resolution that serves, one matter-of-fact line
-  about what the pass costs, the usage receipt afterwards.
+- **Pin the knobs every time** (references/video.md): explicit
+  `--duration`, the resolution the pass needs, one matter-of-fact line about
+  what you're rendering, the usage receipt afterwards.

@@ -15,8 +15,6 @@
      billing everything lands in. Never switch teams on your own initiative.
    - Any entitlement gate (e.g. the account cannot author canvases yet): relay
      the result's actionable hint verbatim and stop. Never retry in a loop.
-   - Note the plan and remaining credits it reports (metered tools spend them;
-     deterministic authoring never does).
 2. Call `brand_list` — one cheap deterministic call, never skipped, even
    for simple asks. Kits exist: use the default (or the one context implies);
    several plausible → ask which, never guess between clients' kits — and read
