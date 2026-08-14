@@ -18,8 +18,9 @@ dogfood-authored repo):
    inventory in verb-map.json; optionally cross-checked against a local CLI
    source tree (MODA_CLI_ROOT, default ../moda) when one exists.
 7. Markup element completeness: the external markup reference documents all
-   23 parser dispatch elements (the chart/path/repeat/generate trap).
-8. Size budgets: SKILL.md <= 150 lines, each reference <= 350 lines.
+   24 parser dispatch elements (the chart/path/repeat/generate/video trap).
+8. Size budgets: SKILL.md <= 150 lines, each reference <= 350 lines
+   (REFERENCE_BUDGET_OVERRIDES carries the argued exceptions).
 9. Manifests parse and agree on the plugin name.
 
 Exit 0 = clean. Any finding prints with its file and fails the run.
@@ -80,11 +81,26 @@ EXPECTED_REFERENCES: dict[str, list[str]] = {
 
 ALLOWED_TOOLS = {"Bash(moda:*)", "Read", "Glob", "Grep"}
 
-# The 23 markupParser.ts dispatch elements (content is the root).
+# Per-reference line budget. Named exceptions rather than a blanket raise, so the
+# 350-line discipline still bites on every other reference and each exception has
+# to be argued in a diff.
+REFERENCE_BUDGET = 350
+REFERENCE_BUDGET_OVERRIDES = {
+    # The video roster went from 5 models to 12 (Veo 3.1 Lite, Seedance 2.0 +
+    # Fast, Grok Imagine 1.5, Kling 3 Standard/Pro/4K, Wan 2.7), and the routing
+    # commentary is one card per model — the part `moda media models` cannot
+    # print, since the registry states envelopes and prices but not which model
+    # to reach for. Canvas video (markup placement, clip properties, the timeline
+    # bar) landed in the same window and belongs in the same file.
+    "video": 420,
+}
+
+# The 24 markupParser.ts dispatch elements (content is the root).
 MARKUP_ELEMENTS = [
     "content", "group", "row", "column", "layers", "rectangle", "ellipse",
-    "polygon", "star", "line", "connector", "text", "image", "path", "chart",
-    "qr", "latex", "map", "background", "comment", "table", "repeat", "generate",
+    "polygon", "star", "line", "connector", "text", "image", "video", "path",
+    "chart", "qr", "latex", "map", "background", "comment", "table", "repeat",
+    "generate",
 ]
 
 # Internal names and removed concepts that must never appear in external text.
@@ -318,7 +334,7 @@ def check_markup_elements() -> None:
     text = read(path)
     for element in MARKUP_ELEMENTS:
         if f"<{element}" not in text:
-            fail(path.relative_to(ROOT), f"markup element <{element}> is not documented (23-element checklist)")
+            fail(path.relative_to(ROOT), f"markup element <{element}> is not documented (24-element checklist)")
 
 
 def check_budgets() -> None:
@@ -327,8 +343,9 @@ def check_budgets() -> None:
         if path.exists() and (n := len(read(path).splitlines())) > 150:
             fail(path.relative_to(ROOT), f"SKILL.md over budget: {n} lines > 150")
     for path in sorted((ROOT / "shared" / "references").glob("*.md")):
-        if (n := len(read(path).splitlines())) > 350:
-            fail(path.relative_to(ROOT), f"reference over budget: {n} lines > 350")
+        budget = REFERENCE_BUDGET_OVERRIDES.get(path.stem, REFERENCE_BUDGET)
+        if (n := len(read(path).splitlines())) > budget:
+            fail(path.relative_to(ROOT), f"reference over budget: {n} lines > {budget}")
 
 
 def check_payload_paths() -> None:

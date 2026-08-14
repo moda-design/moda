@@ -103,10 +103,21 @@ export function registerMedia(program: Command): void {
       .option('--image <ref>', 'first-frame image: file_ ref, URL, or local path')
       .option('--end-image <ref>', 'last-frame image: file_ ref, URL, or local path')
       .option('--reference <refs...>', 'reference images (reference-to-video models): file_ refs, URLs, or local paths')
+      .option(
+        '--reference-video <refs...>',
+        "reference clips (models whose card shows 'ref videos'): file_ refs, URLs, or local paths — " +
+          "count and length caps are per-model; the input's own running time is billed on top",
+      )
       .option('--duration <seconds>', 'clip duration — ALWAYS pass one; it is the dominant cost driver')
       .option('--aspect-ratio <ratio>', 'aspect ratio, e.g. 16:9')
       .option('--resolution <res>', "per-model resolution tier (see the model's capability line)")
-      .option('--generate-audio', 'generate native audio (models that support it)')
+      .option('--generate-audio', 'generate native audio (models that support it) — already the default')
+      .option(
+        '--no-generate-audio',
+        "render silent — on Kling 3 Standard/Pro audio is a price axis and silence is a third cheaper. " +
+          "Models whose card reads 'audio always on' have intrinsic audio: they accept this, report it as " +
+          'an adjustment, and produce audio anyway',
+      )
       .option('--seed <n>', 'deterministic seed', (v: string) => Number.parseInt(v, 10))
       .option('--model-params <json>', 'per-model extra params as a JSON object', parseModelParams)
       .option('-o, --output <path>', 'download the artifact to a local file'),
@@ -122,6 +133,11 @@ export function registerMedia(program: Command): void {
         ...(Array.isArray(opts.reference)
           ? { reference_images: await mediaInputs(opts.reference as string[], client) }
           : {}),
+        // Per-model clip-count and length caps are enforced server-side and named back in the 422,
+        // so nothing is capped here — a client-side number would drift the moment a model is added.
+        ...(Array.isArray(opts.referenceVideo)
+          ? { reference_videos: await mediaInputs(opts.referenceVideo as string[], client) }
+          : {}),
         // Schema: duration_seconds is float|str — numeric strings travel as numbers, model
         // enums like "8s" pass through verbatim for the server to resolve.
         ...(typeof opts.duration === 'string'
@@ -129,7 +145,10 @@ export function registerMedia(program: Command): void {
           : {}),
         ...(typeof opts.aspectRatio === 'string' ? { aspect_ratio: opts.aspectRatio } : {}),
         ...(typeof opts.resolution === 'string' ? { resolution: opts.resolution } : {}),
-        ...(opts.generateAudio === true ? { generate_audio: true } : {}),
+        // Commander pairs --generate-audio with --no-generate-audio: true / false / undefined when
+        // neither is passed (last flag wins if both are). Only a boolean travels — omitting the key
+        // leaves the server on the model's own default, which is not the same as sending false.
+        ...(typeof opts.generateAudio === 'boolean' ? { generate_audio: opts.generateAudio } : {}),
         ...(typeof opts.seed === 'number' && Number.isFinite(opts.seed) ? { seed: opts.seed } : {}),
         ...(opts.modelParams !== undefined ? { model_params: opts.modelParams } : {}),
       };
@@ -304,7 +323,16 @@ function videoModelCard(model: JsonObject): string[] {
   const label = str(model, 'label') ?? '';
   const caps: string[] = [];
   if (model.supports_generate_audio === true) {
-    caps.push(`audio yes (${model.generate_audio_default === true ? 'on' : 'off'} by default)`);
+    // `generate_audio_controllable: false` means audio is INTRINSIC — a request to disable it is
+    // accepted, reported as an adjustment, and produces audio anyway. Rendering that as the same
+    // "on by default" the controllable models get is what sends a run hunting for a knob that
+    // cannot exist (and, where audio is a price axis, for a cheaper rate it can never reach).
+    // A server that predates the field says nothing, so only an explicit false changes the text.
+    caps.push(
+      model.generate_audio_controllable === false
+        ? 'audio always on'
+        : `audio yes (${model.generate_audio_default === true ? 'on' : 'off'} by default)`,
+    );
   } else if (model.supports_generate_audio === false) {
     caps.push('audio no');
   }

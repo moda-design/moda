@@ -794,8 +794,8 @@ REFERENCE_PASSAGES["gotchas"] = [
         "(or canvas-absolute only with `page='canvas'` on a Design canvas)",
     ),
     (
-        "Video files exist on this surface only as inputs/outputs of the metered `moda media` video verbs and of the page-animation exports (`moda export --format mp4|gif --page N` — a page with no animation rejects typed `no_animation`).",
-        "Video files exist on this surface only as inputs/outputs of the metered media video tools and of the page-animation exports (`export(format='mp4'|'gif', page=N)` — a page with no animation rejects typed `no_animation`).",
+        "deliver that page as `moda export --format mp4|gif --page N` instead, and never hand over a still of it.",
+        "deliver that page as `export(format='mp4'|'gif', page=N)` instead, and never hand over a still of it.",
     ),
     (
         "```\nCORRECT — use the deletion verb:\nmoda canvas delete-items CANVAS_REF n7\n```",
@@ -961,7 +961,7 @@ REFERENCE_PASSAGES["omni-and-media"] = [
         "`model` is **required — there is no \"auto\"**. The authoritative model list, with each model's aspect ratios, resolutions, and controls, is embedded in `media_generate_image`'s description — defer to it; never hardcode capabilities from memory.",
     ),
     (
-        "durations, resolutions, and native audio. `moda media models` lists the video model IDS only; the per-model envelope is enforced server-side",
+        "durations, resolutions, and native audio. `moda media models` prints the per-model capability cards; the per-model envelope is enforced server-side",
         "durations, resolutions, and native audio. `media_generate_video`'s description carries the video model cards; the per-model envelope is enforced server-side",
     ),
     (
@@ -1169,10 +1169,12 @@ REFERENCE_PASSAGES["video"] = [
         "   is format-implied.",
     ),
     (
-        "There is no video-to-video edit and no source-video input; the only verb\n"
-        "that takes a video as input is `moda media upscale-video`.",
-        "There is no video-to-video edit and no source-video input; the only tool\n"
-        "that takes a video as input is `media_upscale`.",
+        "There is no video-to-video edit and no source-video input for GENERATION\n"
+        "except reference video on the models whose cards declare it; the only verb\n"
+        "that takes a video as its subject is `moda media upscale-video`.",
+        "There is no video-to-video edit and no source-video input for GENERATION\n"
+        "except reference video on the models whose cards declare it; the only tool\n"
+        "that takes a video as its subject is `media_upscale`.",
     ),
     (
         "`moda media models` prints one capability card per video model — its modes\n"
@@ -1514,8 +1516,71 @@ NON_TOOL_TOKENS = {
 
 REFERENCE_PASSAGES["video"] += [
     (
-        "it — describe the soundtrack in the prompt (`--generate-audio` requests it\nexplicitly).",
-        "it — describe the soundtrack in the prompt (`generate_audio` requests it\nexplicitly).",
+        "DEFAULT — describe the soundtrack in the prompt, and `--generate-audio`\n"
+        "only re-states that default explicitly. `--no-generate-audio` buys the\n"
+        "SILENT rate where the model's audio is controllable — on Kling 3 Standard\n"
+        "and Pro that is a third off, so pass it whenever the clip does not need\n"
+        "sound. Whether audio can be turned off at all is per-model, and the card is\n"
+        "the answer: `moda media models` reports `generate_audio_controllable`,\n"
+        "which the human card renders as \"audio always on\" for the models where\n"
+        "audio is INTRINSIC (they accept the flag, report it as an adjustment, and\n"
+        "produce audio anyway — so it buys nothing there). Read that field instead\n"
+        "of memorising which models those are; the receipt is the truth.",
+        "DEFAULT — describe the soundtrack in the prompt, and `generate_audio=true`\n"
+        "only re-states that default explicitly. `generate_audio=false` buys the\n"
+        "SILENT rate where the model's audio is controllable — on Kling 3 Standard\n"
+        "and Pro that is a third off, so pass it whenever the clip does not need\n"
+        "sound. Whether audio can be turned off at all is per-model, and the card is\n"
+        "the answer: it reports `generate_audio_controllable`, and where that is\n"
+        "false audio is INTRINSIC — the model accepts the parameter, reports it as\n"
+        "an adjustment, and produces audio anyway, so it buys nothing there. Read\n"
+        "that field instead of memorising which models those are; the receipt is\n"
+        "the truth.",
+    ),
+    (
+        "**Reference video** rides `--reference-video <ref-or-url>` (repeatable; the\n"
+        "wire field is `reference_videos`), and only models whose card shows \"ref\n"
+        "videos\" accept any.",
+        "**Reference video** rides `reference_videos` (a list of `file_` refs or\n"
+        "http(s) video URLs), and only models whose card declares reference videos\n"
+        "accept any.",
+    ),
+    # Workflow 6 — the canvas-video composite lane. Every verb in it moves.
+    (
+        "1. Get the clip into the team's files: `moda file upload clip.mp4` (or a\n"
+        "   generated result's `file_` ref, already durable).\n"
+        "2. Animation canvas, then place it:\n"
+        "   `<video src=\"file_…\" width=\"1920\" height=\"1080\" fit=\"cover\"/>` via\n"
+        "   `moda canvas markup` (references/markup.md). Layer text and shapes over\n"
+        "   it like any other element — the clip is a fill on a rectangle.\n"
+        "3. Sequence with `t.video(node, { startMs })` inside `motion.page(...)`;\n"
+        "   trim/speed/loop go on the fill through `update()`\n"
+        "   (references/edit-code.md).\n"
+        "4. Deliver `moda export CANVAS_REF --format mp4 --page N` plus the live\n"
+        "   link. Do NOT deliver a png/pdf of a video-filled page — it renders the\n"
+        "   clip blank today (`video_poster_unavailable`); say so if asked for one.",
+        "1. Get the clip into the team's files: the `upload` tool (or a generated\n"
+        "   result's `file_` ref, already durable).\n"
+        "2. Animation canvas, then place it:\n"
+        "   `<video src=\"file_…\" width=\"1920\" height=\"1080\" fit=\"cover\"/>` via\n"
+        "   `canvas_apply_markup` (references/markup.md). Layer text and shapes over\n"
+        "   it like any other element — the clip is a fill on a rectangle.\n"
+        "3. Sequence with `t.video(node, { startMs })` inside `motion.page(...)`;\n"
+        "   trim/speed/loop go on the fill through `update()`\n"
+        "   (references/edit-code.md).\n"
+        "4. Deliver `export(canvas_ref, format='mp4', page=N)` plus the live link.\n"
+        "   Do NOT deliver a png/pdf of a video-filled page — it renders the clip\n"
+        "   blank today (`video_poster_unavailable`); say so if asked for one.",
+    ),
+]
+REFERENCE_PASSAGES["markup"] += [
+    (
+        "so a video fill cannot be built with `moda canvas edit` `create()`",
+        "so a video fill cannot be built with `canvas_edit` `create()`",
+    ),
+    (
+        "upload the clip first (`moda file upload clip.mp4`), or reuse the `file_` ref a media result returned.",
+        "upload the clip first (the `upload` tool), or reuse the `file_` ref a media result returned.",
     ),
 ]
 

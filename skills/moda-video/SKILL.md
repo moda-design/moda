@@ -146,4 +146,4 @@ allowed-tools: Bash(moda:*), Read, Glob, Grep
 | references/brand.md | a brand kit exists — logo refs, variant choice, guides |
 | references/export.md | any canvas export (frames, mp4/gif ceremony, --page rules) |
 | references/markup.md, references/design-quality.md, references/edit-code.md | vector-native motion: authoring, shader fills, animation edits |
-| references/reading-and-verifying.md, references/gotchas.md | reading canvases, degraded verify; no-video-on-canvas and other traps |
+| references/reading-and-verifying.md, references/gotchas.md | reading canvases, degraded verify; the blank-static-export video trap and others |

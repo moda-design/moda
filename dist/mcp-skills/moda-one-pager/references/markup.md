@@ -20,7 +20,7 @@ canvas_apply_markup(canvas_ref, page, markup, mode='append'|'replace_page_nodes'
 
 ## Elements
 
-The parser dispatches all 23 elements below — including `<chart>`, `<path>`, `<repeat>`, and `<generate>`, which are easy to miss but fully supported. `<content>` is the root wrapper.
+The parser dispatches all 24 elements below — including `<chart>`, `<path>`, `<repeat>`, `<generate>`, and `<video>`, which are easy to miss but fully supported. `<content>` is the root wrapper.
 
 | Element | Key attrs | Notes |
 |---|---|---|
@@ -32,6 +32,7 @@ The parser dispatches all 23 elements below — including `<chart>`, `<path>`, `
 | `<connector>` | from="@NodeName:anchor", to="@Node:anchor", routing=straight\|elbowed\|curved | anchored line between shapes; do NOT place in flex containers. Recovery: a target that fails to resolve after a structural change (groups, freshly-minted ids) → re-read for current ids, then prefer a replace-mode apply with inline connectors for the affected page over incremental patching |
 | `<text>` | font-size,color,text-align,vertical-align,line-height,format,max-lines,stroke,glow,echo,extrude | plain by default; `format="markdown"` for bullets/bold/italic; `format="html"` for per-span styles (`<p>`,`<span style>`,`<a href>`,`<b>`,`<i>`,`<u>`,`<s>`,`<br/>`; absolute http/https/mailto hrefs only; `<ol>` unsupported) |
 | `<image>` | src OR icon (search query), fit=cover\|contain, tint, corner-radius, perspective | `fit="cover"` for full-bleed/hero; `contain` for logos; `icon="query"` resolves a functional UI icon by search — the deterministic icon path |
+| `<video>` | src (a `file_…` ref, required), fit=cover\|contain, x,y,width,height, corner-radius, rotation, opacity, tint, layer-blur; clip attrs trim-start,trim-end,muted,volume,rate,loop | a rectangle with a VIDEO fill (not a node type), so z-order/opacity/clipping/corner-radius come free. See "Video" below |
 | `<group>` | x,y, clip="true" | `clip="true"` = clipping mask: FIRST (bottom-most) child is the mask; needs ≥2 children |
 | `<column>` / `<row>` | x,y,width,height,gap,padding,align,justify,fill,stroke,corner-radius,group | layout-only (children land at root level) unless `group="true"`; appearance props auto-create a background rectangle |
 | `<layers>` | x,y,width,height,padding,fill | z-stack: children overlap; no x/y → (0,0); no size → inherit container content area; first child = back |
@@ -53,6 +54,20 @@ The parser dispatches all 23 elements below — including `<chart>`, `<path>`, `
 - Refs are resolved server-side. Signed URLs are never part of the contract — never paste one into markup, and never retype a URL when you hold a ref.
 - Reuse refs exactly as they appear in your latest `canvas_read` (`img1`, `img2`, …). A hallucinated ref produces an `image_load_failed` error-severity warning that drives `requires_repair`.
 - Functional UI icons (nav, status, bullets): `<image icon="search query"/>` — deterministic, no generation cost. Never use placeholder shapes or literal "[icon]" text.
+
+## Video
+
+`<video>` is the ONLY way a clip gets onto a canvas — placement runs the server-side ref resolver, so a video fill cannot be built with `canvas_edit` `create()` (those props are stripped with `create_video_fill_ignored`). Tune a placed clip afterwards through `update()` (references/edit-code.md).
+
+- **`src` must be a durable `file_…` ref** — upload the clip first (the `upload` tool), or reuse the `file_` ref a media result returned. External and provider video URLs are rejected: they expire, and the canvas would break later while still looking fine today.
+- **Sizing** matches `<image>`: omit width/height for the clip's natural size (capped to the page cap), or declare a box — a clip NEVER resizes the page, so full-bleed means writing the page's dimensions on the clip. Inside a `<row>`/`<column>` an unsized clip falls back to a 320×180 stand-in. `fit="cover"` (default) crops into the box; `fit="contain"` letterboxes and — unlike `<image fit="contain">` — never shrink-wraps the node to the clip.
+- **Clip attributes map 1:1 onto the `fillVideo*` fields `update()` writes**, so `<video trim-start="1.5s">` and `update(id, {fillVideoTrimStartMs: 1500})` land identical state: `trim-start`/`trim-end` (→ `fillVideoTrimStartMs`/`fillVideoTrimEndMs`), `muted`, `volume` (0–1), `rate` (0.1–4), `loop`. Durations accept `1500`, `"1500ms"` or `"1.5s"` (bare = ms). *Generate long and trim* is the normal move — model duration floors (4 s on Seedance, a fixed 4/6/8 on Veo) overshoot a 2–3 s beat.
+- **`muted` and `loop` take HTML's boolean shorthand** (`muted=""` and `muted="muted"` both mean true) because XML rejects a bare `<video muted>`. On any other clip attribute an empty value is an error, not a silent skip.
+- A bad clip value **fails that element** (nothing is clamped): a trim window outside `[0, clip length]`, an inverted window, an out-of-range volume or rate.
+- **Audio is ON by default** for a clip you place (the generators produce native audio and the export mixer only pulls un-muted clips) — the opposite of a clip a user drags in.
+- Placing N clips creates N independent elements; sequencing them is `t.video` on an animation canvas (references/edit-code.md).
+- **Not authorable here** (narrower than `<image>`): `crop`, `perspective`/`corner-pin`, `icon`, `shadow`, `stroke`, `blend-mode`, `backdrop` (that one warns `backdrop_unsupported_for_element`).
+- **Static exports of a video-filled node are blank today** — placement warns `video_poster_unavailable`. Deliver mp4/gif, not png/pdf/pptx (references/gotchas.md).
 
 ## Sizing & layout semantics
 
