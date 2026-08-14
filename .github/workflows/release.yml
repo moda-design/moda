@@ -54,3 +54,19 @@ jobs:
           for pkg in packages/cli-darwin-arm64 packages/cli-darwin-x64 packages/cli-linux-x64 packages/cli-linux-arm64 packages/cli-win32-x64 packages/moda; do
             (cd "$pkg" && npm publish)
           done
+      # Public npm publish — the LAUNCH lane. Guarded by the repo variable
+      # NPM_PUBLISH_ENABLED: unset/false = this step is skipped and releases
+      # stay private-registry only (the pre-launch state). Setting the repo
+      # variable to 'true' makes THIS release and every later one publish to
+      # registry.npmjs.org with public access. The platform packages go first
+      # so the meta-package's optionalDependencies never dangle. Requires the
+      # NPM_TOKEN secret (granular, moda-design-org-scoped).
+      - name: Publish npm packages to npmjs (launch-gated)
+        if: vars.NPM_PUBLISH_ENABLED == 'true'
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          echo "//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}" > ~/.npmrc
+          for pkg in packages/cli-darwin-arm64 packages/cli-darwin-x64 packages/cli-linux-x64 packages/cli-linux-arm64 packages/cli-win32-x64 packages/moda; do
+            (cd "$pkg" && npm publish --registry https://registry.npmjs.org --access public)
+          done
