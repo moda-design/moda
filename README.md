@@ -33,28 +33,6 @@ Set up Moda for me so I can create designs, decks, and documents from here.
 4. Verify: run `moda doctor` and tell me when everything is ready.
 ```
 
-> **Public npm publish is pending launch.** `@moda-design/moda` is not on
-> npmjs.com yet — today the package is served from GitHub Packages, which
-> needs a one-time registry wiring per machine (below). The paste block above
-> is the final shape and does not change when the npm publish lands.
-
-<details>
-<summary><b>One-time setup box</b> — required until the npm publish lands</summary>
-
-Run these yourself, once per machine. Any GitHub account works; the scope is
-read-only package access. (If step 1 of the paste block fails with a 401 or a
-registry error, this wiring is what's missing.)
-
-```sh
-gh auth refresh -s read:packages
-npm config set @moda-design:registry https://npm.pkg.github.com
-npm config set //npm.pkg.github.com/:_authToken "$(gh auth token)"
-```
-
-When the package publishes to npmjs.com this box goes away and the paste
-block keeps working unchanged.
-
-</details>
 
 <details>
 <summary>Fallback: standalone binary (air-gapped / no npm)</summary>

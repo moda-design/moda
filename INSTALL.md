@@ -3,11 +3,8 @@
 Two pieces: the **skills** (what teaches your agent) and the **moda CLI**
 (what it drives). Install both.
 
-> **npm publish is pending launch.** `@moda-design/moda` is served from
-> GitHub Packages today, not npmjs.com, so `npm i -g @moda-design/moda` needs
-> the one-time registry wiring in the README's one-time setup box. Any GitHub
-> account works — the scope is read-only package access. The checksum-verified
-> binary path in section 2 needs no npm at all.
+> `@moda-design/moda` installs from the public npm registry — no auth, no
+> registry wiring.
 
 ## 1. Install the skills
 
