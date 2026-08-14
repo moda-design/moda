@@ -123,7 +123,8 @@
     "moda brand guides",
     "moda brand guide",
     "moda canvas import-pptx",
-    "moda media upscale-video"
+    "moda media upscale-video",
+    "moda media video-frames"
   ],
   "unresolved": {
     "close_website": "Omni's open/close session bracket has no public analogue — the REST surface is stateless (create / set-content / publish are direct calls).",

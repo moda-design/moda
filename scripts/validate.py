@@ -98,7 +98,10 @@ REFERENCE_BUDGET_OVERRIDES = {
     # for anything user-facing, not an appendix, so it sits in the always-loaded
     # file next to the spend checkpoint it modifies rather than in
     # motion-recipes.md, which is loaded only when the ask names a deliverable.
-    "video": 450,
+    # And once more when the frame-read verb landed: the verify step stopped
+    # being aspirational ("view the clip if your harness has vision") and
+    # became a concrete loop the same section must now teach.
+    "video": 460,
 }
 
 # The 24 markupParser.ts dispatch elements (content is the root).

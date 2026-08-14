@@ -4805,7 +4805,7 @@
     },
     {
       "name": "media generate-video",
-      "description": "generate a video (metered; the provider render runs within this call)",
+      "description": "generate a video (metered; the render runs inside this call unless --no-wait)",
       "positionals": [],
       "flags": [
         {
@@ -4877,6 +4877,12 @@
         {
           "flag": "--no-retry",
           "description": "disable the built-in busy/transport retry",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-wait",
+          "description": "submit the render and return a task_id immediately instead of holding the call open for minutes — poll it with `moda task status TASK_REF [--wait]`. Nothing is charged until a poll collects the finished video, and every input must be a file_ ref or a local path (no http(s) URLs). This is how you run several drafts at once",
           "takes_value": false,
           "required": false
         },
@@ -5249,6 +5255,91 @@
         "mutating": true,
         "destructive": false,
         "metered": true,
+        "read_lane": false
+      }
+    },
+    {
+      "name": "media video-frames",
+      "description": "sample still frames from a video and LOOK at them (free) — closes the generate loop",
+      "positionals": [
+        {
+          "name": "ref_or_path",
+          "required": true,
+          "variadic": false
+        }
+      ],
+      "flags": [
+        {
+          "flag": "--api-base",
+          "description": "endpoint override (staging/dev)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--count",
+          "description": "frames sampled evenly across the clip, 1-8 (default 4; first and last always included)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--json",
+          "description": "machine output: exactly one compact JSON document on stdout; implies --no-input",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-input",
+          "description": "fail instead of prompting (implied by --json)",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-retry",
+          "description": "disable the built-in busy/transport retry",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--org",
+          "description": "override the configured org context for this invocation",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--output",
+          "description": "write the frames to disk: output file (single frame) or directory",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--pretty",
+          "description": "pretty-print the --json document",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--quiet",
+          "description": "suppress non-essential stderr",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--timeout",
+          "description": "per-command ceiling override, seconds",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--timestamps",
+          "description": "exact moments to sample, in milliseconds (max 8) — read them off the duration_ms a previous call reported. Out-of-range values clamp to the clip. Cannot be combined with --count",
+          "takes_value": true,
+          "required": false
+        }
+      ],
+      "markers": {
+        "mutating": false,
+        "destructive": false,
+        "metered": false,
         "read_lane": false
       }
     },
@@ -6690,7 +6781,7 @@
     },
     {
       "name": "task status",
-      "description": "task status + usage receipt",
+      "description": "status + usage receipt for a task or a background video render",
       "positionals": [
         {
           "name": "task",
@@ -6745,6 +6836,12 @@
           "flag": "--timeout",
           "description": "per-command ceiling override, seconds",
           "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--wait",
+          "description": "poll until the status is terminal, streaming progress to stderr. A failed or canceled job still exits 0 — this verb reports, it does not adjudicate; read `status`",
+          "takes_value": false,
           "required": false
         }
       ],

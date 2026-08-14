@@ -109,6 +109,11 @@ export const endpoints = {
   mediaGenerateImage: () => '/v1/media/generate-image',
   mediaEditImage: () => '/v1/media/edit-image',
   mediaGenerateVideo: () => '/v1/media/generate-video',
+  // The background-render poll for `generate-video` with `wait: false` (studio #9603). The media
+  // lane polls on its OWN endpoint — the layerize precedent — not on /v1/tasks, which is the
+  // design-agent job lane and knows nothing about a render.
+  mediaVideoGenerationStatus: (taskId: string) => `/v1/media/generate-video/${enc(taskId)}`,
+  mediaVideoFrames: () => '/v1/media/video-frames',
   mediaUpscale: () => '/v1/media/upscale',
   mediaUpscaleVideo: () => '/v1/media/upscale-video',
   mediaRemoveBackground: () => '/v1/media/remove-background',

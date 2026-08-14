@@ -178,13 +178,44 @@ export function registerTask(program: Command): void {
     }),
   );
 
-  addGlobalFlags(task.command('status <task>').description('task status + usage receipt')).action(
-    wrapAction(async (args, _opts, cmd) => {
+  addGlobalFlags(
+    task
+      .command('status <task>')
+      .description('status + usage receipt for a task or a background video render')
+      .option(
+        '--wait',
+        'poll until the status is terminal, streaming progress to stderr. A failed or canceled ' +
+          'job still exits 0 — this verb reports, it does not adjudicate; read `status`',
+      ),
+  ).action(
+    wrapAction(async (args, opts, cmd) => {
       const inv = buildInvocation(cmd);
       const { client } = await authedClient(inv, START_TIMEOUT_MS);
       const ref = parseRef(args[0] as string, 'task').ref;
-      const response = await client.request({ method: 'GET', path: endpoints.taskShow(ref) });
-      return passthroughOutcome('task.status', response, inv);
+      const first = await fetchJobStatus(client, ref);
+      if (opts.wait !== true) return passthroughOutcome(first.operation, first.response, inv);
+      const final = await waitForJob(client, ref, first, inv);
+      const status = taskStatusOf(final.body);
+      // The design lane keeps its local status ledger truthful across the wait.
+      if (first.operation === 'task.status' && status !== undefined) recordTaskStatus(ref, status, inv.env);
+      return {
+        body: {
+          ok: true,
+          operation: first.operation,
+          ...final.body,
+          meta: { ...asObject(final.body.meta), ...metaBlock({ requestId: final.requestId }) },
+        },
+        human: (write) => {
+          write(`${ref}: ${status ?? 'unknown'}`);
+          const result = asObject(final.body.result);
+          const fileId = str(result, 'id') ?? str(result, 'file_id') ?? str(result, 'canvas_id');
+          if (fileId !== undefined) write(`result: ${fileId}`);
+          const errorObj = asObject(final.body.error);
+          const message = str(errorObj, 'message');
+          if (message !== undefined) write(`error: ${message}`);
+        },
+        exitCode: EXIT_OK,
+      };
     }),
   );
 
@@ -293,6 +324,79 @@ export function detectStartReplay(input: {
 
 function taskStatusOf(body: Record<string, unknown>): string | undefined {
   return str(body, 'status') ?? str(asObject(body.task), 'status');
+}
+
+interface JobStatusResponse {
+  response: { body: unknown; requestId?: string; durationMs: number };
+  /** Which lane answered — the two poll on different endpoints and report different operations. */
+  operation: 'task.status' | 'media.generate_video';
+}
+
+/**
+ * Resolve a `task_…` handle across the two lanes that mint one. The design lane owns /v1/tasks;
+ * a background video render started with `moda media generate-video --no-wait` lives on the media
+ * lane's own poll endpoint (studio #9603, the layerize precedent) and is invisible to /v1/tasks.
+ *
+ * The design lane is tried FIRST and its 404 is what routes to the media lane, so a real design
+ * task never pays for the extra call — and when neither lane knows the id, the caller gets the
+ * design lane's typed error rather than a media-shaped one for a handle that may not be a render.
+ */
+async function fetchJobStatus(client: ApiClient, ref: string): Promise<JobStatusResponse> {
+  try {
+    return { response: await client.request({ method: 'GET', path: endpoints.taskShow(ref) }), operation: 'task.status' };
+  } catch (err) {
+    if (!(err instanceof CliError) || err.fields.status !== 404) throw err;
+    try {
+      return {
+        response: await client.request({ method: 'GET', path: endpoints.mediaVideoGenerationStatus(ref) }),
+        operation: 'media.generate_video',
+      };
+    } catch (mediaErr) {
+      // Both lanes answered "no such job" — including a server that predates the media poll
+      // route entirely. The design lane's error is the honest one to surface.
+      if (mediaErr instanceof CliError && mediaErr.fields.status === 404) throw err;
+      throw mediaErr;
+    }
+  }
+}
+
+/**
+ * Poll one job to a terminal status. Both lanes speak the same envelope — `status` in the
+ * PublicTaskStatus vocabulary plus a `retry_after_ms` pacing hint — so one loop serves both; a
+ * terminal render's hint is null, which is exactly when the loop stops reading it.
+ */
+async function waitForJob(
+  client: ApiClient,
+  ref: string,
+  first: JobStatusResponse,
+  inv: Invocation,
+): Promise<{ body: Record<string, unknown>; requestId?: string }> {
+  const path =
+    first.operation === 'task.status' ? endpoints.taskShow(ref) : endpoints.mediaVideoGenerationStatus(ref);
+  const deadline = Date.now() + (inv.flags.timeout !== undefined ? inv.flags.timeout * 1000 : WAIT_BUDGET_MS);
+  let body = asObject(first.response.body);
+  let requestId = first.response.requestId;
+  let waitMs = 2_000;
+  for (;;) {
+    const status = taskStatusOf(body);
+    if (status !== undefined && TERMINAL.has(status)) return { body, requestId };
+    if (Date.now() > deadline) {
+      throw new CliError({
+        type: 'upstream_error',
+        code: 'task_wait_timeout',
+        message: `Job ${ref} did not reach a terminal status within the wait budget.`,
+        hint: `Nothing is lost — poll again later: moda task status ${ref}`,
+        source: 'transport',
+      });
+    }
+    const hint = body.retry_after_ms;
+    await new Promise((resolve) => setTimeout(resolve, typeof hint === 'number' ? hint : waitMs));
+    waitMs = Math.min(waitMs * 1.5, 10_000);
+    inv.note(`${ref}: ${status ?? 'running'}`);
+    const polled = await client.request({ method: 'GET', path, timeoutMs: 30_000 });
+    body = asObject(polled.body);
+    requestId = polled.requestId ?? requestId;
+  }
 }
 
 async function waitForTask(client: ApiClient, taskId: string, inv: Invocation): Promise<Record<string, unknown>> {

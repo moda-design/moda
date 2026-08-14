@@ -943,6 +943,7 @@ REFERENCE_PASSAGES["omni-and-media"] = [
         "moda media remove-background FILE_REF|URL|PATH\n"
         "moda media upscale FILE_REF|URL|PATH [--scale 2|4]\n"
         "moda media upscale-video FILE_REF|URL|PATH [--resolution 720p|1080p|1440p|2160p]\n"
+        "moda media video-frames FILE_REF|PATH [--count N | --timestamps MS...] [-o DIR]   # FREE\n"
         "```\n\n"
         "**`moda media models` is the capability source**: each model's supported aspect ratios, resolution tiers, durations, and extra `--model-params` come from it — read it before passing per-model knobs; never hardcode capabilities from memory.",
         "## The `media_*` tools — raw media operations (all metered)\n\n"
@@ -954,6 +955,7 @@ REFERENCE_PASSAGES["omni-and-media"] = [
         "                     reference_images=[…], model_params=…)\n"
         "media_upscale(source, kind='image', scale=2|4)\n"
         "media_upscale(source, kind='video', target_resolution='720p'|'1080p'|'1440p'|'2160p')\n"
+        "media_video_frames(video, count=…, timestamps_ms=[…])   # FREE\n"
         "```\n\n"
         "Generative image editing and background removal ride `media_generate_image`: pass the image in `source_images` and describe the complete edit (\"remove the background\" included).\n\n"
         "**Each media tool's own description is the capability source**: the current model roster with each model's supported aspect ratios, resolution tiers, durations, and extra `model_params` is embedded there — read it before passing per-model knobs; never hardcode capabilities from memory.",
@@ -1227,8 +1229,8 @@ REFERENCE_PASSAGES["video"] = [
         "   Reference-guided (`--reference`) fits when the logo should GUIDE style\n"
         "   rather than be frame one.\n"
         "3. Spend checkpoint, generate, read `applied`/`adjustments`.\n"
-        "4. Deliver the file path + receipt; offer `moda media upscale-video` for\n"
-        "   the final cut.",
+        "4. Frame-check it with `moda media video-frames`, then deliver the file\n"
+        "   path + receipt; offer `moda media upscale-video` for the final cut.",
         "1. Step-0 found the kit: `brand_show(brand_kit_ref)` → durable `file_` refs\n"
         "   for the logos; verify the variant in place per references/brand.md and\n"
         "   pick the one that fits the concept.\n"
@@ -1238,18 +1240,18 @@ REFERENCE_PASSAGES["video"] = [
         "   Reference-guided (`reference_images`) fits when the logo should GUIDE\n"
         "   style rather than be frame one.\n"
         "3. Spend checkpoint, generate, read `applied`/`adjustments`.\n"
-        "4. Deliver the result link + receipt; offer `media_upscale` for the final\n"
-        "   cut.",
+        "4. Frame-check it with `media_video_frames`, then deliver the result link\n"
+        "   + receipt; offer `media_upscale` for the final cut.",
     ),
     (
         "**2. Quick text-to-video** — a prompt-only clip: registry pick (default\n"
         "model unless the ask demands quality/length/control), spend checkpoint,\n"
         "`moda media generate-video --prompt \"…\" --model M --duration N -o clip.mp4`,\n"
-        "verify, deliver.",
+        "frame-check, deliver.",
         "**2. Quick text-to-video** — a prompt-only clip: registry pick (default\n"
         "model unless the ask demands quality/length/control), spend checkpoint,\n"
         "`media_generate_video(prompt, model, duration_seconds=N)`,\n"
-        "verify, deliver.",
+        "frame-check, deliver.",
     ),
     (
         "2. `moda export CANVAS_REF --format png --page N --pixel-ratio 2 -o frame.png`.\n"
@@ -1312,20 +1314,6 @@ REFERENCE_PASSAGES["video"] = [
     (
         "(pass the start\n  image as `--end-image` on a model that supports end frames).",
         "(pass the start\n  image as `end_image` on a model that supports end frames).",
-    ),
-    (
-        "- Download the result (`-o`), and read `applied`, `adjustments`, and\n"
-        "  `warnings` before describing the output",
-        "- Read `applied`, `adjustments`, and `warnings` before describing the\n"
-        "  output",
-    ),
-    (
-        "- Reviewing the pixels assumes a harness that can view media. If yours can\n"
-        "  (extract stills/frames with local tooling and LOOK), review the first\n"
-        "  frame, one mid frame, and the last.",
-        "- Reviewing the pixels assumes an environment that can view media. If\n"
-        "  yours can (fetch the clip, extract stills, and LOOK), review the first\n"
-        "  frame, one mid frame, and the last.",
     ),
     (
         "- Media-lane results: the file path is the deliverable (plus the usage\n"
@@ -1771,3 +1759,67 @@ REFERENCE_PASSAGES["video"] += [
         "   $1.60 for the same idea rendered 8 s at $0.20/s on Veo 3.1.",
     ),
 ]
+
+# The closed-loop video lane (studio #9603): the frame read and the
+# background render. Both transports have the capability — the connector's
+# `media_video_frames` returns the frames as IMAGE CONTENT rather than data
+# URLs written to disk, and its poll verb is `task_status` (one job envelope
+# across design tasks, exports, and renders) rather than a media-lane path.
+# --------------------------------------------------------------------------
+REFERENCE_PASSAGES["omni-and-media"] += [
+    (
+        "- **Look at what you generated.** `moda media video-frames FILE_REF -o frames/` samples still frames out of a clip and writes them where you can see them — FREE, uncharged, nothing added to the library. A `file_` ref is not an image: this is the only way to know a render matches the brief, so run it before describing or delivering a generated clip. `--count N` (1–8) surveys evenly, `--timestamps MS...` inspects named moments (one or the other, never both), and it reads team files only — a local path uploads itself first, a remote URL does not. An empty frame list means Moda could not DECODE the file, not that the video is bad; a `frames_partial` warning means you saw only part of the clip. The moda-video skill owns the full loop.",
+        "- **Look at what you generated.** `media_video_frames(video='file_…')` samples still frames out of a clip and returns them as images you can actually LOOK at. FREE, uncharged, and nothing is added to the library. A `file_` ref is not an image: this is the only way to know a render matches the brief, so call it before describing or delivering a generated clip. `count` (1–8) surveys the clip evenly, `timestamps_ms` inspects moments you name (one or the other, never both), and it takes team files only — upload first, an http(s) URL is refused. An empty frame list means Moda could not DECODE the file, not that the video is bad; a `frames_partial` warning means you saw only part of the clip. The moda-video skill owns the full loop.",
+    ),
+    (
+        "- **Several drafts at once — the best-of-N pattern.** `moda media generate-video --no-wait` submits the render and returns a `task_id` immediately instead of holding the call open for minutes, so N drafts can run in parallel instead of one after another. Collect each with `moda task status TASK_REF --wait`, frame-check them, pick the direction that worked, and render only that one at final length/resolution on the model the ask deserves. Nothing is charged until a poll collects a finished video — an abandoned task costs nothing — and a background render takes durable inputs only (`file_` refs or local paths, never an http(s) URL), because collection re-resolves them minutes later. A failed or canceled render still exits 0: read the `status`.",
+        "- **Several drafts at once — the best-of-N pattern.** `media_generate_video(…, wait=false)` submits the render and hands back a task handle immediately instead of holding the call open for minutes, so N drafts can run in parallel instead of one after another. Collect each with `task_status(task_ref)` — poll no faster than the `retry_after_seconds` it reports — then frame-check them, pick the direction that worked, and render only that one at final length/resolution on the model the ask deserves. Nothing is charged until a poll collects a finished video, so an abandoned task costs nothing; a background render takes durable `file_` refs only, never an http(s) URL, because collection re-resolves its inputs minutes later. A render the provider gave up on comes back as a terminal status rather than an error — read the `status`.",
+    ),
+]
+REFERENCE_PASSAGES["video"] += [
+    (
+        "`moda media video-frames FILE_REF -o frames/` samples still frames out of a\n"
+        "clip and writes them where you can LOOK at them. FREE, and the only way to\n"
+        "see what a render actually made — a `file_` ref is not an image. Never tell\n"
+        "a user a generated clip is right without looking first.",
+        "`media_video_frames(video='file_…')` samples still frames out of a clip and\n"
+        "returns them as images you can LOOK at. FREE, and the only way to see what\n"
+        "a render actually made — a `file_` ref is not an image. Never tell a user a\n"
+        "generated clip is right without looking first.",
+    ),
+    (
+        "- `--count N` (1–8, default 4) surveys the clip evenly, first and last\n"
+        "  frame always included; `--timestamps MS…` inspects moments you name, read\n"
+        "  off the `duration_ms` the previous call reported. One or the other.",
+        "- `count` (1–8, default 4) surveys the clip evenly, first and last frame\n"
+        "  always included; `timestamps_ms` inspects moments you name, read off the\n"
+        "  `duration_ms` the previous call reported. One or the other.",
+    ),
+    (
+        "- Looking still needs a harness with vision. If yours has none, say so once\n"
+        "  — \"I can't view the frames here; verified the applied parameters and left\n"
+        "  the visual check to you\" — and never claim you watched what you could not\n"
+        "  see (references/reading-and-verifying.md).\n"
+        "- Several drafts at once, each frame-checked before you commit to one, is\n"
+        "  the `--no-wait` pattern in references/omni-and-media.md.",
+        "- The frames come back as image content, so looking is the default. Say so\n"
+        "  plainly in the rare environment that cannot render them, and never claim\n"
+        "  you watched what you could not see (references/reading-and-verifying.md).\n"
+        "- Several drafts at once, each frame-checked before you commit to one, is\n"
+        "  the `wait=false` pattern in references/omni-and-media.md.",
+    ),
+]
+PASSAGES["skills/moda-video/SKILL.md"] += [
+    (
+        "5. **Look at what you made** — `moda media video-frames file_… -o frames/`\n"
+        "   is FREE and the only way to SEE a render: judge the frames against the\n"
+        "   brief, then regenerate with a revised prompt or accept. Read\n"
+        "   `applied`/`adjustments`/`warnings` too; no vision, no claimed look.",
+        "5. **Look at what you made** — `media_video_frames(video='file_…')` is FREE\n"
+        "   and the only way to SEE a render: judge the frames against the brief,\n"
+        "   then regenerate with a revised prompt or accept. Read\n"
+        "   `applied`/`adjustments`/`warnings` too; no vision, no claimed look.",
+    ),
+]
+
+VERB_DISPOSITION["moda media video-frames"] = ("`media_video_frames`", "pending-server")
