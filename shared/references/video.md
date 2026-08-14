@@ -130,13 +130,15 @@ Each clip also lands as a durable file in the team's library.
 
 Native audio: every audio-capable model on the roster generates audio by
 DEFAULT — describe the soundtrack in the prompt, and `--generate-audio`
-only re-states that default explicitly. Whether audio can be turned OFF at
-all is per-model, and the card is the answer: `moda media models` reports
-`generate_audio_controllable`, which the human card renders as "audio
-always on" for the models where audio is INTRINSIC (a request to disable it
-is accepted, reported as an adjustment, and produces audio anyway). Read
-that field instead of memorising which models those are. On some models
-audio is its own price axis; the receipt is the truth.
+only re-states that default explicitly. `--no-generate-audio` buys the
+SILENT rate where the model's audio is controllable — on Kling 3 Standard
+and Pro that is a third off, so pass it whenever the clip does not need
+sound. Whether audio can be turned off at all is per-model, and the card is
+the answer: `moda media models` reports `generate_audio_controllable`,
+which the human card renders as "audio always on" for the models where
+audio is INTRINSIC (they accept the flag, report it as an adjustment, and
+produce audio anyway — so it buys nothing there). Read that field instead
+of memorising which models those are; the receipt is the truth.
 
 ## The spend checkpoint — before EVERY generation
 

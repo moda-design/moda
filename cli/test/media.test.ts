@@ -434,6 +434,50 @@ describe('media models — human/JSON model-set parity (gate finding F4)', () =>
     expect(calls[0]?.prompt).toBe('a slow orbit');
   });
 
+  test('generate-video: --no-generate-audio buys the silent rate (Kling 3 Std/Pro is a third cheaper)', async () => {
+    const { base, calls } = captureBody(VIDEO_RESULT);
+    const code = await runCli(
+      ['media', 'generate-video', '--prompt', 'a slow orbit', '--model', 'kling-3-standard', '--no-generate-audio', '--json'],
+      base,
+    );
+    expect(code).toBe(0);
+    expect(calls[0]?.generate_audio).toBe(false);
+  });
+
+  test('generate-video: --generate-audio still sends true', async () => {
+    const { base, calls } = captureBody(VIDEO_RESULT);
+    const code = await runCli(
+      ['media', 'generate-video', '--prompt', 'a slow orbit', '--model', 'kling-3-standard', '--generate-audio', '--json'],
+      base,
+    );
+    expect(code).toBe(0);
+    expect(calls[0]?.generate_audio).toBe(true);
+  });
+
+  test('generate-video: neither audio flag omits the key entirely — false is NOT the server default', async () => {
+    const { base, calls } = captureBody(VIDEO_RESULT);
+    const code = await runCli(
+      ['media', 'generate-video', '--prompt', 'a slow orbit', '--model', 'kling-3-standard', '--json'],
+      base,
+    );
+    expect(code).toBe(0);
+    // Sending false here would silently buy the silent render on every audio-priced model.
+    expect(calls[0]).not.toHaveProperty('generate_audio');
+  });
+
+  test('generate-video: both audio flags resolve last-wins rather than erroring (commander pairing)', async () => {
+    const { base, calls } = captureBody(VIDEO_RESULT);
+    const code = await runCli(
+      [
+        'media', 'generate-video', '--prompt', 'a slow orbit', '--model', 'kling-3-standard',
+        '--generate-audio', '--no-generate-audio', '--json',
+      ],
+      base,
+    );
+    expect(code).toBe(0);
+    expect(calls[0]?.generate_audio).toBe(false);
+  });
+
   test('--output routes the full registry to the file; the envelope keeps counts + a bounded preview', async () => {
     const { base } = serve(MODELS_ENVELOPE);
     const out = join(mkdtempSync(join(tmpdir(), 'moda-media-out-')), 'models.json');

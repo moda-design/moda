@@ -129,13 +129,16 @@ read them off the card, and a 422 names the whole envelope back to you.
 Each clip also lands as a durable file in the team's library.
 
 Native audio: every audio-capable model on the roster generates audio by
-DEFAULT — describe the soundtrack in the prompt, and `generate_audio` only
-re-states that default explicitly. Whether audio can be turned OFF at all
-is per-model, and the card is the answer: it reports
-`generate_audio_controllable`, and where that is false audio is INTRINSIC —
-`generate_audio=false` is accepted, reported as an adjustment, and produces
-audio anyway. Read that field instead of memorising which models those are. On some models
-audio is its own price axis; the receipt is the truth.
+DEFAULT — describe the soundtrack in the prompt, and `generate_audio=true`
+only re-states that default explicitly. `generate_audio=false` buys the
+SILENT rate where the model's audio is controllable — on Kling 3 Standard
+and Pro that is a third off, so pass it whenever the clip does not need
+sound. Whether audio can be turned off at all is per-model, and the card is
+the answer: it reports `generate_audio_controllable`, and where that is
+false audio is INTRINSIC — the model accepts the parameter, reports it as
+an adjustment, and produces audio anyway, so it buys nothing there. Read
+that field instead of memorising which models those are; the receipt is
+the truth.
 
 ## The spend checkpoint — before EVERY generation
 

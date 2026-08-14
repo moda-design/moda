@@ -4834,7 +4834,7 @@
         },
         {
           "flag": "--generate-audio",
-          "description": "generate native audio (models that support it)",
+          "description": "generate native audio (models that support it) — already the default",
           "takes_value": false,
           "required": false
         },
@@ -4860,6 +4860,12 @@
           "flag": "--model-params",
           "description": "per-model extra params as a JSON object",
           "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--no-generate-audio",
+          "description": "render silent — on Kling 3 Standard/Pro audio is a price axis and silence is a third cheaper. Models whose card reads 'audio always on' have intrinsic audio: they accept this, report it as an adjustment, and produce audio anyway",
+          "takes_value": false,
           "required": false
         },
         {

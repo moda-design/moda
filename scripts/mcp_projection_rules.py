@@ -1517,18 +1517,25 @@ NON_TOOL_TOKENS = {
 REFERENCE_PASSAGES["video"] += [
     (
         "DEFAULT — describe the soundtrack in the prompt, and `--generate-audio`\n"
-        "only re-states that default explicitly. Whether audio can be turned OFF at\n"
-        "all is per-model, and the card is the answer: `moda media models` reports\n"
-        "`generate_audio_controllable`, which the human card renders as \"audio\n"
-        "always on\" for the models where audio is INTRINSIC (a request to disable it\n"
-        "is accepted, reported as an adjustment, and produces audio anyway). Read\n"
-        "that field instead of memorising which models those are.",
-        "DEFAULT — describe the soundtrack in the prompt, and `generate_audio` only\n"
-        "re-states that default explicitly. Whether audio can be turned OFF at all\n"
-        "is per-model, and the card is the answer: it reports\n"
-        "`generate_audio_controllable`, and where that is false audio is INTRINSIC —\n"
-        "`generate_audio=false` is accepted, reported as an adjustment, and produces\n"
-        "audio anyway. Read that field instead of memorising which models those are.",
+        "only re-states that default explicitly. `--no-generate-audio` buys the\n"
+        "SILENT rate where the model's audio is controllable — on Kling 3 Standard\n"
+        "and Pro that is a third off, so pass it whenever the clip does not need\n"
+        "sound. Whether audio can be turned off at all is per-model, and the card is\n"
+        "the answer: `moda media models` reports `generate_audio_controllable`,\n"
+        "which the human card renders as \"audio always on\" for the models where\n"
+        "audio is INTRINSIC (they accept the flag, report it as an adjustment, and\n"
+        "produce audio anyway — so it buys nothing there). Read that field instead\n"
+        "of memorising which models those are; the receipt is the truth.",
+        "DEFAULT — describe the soundtrack in the prompt, and `generate_audio=true`\n"
+        "only re-states that default explicitly. `generate_audio=false` buys the\n"
+        "SILENT rate where the model's audio is controllable — on Kling 3 Standard\n"
+        "and Pro that is a third off, so pass it whenever the clip does not need\n"
+        "sound. Whether audio can be turned off at all is per-model, and the card is\n"
+        "the answer: it reports `generate_audio_controllable`, and where that is\n"
+        "false audio is INTRINSIC — the model accepts the parameter, reports it as\n"
+        "an adjustment, and produces audio anyway, so it buys nothing there. Read\n"
+        "that field instead of memorising which models those are; the receipt is\n"
+        "the truth.",
     ),
     (
         "**Reference video** rides `--reference-video <ref-or-url>` (repeatable; the\n"

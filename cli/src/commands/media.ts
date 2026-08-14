@@ -111,7 +111,13 @@ export function registerMedia(program: Command): void {
       .option('--duration <seconds>', 'clip duration — ALWAYS pass one; it is the dominant cost driver')
       .option('--aspect-ratio <ratio>', 'aspect ratio, e.g. 16:9')
       .option('--resolution <res>', "per-model resolution tier (see the model's capability line)")
-      .option('--generate-audio', 'generate native audio (models that support it)')
+      .option('--generate-audio', 'generate native audio (models that support it) — already the default')
+      .option(
+        '--no-generate-audio',
+        "render silent — on Kling 3 Standard/Pro audio is a price axis and silence is a third cheaper. " +
+          "Models whose card reads 'audio always on' have intrinsic audio: they accept this, report it as " +
+          'an adjustment, and produce audio anyway',
+      )
       .option('--seed <n>', 'deterministic seed', (v: string) => Number.parseInt(v, 10))
       .option('--model-params <json>', 'per-model extra params as a JSON object', parseModelParams)
       .option('-o, --output <path>', 'download the artifact to a local file'),
@@ -139,7 +145,10 @@ export function registerMedia(program: Command): void {
           : {}),
         ...(typeof opts.aspectRatio === 'string' ? { aspect_ratio: opts.aspectRatio } : {}),
         ...(typeof opts.resolution === 'string' ? { resolution: opts.resolution } : {}),
-        ...(opts.generateAudio === true ? { generate_audio: true } : {}),
+        // Commander pairs --generate-audio with --no-generate-audio: true / false / undefined when
+        // neither is passed (last flag wins if both are). Only a boolean travels — omitting the key
+        // leaves the server on the model's own default, which is not the same as sending false.
+        ...(typeof opts.generateAudio === 'boolean' ? { generate_audio: opts.generateAudio } : {}),
         ...(typeof opts.seed === 'number' && Number.isFinite(opts.seed) ? { seed: opts.seed } : {}),
         ...(opts.modelParams !== undefined ? { model_params: opts.modelParams } : {}),
       };
