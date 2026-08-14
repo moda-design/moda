@@ -1,5 +1,6 @@
 /** `moda canvas` — the deterministic authoring core (cli.md §9) plus lifecycle reuse verbs. */
 import { existsSync } from 'node:fs';
+import { basename } from 'node:path';
 import type { Command } from 'commander';
 import type { ApiClient } from '../api/client.ts';
 import { endpoints } from '../api/endpoints.ts';
@@ -425,7 +426,9 @@ export function registerCanvas(program: Command): void {
           form.append('file_ref', input);
         } else {
           if (!existsSync(input)) throw CliError.usage(`'${input}' is not a file_ ref or an existing local .pptx path.`);
-          form.append('file', Bun.file(input), input.split('/').at(-1) ?? 'import.pptx');
+          // Basename-reduced like `file upload` — `basename` follows the HOST separator, so a
+          // Windows path never ships `C:\Users\…` as the uploaded filename.
+          form.append('file', Bun.file(input), basename(input) || 'import.pptx');
         }
         let started;
         try {

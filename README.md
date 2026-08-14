@@ -68,6 +68,11 @@ grep moda-<os>-<arch> SHA256SUMS | sha256sum -c -
 install -m 755 moda-<os>-<arch> ~/.local/bin/moda && rm moda-<os>-<arch> SHA256SUMS
 ```
 
+Windows (x64) ships `moda-win32-x64.exe` — same CLI, suffixed because Windows
+needs it. Download it, verify against `SHA256SUMS`, and put it on `PATH` as
+`moda.exe`. The npm path above is the supported one; the `.exe` is **beta**
+(cross-compiled and unit-tested on Windows CI, not yet soaked in real use).
+
 </details>
 
 Per harness:

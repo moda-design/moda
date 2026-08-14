@@ -10,7 +10,14 @@ import { join, resolve } from 'node:path';
 const ROOT = resolve(import.meta.dir, '..');
 const DIST = join(ROOT, 'dist');
 
-const ARTIFACTS = ['moda-darwin-arm64', 'moda-darwin-x64', 'moda-linux-x64', 'moda-linux-arm64'];
+const ARTIFACTS = [
+  'moda-darwin-arm64',
+  'moda-darwin-x64',
+  'moda-linux-x64',
+  'moda-linux-arm64',
+  // Suffixed because Windows will not execute a suffix-less file (scripts/build.ts matches).
+  'moda-win32-x64.exe',
+];
 
 const tag = process.argv[2];
 if (tag === undefined || !/^v\d+\.\d+\.\d+/.test(tag)) {
@@ -46,8 +53,18 @@ if (dryRun) {
   process.exit(0);
 }
 
-const proc = Bun.spawn(
-  ['gh', 'release', 'create', tag, ...assets, '--title', `moda ${tag}`, '--notes', `moda CLI ${tag} — install: \`npm i -g @moda-design/moda\` (see the README's one-time setup box until the npm publish lands), or download the platform binary below and verify it against \`SHA256SUMS\`.`],
-  { cwd: ROOT, stdout: 'inherit', stderr: 'inherit' },
-);
+// The Windows asset is cross-compiled and CI-built but never executed on Windows by any gate —
+// it stays labelled beta until a real win32 smoke run exists. Drop the line when that lands.
+const notes = [
+  `moda CLI ${tag} — install: \`npm i -g @moda-design/moda\` (see the README's one-time setup box until the npm publish lands), or download the platform binary below and verify it against \`SHA256SUMS\`.`,
+  '',
+  '`moda-win32-x64.exe` is **beta**: cross-compiled from the Linux runner and not yet exercised by',
+  'an automated Windows run. macOS and Linux assets are covered by CI.',
+].join('\n');
+
+const proc = Bun.spawn(['gh', 'release', 'create', tag, ...assets, '--title', `moda ${tag}`, '--notes', notes], {
+  cwd: ROOT,
+  stdout: 'inherit',
+  stderr: 'inherit',
+});
 process.exit(await proc.exited);

@@ -11,7 +11,8 @@
     "@moda-design/cli-darwin-arm64": "0.14.0",
     "@moda-design/cli-darwin-x64": "0.14.0",
     "@moda-design/cli-linux-x64": "0.14.0",
-    "@moda-design/cli-linux-arm64": "0.14.0"
+    "@moda-design/cli-linux-arm64": "0.14.0",
+    "@moda-design/cli-win32-x64": "0.14.0"
   },
   "publishConfig": {
     "registry": "https://npm.pkg.github.com"

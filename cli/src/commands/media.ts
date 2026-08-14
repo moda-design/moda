@@ -7,7 +7,7 @@
  * verbs return `result`; every response carries the metered usage receipt.
  */
 import { mkdirSync, writeFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { basename, dirname, join } from 'node:path';
 import { existsSync } from 'node:fs';
 import type { Command } from 'commander';
 import type { ApiClient } from '../api/client.ts';
@@ -766,7 +766,9 @@ async function mediaInput(input: string, client: ApiClient): Promise<string> {
     throw CliError.usage(`'${input}' is not a file_ ref, an http(s) URL, or an existing local path.`);
   }
   const form = new FormData();
-  form.append('file', Bun.file(input), input.split('/').at(-1) ?? 'upload');
+  // Basename-reduced like `file upload` — `basename` follows the HOST separator, so a Windows
+  // path never ships `C:\Users\…` as the uploaded filename (a separator forks the storage key).
+  form.append('file', Bun.file(input), basename(input) || 'upload');
   const response = await client.request({ method: 'POST', path: endpoints.uploads(), formData: form, timeoutMs: 300_000 });
   const body = asObject(response.body);
   const fileId = str(body, 'id') ?? str(body, 'file_id') ?? str(asObject(body.file), 'id');

@@ -33,7 +33,7 @@ The package path is `npm i -g @moda-design/moda` (see the note at the top).
 The rest of this section is the **no-npm, checksum-verified** path: GitHub
 Releases on this repo. Release artifacts are named `moda-<platform>-<arch>`
 (`moda-linux-x64`, `moda-linux-arm64`, `moda-darwin-x64`,
-`moda-darwin-arm64`) plus a `SHA256SUMS` file. Run exactly:
+`moda-darwin-arm64`, `moda-win32-x64.exe`) plus a `SHA256SUMS` file. Run exactly:
 
 ```sh
 gh release download --repo moda-design/moda -p "moda-$(uname -s | tr '[:upper:]' '[:lower:]')-$(uname -m | sed 's/x86_64/x64/; s/aarch64/arm64/')" -p SHA256SUMS -D /tmp/moda-dl
@@ -52,6 +52,31 @@ gh release download --repo moda-design/moda -p moda-$(uname -s | tr '[:upper:]' 
 
 (`~/.local/bin` must be on PATH. Upgrades: same command — `moda update`
 prints it too rather than self-updating on this channel.)
+
+### Windows (x64)
+
+The commands above are POSIX-shell only. On Windows use the npm package —
+identical CLI, and it pulls `@moda-design/cli-win32-x64` automatically:
+
+```powershell
+npm i -g @moda-design/moda
+moda doctor
+```
+
+Standalone alternative: download `moda-win32-x64.exe` plus `SHA256SUMS` from
+the release, verify with `Get-FileHash moda-win32-x64.exe -Algorithm SHA256`,
+and put it on `PATH` as `moda.exe`.
+
+Windows notes: config lives in `%APPDATA%\moda`, state in `%LOCALAPPDATA%\moda`
+(the XDG variables still win if your shell sets them). There is no Windows
+keychain backend — Credential Manager's CLI cannot read a secret back — so
+credentials sit in `%APPDATA%\moda\credentials.json`, protected by your
+user-profile ACL rather than a POSIX mode bit; `moda auth login` says so once.
+
+The Windows binary is **beta**: CI typechecks, unit-tests and runs the
+compiled-binary stub proof on `windows-latest`, but it has not been soaked in
+real use. Two fallbacks if it misbehaves: the claude.ai MCP connector needs no
+local binary at all, and WSL2 runs the `moda-linux-x64` binary unchanged.
 
 ## 3. Authenticate
 

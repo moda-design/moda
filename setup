@@ -47,15 +47,32 @@ echo
 # Release artifacts are named moda-<platform>-<arch> with Node/Bun platform-arch
 # spelling (moda-linux-x64, moda-darwin-arm64, ...) plus a SHA256SUMS file —
 # see scripts/build.ts and scripts/release.ts. Map uname output accordingly.
+# This script only runs under a POSIX shell, so "Windows" here means Git Bash /
+# MSYS2 / Cygwin, where uname reports MINGW64_NT-… and the artifact is suffixed.
 PLATFORM="$(uname -s | tr '[:upper:]' '[:lower:]')"
 ARCH="$(uname -m)"
 case "$ARCH" in
   x86_64) ARCH=x64 ;;
   aarch64|arm64) ARCH=arm64 ;;
 esac
+case "$PLATFORM" in
+  mingw*|msys*|cygwin*) PLATFORM=win32 ;;
+esac
 
 if command -v moda >/dev/null 2>&1; then
   echo "moda CLI found: $(command -v moda)"
+elif [ "$PLATFORM" = win32 ]; then
+  echo "Now install the moda CLI yourself (this script never will). On Windows the"
+  echo "npm package is the supported path — it pulls the win32-x64 binary:"
+  echo
+  echo "  npm i -g @moda-design/moda"
+  echo
+  echo "Standalone alternative: download moda-win32-x64.exe from the release and put"
+  echo "it on PATH as moda.exe:"
+  echo
+  echo "  gh release download --repo moda-design/moda -p moda-win32-x64.exe -D ."
+  echo
+  echo "Then run: moda doctor"
 else
   echo "Now install the moda CLI yourself (this script never will). Pinned command"
   echo "(needs the gh CLI, authenticated):"
