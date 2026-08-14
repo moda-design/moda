@@ -16,8 +16,8 @@
       "status": "replaced"
     },
     "moda ask": {
-      "target": "an advisory ask lane is planned for this surface; meanwhile `load_skill` pulls the full skill references",
-      "status": "pending-server"
+      "target": "`ask_expert`",
+      "status": "live"
     },
     "moda auth login": {
       "target": "connector OAuth (claude.ai Settings → Connectors)",
@@ -217,7 +217,7 @@
     },
     "moda media video-frames": {
       "target": "`media_video_frames`",
-      "status": "pending-server"
+      "status": "live"
     },
     "moda org current": {
       "target": "`moda_bootstrap`",
