@@ -140,4 +140,4 @@ Existing work should still be your starting point instead of recreating it by ha
 
 A failure's full typed envelope (type, code, message, hint) rides the tool result itself — read it there; never re-run a failed write just to see its error again.
 
-Whenever you're unsure of the best approach — before an unfamiliar kind of task, when weighing two ways to do something, or after any failed call — pull the fuller skill reference with `load_skill` rather than guessing.
+Whenever you're unsure of the best approach — before an unfamiliar kind of task, when weighing two ways to do something, or after any failed call — ask Moda itself: the `ask_expert` tool is fast, free, and answers with the exact tools and references to use, so ask early and often rather than guessing. Pass its returned `session_id` on follow-ups to keep context, and `brand_kit_ref` (from `brand_list`) to ground a styling answer in that kit. Read whatever its `required_reading` names before acting.

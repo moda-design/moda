@@ -682,10 +682,8 @@ REFERENCE_PASSAGES["reading-and-verifying"] = [
         "A failure's full typed envelope (type, code, message, hint) rides the tool result itself — read it there; never re-run a failed write just to see its error again.",
     ),
     (
-        # The connector has no ask lane yet (VERB_DISPOSITION: pending-server) — until the
-        # advisory tool ships there, the honest same-shaped steer is the load_skill pull tier.
         "Whenever you're unsure of the best approach — before an unfamiliar kind of task, when weighing two ways to do something, or after any failed call — ask Moda itself: `moda ask \"<question>\"` is fast, free, and answers with the exact verbs and references to use, so ask early and often rather than guessing. Follow-ups keep context automatically — the last session is reused, so just ask the next question; pass `--fresh` to reset. Add `--brand <kit-id>` (from `moda brand list`) to ground a styling answer in that brand kit; without the flag no brand is applied.",
-        "Whenever you're unsure of the best approach — before an unfamiliar kind of task, when weighing two ways to do something, or after any failed call — pull the fuller skill reference with `load_skill` rather than guessing.",
+        "Whenever you're unsure of the best approach — before an unfamiliar kind of task, when weighing two ways to do something, or after any failed call — ask Moda itself: the `ask_expert` tool is fast, free, and answers with the exact tools and references to use, so ask early and often rather than guessing. Pass its returned `session_id` on follow-ups to keep context, and `brand_kit_ref` (from `brand_list`) to ground a styling answer in that kit. Read whatever its `required_reading` names before acting.",
     ),
 ]
 
@@ -1393,7 +1391,7 @@ VERB_DISPOSITION: dict[str, tuple[str, str]] = {
     "moda org current": ("`moda_bootstrap`", "replaced"),
     "moda account status": ("`moda_bootstrap` (plan + credits)", "replaced"),
     "moda describe": ("tool descriptions/schemas", "replaced"),
-    "moda ask": ("an advisory ask lane is planned for this surface; meanwhile `load_skill` pulls the full skill references", "pending-server"),
+    "moda ask": ("`ask_expert`", "live"),
     "moda docs": ("the skill references themselves", "replaced"),
     "moda last-error": ("typed error on the tool result", "replaced"),
     "moda canvas create": ("`canvas_create`", "live"),
@@ -1582,7 +1580,7 @@ REFERENCE_PASSAGES["deck-design"] += [
     ),
 ]
 REFERENCE_PASSAGES["templates"] += [
-    # The template tools are pending-server: teach the model what their
+    # Older connectors predate the template tools: teach the model what their
     # absence looks like so step 1 degrades to "no templates", not a stall.
     (
         "- The server may report this surface as unavailable (a 404) on an account\n"
@@ -1818,4 +1816,4 @@ PASSAGES["skills/moda-video/SKILL.md"] += [
     ),
 ]
 
-VERB_DISPOSITION["moda media video-frames"] = ("`media_video_frames`", "pending-server")
+VERB_DISPOSITION["moda media video-frames"] = ("`media_video_frames`", "live")
