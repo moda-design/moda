@@ -1,7 +1,7 @@
 /**
  * Stamp versions and copy compiled binaries into the npm packages (cli-repo-plan §1.2).
  * Wrapper + platform packages always release as an exact-pinned set (the esbuild/biome
- * pattern). Nothing is published during dogfood — release.yml attaches `npm pack` output
+ * pattern). release.yml attaches `npm pack` output
  * to the GitHub Release instead.
  */
 import { chmodSync, copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';

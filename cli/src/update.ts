@@ -1,7 +1,6 @@
 /**
- * Version-header capture, the once-daily stderr notice, and the dogfood update channel
- * (cli.md §14; orchestrator ruling 13: while the repo is private, `moda update` prints the
- * pinned `gh release download` command instead of self-updating).
+ * Version-header capture, the once-daily stderr notice, and the update channel: `moda update`
+ * prints the pinned install command instead of self-updating, on every channel.
  */
 import { HEADER_CLI_LATEST, HEADER_CLI_MINIMUM } from './api/endpoints.ts';
 import { readUpdateStamp, writeUpdateStamp } from './config/state.ts';
@@ -11,8 +10,8 @@ export const RELEASES_REPO = 'moda-design/moda';
 
 /**
  * The canonical install command (shared/step0.md + the README paste block carry the same clean
- * form; validate.py pins them together). Private-registry wiring lives in the README's
- * one-time box — a 401/registry failure here means that wiring is missing.
+ * form; validate.py pins them together). Until the npm publish lands the package is on
+ * GitHub Packages: a 401/registry failure means the README's one-time setup box was skipped.
  */
 export function pinnedInstallCommand(): string {
   return 'npm i -g @moda-design/moda';

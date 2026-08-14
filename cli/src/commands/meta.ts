@@ -63,13 +63,12 @@ export function registerMeta(program: Command): void {
   addGlobalFlags(
     program
       .command('update')
-      .description('update the CLI (dogfood: prints the pinned gh release download command; never silent)'),
+      .description('update the CLI (prints the pinned install command; never updates silently)'),
   ).action(
     wrapAction(async (_args, _opts, cmd) => {
       const inv = buildInvocation(cmd);
       const available = updateAvailable(inv.env);
-      // Ruling 13: while the repo is private, `moda update` PRINTS the pinned command on every
-      // channel instead of self-updating; the npm/brew channels always print their own command.
+      // `moda update` PRINTS the pinned command on every channel instead of self-updating.
       const command =
         CLI_CHANNEL === 'npm'
           ? 'npm i -g @moda-design/moda@latest'

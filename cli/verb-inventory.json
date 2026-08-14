@@ -7018,7 +7018,7 @@
     },
     {
       "name": "update",
-      "description": "update the CLI (dogfood: prints the pinned gh release download command; never silent)",
+      "description": "update the CLI (prints the pinned install command; never updates silently)",
       "positionals": [],
       "flags": [
         {

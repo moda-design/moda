@@ -35,7 +35,7 @@ jobs:
         run: |
           python3 scripts/project-mcp.py check
           python3 scripts/project-mcp.py zips
-      - name: npm pack (attached to the release; nothing published during dogfood)
+      - name: npm pack (tarballs attached to the release alongside the binaries)
         run: |
           mkdir -p dist
           for pkg in packages/moda packages/cli-darwin-arm64 packages/cli-darwin-x64 packages/cli-linux-x64 packages/cli-linux-arm64; do

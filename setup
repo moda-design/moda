@@ -1,5 +1,5 @@
 #!/bin/sh
-# Moda skills installer (private dogfood).
+# Moda skills installer.
 # Copies the skill directories into the harness locations it can detect and
 # PRINTS the pinned moda-CLI install command. It never installs the CLI,
 # never pipes curl to sh, never uses sudo.
@@ -58,7 +58,7 @@ if command -v moda >/dev/null 2>&1; then
   echo "moda CLI found: $(command -v moda)"
 else
   echo "Now install the moda CLI yourself (this script never will). Pinned command"
-  echo "(requires gh auth to the private moda-design/moda repo during dogfood):"
+  echo "(needs the gh CLI, authenticated):"
   echo
   echo "  gh release download --repo moda-design/moda -p moda-${PLATFORM}-${ARCH} -O ~/.local/bin/moda && chmod +x ~/.local/bin/moda"
   echo

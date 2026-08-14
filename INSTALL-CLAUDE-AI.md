@@ -1,7 +1,7 @@
 # Installing the Moda skills on claude.ai (Agent Skills)
 
-Repo-internal doc — private repo, not published anywhere. The distributable
-artifacts are the `moda-*.skill.zip` files attached to each GitHub release.
+The distributable artifacts are the `moda-*.skill.zip` files attached to each
+GitHub release.
 
 ## What these are
 
@@ -20,7 +20,7 @@ same design doctrine, same metering ceremony — different transport.
 - A few paths reference tools from the connector's surface-parity wave
   (`file_search`, `file_list`, `drive_tree`, `drive_organize`,
   `template_list`, `site_list`, `site_show` — the `pending_server` list in
-  `mcp/connector-tools.json`, names FINAL per studio PR #9466). Until that
+  `mcp/connector-tools.json`). Until that
   wave deploys, a model that reaches for one gets a normal tool-not-found
   and falls back; the core canvas/brand/media/task/export lanes are all
   live today.
@@ -76,9 +76,9 @@ verify downloads.
 - `python3 scripts/project-mcp.py audit-server --studio-root <path>` — strict
   reconciliation of `mcp/connector-tools.json` (including the
   `pending_server` best-guess names for the connector surface-parity wave)
-  against the studio repo's connector manifest. Run it when that wave lands;
+  against the server repo's connector manifest. Run it when that wave lands;
   a name that landed differently fails loudly and gets renamed in the roster,
   the rules, and the projection in one commit.
 - `dist/mcp-skills/index.json` is the machine-readable manifest for the
-  studio-side `load_skill` connector lane — path-stable, deterministic, no
+  server-side `load_skill` connector lane — path-stable, deterministic, no
   timestamps.

@@ -1,4 +1,4 @@
-# Set yourself up to design with Moda (agent instructions — private dogfood)
+# Set yourself up to design with Moda (agent instructions)
 
 You are an agent. Follow these steps exactly. You never install or update
 software yourself in this flow — where a step needs an install, you show the
@@ -9,16 +9,18 @@ user the pinned command and WAIT for them to run it.
      `/plugin marketplace add moda-design/moda` then `/plugin install moda@moda`
    - Codex CLI / Cursor / other shell-capable harness → tell the user to run:
      `npx skills add moda-design/moda`
-     (fallback: `git clone git@github.com:moda-design/moda && cd moda && ./setup`)
-   - No shell available → stop: the dogfood build is CLI-lane only. Tell the
-     user a hosted connector lane arrives at publish.
-   This repo is private — the commands rely on the user's own GitHub auth.
+     (fallback: `git clone https://github.com/moda-design/moda && cd moda && ./setup`)
+   - No shell available → stop: this build is CLI-lane only. Tell the user
+     that claude.ai has its own lane (INSTALL-CLAUDE-AI.md) and that a hosted
+     connector lane is coming.
 
 2. **Check the CLI.** Run `moda doctor --json`.
    - `moda` missing or below the compatibility floor: STOP and show the user
      the pinned install command from INSTALL.md section 2 (verbatim). Wait
      for "done", then re-run doctor. Never pipe curl to sh, never use sudo,
-     never install anything yourself.
+     never install anything yourself. If their install fails with a 401 or a
+     registry error, point them at the README's one-time setup box — the
+     package is on GitHub Packages until the npm publish lands.
    - `authenticated: false`: tell the user to run `moda auth login`
      (browser key mint; `--paste` on headless boxes). Wait, then re-check.
      Never ask for, print, or handle keys.

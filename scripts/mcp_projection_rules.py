@@ -3,19 +3,19 @@
 Two rule classes:
 
 - PASSAGES / REFERENCE_PASSAGES / DESCRIPTION_RULES: exact-match replacements
-  with an expected occurrence count (default 1). When upstream skills-src
+  with an expected occurrence count (default 1). When the upstream skill sources
   edits a covered passage, the rule stops matching and the build FAILS —
   the projection is then re-decided consciously, never drifted silently.
 - GENERIC: bare CLI-verb → connector-tool string swaps applied after
   passages. Every entry must fire at least once (dead-rule audit).
 
 VERB_DISPOSITION is the audit table: every `moda <verb>` that appears in
-skills-src must have a row (mapped, folded, pending-server, host-native,
+the skill sources must have a row (mapped, folded, pending-server, host-native,
 app-only, or replaced) — an unlisted verb fails the build.
 
 JSON export (dist/mcp-skills/verb-dispositions.json) — STABLE SCHEMA v1:
 the projection build emits VERB_DISPOSITION machine-readably next to
-index.json, as the bilingual CLI↔connector dictionary the studio advisory
+index.json, as the bilingual CLI↔connector dictionary the server-side advisory
 (ask) service consumes — per-surface allowed vocabulary plus the authored
 remedy text for cross-surface questions. Shape:
 
@@ -1362,7 +1362,7 @@ OUTPUT_BANS: list[tuple[re.Pattern[str], str]] = [
 ]
 
 # --------------------------------------------------------------------------
-# Disposition audit table: every `moda <verb>` in skills-src needs a row.
+# Disposition audit table: every `moda <verb>` in the skill sources needs a row.
 # Statuses: live (maps to a shipped connector tool), folded (rides another
 # tool/parameter), pending-server (best-guess name for the connector
 # surface-parity wave; see mcp/connector-tools.json), host-native (the chat

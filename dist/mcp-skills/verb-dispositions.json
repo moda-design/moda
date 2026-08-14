@@ -1,5 +1,5 @@
 {
-  "comment": "Bilingual CLI↔connector verb dictionary: every `moda <verb>` used in skills-src, mapped to its connector equivalent or authored prose remedy (backticks mark code tokens). Verbatim export of VERB_DISPOSITION in scripts/mcp_projection_rules.py — schema documented there; stable within schema_version 1. Regenerate with scripts/project-mcp.py build.",
+  "comment": "Bilingual CLI↔connector verb dictionary: every `moda <verb>` used in the skill sources, mapped to its connector equivalent or authored prose remedy (backticks mark code tokens). Verbatim export of VERB_DISPOSITION in scripts/mcp_projection_rules.py — schema documented there; stable within schema_version 1. Regenerate with scripts/project-mcp.py build.",
   "schema_version": 1,
   "statuses": {
     "live": "maps to a shipped connector tool (target names it)",
