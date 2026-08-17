@@ -185,8 +185,9 @@ export function registerMedia(program: Command): void {
 
   addGlobalFlags(
     media
-      .command('video-frames <ref_or_path>')
+      .command('video-frames [ref_or_path]')
       .description('sample still frames from a video and LOOK at them (free) — closes the generate loop')
+      .option('--source <ref_or_path>', 'the video as a flag instead of the positional — same accepted values')
       .option('--count <n>', `frames sampled evenly across the clip, ${MIN_FRAME_COUNT}-${MAX_FRAME_COUNT} (default 4; first and last always included)`, parseFrameCount)
       .option(
         '--timestamps <ms...>',
@@ -206,7 +207,7 @@ export function registerMedia(program: Command): void {
       const inv = buildInvocation(cmd);
       const { client } = await authedClient(inv, FRAMES_TIMEOUT_MS);
       return performVideoFrames(client, inv, {
-        input: args[0] as string,
+        input: singleMediaRef(args, opts, 'video-frames', 'video'),
         count: opts.count as number | undefined,
         timestampsMs: opts.timestamps as number[] | undefined,
         output: opts.output as string | undefined,
@@ -216,15 +217,16 @@ export function registerMedia(program: Command): void {
 
   addGlobalFlags(
     media
-      .command('upscale <ref_or_path>')
+      .command('upscale [ref_or_path]')
       .description('upscale an image 2x or 4x (metered); accepts a file_ ref, URL, or local path')
+      .option('--source <ref_or_path>', 'the image as a flag instead of the positional — same accepted values')
       .option('--scale <n>', 'upscale factor: 2 or 4', (v: string) => Number.parseInt(v, 10))
       .option('-o, --output <path>', 'download artifacts: a file path, or a directory (also used for --num-images > 1)'),
   ).action(
     wrapAction(async (args, opts, cmd) => {
       const inv = buildInvocation(cmd);
       const { client } = await authedClient(inv, MEDIA_TIMEOUT_MS);
-      const image = await mediaInput(args[0] as string, client);
+      const image = await mediaInput(singleMediaRef(args, opts, 'upscale', 'image'), client);
       const payload = { image, ...(typeof opts.scale === 'number' ? { scale: opts.scale } : {}) };
       return mediaCall(client, inv, 'media.upscale', endpoints.mediaUpscale(), payload, opts.output as string | undefined);
     }),
@@ -232,15 +234,16 @@ export function registerMedia(program: Command): void {
 
   addGlobalFlags(
     media
-      .command('upscale-video <ref_or_path>')
+      .command('upscale-video [ref_or_path]')
       .description('upscale a video (metered); accepts a file_ ref, URL, or local path')
+      .option('--source <ref_or_path>', 'the video as a flag instead of the positional — same accepted values')
       .option('--resolution <res>', 'target resolution: 720p | 1080p | 1440p | 2160p')
       .option('-o, --output <path>', 'download artifacts: a file path, or a directory (also used for --num-images > 1)'),
   ).action(
     wrapAction(async (args, opts, cmd) => {
       const inv = buildInvocation(cmd);
       const { client } = await authedClient(inv, MEDIA_TIMEOUT_MS);
-      const video = await mediaInput(args[0] as string, client);
+      const video = await mediaInput(singleMediaRef(args, opts, 'upscale-video', 'video'), client);
       // Wire field is target_resolution (extra=forbid server-side); the flag stays --resolution.
       const payload = { video, ...(typeof opts.resolution === 'string' ? { target_resolution: opts.resolution } : {}) };
       try {
@@ -257,15 +260,16 @@ export function registerMedia(program: Command): void {
 
   addGlobalFlags(
     media
-      .command('remove-background <ref_or_path>')
+      .command('remove-background [ref_or_path]')
       .description('remove an image background (metered); result is a new transparent PNG')
+      .option('--source <ref_or_path>', 'the image as a flag instead of the positional — same accepted values')
       .option('--high-quality', 'use the high-quality matting model')
       .option('-o, --output <path>', 'download artifacts: a file path, or a directory (also used for --num-images > 1)'),
   ).action(
     wrapAction(async (args, opts, cmd) => {
       const inv = buildInvocation(cmd);
       const { client } = await authedClient(inv, MEDIA_TIMEOUT_MS);
-      const image = await mediaInput(args[0] as string, client);
+      const image = await mediaInput(singleMediaRef(args, opts, 'remove-background', 'image'), client);
       const payload = { image, ...(opts.highQuality === true ? { high_quality: true } : {}) };
       return mediaCall(client, inv, 'media.remove_background', endpoints.mediaRemoveBackground(), payload, opts.output as string | undefined);
     }),
@@ -824,6 +828,32 @@ function parseModelParams(value: string): Record<string, unknown> {
   } catch {
     throw CliError.usage(`Invalid --model-params '${value}' — expected a JSON object, e.g. '{"style":"photo"}'.`);
   }
+}
+
+/**
+ * ENG-4997: the media group carried two spellings for one concept — `--source` on the
+ * multi-input verbs (generate-image, edit-image), a bare positional on the single-input ones.
+ * An agent that learns the flag reaches for it on the others and gets `unknown option`. The
+ * positional stays canonical; `--source` is an accepted alias. Exactly one of the two — both
+ * at once is a contradiction, not a precedence puzzle to resolve silently.
+ */
+function singleMediaRef(args: unknown[], opts: Record<string, unknown>, verb: string, noun: string): string {
+  const positional = typeof args[0] === 'string' ? args[0] : undefined;
+  const flag = typeof opts.source === 'string' ? opts.source : undefined;
+  if (positional !== undefined && flag !== undefined) {
+    throw CliError.usage(
+      `'media ${verb}' got the ${noun} twice: once positionally and once as --source.`,
+      `Pass it once — moda media ${verb} <ref_or_path> (--source <ref_or_path> is the same thing).`,
+    );
+  }
+  const ref = positional ?? flag;
+  if (ref === undefined) {
+    throw CliError.usage(
+      `'media ${verb}' needs the ${noun} to operate on.`,
+      `moda media ${verb} <ref_or_path> (or --source <ref_or_path>) — a file_ ref, an http(s) URL, or a local path.`,
+    );
+  }
+  return ref;
 }
 
 /**
