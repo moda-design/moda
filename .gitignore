@@ -4,6 +4,10 @@ node_modules/
 packages/cli-*/bin/moda
 packages/cli-*/bin/moda.exe
 __pycache__/
+# `bun build --compile` (scripts/build.ts) leaves a hashed sidecar next to the
+# invocation, e.g. `.18ccbbacfe2fff78-00000000.bun-build`. It is scratch, it is
+# named differently every run, and it is trivially swept into a commit by `git add -A`.
+*.bun-build
 # dist/ holds throwaway build artifacts EXCEPT the committed MCP-skills
 # projection, which is a build artifact of scripts/project-mcp.py kept in
 # git (fanout-style) so CI can fail on drift.
