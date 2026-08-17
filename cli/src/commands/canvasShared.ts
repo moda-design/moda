@@ -125,6 +125,23 @@ export function cacheFromResponse(ref: string, body: unknown, env: NodeJS.Proces
 }
 
 /**
+ * One repair-warning line. The mutation lanes send BOTH shapes through `warnings[]`: the markup
+ * validator emits objects (`{severity, code, message}` — e.g. `flex_child_missing_size`), and the
+ * element walker emits bare strings (`"Unknown element type: blend"`). Reading fields off a string
+ * yielded `[warn] : ` and lost the only text that made `requires_repair` actionable, so a string
+ * entry is printed as-is and anything unrecognized falls back to its JSON rather than to blank.
+ */
+export function warningLine(warning: unknown): string {
+  if (typeof warning === 'string') return warning.trim().length > 0 ? warning : JSON.stringify(warning);
+  const w = asObject(warning);
+  const severity = str(w, 'severity') ?? 'warn';
+  const code = str(w, 'code');
+  const message = str(w, 'message');
+  if (code === undefined && message === undefined) return `[${severity}] ${JSON.stringify(warning)}`;
+  return `[${severity}] ${code !== undefined ? `${code}: ` : ''}${message ?? ''}`.trimEnd();
+}
+
+/**
  * Shape a mutation response into the §3 output contract document. Never caches the advisory
  * revision. Idempotent replays (`replayed: true`, and `reused_existing: true` + the original
  * `created_at` + a steering `note` on a replayed create) are surfaced LOUDLY in human output;
@@ -173,10 +190,7 @@ export function mutationOutcome(
       if (requiresRepair) {
         write('requires_repair: true — read the warnings and author a corrective edit (do not re-run).');
         const warnings = Array.isArray(root.warnings) ? root.warnings : [];
-        for (const warning of warnings) {
-          const w = asObject(warning);
-          write(`  [${str(w, 'severity') ?? 'warn'}] ${str(w, 'code') ?? ''}: ${str(w, 'message') ?? ''}`);
-        }
+        for (const warning of warnings) write(`  ${warningLine(warning)}`);
       }
       const editorUrl = str(root, 'editor_url');
       if (editorUrl !== undefined) write(`editor: ${editorUrl}`);
