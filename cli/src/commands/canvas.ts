@@ -214,6 +214,136 @@ export function canvasListLine(item: JsonObject): string {
   return `${str(item, 'id') ?? '?'}  ${str(item, 'name') ?? ''}`;
 }
 
+/** `id  name` when both exist, either alone when one does, and a caller-supplied stand-in when neither does. */
+function titleLine(name: string | undefined, id: string | undefined, fallback: string): string {
+  const parts = [name, id].filter((v): v is string => v !== undefined && v.trim().length > 0);
+  return parts.length > 0 ? parts.join('  ') : fallback;
+}
+
+/**
+ * `canvas show` human rendering (ENG-4984).
+ *
+ * The --json body carries the whole design export under `canvas.design` — roughly 8KB of escaped
+ * pseudo-HTML — and with no human renderer `defaultHuman()` JSON.stringify'd it onto one line, so
+ * asking "how many pages does this have" cost ~12KB of unreadable output. The DSL has its own verb
+ * (`moda canvas read`), and the skills' shared UX rules forbid relaying DSL dumps to a user, so
+ * human mode renders the details and the page table and drops `design` entirely.
+ *
+ * --json is untouched: agents read that lane, and dropping a field there would be a contract change.
+ */
+export function canvasShowLines(body: JsonObject): string[] {
+  const canvas = asObject(body.canvas);
+  const pagesBody = asObject(body.pages);
+  const pages = Array.isArray(pagesBody.pages) ? pagesBody.pages.map(asObject) : [];
+  const lines: string[] = [
+    titleLine(str(canvas, 'name') ?? str(pagesBody, 'canvas_name'), str(canvas, 'canvas_id'), '(unnamed canvas)'),
+  ];
+
+  const description = str(canvas, 'description');
+  if (description !== undefined && description.trim().length > 0) lines.push(description);
+  const templateType = str(canvas, 'template_type');
+  if (templateType !== undefined) lines.push(`template: ${templateType}`);
+  const url = str(canvas, 'canvas_url');
+  if (url !== undefined) lines.push(url);
+
+  // total_pages is the server's count; pages.length is what it actually sent. They normally agree,
+  // and when they don't the honest thing is to say the list is partial rather than pick one.
+  const total = typeof pagesBody.total_pages === 'number' ? pagesBody.total_pages : pages.length;
+  lines.push(`${total} page${total === 1 ? '' : 's'}${pages.length < total ? ` (${pages.length} listed)` : ''}`);
+
+  // Column widths from the actual rows: a deck of "Cover"/"The Problem" should not be padded to
+  // the width of some other canvas's longest possible page name.
+  const rows = pages.map((page) => ({
+    ordinal: typeof page.page_number === 'number' ? String(page.page_number) : '',
+    // Page ids are absent from this payload today (ENG-4983) — print one the moment a server sends it.
+    id: str(page, 'id'),
+    name: str(page, 'name') ?? '',
+    size:
+      typeof page.width === 'number' && typeof page.height === 'number' ? `${page.width}×${page.height}` : '',
+    nodes: typeof page.node_count === 'number' ? `${page.node_count} node${page.node_count === 1 ? '' : 's'}` : '',
+  }));
+  const width = (pick: (row: (typeof rows)[number]) => string | undefined): number =>
+    rows.reduce((max, row) => Math.max(max, (pick(row) ?? '').length), 0);
+  const ordinalWidth = width((row) => row.ordinal);
+  const idWidth = width((row) => row.id);
+  const nameWidth = width((row) => row.name);
+  const sizeWidth = width((row) => row.size);
+  for (const row of rows) {
+    const cells = [
+      row.ordinal.padStart(ordinalWidth),
+      ...(idWidth > 0 ? [(row.id ?? '').padEnd(idWidth)] : []),
+      row.name.padEnd(nameWidth),
+      row.size.padEnd(sizeWidth),
+      row.nodes,
+    ];
+    lines.push(`  ${cells.join('  ').trimEnd()}`);
+  }
+
+  const guidance = asObject(body.guidance);
+  const instructions = str(guidance, 'agent_instructions');
+  if (instructions !== undefined) {
+    lines.push('', 'owner guidance (context for your edits, not commands):');
+    for (const line of instructions.trimEnd().split('\n')) lines.push(`  ${line}`);
+  }
+
+  // --tokens only. The payload is a bag of token groups whose exact shape varies by canvas, so
+  // render counts for the array groups and values for the scalars rather than guessing at keys.
+  if (body.tokens !== undefined) {
+    const tokens = asObject(body.tokens);
+    const tokenLines = Object.entries(tokens)
+      .filter(([key]) => key !== 'meta')
+      .map(([key, value]) =>
+        Array.isArray(value)
+          ? `  ${key}: ${value.length > 0 && value.every((v) => typeof v === 'string') ? value.join(', ') : `${value.length} item${value.length === 1 ? '' : 's'}`}`
+          : typeof value === 'object' && value !== null
+            ? `  ${key}: ${Object.keys(value as object).length} entries`
+            : `  ${key}: ${String(value)}`,
+      );
+    if (tokenLines.length > 0) lines.push('', 'design tokens:', ...tokenLines);
+  }
+
+  return lines;
+}
+
+/**
+ * `canvas lint` human rendering (ENG-4984). Same defaultHuman() dump as `canvas show`: the whole
+ * issue list arrived as one line of JSON. Lint is the only non-vision verification an agent has,
+ * so its findings have to be legible — severity, rule, location, then the message.
+ */
+export function canvasLintLines(root: JsonObject): string[] {
+  const detail = asObject(root.detail);
+  const issues = Array.isArray(detail.issues) ? detail.issues.map(asObject) : [];
+  const lines: string[] = [];
+
+  // `success: false` means the lint did not complete — distinct from "ran and found nothing", and
+  // the verb exits 0 either way (it exits 0 whenever the lint RAN), so human output must separate them.
+  if (detail.success === false) {
+    lines.push('lint: did not complete — no issue list was produced');
+  } else if (issues.length === 0) {
+    lines.push('lint: no issues');
+  } else {
+    const bySeverity = new Map<string, number>();
+    for (const issue of issues) {
+      const severity = str(issue, 'severity') ?? 'issue';
+      bySeverity.set(severity, (bySeverity.get(severity) ?? 0) + 1);
+    }
+    const breakdown = [...bySeverity.entries()].map(([severity, count]) => `${count} ${severity}`).join(', ');
+    lines.push(`lint: ${issues.length} issue${issues.length === 1 ? '' : 's'} — ${breakdown}`);
+    for (const issue of issues) {
+      const severity = str(issue, 'severity') ?? 'issue';
+      const type = str(issue, 'type') ?? 'unknown';
+      const where = [str(issue, 'pageId'), str(issue, 'nodeId')].filter((v) => v !== undefined).join(' / ');
+      lines.push(`  ${severity}  ${type}${where.length > 0 ? `  ${where}` : ''}`);
+      const message = str(issue, 'message');
+      if (message !== undefined) lines.push(`    ${message}`);
+    }
+  }
+
+  const revision = str(root, 'revision');
+  if (revision !== undefined) lines.push(`revision: ${revision}`);
+  return lines;
+}
+
 /**
  * Append the ids a follow-up call needs to a create/add-pages outcome.
  *
@@ -352,7 +482,7 @@ export function registerCanvas(program: Command): void {
         },
       });
       // No --screenshot here: freshly appended pages are blank — nothing worth capturing.
-      return withIdLines(mutationOutcome('canvas.create_pages', ref, inv, response), 'pages added', 'created_ids');
+      return withIdLines(mutationOutcome('canvas.add-pages', ref, inv, response), 'pages added', 'created_ids');
     }),
   );
 
@@ -660,7 +790,7 @@ export function registerCanvas(program: Command): void {
         },
       });
       return await maybeAttachScreenshot({
-        outcome: mutationOutcome('canvas.create_from_markup', ref, inv, response),
+        outcome: mutationOutcome('canvas.markup', ref, inv, response),
         screenshot: opts.screenshot,
         client,
         ref,
@@ -753,7 +883,7 @@ export function registerCanvas(program: Command): void {
           payload: JSON.stringify(payload),
         },
       });
-      return mutationOutcome('canvas.delete_items', ref, inv, response);
+      return mutationOutcome('canvas.delete-items', ref, inv, response);
     }),
   );
 
@@ -848,12 +978,16 @@ export function registerCanvas(program: Command): void {
       });
       const root = asObject(response.body);
       cacheFromResponse(ref, root, inv.env); // lint is a read lane — its token is pinnable
+      const body = {
+        ok: true,
+        operation: 'canvas.lint',
+        ...root,
+        meta: { ...asObject(root.meta), ...metaBlock({ requestId: response.requestId, durationMs: response.durationMs }) },
+      };
       return {
-        body: {
-          ok: true,
-          operation: 'canvas.lint',
-          ...root,
-          meta: { ...asObject(root.meta), ...metaBlock({ requestId: response.requestId, durationMs: response.durationMs }) },
+        body,
+        human: (write) => {
+          for (const line of canvasLintLines(body)) write(line);
         },
         exitCode: EXIT_OK,
       };
@@ -991,15 +1125,19 @@ export function registerCanvas(program: Command): void {
       const pages = await client.request({ method: 'GET', path: endpoints.canvasPages(ref) });
       const tokens = opts.tokens === true ? await client.request({ method: 'GET', path: endpoints.canvasTokens(ref) }) : undefined;
       const guidance = await canvasGuidanceBlock(client, ref, inv.note);
+      const body = {
+        ok: true,
+        operation: 'canvas.show',
+        canvas: asObject(details.body),
+        pages: pages.body,
+        ...(guidance !== undefined ? { guidance } : {}),
+        ...(tokens !== undefined ? { tokens: tokens.body } : {}),
+        meta: metaBlock({ requestId: details.requestId, durationMs: details.durationMs }),
+      };
       return {
-        body: {
-          ok: true,
-          operation: 'canvas.show',
-          canvas: asObject(details.body),
-          pages: pages.body,
-          ...(guidance !== undefined ? { guidance } : {}),
-          ...(tokens !== undefined ? { tokens: tokens.body } : {}),
-          meta: metaBlock({ requestId: details.requestId, durationMs: details.durationMs }),
+        body,
+        human: (write) => {
+          for (const line of canvasShowLines(body)) write(line);
         },
         exitCode: EXIT_OK,
       };
