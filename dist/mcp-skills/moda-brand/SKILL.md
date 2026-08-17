@@ -45,8 +45,8 @@ description: >-
 
 ## UX rules
 
-- Talk in deliverables, not plumbing: hand over the canvas URL and the
-  export download link. Never show raw JSON, DSL dumps, node ids, or request payloads.
+- Talk in deliverables: hand over the canvas URL and the export download
+  link. Decide from the tool result fields; never SHOW raw JSON, DSL, or ids.
 - Canvas references: pass whatever the user gave you — a moda.app canvas
   URL, a share link, a `cvs_` public id, or a raw UUID; the tools resolve
   them identically. Copy URLs and ids VERBATIM from tool output — never

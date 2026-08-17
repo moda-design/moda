@@ -120,10 +120,10 @@ PASSAGES: dict[str, list] = {}
 
 PASSAGES["shared/ux-rules.md"] = [
     (
-        "- Talk in deliverables, not plumbing: print the canvas URL and export file\n"
-        "  path. Never show raw JSON",
-        "- Talk in deliverables, not plumbing: hand over the canvas URL and the\n"
-        "  export download link. Never show raw JSON",
+        "- Talk in deliverables: print the canvas URL and export path. Decide from\n"
+        "  `--json` (human output omits caveats); never SHOW raw JSON",
+        "- Talk in deliverables: hand over the canvas URL and the export download\n"
+        "  link. Decide from the tool result fields; never SHOW raw JSON",
     ),
     (
         "a `cvs_` public id, or a raw UUID; the CLI resolves\n  them identically.",
