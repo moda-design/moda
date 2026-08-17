@@ -78,13 +78,17 @@ export function registerAccount(program: Command): void {
           entitlements,
           model: {
             deterministic_lane: 'canvas authoring, reads, lint, screenshot, export, site.* — 0 metered credits on every plan',
-            metered_lanes: 'task.* (Omni), media.*, and web.* — cost class before, exact receipt after, in usage on every response',
+            metered_lanes:
+              'task.* (Omni), media.*, and web.* — every response carries usage.class; the exact per-call ' +
+              'credit amount is NOT returned inline. Per-call credits appear in `moda account usage` once the ' +
+              'server has finalized them, and `moda account status` reports the running balance.',
           },
           meta: metaBlock({ requestId: response.requestId, durationMs: response.durationMs }),
         },
         human: (write) => {
           write('deterministic lane (authoring, read, lint, screenshot, export, site.*): 0 credits, every plan');
-          write('metered lanes (task.*, media.*, web.*): labeled, cost class before + receipt after');
+          write('metered lanes (task.*, media.*, web.*): cost class labeled on every response');
+          write('  exact per-call credits are not returned inline — see: moda account usage (balance: moda account status)');
           if (Object.keys(entitlements).length > 0) write(`entitlements: ${JSON.stringify(entitlements)}`);
           else write('entitlement details: not reported by this server build');
         },
