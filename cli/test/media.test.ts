@@ -785,3 +785,57 @@ describe('media idempotency command is frozen across the ENG-5011 label rename',
     );
   });
 });
+
+describe('media single-input verbs accept --source as well as the positional (ENG-4997)', () => {
+  const UPSCALE_RESULT = {
+    operation: 'media.upscale',
+    result: { file_id: 'file_01HZX9K2ABCDEFGHJKMNPQRSTV', url: 'https://example.test/up.png' },
+    usage: { credits: 1 },
+  };
+  const REF = 'file_01HZX9K2ABCDEFGHJKMNPQRSTV';
+
+  test('upscale: --source rides the wire as `image`, exactly as the positional does', async () => {
+    const flag = captureBody(UPSCALE_RESULT);
+    expect(await runCli(['media', 'upscale', '--source', REF, '--json'], flag.base)).toBe(0);
+    expect(flag.calls[0]?.image).toBe(REF);
+    server?.stop(true);
+
+    const positional = captureBody(UPSCALE_RESULT);
+    expect(await runCli(['media', 'upscale', REF, '--json'], positional.base)).toBe(0);
+    // Same field, same value — the alias is a spelling, not a second code path.
+    expect(positional.calls[0]?.image).toEqual(flag.calls[0]?.image as string);
+  });
+
+  test('remove-background: --source rides the wire as `image`', async () => {
+    const { base, calls } = captureBody({ operation: 'media.remove_background', result: { file_id: REF }, usage: {} });
+    expect(await runCli(['media', 'remove-background', '--source', REF, '--json'], base)).toBe(0);
+    expect(calls[0]?.image).toBe(REF);
+  });
+
+  test('upscale-video: --source rides the wire as `video` (not `image`)', async () => {
+    const { base, calls } = captureBody({ operation: 'media.upscale_video', result: { file_id: REF }, usage: {} });
+    expect(await runCli(['media', 'upscale-video', '--source', REF, '--resolution', '1080p', '--json'], base)).toBe(0);
+    expect(calls[0]?.video).toBe(REF);
+    expect(calls[0]?.image).toBeUndefined();
+  });
+
+  test('both spellings at once is a usage error, not a silent precedence rule', async () => {
+    const { base, calls } = captureBody(UPSCALE_RESULT);
+    expect(await runCli(['media', 'upscale', REF, '--source', 'https://example.test/other.png', '--json'], base)).toBe(2);
+    // Refused before spending anything — these verbs are metered.
+    expect(calls.length).toBe(0);
+  });
+
+  test('neither spelling names the verb and both ways to supply the input', async () => {
+    const { base, calls } = captureBody(UPSCALE_RESULT);
+    expect(await runCli(['media', 'upscale', '--json'], base)).toBe(2);
+    expect(calls.length).toBe(0);
+  });
+
+  test('video-frames takes the alias too — the free read verb is in the same group', async () => {
+    const { base, calls } = captureBody(UPSCALE_RESULT);
+    // Both spellings at once: the shared guard fires before any request goes out.
+    expect(await runCli(['media', 'video-frames', REF, '--source', REF, '--json'], base)).toBe(2);
+    expect(calls.length).toBe(0);
+  });
+});

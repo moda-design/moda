@@ -5027,7 +5027,7 @@
       "positionals": [
         {
           "name": "ref_or_path",
-          "required": true,
+          "required": false,
           "variadic": false
         }
       ],
@@ -5087,6 +5087,12 @@
           "required": false
         },
         {
+          "flag": "--source",
+          "description": "the image as a flag instead of the positional — same accepted values",
+          "takes_value": true,
+          "required": false
+        },
+        {
           "flag": "--timeout",
           "description": "per-command ceiling override, seconds",
           "takes_value": true,
@@ -5106,7 +5112,7 @@
       "positionals": [
         {
           "name": "ref_or_path",
-          "required": true,
+          "required": false,
           "variadic": false
         }
       ],
@@ -5166,6 +5172,12 @@
           "required": false
         },
         {
+          "flag": "--source",
+          "description": "the image as a flag instead of the positional — same accepted values",
+          "takes_value": true,
+          "required": false
+        },
+        {
           "flag": "--timeout",
           "description": "per-command ceiling override, seconds",
           "takes_value": true,
@@ -5185,7 +5197,7 @@
       "positionals": [
         {
           "name": "ref_or_path",
-          "required": true,
+          "required": false,
           "variadic": false
         }
       ],
@@ -5245,6 +5257,12 @@
           "required": false
         },
         {
+          "flag": "--source",
+          "description": "the video as a flag instead of the positional — same accepted values",
+          "takes_value": true,
+          "required": false
+        },
+        {
           "flag": "--timeout",
           "description": "per-command ceiling override, seconds",
           "takes_value": true,
@@ -5264,7 +5282,7 @@
       "positionals": [
         {
           "name": "ref_or_path",
-          "required": true,
+          "required": false,
           "variadic": false
         }
       ],
@@ -5321,6 +5339,12 @@
           "flag": "--quiet",
           "description": "suppress non-essential stderr",
           "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--source",
+          "description": "the video as a flag instead of the positional — same accepted values",
+          "takes_value": true,
           "required": false
         },
         {
