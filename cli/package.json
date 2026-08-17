@@ -2,7 +2,7 @@
   "name": "@moda-design/cli-src",
   "private": true,
   "license": "Apache-2.0",
-  "version": "0.15.1",
+  "version": "0.15.2",
   "type": "module",
   "description": "Source for the moda CLI. Compiled with `bun build --compile` (scripts/build.ts).",
   "scripts": {
