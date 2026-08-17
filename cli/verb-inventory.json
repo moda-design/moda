@@ -4628,7 +4628,7 @@
         },
         {
           "flag": "--output",
-          "description": "download the artifact to a local file",
+          "description": "download artifacts: a file path, or a directory (also used for --num-images > 1)",
           "takes_value": true,
           "required": false
         },
@@ -4743,7 +4743,7 @@
         },
         {
           "flag": "--output",
-          "description": "download the artifact to a local file",
+          "description": "download artifacts: a file path, or a directory (also used for --num-images > 1)",
           "takes_value": true,
           "required": false
         },
@@ -4894,7 +4894,7 @@
         },
         {
           "flag": "--output",
-          "description": "download the artifact to a local file",
+          "description": "download artifacts: a file path, or a directory (also used for --num-images > 1)",
           "takes_value": true,
           "required": false
         },
@@ -5070,7 +5070,7 @@
         },
         {
           "flag": "--output",
-          "description": "download the artifact to a local file",
+          "description": "download artifacts: a file path, or a directory (also used for --num-images > 1)",
           "takes_value": true,
           "required": false
         },
@@ -5143,7 +5143,7 @@
         },
         {
           "flag": "--output",
-          "description": "download the artifact to a local file",
+          "description": "download artifacts: a file path, or a directory (also used for --num-images > 1)",
           "takes_value": true,
           "required": false
         },
@@ -5222,7 +5222,7 @@
         },
         {
           "flag": "--output",
-          "description": "download the artifact to a local file",
+          "description": "download artifacts: a file path, or a directory (also used for --num-images > 1)",
           "takes_value": true,
           "required": false
         },
