@@ -17,6 +17,8 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { ApiClient } from '../src/api/client.ts';
 import { performMediaModels } from '../src/commands/media.ts';
+import { parseTimestampMs } from '../src/commands/media.ts';
+import { CliError } from '../src/cliError.ts';
 
 const MAIN = resolve(import.meta.dir, '../src/main.ts');
 
@@ -550,5 +552,47 @@ describe('bare-string controls stay verbatim (regression guard for ENG-5026)', (
   test('an older server sending ["quality"] still renders "quality"', () => {
     expect(controlSpec('quality')).toBe('quality');
     expect(controlSpec('quality')).not.toContain(':value');
+  });
+});
+
+describe('--timestamps accepts both list forms (ENG-5027)', () => {
+  test('space-separated values accumulate, as commander variadics always did', () => {
+    expect(parseTimestampMs('2500', parseTimestampMs('0', undefined))).toEqual([0, 2500]);
+  });
+
+  test('a comma-separated list is accepted — the obvious first attempt', () => {
+    expect(parseTimestampMs('0,2500,4999', undefined)).toEqual([0, 2500, 4999]);
+  });
+
+  test('the two forms mix, and surrounding whitespace is tolerated', () => {
+    expect(parseTimestampMs('2500, 4999', parseTimestampMs('0', undefined))).toEqual([0, 2500, 4999]);
+  });
+
+  test('a genuinely non-numeric value still fails, now naming both working forms', () => {
+    try {
+      parseTimestampMs('0,abc', undefined);
+      throw new Error('expected a usage error');
+    } catch (err) {
+      const fields = (err as CliError).fields;
+      expect(fields.code).toBe('usage');
+      expect(fields.hint).toContain('--timestamps 0 2500 4999');
+      expect(fields.hint).toContain('--timestamps 0,2500,4999');
+    }
+  });
+
+  test('the max-8 refusal counts across both forms and points at --count', () => {
+    try {
+      parseTimestampMs('1,2,3,4,5,6,7,8,9', undefined);
+      throw new Error('expected a usage error');
+    } catch (err) {
+      const fields = (err as CliError).fields;
+      expect(fields.message).toContain('at most 8');
+      expect(fields.hint).toContain('--count 8');
+    }
+  });
+
+  test('an empty or comma-only value is a usage error, not a silent empty list', () => {
+    expect(() => parseTimestampMs('', undefined)).toThrow(CliError);
+    expect(() => parseTimestampMs(',,', undefined)).toThrow(CliError);
   });
 });

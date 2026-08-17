@@ -5331,7 +5331,7 @@
         },
         {
           "flag": "--timestamps",
-          "description": "exact moments to sample, in milliseconds (max 8) — read them off the duration_ms a previous call reported. Out-of-range values clamp to the clip. Cannot be combined with --count",
+          "description": "exact moments to sample, in milliseconds — space-separated or comma-separated, max 8 (e.g. --timestamps 0 2500 4999). Read them off the duration_ms a previous call reported. Out-of-range values clamp to the clip. Cannot be combined with --count",
           "takes_value": true,
           "required": false
         }

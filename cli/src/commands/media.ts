@@ -190,8 +190,9 @@ export function registerMedia(program: Command): void {
       .option('--count <n>', `frames sampled evenly across the clip, ${MIN_FRAME_COUNT}-${MAX_FRAME_COUNT} (default 4; first and last always included)`, parseFrameCount)
       .option(
         '--timestamps <ms...>',
-        `exact moments to sample, in milliseconds (max ${MAX_FRAME_COUNT}) — read them off the ` +
-          'duration_ms a previous call reported. Out-of-range values clamp to the clip. Cannot be combined with --count',
+        `exact moments to sample, in milliseconds — space-separated or comma-separated, max ` +
+          `${MAX_FRAME_COUNT} (e.g. --timestamps 0 2500 4999). Read them off the duration_ms a ` +
+          'previous call reported. Out-of-range values clamp to the clip. Cannot be combined with --count',
         parseTimestampMs,
       )
       .option('-o, --output <path>', 'write the frames to disk: output file (single frame) or directory'),
@@ -776,15 +777,32 @@ function parseFrameCount(value: string): number {
   return parsed;
 }
 
-/** Variadic collector: commander calls this once per value with the accumulated list. */
-function parseTimestampMs(value: string, previous: number[] | undefined): number[] {
-  const parsed = Number.parseInt(value, 10);
-  if (!/^\d+$/.test(value.trim())) {
-    throw CliError.usage(`Invalid --timestamps value '${value}' — expected a whole number of milliseconds.`);
+/**
+ * Variadic collector: commander calls this once per value with the accumulated list.
+ *
+ * A comma-separated list is accepted too. The flag name is plural, so `--timestamps 0,2500` is
+ * the obvious first attempt, and rejecting it taught the reader nothing — milliseconds cannot
+ * contain a comma, so there is no ambiguity in taking it. The refusal that remains (a genuinely
+ * non-numeric value) now names both working forms instead of only restating the requirement.
+ */
+export function parseTimestampMs(value: string, previous: number[] | undefined): number[] {
+  const parts = value
+    .split(',')
+    .map((part) => part.trim())
+    .filter((part) => part.length > 0);
+  if (parts.length === 0 || parts.some((part) => !/^\d+$/.test(part))) {
+    throw CliError.usage(
+      `Invalid --timestamps value '${value}' — expected whole numbers of milliseconds.`,
+      'Pass several moments as separate values or one comma-separated list: ' +
+        '--timestamps 0 2500 4999, or --timestamps 0,2500,4999',
+    );
   }
-  const list = [...(previous ?? []), parsed];
+  const list = [...(previous ?? []), ...parts.map((part) => Number.parseInt(part, 10))];
   if (list.length > MAX_FRAME_COUNT) {
-    throw CliError.usage(`--timestamps takes at most ${MAX_FRAME_COUNT} moments.`);
+    throw CliError.usage(
+      `--timestamps takes at most ${MAX_FRAME_COUNT} moments.`,
+      `Sample ${MAX_FRAME_COUNT} or fewer, or use --count ${MAX_FRAME_COUNT} to spread them evenly across the clip.`,
+    );
   }
   return list;
 }
