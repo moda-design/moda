@@ -1,5 +1,5 @@
 {
-  "skills_release": "v2026.08.14+preview.10",
+  "skills_release": "v2026.08.17+preview.11",
   "authoring": "skill text is authored directly in this repo; a server-side publish pipeline takes over at ship time",
   "cli": {
     "floor": "0.14.0",
