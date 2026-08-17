@@ -3,7 +3,7 @@ import type { Command } from 'commander';
 import type { ApiClient } from '../api/client.ts';
 import { endpoints } from '../api/endpoints.ts';
 import { deriveIdempotencyKey } from '../api/idempotency.ts';
-import { asObject, str } from '../api/types.ts';
+import { asObject, str, type JsonObject } from '../api/types.ts';
 import { CliError } from '../cliError.ts';
 import { readTaskStart, recordTaskStart, recordTaskStatus, type TaskStartEntry } from '../config/state.ts';
 import { LIST_ALL_CAP, fetchListPages, listFlagsOf, listOutcome, parseListLimit, parseListOffset } from './listLane.ts';
@@ -23,6 +23,32 @@ const FAILED = new Set(['failed', 'canceled', 'expired']);
 const FORMAT_CATEGORIES = new Set([
   'slides', 'social', 'carousel', 'pdf', 'diagram', 'ui', 'animation', 'prints', 'web-ads', 'other',
 ]);
+
+/** Max prompt characters on a list line — enough to tell two tasks apart, short enough to scan. */
+const TASK_EXCERPT_MAX = 72;
+
+/**
+ * One list line per task. A bare `id  status` identifies nothing on an account with thousands of
+ * tasks, so lead with an excerpt of the prompt that started it — the only human-meaningful field
+ * the payload carries — and push kind/status/date into the facet bracket (template-list idiom).
+ */
+function taskLine(item: JsonObject): string {
+  const facets: string[] = [];
+  const kind = str(item, 'kind');
+  if (kind !== undefined) facets.push(kind);
+  const status = str(item, 'status');
+  if (status !== undefined) facets.push(status);
+  const created = str(item, 'created_at');
+  if (created !== undefined) facets.push(created.slice(0, 10));
+  const prompt = str(asObject(item.input), 'prompt')?.replace(/\s+/g, ' ').trim();
+  const excerpt =
+    prompt === undefined || prompt.length === 0
+      ? ''
+      : prompt.length > TASK_EXCERPT_MAX
+        ? `${prompt.slice(0, TASK_EXCERPT_MAX - 1)}…`
+        : prompt;
+  return `${str(item, 'id') ?? '?'}  ${excerpt}${facets.length > 0 ? `  [${facets.join(' · ')}]` : ''}`;
+}
 
 export function registerTask(program: Command): void {
   const task = program.command('task').description('Omni escalation lane — metered, labeled, explicit');
@@ -247,7 +273,7 @@ export function registerTask(program: Command): void {
         pages,
         flags,
         emptyHint: opts.active === true ? 'no running tasks — see all: moda task list' : 'no tasks yet',
-        itemLine: (item) => `${str(item, 'id') ?? '?'}  ${str(item, 'status') ?? ''}`,
+        itemLine: taskLine,
       });
     }),
   );
