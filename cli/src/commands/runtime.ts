@@ -127,7 +127,7 @@ export function metaBlock(extra: { requestId?: string; durationMs?: number } = {
 export interface VerbSemantics {
   /** Changes server-side state. */
   mutating?: boolean;
-  /** Spends Moda credits. The response carries usage.class, never the per-call credit amount. */
+  /** Spends Moda credits. Media/web responses carry usage.class; task responses report credits on completion. The per-call amount is never inline. */
   metered?: boolean;
   /** Returns/refreshes the pinnable revision token (the read lane writes pin against). */
   read_lane?: boolean;

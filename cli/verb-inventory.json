@@ -6660,7 +6660,7 @@
     },
     {
       "name": "task start",
-      "description": "start an Omni task (spends Moda credits; cost class on the response, credits via moda account usage)",
+      "description": "start an Omni task (spends Moda credits; labeled metered, finalized credits via moda account usage)",
       "positionals": [],
       "flags": [
         {

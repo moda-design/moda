@@ -79,16 +79,19 @@ export function registerAccount(program: Command): void {
           model: {
             deterministic_lane: 'canvas authoring, reads, lint, screenshot, export, site.* — 0 metered credits on every plan',
             metered_lanes:
-              'task.* (Omni), media.*, and web.* — every response carries usage.class; the exact per-call ' +
-              'credit amount is NOT returned inline. Per-call credits appear in `moda account usage` once the ' +
-              'server has finalized them, and `moda account status` reports the running balance.',
+              'media.* and web.* responses carry usage.class; task.* responses are CLI-labeled metered and ' +
+              'report the remaining balance on completion. The exact per-call credit amount is never returned ' +
+              'inline and is not retrievable today for direct media/web calls — finalized per-call credits ' +
+              'appear in `moda account usage` for Omni tasks only. `moda account status` (balance) is the ' +
+              'honest check; totals live in `moda account usage`.',
           },
           meta: metaBlock({ requestId: response.requestId, durationMs: response.durationMs }),
         },
         human: (write) => {
           write('deterministic lane (authoring, read, lint, screenshot, export, site.*): 0 credits, every plan');
-          write('metered lanes (task.*, media.*, web.*): cost class labeled on every response');
-          write('  exact per-call credits are not returned inline — see: moda account usage (balance: moda account status)');
+          write('metered lanes (task.*, media.*, web.*): labeled metered; per-call credit amounts are never inline');
+          write('  Omni tasks finalize per-call credits into: moda account usage — direct media/web calls do not (yet)');
+          write('  balance (the honest check): moda account status');
           if (Object.keys(entitlements).length > 0) write(`entitlements: ${JSON.stringify(entitlements)}`);
           else write('entitlement details: not reported by this server build');
         },
