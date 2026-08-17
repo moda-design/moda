@@ -11,11 +11,14 @@
  * the cards exist so the choice reads from the registry).
  */
 import { afterEach, describe, expect, test } from 'bun:test';
+import { controlSpec, sizeSpec } from '../src/commands/media.ts';
 import { mkdtempSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { ApiClient } from '../src/api/client.ts';
 import { performMediaModels } from '../src/commands/media.ts';
+import { parseTimestampMs } from '../src/commands/media.ts';
+import { CliError } from '../src/cliError.ts';
 
 const MAIN = resolve(import.meta.dir, '../src/main.ts');
 
@@ -493,5 +496,103 @@ describe('media models — human/JSON model-set parity (gate finding F4)', () =>
     expect(onDisk.video_model_ids).toEqual(MODELS_ENVELOPE.video_model_ids);
     const lines = humanLines(outcome);
     expect(lines[0]).toBe(`7 models → ${out} (inspect with jq/grep)`);
+  });
+});
+
+describe('model controls render their legal values (ENG-5026)', () => {
+  // Live payloads, captured from `moda media models --json`.
+  const QUALITY = {
+    id: 'quality',
+    label: 'Quality',
+    type: 'select',
+    options: [{ value: 'auto' }, { value: 'low' }, { value: 'medium' }, { value: 'high' }],
+    default: 'high',
+    max_items: null,
+  };
+  const COLORS = { id: 'colors', label: 'Brand colors', type: 'color_list', options: null, default: [], max_items: 5 };
+
+  test('a select renders its options and default — the whole point of the ticket', () => {
+    expect(controlSpec(QUALITY)).toBe('quality=auto|low|medium|high (default high)');
+    // The old render was the bare id, which told a caller nothing they could pass.
+    expect(controlSpec(QUALITY)).not.toBe('quality');
+  });
+
+  test('an open-valued control reports type and cap instead of an option list', () => {
+    // `colors` cannot be enumerated (options: null); type + max_items is the most a caller can be told.
+    expect(controlSpec(COLORS)).toBe('colors:color_list (max 5)');
+  });
+
+  test('a non-string default is omitted rather than rendered as [object Object]', () => {
+    const spec = controlSpec({ id: 'x', type: 'select', options: [{ value: 'a' }], default: [] });
+    expect(spec).toBe('x=a');
+    expect(spec).not.toContain('object');
+  });
+
+  test('plain-string options are accepted alongside the {value} shape', () => {
+    expect(controlSpec({ id: 'x', type: 'select', options: ['a', 'b'], default: 'a' })).toBe('x=a|b (default a)');
+  });
+
+  test('size envelope renders as a range, showing step only when it constrains', () => {
+    expect(sizeSpec({ min_width: 512, max_width: 3840, min_height: 512, max_height: 3840, step: 16 })).toBe(
+      'size 512-3840x512-3840 step 16',
+    );
+    expect(sizeSpec({ min_width: 512, max_width: 1536, min_height: 512, max_height: 1536, step: 1 })).toBe(
+      'size 512-1536x512-1536',
+    );
+  });
+
+  test('an incomplete or absent size envelope renders nothing', () => {
+    expect(sizeSpec(undefined)).toBeUndefined();
+    expect(sizeSpec({})).toBeUndefined();
+    expect(sizeSpec({ min_width: 512, max_width: 3840 })).toBeUndefined();
+  });
+});
+
+describe('bare-string controls stay verbatim (regression guard for ENG-5026)', () => {
+  test('an older server sending ["quality"] still renders "quality"', () => {
+    expect(controlSpec('quality')).toBe('quality');
+    expect(controlSpec('quality')).not.toContain(':value');
+  });
+});
+
+describe('--timestamps accepts both list forms (ENG-5027)', () => {
+  test('space-separated values accumulate, as commander variadics always did', () => {
+    expect(parseTimestampMs('2500', parseTimestampMs('0', undefined))).toEqual([0, 2500]);
+  });
+
+  test('a comma-separated list is accepted — the obvious first attempt', () => {
+    expect(parseTimestampMs('0,2500,4999', undefined)).toEqual([0, 2500, 4999]);
+  });
+
+  test('the two forms mix, and surrounding whitespace is tolerated', () => {
+    expect(parseTimestampMs('2500, 4999', parseTimestampMs('0', undefined))).toEqual([0, 2500, 4999]);
+  });
+
+  test('a genuinely non-numeric value still fails, now naming both working forms', () => {
+    try {
+      parseTimestampMs('0,abc', undefined);
+      throw new Error('expected a usage error');
+    } catch (err) {
+      const fields = (err as CliError).fields;
+      expect(fields.code).toBe('usage');
+      expect(fields.hint).toContain('--timestamps 0 2500 4999');
+      expect(fields.hint).toContain('--timestamps 0,2500,4999');
+    }
+  });
+
+  test('the max-8 refusal counts across both forms and points at --count', () => {
+    try {
+      parseTimestampMs('1,2,3,4,5,6,7,8,9', undefined);
+      throw new Error('expected a usage error');
+    } catch (err) {
+      const fields = (err as CliError).fields;
+      expect(fields.message).toContain('at most 8');
+      expect(fields.hint).toContain('--count 8');
+    }
+  });
+
+  test('an empty or comma-only value is a usage error, not a silent empty list', () => {
+    expect(() => parseTimestampMs('', undefined)).toThrow(CliError);
+    expect(() => parseTimestampMs(',,', undefined)).toThrow(CliError);
   });
 });
