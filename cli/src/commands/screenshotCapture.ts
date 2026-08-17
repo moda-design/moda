@@ -8,7 +8,8 @@
  */
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { asObject, str } from '../api/types.ts';
+import { asObject, str, strArray } from '../api/types.ts';
+import { CliError } from '../cliError.ts';
 import { detectImageFormat, resolveScreenshotPath } from './screenshotFiles.ts';
 
 /** Server ceiling (backend MAX_SCREENSHOT_PAGES): base64 payload size, not a request validator. */
@@ -34,6 +35,35 @@ export interface CaptureRun {
   /** Wall time summed across every batched call. */
   durationMs: number;
   calls: number;
+}
+
+/**
+ * In-band capture refusal. The tool host answers HTTP 200 carrying `success: false` and a typed
+ * `error` block rather than an HTTP error, so the transport layer sees nothing wrong: no pages
+ * come back, no file is written, and without this the run reads as a clean success (exit 0, empty
+ * output). Raise it into the normal typed-error path instead.
+ *
+ * Exit class: `unprocessable` (exit 2). The observed refusals reject the REQUEST (an unknown page
+ * id), and a did-not-commit class that harnesses do not retry is the safe default for a structured
+ * refusal — a transport class would send them into a retry loop over an input the server will keep
+ * rejecting. The `--screenshot` path on the mutation verbs is unaffected by the exit class: it
+ * catches capture failures by contract, since the mutation already committed.
+ */
+function throwIfCaptureRefused(root: Record<string, unknown>): void {
+  if (root.success !== false) return;
+  const error = asObject(root.error);
+  const details = asObject(error.details);
+  // The page ids live only in the error payload — surfacing them is the difference between a
+  // recoverable error and a dead end (no read verb prints them today).
+  const available = strArray(details, 'availablePageIds');
+  throw new CliError({
+    type: 'unprocessable',
+    code: (str(error, 'code') ?? 'capture_failed').toLowerCase(),
+    message: str(error, 'message') ?? 'The screenshot capture failed and no pages were captured.',
+    source: 'api',
+    ...(available.length > 0 ? { hint: `Available page ids: ${available.join(', ')}` } : {}),
+    ...(Object.keys(details).length > 0 ? { details } : {}),
+  });
 }
 
 function requestBody(pages: string[] | undefined, pixelRatio: number | undefined): Record<string, unknown> {
@@ -75,6 +105,7 @@ export async function captureScreenshots(input: {
   const { call, pages, pixelRatio } = input;
   const first = await call(requestBody(pages, pixelRatio));
   const roots = [asObject(first.body)];
+  throwIfCaptureRefused(roots[0]!);
   let durationMs = first.durationMs;
   const clampNote = str(roots[0]!, 'clamp_note');
   let truncated = clampNote !== undefined;
@@ -100,6 +131,7 @@ export async function captureScreenshots(input: {
         const response = await call(requestBody(remaining.slice(i, i + MAX_SCREENSHOT_PAGES_PER_CALL), pixelRatio));
         durationMs += response.durationMs;
         const root = asObject(response.body);
+        throwIfCaptureRefused(root);
         // Defensive: a follow-up chunk is ≤ the cap, but surface any clamp the server reports.
         const followUpClamp = str(root, 'clamp_note');
         if (followUpClamp !== undefined) input.note(`⚠ ${followUpClamp}`);

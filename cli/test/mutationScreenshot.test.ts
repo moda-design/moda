@@ -201,3 +201,43 @@ describe('attachScreenshotResult', () => {
     expect(lines).toEqual([]);
   });
 });
+
+describe('in-band capture refusal after a COMMITTED mutation (ENG-4982)', () => {
+  const refusal = {
+    success: false,
+    error: { code: 'INVALID_PAGE', message: 'Target page "1" was not found in the current document.' },
+  };
+
+  test('is contained: no throw, screenshot.ok false, alert on stderr', async () => {
+    const alerts: string[] = [];
+    const call = async (): Promise<ScreenshotResponse> => ({ body: refusal, durationMs: 1 });
+    const result = await captureAfterMutation({
+      call,
+      output: join(mkdtempSync(join(tmpdir(), 'moda-mut-')), 'shot'),
+      shotsDirPath: mkdtempSync(join(tmpdir(), 'moda-shots-')),
+      note: () => {},
+      alert: (m) => alerts.push(m),
+    });
+    expect(result.block.ok).toBe(false);
+    expect(result.written).toHaveLength(0);
+    expect(alerts.join('\n')).toContain('mutation committed');
+    expect(alerts.join('\n')).toContain('not found');
+  });
+
+  test('the mutation still exits 0 — nonzero is reserved for did-not-commit', async () => {
+    const call = async (): Promise<ScreenshotResponse> => ({ body: refusal, durationMs: 1 });
+    const result = await captureAfterMutation({
+      call,
+      output: join(mkdtempSync(join(tmpdir(), 'moda-mut-')), 'shot'),
+      shotsDirPath: mkdtempSync(join(tmpdir(), 'moda-shots-')),
+      note: () => {},
+      alert: () => {},
+    });
+    const outcome = attachScreenshotResult(
+      { body: { ok: true, operation: 'canvas.markup' }, exitCode: EXIT_OK },
+      result,
+    );
+    expect(outcome.exitCode).toBe(EXIT_OK);
+    expect((outcome.body.screenshot as Record<string, unknown>).ok).toBe(false);
+  });
+});
