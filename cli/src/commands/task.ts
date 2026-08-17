@@ -355,7 +355,7 @@ function taskStatusOf(body: Record<string, unknown>): string | undefined {
 interface JobStatusResponse {
   response: { body: unknown; requestId?: string; durationMs: number };
   /** Which lane answered — the two poll on different endpoints and report different operations. */
-  operation: 'task.status' | 'media.generate_video';
+  operation: 'task.status' | 'media.generate-video';
 }
 
 /**
@@ -375,7 +375,7 @@ async function fetchJobStatus(client: ApiClient, ref: string): Promise<JobStatus
     try {
       return {
         response: await client.request({ method: 'GET', path: endpoints.mediaVideoGenerationStatus(ref) }),
-        operation: 'media.generate_video',
+        operation: 'media.generate-video',
       };
     } catch (mediaErr) {
       // Both lanes answered "no such job" — including a server that predates the media poll

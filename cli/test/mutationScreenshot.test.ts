@@ -192,7 +192,7 @@ describe('attachScreenshotResult', () => {
 
   test('a failed capture attaches its error block and appends no page lines', () => {
     const attached = attachScreenshotResult(
-      { body: { ok: true, operation: 'canvas.create_from_markup' }, exitCode: EXIT_OK },
+      { body: { ok: true, operation: 'canvas.markup' }, exitCode: EXIT_OK },
       { block: { ok: false, error: 'boom' }, written: [] },
     );
     expect(attached.body.screenshot).toEqual({ ok: false, error: 'boom' });

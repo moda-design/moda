@@ -269,6 +269,30 @@ def check_banned() -> None:
                     fail(rel, f"line {i}: banned pattern ({label})")
 
 
+# The CLI's own user-facing operation labels: printed as `<label>: committed` / `<label>: done`
+# and echoed as the envelope's `operation` field. `check_banned` cannot cover cli/src wholesale —
+# the same banned list contains wire-format field names the CLI must legitimately use
+# (`requiresRepair`, `idMapping`) and a real endpoint path (`layerize`) — so this checks only the
+# literals that actually reach a user, in the three positions that produce one. ENG-5011.
+CLI_SRC_GLOB = "cli/src/**/*.ts"
+OPERATION_LABEL = re.compile(
+    r"(?:mutationOutcome\(\s*|mediaCall\([^,]+,[^,]+,\s*|operation:\s*)'([a-z_]+\.[a-z_\-]+)'"
+)
+
+
+def check_cli_operation_labels() -> None:
+    for path in sorted(ROOT.glob(CLI_SRC_GLOB)):
+        if not path.is_file():
+            continue
+        rel = path.relative_to(ROOT)
+        for i, line in enumerate(read(path).splitlines(), 1):
+            for match in OPERATION_LABEL.finditer(line):
+                label = match.group(1)
+                for token in BANNED_TOKENS:
+                    if token in label:
+                        fail(rel, f"line {i}: operation label {label!r} contains banned token {token!r}")
+
+
 def extract_cli_invocations(text: str) -> set[str]:
     """All `moda ...` invocations inside inline code or fenced blocks."""
     spans: list[str] = re.findall(r"`([^`]+)`", text)
@@ -446,6 +470,7 @@ def main() -> int:
     check_fanout()
     check_links()
     check_banned()
+    check_cli_operation_labels()
     check_verb_parity()
     check_markup_elements()
     check_budgets()

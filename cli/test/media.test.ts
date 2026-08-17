@@ -19,6 +19,7 @@ import { ApiClient } from '../src/api/client.ts';
 import { performMediaModels } from '../src/commands/media.ts';
 import { parseTimestampMs } from '../src/commands/media.ts';
 import { CliError } from '../src/cliError.ts';
+import { deriveIdempotencyKey } from '../src/api/idempotency.ts';
 
 const MAIN = resolve(import.meta.dir, '../src/main.ts');
 
@@ -67,7 +68,7 @@ async function runCli(args: string[], base: string): Promise<number> {
 
 /** Minimal generate-video success envelope — enough for the CLI to render an outcome. */
 const VIDEO_RESULT = {
-  operation: 'media.generate_video',
+  operation: 'media.generate-video',
   result: { file_id: 'file_01HZX9K2ABCDEFGHJKMNPQRSTV', url: 'https://example.test/clip.mp4' },
   usage: { credits: 1 },
 };
@@ -613,7 +614,7 @@ function serveArtifacts(count: number): { base: string } {
       if (url.pathname.startsWith('/artifact/')) return new Response(PNG_BYTES);
       const origin = `http://127.0.0.1:${server?.port}`;
       return Response.json({
-        operation: 'media.generate_image',
+        operation: 'media.generate-image',
         results: Array.from({ length: count }, (_, i) => ({
           id: `file_TEST${i + 1}`,
           url: `${origin}/artifact/${i + 1}`,
@@ -733,5 +734,54 @@ describe('media write failure after billing (ENG-5034: failure-with-results)', (
     expect(doc.usage).toBeDefined();
 
     chmodSync(target, 0o700);
+  });
+});
+
+/**
+ * ENG-5011 renamed the PRINTED media operation labels (`media.generate_image` →
+ * `media.generate-image`). Those same strings were also feeding the idempotency-key hash, where a
+ * change is not cosmetic: an identical re-run would derive a fresh key, so the server would bill a
+ * second render instead of replaying the first. The key spelling is therefore frozen at the
+ * pre-rename value. This test fails if anyone "tidies" it to match the label.
+ */
+describe('media idempotency command is frozen across the ENG-5011 label rename', () => {
+  function captureHeaders(response: unknown): { base: string; keys: (string | null)[]; bodies: unknown[] } {
+    const keys: (string | null)[] = [];
+    const bodies: unknown[] = [];
+    server = Bun.serve({
+      hostname: '127.0.0.1',
+      port: 0,
+      fetch: async (req) => {
+        keys.push(req.headers.get('idempotency-key'));
+        bodies.push(await req.json().catch(() => ({})));
+        return Response.json(response);
+      },
+    });
+    return { base: `http://127.0.0.1:${server.port}`, keys, bodies };
+  }
+
+  test('generate-image sends the key derived from the pre-rename command string', async () => {
+    const { base, keys, bodies } = captureHeaders({ results: [], usage: { metered_credits: 1 } });
+    expect(await runCli(GEN_ARGS, base)).toBe(0);
+    // The client stamps `idempotency_key` INTO the body after deriving it, so the hashed payload
+    // is the body without that field.
+    const { idempotency_key: _stamped, ...hashedPayload } = bodies[0] as Record<string, unknown>;
+    expect(keys[0]).toBe(
+      deriveIdempotencyKey({
+        command: 'media.generate_image',
+        canvas: '',
+        expectedRevision: undefined,
+        payload: JSON.stringify(hashedPayload),
+      }),
+    );
+    // …and specifically NOT the key the new printed label would derive.
+    expect(keys[0]).not.toBe(
+      deriveIdempotencyKey({
+        command: 'media.generate-image',
+        canvas: '',
+        expectedRevision: undefined,
+        payload: JSON.stringify(hashedPayload),
+      }),
+    );
   });
 });
