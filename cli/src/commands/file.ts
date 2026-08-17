@@ -212,6 +212,11 @@ export function registerFileUpload(program: Command): void {
   );
 }
 
+/** One `moda file search` line (team assets and the stock library share the shape). */
+export function assetLine(asset: JsonObject): string {
+  return `${str(asset, 'id') ?? '?'}  ${str(asset, 'name') ?? ''}`;
+}
+
 export function registerFileFacade(program: Command): void {
   const file = program.commands.find((c) => c.name() === 'file') ?? program.command('file');
 
@@ -262,7 +267,7 @@ export function registerFileFacade(program: Command): void {
         emptyHint:
           `no results for '${args[0] as string}' — broaden the query or switch --kind (icon | photo)` +
           (kind === 'photo' && source === 'team' ? ' or try --source stock (stock photo library)' : ''),
-        itemLine: (asset) => `${str(asset, 'id') ?? '?'}  ${str(asset, 'name') ?? ''}`,
+        itemLine: assetLine,
       });
       const inner = outcome.human;
       // The stock contract applies to the PHOTO lane only — for kind=icon the server ignores
@@ -368,7 +373,7 @@ export function registerFileFacade(program: Command): void {
 }
 
 /** `file_…  name  mime  size` — plus the privacy marker the listing itself would hide behind. */
-function fileLine(file: JsonObject): string {
+export function fileLine(file: JsonObject): string {
   const size = num(file, 'size_bytes');
   return (
     `${str(file, 'id') ?? '?'}  ${str(file, 'name') ?? '(unnamed)'}` +

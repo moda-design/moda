@@ -4,7 +4,7 @@ import { dirname } from 'node:path';
 import type { Command } from 'commander';
 import type { ApiClient } from '../api/client.ts';
 import { endpoints } from '../api/endpoints.ts';
-import { asObject, listItems, str } from '../api/types.ts';
+import { asObject, listItems, str, type JsonObject } from '../api/types.ts';
 import { CliError } from '../cliError.ts';
 import { readConfig, writeConfig } from '../config/config.ts';
 import { writeRepoContextKey } from '../config/context.ts';
@@ -193,6 +193,11 @@ export async function performBrandRemoveImage(client: ApiClient, ref: string, im
   };
 }
 
+/** One `moda brand list` line. The kit read model spells the display name `title` (create POSTs `name`). */
+export function brandListLine(kit: JsonObject): string {
+  return `${str(kit, 'id') ?? '?'}  ${str(kit, 'title') ?? ''}`;
+}
+
 export function registerBrand(program: Command): void {
   const brand = program.command('brand').description('brand kits: list, read tokens, set the default');
 
@@ -217,7 +222,7 @@ export function registerBrand(program: Command): void {
         flags,
         emptyHint: 'no brand kits',
         // The kit read model spells the display name `title` (create POSTs `name`).
-        itemLine: (kit) => `${str(kit, 'id') ?? '?'}  ${str(kit, 'title') ?? ''}`,
+        itemLine: brandListLine,
       });
     }),
   );

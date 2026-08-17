@@ -4,7 +4,7 @@ import { basename } from 'node:path';
 import type { Command } from 'commander';
 import type { ApiClient } from '../api/client.ts';
 import { endpoints } from '../api/endpoints.ts';
-import { asObject, str } from '../api/types.ts';
+import { asObject, str, type JsonObject } from '../api/types.ts';
 import { CliError, rethrowRoutePredates } from '../cliError.ts';
 import { shotsDir } from '../config/state.ts';
 import { alert, type CommandOutcome } from '../output/emit.ts';
@@ -207,6 +207,11 @@ async function canvasSummary(client: ApiClient, inv: Invocation, ref: string): P
     },
     exitCode: EXIT_OK,
   };
+}
+
+/** One `moda canvas list` / `canvas search` line — both lanes return the same shape. */
+export function canvasListLine(item: JsonObject): string {
+  return `${str(item, 'id') ?? '?'}  ${str(item, 'name') ?? ''}`;
 }
 
 export function registerCanvas(program: Command): void {
@@ -911,7 +916,7 @@ export function registerCanvas(program: Command): void {
         pages,
         flags,
         emptyHint: 'no canvases — create one: moda canvas create',
-        itemLine: (item) => `${str(item, 'id') ?? '?'}  ${str(item, 'name') ?? ''}`,
+        itemLine: canvasListLine,
       });
     }),
   );
@@ -935,7 +940,7 @@ export function registerCanvas(program: Command): void {
         pages,
         flags,
         emptyHint: `no results for '${args[0] as string}' — broaden the query or try moda canvas list`,
-        itemLine: (item) => `${str(item, 'id') ?? '?'}  ${str(item, 'name') ?? ''}`,
+        itemLine: canvasListLine,
       });
     }),
   );
