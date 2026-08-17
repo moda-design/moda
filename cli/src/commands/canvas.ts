@@ -214,6 +214,38 @@ export function canvasListLine(item: JsonObject): string {
   return `${str(item, 'id') ?? '?'}  ${str(item, 'name') ?? ''}`;
 }
 
+/**
+ * Append the ids a follow-up call needs to a create/add-pages outcome.
+ *
+ * Both verbs printed only the revision and the editor URL, while the ids the very next command
+ * requires sat in the --json envelope: `markup --page` is mandatory even on a single-page canvas,
+ * so in human mode the agent had to parse a UUID out of the editor URL or spend an extra
+ * `canvas show` immediately after creating.
+ *
+ * Ids print VERBATIM as the server sent them — the shared UX rules forbid retyping or transforming
+ * them, and the two verbs genuinely differ (`create` returns short `p_a`, `add-pages` returns long
+ * `page-1786…`), so normalizing here would hand back an id the server never issued.
+ */
+export function withIdLines(
+  outcome: CommandOutcome,
+  label: string,
+  pageIdKey: 'page_ids' | 'created_ids',
+): CommandOutcome {
+  const root = asObject(outcome.body);
+  const canvasId = str(asObject(root.canvas), 'id');
+  const rawIds = root[pageIdKey];
+  const pageIds = Array.isArray(rawIds) ? rawIds.filter((id): id is string => typeof id === 'string') : [];
+  const baseHuman = outcome.human;
+  return {
+    ...outcome,
+    human: (write) => {
+      baseHuman?.(write);
+      if (canvasId !== undefined) write(`canvas: ${canvasId}`);
+      if (pageIds.length > 0) write(`${label}: ${pageIds.join(', ')}`);
+    },
+  };
+}
+
 export function registerCanvas(program: Command): void {
   const canvas = program.command('canvas').description('deterministic canvas authoring and lifecycle');
 
@@ -284,7 +316,7 @@ export function registerCanvas(program: Command): void {
           payload: JSON.stringify(payload),
         },
       });
-      return mutationOutcome('canvas.create', '', inv, response);
+      return withIdLines(mutationOutcome('canvas.create', '', inv, response), 'pages', 'page_ids');
     }),
   );
 
@@ -320,7 +352,7 @@ export function registerCanvas(program: Command): void {
         },
       });
       // No --screenshot here: freshly appended pages are blank — nothing worth capturing.
-      return mutationOutcome('canvas.create_pages', ref, inv, response);
+      return withIdLines(mutationOutcome('canvas.create_pages', ref, inv, response), 'pages added', 'created_ids');
     }),
   );
 
