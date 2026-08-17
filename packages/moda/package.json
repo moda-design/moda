@@ -1,6 +1,6 @@
 {
   "name": "@moda-design/moda",
-  "version": "0.15.3",
+  "version": "0.15.4",
   "description": "The moda CLI — drive Moda as a deterministic artifact runtime from any agent harness.",
   "license": "Apache-2.0",
   "repository": "github:moda-design/moda",
@@ -8,11 +8,11 @@
     "moda": "bin/moda.js"
   },
   "optionalDependencies": {
-    "@moda-design/cli-darwin-arm64": "0.15.3",
-    "@moda-design/cli-darwin-x64": "0.15.3",
-    "@moda-design/cli-linux-x64": "0.15.3",
-    "@moda-design/cli-linux-arm64": "0.15.3",
-    "@moda-design/cli-win32-x64": "0.15.3"
+    "@moda-design/cli-darwin-arm64": "0.15.4",
+    "@moda-design/cli-darwin-x64": "0.15.4",
+    "@moda-design/cli-linux-x64": "0.15.4",
+    "@moda-design/cli-linux-arm64": "0.15.4",
+    "@moda-design/cli-win32-x64": "0.15.4"
   },
   "publishConfig": {
     "registry": "https://npm.pkg.github.com"
