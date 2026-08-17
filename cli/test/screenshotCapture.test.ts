@@ -9,6 +9,8 @@ import {
   writtenPageLine,
   type ScreenshotResponse,
 } from '../src/commands/screenshotCapture.ts';
+import { CliError } from '../src/cliError.ts';
+import { EXIT_INVALID_INPUT, EXIT_OK, exitCodeForError } from '../src/output/exitCodes.ts';
 
 const JPEG_BYTES = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46, 0x49, 0x46]);
 const PNG_BYTES = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 0]);
@@ -190,5 +192,66 @@ describe('writtenPageLine (defect D2: no "? →" placeholder)', () => {
     expect(writtenPageLine({ page_id: 'p_a', path: '/x/p_a.jpg' })).toBe('p_a → /x/p_a.jpg');
     expect(writtenPageLine({ path: '/x/page-1.jpg' })).toBe('/x/page-1.jpg');
     expect(writtenPageLine({ path: '/x/page-1.jpg' })).not.toContain('?');
+  });
+});
+
+describe('in-band capture refusal (ENG-4982: success:false must not read as success)', () => {
+  /** The live shape: HTTP 200, `success: false`, typed error block, no `pages`. */
+  const refusal = {
+    success: false,
+    error: {
+      code: 'INVALID_PAGE',
+      message: 'Target page "1" was not found in the current document — no screenshots were captured.',
+      details: {
+        failedPageIds: [{ pageId: '1', errorCode: 'INVALID_PAGE' }],
+        availablePageIds: ['page-111', 'page-222'],
+      },
+    },
+  };
+
+  test('throws a typed error instead of returning an empty run', async () => {
+    const call = async (): Promise<ScreenshotResponse> => ({ body: refusal, durationMs: 1 });
+    const err = (await captureScreenshots({ call, note: () => {} }).catch((e: unknown) => e)) as CliError;
+    expect(err).toBeInstanceOf(CliError);
+    // Server code rides through lowercased; exit class is did-not-commit, never 0.
+    expect(err.fields.code).toBe('invalid_page');
+    expect(err.fields.type).toBe('unprocessable');
+    expect(exitCodeForError(err.fields)).toBe(EXIT_INVALID_INPUT);
+    expect(exitCodeForError(err.fields)).not.toBe(EXIT_OK);
+  });
+
+  test('surfaces the available page ids — the only place they are printed', async () => {
+    const call = async (): Promise<ScreenshotResponse> => ({ body: refusal, durationMs: 1 });
+    const err = (await captureScreenshots({ call, note: () => {} }).catch((e: unknown) => e)) as CliError;
+    expect(err.fields.hint).toContain('page-111');
+    expect(err.fields.hint).toContain('page-222');
+  });
+
+  test('a refusal on a BATCHED follow-up call fails the run too', async () => {
+    let n = 0;
+    const call = async (body: Record<string, unknown>): Promise<ScreenshotResponse> => {
+      n += 1;
+      if (n === 1) {
+        const kept = (body.page_ids as string[]).slice(0, MAX_SCREENSHOT_PAGES_PER_CALL);
+        return {
+          body: { pages: kept.map((id) => ({ pageId: id, dataURL: jpegDataUrl() })), format: 'jpg' },
+          durationMs: 1,
+        };
+      }
+      return { body: refusal, durationMs: 1 };
+    };
+    const pages = ['p1', 'p2', 'p3', 'p4'];
+    expect(captureScreenshots({ call, pages, note: () => {} })).rejects.toBeInstanceOf(CliError);
+  });
+
+  test('a successful run is untouched (no success field, or success: true)', async () => {
+    for (const extra of [{}, { success: true }]) {
+      const call = async (): Promise<ScreenshotResponse> => ({
+        body: { ...extra, pages: [{ pageId: 'p_a', dataURL: jpegDataUrl() }], format: 'jpg' },
+        durationMs: 1,
+      });
+      const run = await captureScreenshots({ call, note: () => {} });
+      expect(run.roots).toHaveLength(1);
+    }
   });
 });
