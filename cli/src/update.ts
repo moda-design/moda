@@ -4,7 +4,7 @@
  */
 import { HEADER_CLI_LATEST, HEADER_CLI_MINIMUM } from './api/endpoints.ts';
 import { readUpdateStamp, writeUpdateStamp } from './config/state.ts';
-import { CLI_VERSION } from './version.ts';
+import { CLI_CHANNEL, CLI_VERSION } from './version.ts';
 
 export const RELEASES_REPO = 'moda-design/moda';
 
@@ -49,7 +49,13 @@ export function recordVersionHeaders(headers: Headers, env: NodeJS.ProcessEnv = 
   );
 }
 
-export function updateAvailable(env: NodeJS.ProcessEnv = process.env): { latest: string } | undefined {
+export function updateAvailable(
+  env: NodeJS.ProcessEnv = process.env,
+  channel: string = CLI_CHANNEL,
+): { latest: string } | undefined {
+  // A dev build runs from source: the published release is OLDER code, and the pinned install
+  // command would replace the working tree's CLI with it. Never nag off a source checkout.
+  if (channel === 'dev') return undefined;
   const stamp = readUpdateStamp(env);
   if (stamp.latest === undefined) return undefined;
   return compareVersions(stamp.latest, CLI_VERSION) > 0 ? { latest: stamp.latest } : undefined;
@@ -60,9 +66,13 @@ export function updateAvailable(env: NodeJS.ProcessEnv = process.env): { latest:
  * in --json bodies. MODA_NO_UPDATE_CHECK=1 disables. Returns the notice line (for tests) or
  * undefined when suppressed.
  */
-export function maybeUpdateNotice(env: NodeJS.ProcessEnv = process.env, now: Date = new Date()): string | undefined {
+export function maybeUpdateNotice(
+  env: NodeJS.ProcessEnv = process.env,
+  now: Date = new Date(),
+  channel: string = CLI_CHANNEL,
+): string | undefined {
   if (env.MODA_NO_UPDATE_CHECK === '1') return undefined;
-  const available = updateAvailable(env);
+  const available = updateAvailable(env, channel);
   if (available === undefined) return undefined;
   const stamp = readUpdateStamp(env);
   if (stamp.last_notice_version === available.latest && stamp.last_notice_at !== undefined) {

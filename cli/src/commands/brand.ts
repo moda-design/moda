@@ -216,7 +216,8 @@ export function registerBrand(program: Command): void {
         pages,
         flags,
         emptyHint: 'no brand kits',
-        itemLine: (kit) => `${str(kit, 'id') ?? '?'}  ${str(kit, 'name') ?? ''}`,
+        // The kit read model spells the display name `title` (create POSTs `name`).
+        itemLine: (kit) => `${str(kit, 'id') ?? '?'}  ${str(kit, 'title') ?? ''}`,
       });
     }),
   );
