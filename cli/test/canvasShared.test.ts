@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import { CliError } from '../src/cliError.ts';
 import { writeRevisionEntry, readRevisionEntry } from '../src/config/state.ts';
 import { cacheFromResponse, chooseRevision, mutationOutcome, parseSize, sandboxPrintLines } from '../src/commands/canvasShared.ts';
+import { withIdLines } from '../src/commands/canvas.ts';
 import type { Invocation } from '../src/commands/runtime.ts';
 
 function tempEnv(): NodeJS.ProcessEnv {
@@ -294,5 +295,74 @@ describe('sandbox print/log/inspect output reaches human lines (ENG-5009)', () =
       '[print] bare string',
       '[print] {"odd":true}',
     ]);
+  });
+});
+
+describe('create / add-pages print the ids a follow-up call needs (ENG-5011)', () => {
+  function lines(outcome: { human?: (write: (line: string) => void) => void }): string[] {
+    const out: string[] = [];
+    outcome.human?.((line) => out.push(line));
+    return out;
+  }
+  const base = (body: Record<string, unknown>) =>
+    mutationOutcome('canvas.create', '', fakeInvocation(tempEnv()), { body, durationMs: 1 });
+
+  test('create appends the cvs_ id and its short page id', () => {
+    const out = lines(
+      withIdLines(
+        base({
+          committed: true,
+          canvas: { id: 'cvs_7D2DTH85G099XAGGY2CCV78JAF', uuid: 'ed137514-1600-4a7a-a843-c2633674494f' },
+          page_ids: ['p_a'],
+          editor_url: 'https://moda.app/canvas/ed137514-1600-4a7a-a843-c2633674494f',
+        }),
+        'pages',
+        'page_ids',
+      ),
+    );
+    expect(out).toContain('canvas: cvs_7D2DTH85G099XAGGY2CCV78JAF');
+    expect(out).toContain('pages: p_a');
+  });
+
+  test('add-pages reports created_ids VERBATIM — the long form the server actually returns', () => {
+    const out = lines(
+      withIdLines(
+        base({
+          committed: true,
+          canvas: { id: 'cvs_A' },
+          page_ids: ['page-1786980702653-782465621'],
+          created_ids: ['page-1786980702653-782465621', 'page-1786980702653-999999999'],
+        }),
+        'pages added',
+        'created_ids',
+      ),
+    );
+    // Never normalized to p_b/p_c: the UX rules forbid transforming ids, and these two verbs
+    // genuinely return different formats for the same field.
+    expect(out).toContain('pages added: page-1786980702653-782465621, page-1786980702653-999999999');
+  });
+
+  test('the base mutation lines are preserved, and the ids come last', () => {
+    const out = lines(
+      withIdLines(base({ committed: true, canvas: { id: 'cvs_A' }, page_ids: ['p_a'], editor_url: 'https://x' }), 'pages', 'page_ids'),
+    );
+    expect(out.some((l) => l.startsWith('canvas.create:'))).toBe(true);
+    expect(out.some((l) => l.startsWith('editor:'))).toBe(true);
+    expect(out[out.length - 1]).toBe('pages: p_a');
+  });
+
+  test('missing canvas or page ids simply omit their line', () => {
+    expect(lines(withIdLines(base({ committed: true }), 'pages', 'page_ids'))).not.toContain('canvas: undefined');
+    const out = lines(withIdLines(base({ committed: true, canvas: { id: 'cvs_A' }, page_ids: [] }), 'pages', 'page_ids'));
+    expect(out).toContain('canvas: cvs_A');
+    expect(out.some((l) => l.startsWith('pages:'))).toBe(false);
+  });
+
+  test('non-string entries are filtered rather than printed as undefined', () => {
+    const out = lines(
+      withIdLines(base({ committed: true, canvas: { id: 'cvs_A' }, page_ids: ['p_a', 7, null] }), 'pages', 'page_ids'),
+    );
+    expect(out).toContain('pages: p_a');
+    expect(out.join('\n')).not.toContain('undefined');
   });
 });
