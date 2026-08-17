@@ -56,7 +56,7 @@ export function registerTask(program: Command): void {
   addGlobalFlags(
     task
       .command('start')
-      .description('start an Omni task (spends Moda credits; cost class before, receipt after)')
+      .description('start an Omni task (spends Moda credits; labeled metered, finalized credits via moda account usage)')
       .requiredOption('--prompt <prompt>', 'the task prompt')
       .option('--canvas <canvas>', 'target canvas')
       .option('--files <file_ids...>', 'input file refs')
