@@ -27,7 +27,7 @@ describe('version headers + stderr notice discipline (cli.md §14)', () => {
     const stamp = readUpdateStamp(env);
     expect(stamp.latest).toBe('9.9.9');
     expect(stamp.minimum_supported).toBe('0.0.1');
-    expect(updateAvailable(env)?.latest).toBe('9.9.9');
+    expect(updateAvailable(env, 'npm')?.latest).toBe('9.9.9');
   });
 
   test('missing headers stay silent (offline ⇒ no stamp churn)', () => {
@@ -40,25 +40,35 @@ describe('version headers + stderr notice discipline (cli.md §14)', () => {
     const env = tempEnv();
     writeUpdateStamp({ latest: '9.9.9' }, env);
     const t0 = new Date('2026-08-10T10:00:00Z');
-    const first = maybeUpdateNotice(env, t0);
+    const first = maybeUpdateNotice(env, t0, 'npm');
     expect(first).toContain('9.9.9');
     // The notice names the npm update command directly (README parity).
     expect(first).toContain('npm i -g @moda-design/moda');
     // Same day: suppressed.
-    expect(maybeUpdateNotice(env, new Date('2026-08-10T22:00:00Z'))).toBeUndefined();
+    expect(maybeUpdateNotice(env, new Date('2026-08-10T22:00:00Z'), 'npm')).toBeUndefined();
     // Next day: fires again.
-    expect(maybeUpdateNotice(env, new Date('2026-08-11T11:00:00Z'))).toContain('9.9.9');
+    expect(maybeUpdateNotice(env, new Date('2026-08-11T11:00:00Z'), 'npm')).toContain('9.9.9');
     // A NEW latest version fires immediately even within the day.
     writeUpdateStamp({ ...readUpdateStamp(env), latest: '10.0.0' }, env);
-    expect(maybeUpdateNotice(env, new Date('2026-08-11T11:05:00Z'))).toContain('10.0.0');
+    expect(maybeUpdateNotice(env, new Date('2026-08-11T11:05:00Z'), 'npm')).toContain('10.0.0');
   });
 
   test('MODA_NO_UPDATE_CHECK=1 disables the notice; up-to-date CLI never notices', () => {
     const env = tempEnv();
     writeUpdateStamp({ latest: '9.9.9' }, env);
-    expect(maybeUpdateNotice({ ...env, MODA_NO_UPDATE_CHECK: '1' })).toBeUndefined();
+    expect(maybeUpdateNotice({ ...env, MODA_NO_UPDATE_CHECK: '1' }, new Date(), 'npm')).toBeUndefined();
     const env2 = tempEnv();
     writeUpdateStamp({ latest: '0.0.1' }, env2);
-    expect(maybeUpdateNotice(env2)).toBeUndefined();
+    expect(maybeUpdateNotice(env2, new Date(), 'npm')).toBeUndefined();
+  });
+
+  test('a dev build never reports an update (the release is older code)', () => {
+    const env = tempEnv();
+    writeUpdateStamp({ latest: '9.9.9' }, env);
+    // Same stamp that fires on a released channel...
+    expect(updateAvailable(env, 'npm')?.latest).toBe('9.9.9');
+    // ...stays silent when running from source.
+    expect(updateAvailable(env, 'dev')).toBeUndefined();
+    expect(maybeUpdateNotice(env, new Date('2026-08-10T10:00:00Z'), 'dev')).toBeUndefined();
   });
 });
