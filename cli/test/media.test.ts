@@ -665,6 +665,11 @@ describe('media artifact download (ENG-5033: every paid image reaches disk)', ()
 
 describe('media output pre-flight (ENG-5034: never bill for a write that cannot land)', () => {
   test('an unwritable --output fails BEFORE the metered call is made', async () => {
+    // chmod(0o500) cannot make a directory unwritable on Windows (POSIX modes
+    // are a near-no-op there — the #46 port's documented platform fact), so the
+    // simulation method, not the pre-flight itself, is POSIX-only. Same skip
+    // idiom as keychain.test.ts.
+    if (process.platform === 'win32') return;
     const calls: Record<string, unknown>[] = [];
     server = Bun.serve({
       hostname: '127.0.0.1',
