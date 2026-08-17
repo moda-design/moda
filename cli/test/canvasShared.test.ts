@@ -90,7 +90,7 @@ describe('revision pin-cache lanes (rulings §15: reads only, mutation tokens ar
   test('append-mode markup after a mutation with no intervening read sends NO expected_revision', () => {
     const env = tempEnv();
     // A mutation happened (advisory token in the response) but no read ever cached a pin.
-    mutationOutcome('canvas.create_from_markup', 'cvs_A', fakeInvocation(env), {
+    mutationOutcome('canvas.markup', 'cvs_A', fakeInvocation(env), {
       body: { revision: 'crdt-advisory' },
       durationMs: 10,
     });
@@ -153,7 +153,7 @@ describe('idempotent replay surfacing (server contract: replayed / reused_existi
 
   test('a replayed MUTATION is loud: REPLAYED warning, no reuse phrasing, fields verbatim', () => {
     const env = tempEnv();
-    const outcome = mutationOutcome('canvas.create_from_markup', 'cvs_A', fakeInvocation(env), {
+    const outcome = mutationOutcome('canvas.markup', 'cvs_A', fakeInvocation(env), {
       body: { committed: true, replayed: true, revision: 'crdt-stored' },
       durationMs: 5,
     });
@@ -163,7 +163,7 @@ describe('idempotent replay surfacing (server contract: replayed / reused_existi
     expect(lines[0]).toContain('⚠ REPLAYED');
     expect(lines[0]).toContain('nothing was applied again');
     expect(lines.join('\n')).not.toContain('REUSED existing canvas');
-    expect(lines.join('\n')).toContain('canvas.create_from_markup: replayed (stored result — not re-applied)');
+    expect(lines.join('\n')).toContain('canvas.markup: replayed (stored result — not re-applied)');
   });
 
   test('a normal mutation stays quiet: no warning, committed line unchanged', () => {
@@ -191,7 +191,7 @@ describe('parseSize', () => {
 
 describe('repair warnings render both server shapes (ENG-5007)', () => {
   function repairLines(warnings: unknown[]): string {
-    const outcome = mutationOutcome('canvas.create_from_markup', 'cvs_A', fakeInvocation(tempEnv()), {
+    const outcome = mutationOutcome('canvas.markup', 'cvs_A', fakeInvocation(tempEnv()), {
       body: { requires_repair: true, warnings },
       durationMs: 1,
     });

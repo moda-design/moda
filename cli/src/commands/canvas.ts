@@ -482,7 +482,7 @@ export function registerCanvas(program: Command): void {
         },
       });
       // No --screenshot here: freshly appended pages are blank — nothing worth capturing.
-      return withIdLines(mutationOutcome('canvas.create_pages', ref, inv, response), 'pages added', 'created_ids');
+      return withIdLines(mutationOutcome('canvas.add-pages', ref, inv, response), 'pages added', 'created_ids');
     }),
   );
 
@@ -790,7 +790,7 @@ export function registerCanvas(program: Command): void {
         },
       });
       return await maybeAttachScreenshot({
-        outcome: mutationOutcome('canvas.create_from_markup', ref, inv, response),
+        outcome: mutationOutcome('canvas.markup', ref, inv, response),
         screenshot: opts.screenshot,
         client,
         ref,
@@ -883,7 +883,7 @@ export function registerCanvas(program: Command): void {
           payload: JSON.stringify(payload),
         },
       });
-      return mutationOutcome('canvas.delete_items', ref, inv, response);
+      return mutationOutcome('canvas.delete-items', ref, inv, response);
     }),
   );
 

@@ -222,13 +222,13 @@ describe('moda media video-frames — the verify lane', () => {
 });
 
 const VIDEO_RESULT = {
-  operation: 'media.generate_video',
+  operation: 'media.generate-video',
   result: { id: FILE_REF, url: 'https://example.test/clip.mp4' },
   usage: { class: 'metered' },
 };
 
 const QUEUED = {
-  operation: 'media.generate_video',
+  operation: 'media.generate-video',
   task_id: TASK_REF,
   status: 'queued',
   poll_url: `/v1/media/generate-video/${TASK_REF}`,

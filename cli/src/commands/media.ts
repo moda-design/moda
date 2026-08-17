@@ -65,7 +65,7 @@ export function registerMedia(program: Command): void {
           ? { reference_images: await mediaInputs(opts.reference as string[], client) }
           : {}),
       };
-      return mediaCall(client, inv, 'media.generate_image', endpoints.mediaGenerateImage(), payload, opts.output as string | undefined);
+      return mediaCall(client, inv, 'media.generate-image', endpoints.mediaGenerateImage(), payload, opts.output as string | undefined);
     }),
   );
 
@@ -179,7 +179,7 @@ export function registerMedia(program: Command): void {
         }
         return startBackgroundVideo(client, inv, payload);
       }
-      return mediaCall(client, inv, 'media.generate_video', endpoints.mediaGenerateVideo(), payload, opts.output as string | undefined);
+      return mediaCall(client, inv, 'media.generate-video', endpoints.mediaGenerateVideo(), payload, opts.output as string | undefined);
     }),
   );
 
@@ -244,7 +244,7 @@ export function registerMedia(program: Command): void {
       // Wire field is target_resolution (extra=forbid server-side); the flag stays --resolution.
       const payload = { video, ...(typeof opts.resolution === 'string' ? { target_resolution: opts.resolution } : {}) };
       try {
-        return await mediaCall(client, inv, 'media.upscale_video', endpoints.mediaUpscaleVideo(), payload, opts.output as string | undefined);
+        return await mediaCall(client, inv, 'media.upscale-video', endpoints.mediaUpscaleVideo(), payload, opts.output as string | undefined);
       } catch (err) {
         rethrowRoutePredates(
           err,
@@ -697,6 +697,7 @@ async function startBackgroundVideo(
       path: endpoints.mediaGenerateVideo(),
       body: payload,
       idempotency: {
+        // Frozen pre-rename spelling — see FROZEN_IDEMPOTENCY_COMMAND above.
         command: 'media.generate_video',
         canvas: '',
         expectedRevision: undefined,
@@ -716,7 +717,7 @@ async function startBackgroundVideo(
   return {
     body: {
       ok: true,
-      operation: 'media.generate_video',
+      operation: 'media.generate-video',
       metered: true,
       ...root,
       meta: { ...asObject(root.meta), ...metaBlock({ requestId: response.requestId, durationMs: response.durationMs }) },
@@ -947,6 +948,22 @@ async function downloadArtifacts(artifacts: JsonObject[], output: string, inv: I
   return written;
 }
 
+/**
+ * Idempotency keys hash the command string (`api/idempotency.ts`), so an identical re-run only
+ * replays — and avoids a second charge — while that string stays byte-stable. The operation
+ * labels these verbs PRINT were renamed in ENG-5011; these key strings are internal, never shown,
+ * and are deliberately frozen at their pre-rename spelling so the rename cannot turn a replay
+ * into a fresh paid render. Do not "tidy" them to match the labels.
+ *
+ * (These are also the only idempotency commands in the CLI not spelled as the CLI verb — every
+ * other verb passes e.g. 'canvas markup'. Reconciling that is a separate, billing-visible change.)
+ */
+const FROZEN_IDEMPOTENCY_COMMAND: Record<string, string> = {
+  'media.generate-image': 'media.generate_image',
+  'media.generate-video': 'media.generate_video',
+  'media.upscale-video': 'media.upscale_video',
+};
+
 async function mediaCall(
   client: ApiClient,
   inv: Invocation,
@@ -961,7 +978,12 @@ async function mediaCall(
     method: 'POST',
     path,
     body: payload,
-    idempotency: { command: operation, canvas: '', expectedRevision: undefined, payload: JSON.stringify(payload) },
+    idempotency: {
+      command: FROZEN_IDEMPOTENCY_COMMAND[operation] ?? operation,
+      canvas: '',
+      expectedRevision: undefined,
+      payload: JSON.stringify(payload),
+    },
   });
   const root = asObject(response.body);
   // Image verbs return `results[]`; video/upscale/remove-background return `result`.
