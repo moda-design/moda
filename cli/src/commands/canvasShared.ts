@@ -2,7 +2,7 @@
 import { readFileSync } from 'node:fs';
 import { ApiClient } from '../api/client.ts';
 import { endpoints } from '../api/endpoints.ts';
-import { asObject, str } from '../api/types.ts';
+import { asObject, str, type JsonObject } from '../api/types.ts';
 import { CliError } from '../cliError.ts';
 import { readRevisionEntry, updateRevisionOnly, writeRevisionEntry } from '../config/state.ts';
 import { extractShortIds, parseRef, URL_SCHEME_RE } from '../refs.ts';
@@ -124,6 +124,37 @@ export function cacheFromResponse(ref: string, body: unknown, env: NodeJS.Proces
   }
 }
 
+/** One sandbox value as text: strings bare, everything else as JSON (never "[object Object]"). */
+function printArg(value: unknown): string {
+  return typeof value === 'string' ? value : JSON.stringify(value) ?? String(value);
+}
+
+/**
+ * Human lines for the edit sandbox's `print` / `log` / `inspect` output, which the server returns
+ * at `detail.prints[]`. Those verbs exist to get information back out of a batch, so dropping them
+ * from human output left them usable only under `--json`.
+ *
+ * Two entry shapes, both live: `print(a, b)` / `log(x)` yield `{args: [...]}` (mixed types), while
+ * `inspect(x)` yields `{value: …}`. The `[print]` prefix matches the `[warn]`/`[error]` idiom this
+ * function already uses, so program output is never mistaken for the CLI's own reporting.
+ */
+export function sandboxPrintLines(root: JsonObject): string[] {
+  const prints = asObject(root.detail).prints;
+  if (!Array.isArray(prints)) return [];
+  const lines: string[] = [];
+  for (const entry of prints) {
+    const e = asObject(entry);
+    if (Array.isArray(e.args)) {
+      lines.push(`[print] ${e.args.map(printArg).join(' ')}`);
+    } else if ('value' in e) {
+      lines.push(`[print] ${printArg(e.value)}`);
+    } else {
+      lines.push(`[print] ${printArg(entry)}`);
+    }
+  }
+  return lines;
+}
+
 /**
  * One repair-warning line. The mutation lanes send BOTH shapes through `warnings[]`: the markup
  * validator emits objects (`{severity, code, message}` — e.g. `flex_child_missing_size`), and the
@@ -192,6 +223,7 @@ export function mutationOutcome(
         const warnings = Array.isArray(root.warnings) ? root.warnings : [];
         for (const warning of warnings) write(`  ${warningLine(warning)}`);
       }
+      for (const line of sandboxPrintLines(root)) write(line);
       const editorUrl = str(root, 'editor_url');
       if (editorUrl !== undefined) write(`editor: ${editorUrl}`);
     },

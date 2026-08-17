@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { CliError } from '../src/cliError.ts';
 import { writeRevisionEntry, readRevisionEntry } from '../src/config/state.ts';
-import { cacheFromResponse, chooseRevision, mutationOutcome, parseSize } from '../src/commands/canvasShared.ts';
+import { cacheFromResponse, chooseRevision, mutationOutcome, parseSize, sandboxPrintLines } from '../src/commands/canvasShared.ts';
 import type { Invocation } from '../src/commands/runtime.ts';
 
 function tempEnv(): NodeJS.ProcessEnv {
@@ -247,5 +247,52 @@ describe('repair warnings render both server shapes (ENG-5007)', () => {
     const lines: string[] = [];
     outcome.human?.((line) => lines.push(line));
     expect(lines.join('\n')).not.toContain('should not appear');
+  });
+});
+
+describe('sandbox print/log/inspect output reaches human lines (ENG-5009)', () => {
+  /** The two live entry shapes, captured from a real edit batch. */
+  const detail = {
+    prints: [{ args: ['plain print', 42] }, { args: ['log call'] }, { value: { a: 1 } }],
+  };
+
+  test('args entries join, non-strings serialize as JSON', () => {
+    expect(sandboxPrintLines({ detail })).toEqual([
+      '[print] plain print 42',
+      '[print] log call',
+      '[print] {"a":1}',
+    ]);
+  });
+
+  test('inspect() uses `value`, not `args` — and never prints [object Object]', () => {
+    const lines = sandboxPrintLines({ detail: { prints: [{ value: { nested: { b: [1, 2] } } }] } });
+    expect(lines).toEqual(['[print] {"nested":{"b":[1,2]}}']);
+    expect(lines.join('')).not.toContain('[object Object]');
+  });
+
+  test('the lines appear in the mutation human output', () => {
+    const outcome = mutationOutcome('canvas.edit', 'cvs_A', fakeInvocation(tempEnv()), {
+      body: { committed: true, detail, editor_url: 'https://moda.app/canvas/x' },
+      durationMs: 1,
+    });
+    const lines: string[] = [];
+    outcome.human?.((line) => lines.push(line));
+    expect(lines).toContain('[print] plain print 42');
+    // Program output belongs before the closing editor line.
+    expect(lines.indexOf('[print] plain print 42')).toBeLessThan(lines.findIndex((l) => l.startsWith('editor:')));
+  });
+
+  test('no prints, a non-array prints, or no detail all yield nothing', () => {
+    expect(sandboxPrintLines({})).toEqual([]);
+    expect(sandboxPrintLines({ detail: {} })).toEqual([]);
+    expect(sandboxPrintLines({ detail: { prints: 'nope' } })).toEqual([]);
+    expect(sandboxPrintLines({ detail: { prints: [] } })).toEqual([]);
+  });
+
+  test('an unrecognized entry still renders rather than vanishing', () => {
+    expect(sandboxPrintLines({ detail: { prints: ['bare string', { odd: true }] } })).toEqual([
+      '[print] bare string',
+      '[print] {"odd":true}',
+    ]);
   });
 });
