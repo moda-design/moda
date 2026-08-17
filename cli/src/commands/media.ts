@@ -6,16 +6,16 @@
  * http(s) URLs (`img_*` agent refs are rejected); image verbs return `results[]`, single-artifact
  * verbs return `result`; every response carries the metered usage receipt.
  */
-import { mkdirSync, writeFileSync } from 'node:fs';
-import { basename, dirname, join } from 'node:path';
+import { accessSync, constants, mkdirSync, statSync, writeFileSync } from 'node:fs';
+import { basename, dirname, join, sep } from 'node:path';
 import { existsSync } from 'node:fs';
 import type { Command } from 'commander';
 import type { ApiClient } from '../api/client.ts';
 import { endpoints } from '../api/endpoints.ts';
 import { asObject, num, str, strArray, type JsonObject } from '../api/types.ts';
-import { CliError, rethrowRoutePredates } from '../cliError.ts';
-import { EXIT_OK } from '../output/exitCodes.ts';
-import type { CommandOutcome } from '../output/emit.ts';
+import { CliError, rethrowRoutePredates, type CliErrorFields } from '../cliError.ts';
+import { EXIT_OK, exitCodeForError } from '../output/exitCodes.ts';
+import { alert, type CommandOutcome } from '../output/emit.ts';
 import { PREVIEW_ITEMS, writeResultFile } from '../output/resultFile.ts';
 import { addGlobalFlags, authedClient, buildInvocation, metaBlock, wrapAction, type Invocation } from './runtime.ts';
 import { parseSize } from './canvasShared.ts';
@@ -44,7 +44,7 @@ export function registerMedia(program: Command): void {
       .option('--model-params <json>', 'per-model extra params as a JSON object', parseModelParams)
       .option('--source <refs...>', 'images the prompt modifies/preserves: file_ refs, URLs, or local paths')
       .option('--reference <refs...>', 'style/subject references: file_ refs, URLs, or local paths')
-      .option('-o, --output <path>', 'download the artifact to a local file'),
+      .option('-o, --output <path>', 'download artifacts: a file path, or a directory (also used for --num-images > 1)'),
   )
     .addHelpText('after', '\nExample:\n  moda media generate-image --prompt "isometric city at dusk, warm light" --model MODEL -o city.png\n\nGenerated imagery is a default quality lever — covers, heroes, section\nbreaks. Reuse brand-kit assets/uploads when they ARE the subject (moda file\nsearch, moda brand show); markup <image icon="query"/> covers UI icons.\n')
     .action(
@@ -80,7 +80,7 @@ export function registerMedia(program: Command): void {
       .option('--num-images <n>', 'images per call, 1-4', parseNumImages)
       .option('--model-params <json>', 'per-model extra params as a JSON object', parseModelParams)
       .option('--reference <refs...>', 'style/subject references: file_ refs, URLs, or local paths')
-      .option('-o, --output <path>', 'download the artifact to a local file'),
+      .option('-o, --output <path>', 'download artifacts: a file path, or a directory (also used for --num-images > 1)'),
   ).action(
     wrapAction(async (_args, opts, cmd) => {
       const inv = buildInvocation(cmd);
@@ -133,7 +133,7 @@ export function registerMedia(program: Command): void {
           'poll collects the finished video, and every input must be a file_ ref or a local path ' +
           '(no http(s) URLs). This is how you run several drafts at once',
       )
-      .option('-o, --output <path>', 'download the artifact to a local file'),
+      .option('-o, --output <path>', 'download artifacts: a file path, or a directory (also used for --num-images > 1)'),
   ).action(
     wrapAction(async (_args, opts, cmd) => {
       const inv = buildInvocation(cmd);
@@ -219,7 +219,7 @@ export function registerMedia(program: Command): void {
       .command('upscale <ref_or_path>')
       .description('upscale an image 2x or 4x (metered); accepts a file_ ref, URL, or local path')
       .option('--scale <n>', 'upscale factor: 2 or 4', (v: string) => Number.parseInt(v, 10))
-      .option('-o, --output <path>', 'download the artifact to a local file'),
+      .option('-o, --output <path>', 'download artifacts: a file path, or a directory (also used for --num-images > 1)'),
   ).action(
     wrapAction(async (args, opts, cmd) => {
       const inv = buildInvocation(cmd);
@@ -235,7 +235,7 @@ export function registerMedia(program: Command): void {
       .command('upscale-video <ref_or_path>')
       .description('upscale a video (metered); accepts a file_ ref, URL, or local path')
       .option('--resolution <res>', 'target resolution: 720p | 1080p | 1440p | 2160p')
-      .option('-o, --output <path>', 'download the artifact to a local file'),
+      .option('-o, --output <path>', 'download artifacts: a file path, or a directory (also used for --num-images > 1)'),
   ).action(
     wrapAction(async (args, opts, cmd) => {
       const inv = buildInvocation(cmd);
@@ -260,7 +260,7 @@ export function registerMedia(program: Command): void {
       .command('remove-background <ref_or_path>')
       .description('remove an image background (metered); result is a new transparent PNG')
       .option('--high-quality', 'use the high-quality matting model')
-      .option('-o, --output <path>', 'download the artifact to a local file'),
+      .option('-o, --output <path>', 'download artifacts: a file path, or a directory (also used for --num-images > 1)'),
   ).action(
     wrapAction(async (args, opts, cmd) => {
       const inv = buildInvocation(cmd);
@@ -854,6 +854,99 @@ async function mediaInputs(inputs: string[], client: ApiClient): Promise<string[
   return resolved;
 }
 
+/** Extension for a returned artifact. Results declare `mime_type`; `name` is the fallback. */
+const EXTENSION_FOR_MIME: Readonly<Record<string, string>> = {
+  'image/png': 'png',
+  'image/jpeg': 'jpg',
+  'image/jpg': 'jpg',
+  'image/webp': 'webp',
+  'image/gif': 'gif',
+  'video/mp4': 'mp4',
+  'video/webm': 'webm',
+};
+
+function artifactExtension(artifact: JsonObject): string {
+  const mime = str(artifact, 'mime_type');
+  const known = mime !== undefined ? EXTENSION_FOR_MIME[mime.toLowerCase()] : undefined;
+  if (known !== undefined) return known;
+  const name = str(artifact, 'name');
+  const dot = name !== undefined ? name.lastIndexOf('.') : -1;
+  return dot > 0 ? name!.slice(dot + 1) : 'bin';
+}
+
+/** True when `--output` names a directory: it exists as one, or is written with a trailing separator. */
+function outputIsDirectory(output: string): boolean {
+  if (output.endsWith('/') || output.endsWith(sep)) return true;
+  return statSync(output, { throwIfNoEntry: false })?.isDirectory() === true;
+}
+
+/**
+ * Prepare `--output` BEFORE the metered call. A directory passed where a file was expected, or a
+ * missing parent, used to surface as a raw `EISDIR`/`ENOENT` from `writeFileSync` AFTER the
+ * provider had run and the team had been billed (ENG-5034). Checking first makes the common
+ * mistakes fail free.
+ */
+function preflightOutputPath(output: string): void {
+  const dir = outputIsDirectory(output) ? output : dirname(output);
+  try {
+    mkdirSync(dir, { recursive: true });
+    accessSync(dir, constants.W_OK);
+  } catch (err) {
+    throw CliError.io(
+      `--output path is not writable: ${output} (${err instanceof Error ? err.message : String(err)})`,
+      'Pass a writable file path, or a directory to receive the artifacts.',
+    );
+  }
+}
+
+/**
+ * Download every returned artifact. One artifact to a file path keeps the exact path given; several
+ * artifacts (`--num-images > 1`), or an `--output` that names a directory, land inside it as
+ * `<file_id>.<ext>` — the file-or-directory rule `canvas screenshot` already follows.
+ *
+ * Previously only `results[0]` was fetched, so `--num-images 4` billed for four images and wrote
+ * one (ENG-5033).
+ */
+async function downloadArtifacts(artifacts: JsonObject[], output: string, inv: Invocation): Promise<string[]> {
+  const intoDirectory = outputIsDirectory(output);
+  const written: string[] = [];
+  for (const [index, artifact] of artifacts.entries()) {
+    const url = str(artifact, 'url');
+    if (url === undefined) continue;
+    const response = await fetch(url, { signal: AbortSignal.timeout(120_000) });
+    if (!response.ok) {
+      inv.note(`artifact download failed (HTTP ${response.status}) — the file ref remains usable.`);
+      continue;
+    }
+    const extension = artifactExtension(artifact);
+    let target: string;
+    if (intoDirectory) {
+      target = join(output, `${str(artifact, 'id') ?? `artifact-${index + 1}`}.${extension}`);
+    } else if (artifacts.length === 1) {
+      target = output;
+    } else {
+      // Several artifacts, but `--output` names a FILE: number off its stem rather than turning
+      // `city.png` into a directory called `city.png`.
+      const base = basename(output);
+      const dot = base.lastIndexOf('.');
+      const stem = dot > 0 ? output.slice(0, output.length - (base.length - dot)) : output;
+      target = `${stem}-${index + 1}.${dot > 0 ? base.slice(dot + 1) : extension}`;
+    }
+    try {
+      mkdirSync(dirname(target), { recursive: true });
+      writeFileSync(target, new Uint8Array(await response.arrayBuffer()));
+    } catch (err) {
+      // Never a `cli_internal`: a bad path is the caller's input, not a CLI defect.
+      throw CliError.io(
+        `could not write ${target}: ${err instanceof Error ? err.message : String(err)}`,
+        'Pass a writable file path, or a directory to receive the artifacts.',
+      );
+    }
+    written.push(target);
+  }
+  return written;
+}
+
 async function mediaCall(
   client: ApiClient,
   inv: Invocation,
@@ -862,6 +955,8 @@ async function mediaCall(
   payload: Record<string, unknown>,
   output: string | undefined,
 ): Promise<CommandOutcome> {
+  // Fail free on an unusable output path rather than after the provider has billed.
+  if (output !== undefined) preflightOutputPath(output);
   const response = await client.request({
     method: 'POST',
     path,
@@ -872,26 +967,33 @@ async function mediaCall(
   // Image verbs return `results[]`; video/upscale/remove-background return `result`.
   const results = Array.isArray(root.results) ? root.results.map(asObject) : [];
   const single = asObject(root.result);
-  const first = results[0] ?? single;
-  const artifactUrl = str(first, 'url');
-  let downloaded: string | undefined;
-  if (output !== undefined && artifactUrl !== undefined) {
-    const bare = await fetch(artifactUrl, { signal: AbortSignal.timeout(120_000) });
-    if (bare.ok) {
-      mkdirSync(dirname(output), { recursive: true });
-      writeFileSync(output, new Uint8Array(await bare.arrayBuffer()));
-      downloaded = output;
-    } else {
-      inv.note(`artifact download failed (HTTP ${bare.status}) — the file ref remains usable.`);
+  const artifacts = results.length > 0 ? results : str(single, 'url') !== undefined ? [single] : [];
+  let downloaded: string[] = [];
+  /**
+   * A write failure AFTER a metered call must not discard the response: the provider has run and
+   * the team has been billed, so the `file_` refs are the only route back to work already paid for
+   * (`moda file download`). Exit nonzero — the caller asked for a local file and there is none, so
+   * `… && next-step` must halt — but carry `results`/`usage` in the envelope as recovery data
+   * rather than a claim of success (ENG-5034).
+   */
+  let writeError: CliErrorFields | undefined;
+  if (output !== undefined && artifacts.length > 0) {
+    try {
+      downloaded = await downloadArtifacts(artifacts, output, inv);
+    } catch (err) {
+      if (!(err instanceof CliError)) throw err;
+      writeError = err.fields;
     }
   }
   return {
     body: {
-      ok: true,
+      ok: writeError === undefined,
       operation,
       metered: true,
       ...root,
-      ...(downloaded !== undefined ? { output: downloaded } : {}),
+      ...(downloaded.length === 1 ? { output: downloaded[0] } : {}),
+      ...(downloaded.length > 1 ? { outputs: downloaded } : {}),
+      ...(writeError !== undefined ? { error: writeError } : {}),
       meta: { ...asObject(root.meta), ...metaBlock({ requestId: response.requestId, durationMs: response.durationMs }) },
     },
     human: (write) => {
@@ -922,8 +1024,15 @@ async function mediaCall(
       if (root.resumed_provider_job === true) {
         write('(resumed the existing provider render for this idempotency key — no duplicate charge)');
       }
-      if (downloaded !== undefined) write(`artifact → ${downloaded}`);
+      for (const file of downloaded) write(`artifact → ${file}`);
+      if (writeError !== undefined) {
+        // The refs above are the recovery route; say so plainly rather than leaving a bare fs error.
+        alert(
+          `⚠ the artifacts were generated and billed, but could not be saved: ${writeError.message} — ` +
+            'recover them with: moda file download FILE_REF -o …',
+        );
+      }
     },
-    exitCode: EXIT_OK,
+    exitCode: writeError === undefined ? EXIT_OK : exitCodeForError(writeError),
   };
 }

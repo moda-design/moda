@@ -12,7 +12,7 @@
  */
 import { afterEach, describe, expect, test } from 'bun:test';
 import { controlSpec, sizeSpec } from '../src/commands/media.ts';
-import { mkdtempSync, readFileSync } from 'node:fs';
+import { chmodSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { ApiClient } from '../src/api/client.ts';
@@ -594,5 +594,139 @@ describe('--timestamps accepts both list forms (ENG-5027)', () => {
   test('an empty or comma-only value is a usage error, not a silent empty list', () => {
     expect(() => parseTimestampMs('', undefined)).toThrow(CliError);
     expect(() => parseTimestampMs(',,', undefined)).toThrow(CliError);
+  });
+});
+
+/**
+ * Artifact download: multi-image output and the paid-work-orphaning guard (ENG-5033 / ENG-5034).
+ * The fake server answers the media POST with N results whose `url` points back at itself, so
+ * the real download path runs end to end.
+ */
+const PNG_BYTES = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 0]);
+
+function serveArtifacts(count: number): { base: string } {
+  server = Bun.serve({
+    hostname: '127.0.0.1',
+    port: 0,
+    fetch: (req) => {
+      const url = new URL(req.url);
+      if (url.pathname.startsWith('/artifact/')) return new Response(PNG_BYTES);
+      const origin = `http://127.0.0.1:${server?.port}`;
+      return Response.json({
+        operation: 'media.generate_image',
+        results: Array.from({ length: count }, (_, i) => ({
+          id: `file_TEST${i + 1}`,
+          url: `${origin}/artifact/${i + 1}`,
+          mime_type: 'image/png',
+        })),
+        usage: { class: 'metered', metered: true, model: 'nano-banana' },
+      });
+    },
+  });
+  return { base: `http://127.0.0.1:${server.port}` };
+}
+
+const GEN_ARGS = ['media', 'generate-image', '--model', 'nano-banana', '--prompt', 'x'];
+
+describe('media artifact download (ENG-5033: every paid image reaches disk)', () => {
+  test('one artifact keeps the exact --output path', async () => {
+    const { base } = serveArtifacts(1);
+    const dir = mkdtempSync(join(tmpdir(), 'moda-art-'));
+    const out = join(dir, 'one.png');
+    expect(await runCli([...GEN_ARGS, '-o', out], base)).toBe(0);
+    expect(readFileSync(out)).toHaveLength(PNG_BYTES.length);
+  });
+
+  test('N artifacts into a DIRECTORY land as <file_id>.<ext> — not one overwritten file', async () => {
+    const { base } = serveArtifacts(3);
+    const dir = mkdtempSync(join(tmpdir(), 'moda-art-'));
+    expect(await runCli([...GEN_ARGS, '--num-images', '3', '-o', dir], base)).toBe(0);
+    for (const id of ['file_TEST1', 'file_TEST2', 'file_TEST3']) {
+      expect(readFileSync(join(dir, `${id}.png`))).toHaveLength(PNG_BYTES.length);
+    }
+  });
+
+  test('N artifacts with a FILE --output are numbered off its stem', async () => {
+    const { base } = serveArtifacts(2);
+    const dir = mkdtempSync(join(tmpdir(), 'moda-art-'));
+    expect(await runCli([...GEN_ARGS, '--num-images', '2', '-o', join(dir, 'city.png')], base)).toBe(0);
+    // Never a directory called `city.png`.
+    expect(readFileSync(join(dir, 'city-1.png'))).toHaveLength(PNG_BYTES.length);
+    expect(readFileSync(join(dir, 'city-2.png'))).toHaveLength(PNG_BYTES.length);
+  });
+
+  test('a trailing-separator --output is a directory, not an ENOENT crash', async () => {
+    const { base } = serveArtifacts(1);
+    const dir = mkdtempSync(join(tmpdir(), 'moda-art-'));
+    expect(await runCli([...GEN_ARGS, '-o', `${join(dir, 'shots')}/`], base)).toBe(0);
+    expect(readFileSync(join(dir, 'shots', 'file_TEST1.png'))).toHaveLength(PNG_BYTES.length);
+  });
+});
+
+describe('media output pre-flight (ENG-5034: never bill for a write that cannot land)', () => {
+  test('an unwritable --output fails BEFORE the metered call is made', async () => {
+    const calls: Record<string, unknown>[] = [];
+    server = Bun.serve({
+      hostname: '127.0.0.1',
+      port: 0,
+      fetch: async (req) => {
+        calls.push((await req.json().catch(() => ({}))) as Record<string, unknown>);
+        return Response.json({ results: [], usage: {} });
+      },
+    });
+    const base = `http://127.0.0.1:${server.port}`;
+    const dir = mkdtempSync(join(tmpdir(), 'moda-art-'));
+    chmodSync(dir, 0o500);
+    // exit 2 (invalid_request/io_error), not 1 (cli_internal) — a bad path is caller input.
+    expect(await runCli([...GEN_ARGS, '-o', join(dir, 'sub', 'out.png')], base)).toBe(2);
+    // The decisive assertion: the provider was never called, so nothing was billed.
+    expect(calls).toHaveLength(0);
+    chmodSync(dir, 0o700);
+  });
+});
+
+async function runCliCapture(args: string[], base: string): Promise<{ code: number; stdout: string }> {
+  const scratch = mkdtempSync(join(tmpdir(), 'moda-media-cli-'));
+  const proc = Bun.spawn(['bun', MAIN, ...args], {
+    stdout: 'pipe',
+    stderr: 'pipe',
+    env: {
+      ...process.env,
+      MODA_NO_UPDATE_CHECK: '1',
+      MODA_CONFIG_DIR: join(scratch, 'config'),
+      MODA_STATE_DIR: join(scratch, 'state'),
+      MODA_API_KEY: 'moda_live_testkey000000',
+      MODA_API_BASE: base,
+    },
+  });
+  const [code, stdout] = await Promise.all([
+    proc.exited,
+    new Response(proc.stdout).text(),
+    new Response(proc.stderr).text(),
+  ]);
+  return { code, stdout };
+}
+
+describe('media write failure after billing (ENG-5034: failure-with-results)', () => {
+  test('exits nonzero but keeps results + usage so the paid refs are recoverable', async () => {
+    const { base } = serveArtifacts(1);
+    const dir = mkdtempSync(join(tmpdir(), 'moda-art-'));
+    const target = join(dir, 'readonly.png');
+    writeFileSync(target, '');
+    chmodSync(target, 0o400); // passes the dir pre-flight, fails at write
+
+    const { code, stdout } = await runCliCapture([...GEN_ARGS, '-o', target, '--json'], base);
+    const doc = JSON.parse(stdout) as Record<string, unknown>;
+
+    // Nonzero: the caller asked for a local file and there is none, so `… && next` must halt.
+    expect(code).not.toBe(0);
+    expect(doc.ok).toBe(false);
+    expect((doc.error as Record<string, unknown>).code).toBe('io_error');
+    // The decision: the refs ride along as recovery data, never discarded with the error.
+    expect(doc.results).toHaveLength(1);
+    expect((doc.results as Record<string, unknown>[])[0]!.id).toBe('file_TEST1');
+    expect(doc.usage).toBeDefined();
+
+    chmodSync(target, 0o700);
   });
 });
