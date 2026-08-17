@@ -4,7 +4,7 @@ import { dirname } from 'node:path';
 import type { Command } from 'commander';
 import type { ApiClient } from '../api/client.ts';
 import { endpoints } from '../api/endpoints.ts';
-import { asObject, listItems, str, type JsonObject } from '../api/types.ts';
+import { asObject, str, strArray, type JsonObject } from '../api/types.ts';
 import { CliError } from '../cliError.ts';
 import { readConfig, writeConfig } from '../config/config.ts';
 import { writeRepoContextKey } from '../config/context.ts';
@@ -198,6 +198,83 @@ export function brandListLine(kit: JsonObject): string {
   return `${str(kit, 'id') ?? '?'}  ${str(kit, 'title') ?? ''}`;
 }
 
+/**
+ * `brand show` human rendering (ENG-4984). The verb went through `passthroughOutcome` with no
+ * human renderer, so `defaultHuman()` JSON.stringify'd the entire kit — 28 colors, every font,
+ * every logo url — onto one line. This is the verb an agent uses to LEARN the brand before it
+ * authors anything, so the palette and the type stack have to be readable.
+ *
+ * The kit's own `id` is a UUID here while `brand list` yields the `bk_` form (ENG-4992); this
+ * renderer prints the kit URL and leaves ids to that fix rather than picking one of the two.
+ */
+export function brandShowLines(kit: JsonObject): string[] {
+  const arrayOf = (value: unknown): JsonObject[] => (Array.isArray(value) ? value.map(asObject) : []);
+  const lines: string[] = [`${str(kit, 'title') ?? '(untitled kit)'}${kit.is_default === true ? '  (default)' : ''}`];
+
+  const tagline = str(kit, 'tagline');
+  if (tagline !== undefined && tagline.trim().length > 0) lines.push(tagline);
+  const url = str(kit, 'url');
+  if (url !== undefined) lines.push(url);
+  const site = str(kit, 'company_url');
+  if (site !== undefined) lines.push(`site: ${site}`);
+  const mode = str(kit, 'default_color_mode');
+  if (mode !== undefined) lines.push(`default color mode: ${mode}`);
+
+  const colors = arrayOf(kit.colors);
+  if (colors.length > 0) {
+    lines.push('', `colors (${colors.length}):`);
+    // A gradient stop carries no flat `color`, so render whichever the entry actually holds.
+    const swatch = (entry: JsonObject): string => str(entry, 'color') ?? str(entry, 'gradient') ?? '(no value)';
+    const swatchWidth = colors.reduce((max, entry) => Math.max(max, swatch(entry).length), 0);
+    const labelWidth = colors.reduce((max, entry) => Math.max(max, (str(entry, 'label') ?? '').length), 0);
+    for (const entry of colors) {
+      const cells = [swatch(entry).padEnd(swatchWidth), (str(entry, 'label') ?? '').padEnd(labelWidth), str(entry, 'mode') ?? ''];
+      lines.push(`  ${cells.join('  ').trimEnd()}`);
+    }
+  }
+
+  const fonts = arrayOf(kit.fonts);
+  if (fonts.length > 0) {
+    lines.push('', `fonts (${fonts.length}):`);
+    const familyWidth = fonts.reduce((max, font) => Math.max(max, (str(font, 'family') ?? '(unnamed)').length), 0);
+    for (const font of fonts) {
+      // `weight` is a number in the create payload and null on most read kits — stringify either.
+      const weight = font.weight === null || font.weight === undefined ? undefined : String(font.weight);
+      const detail = [str(font, 'label'), weight].filter((v) => v !== undefined && v.length > 0).join(' ');
+      // `supported: false` is the one font fact that changes what an agent should author with.
+      const unsupported = font.supported === false ? '  (not supported — will fall back)' : '';
+      lines.push(`  ${(str(font, 'family') ?? '(unnamed)').padEnd(familyWidth)}  ${detail}${unsupported}`.trimEnd());
+    }
+  }
+
+  const logoGroups = arrayOf(kit.logos);
+  const logoCount = logoGroups.reduce((sum, group) => sum + arrayOf(group.images).length, 0);
+  if (logoCount > 0) {
+    lines.push('', `logos (${logoCount}):`);
+    for (const group of logoGroups) {
+      const images = arrayOf(group.images);
+      if (images.length === 0) continue;
+      const groupName = str(group, 'group_name');
+      if (groupName !== undefined) lines.push(`  ${groupName}:`);
+      for (const image of images) {
+        lines.push(`    ${str(image, 'id') ?? '?'}  ${str(image, 'name') ?? ''}`.trimEnd());
+      }
+    }
+  }
+
+  // The written brand character: short string lists that belong on one line each.
+  for (const [key, label] of [
+    ['brand_values', 'values'],
+    ['brand_aesthetic', 'aesthetic'],
+    ['brand_tone_of_voice', 'tone of voice'],
+  ] as const) {
+    const values = strArray(kit, key);
+    if (values.length > 0) lines.push(`${label}: ${values.join(', ')}`);
+  }
+
+  return lines;
+}
+
 export function registerBrand(program: Command): void {
   const brand = program.command('brand').description('brand kits: list, read tokens, set the default');
 
@@ -290,7 +367,16 @@ export function registerBrand(program: Command): void {
       const ref = parseRef(args[0] as string, 'brand_kit').ref;
       // Server contract: GET /v1/brand-kits/{ref} (gated verbose read) — no query params.
       const response = await client.request({ method: 'GET', path: endpoints.brandShow(ref) });
-      return passthroughOutcome('brand.show', response, inv);
+      const outcome = passthroughOutcome('brand.show', response, inv);
+      // The kit sits under `brand_kit`; older servers returned it at the root, so fall back there.
+      const root = asObject(response.body);
+      const kit = root.brand_kit !== undefined ? asObject(root.brand_kit) : root;
+      return {
+        ...outcome,
+        human: (write) => {
+          for (const line of brandShowLines(kit)) write(line);
+        },
+      };
     }),
   );
 
