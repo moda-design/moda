@@ -367,7 +367,7 @@ function isServing(website: Record<string, unknown>): boolean {
   return website.is_published === true && str(website, 'review_status') !== 'pending_review';
 }
 
-function siteLine(website: Record<string, unknown>): string {
+export function siteLine(website: Record<string, unknown>): string {
   const id = str(website, 'id') ?? '?';
   const name = str(website, 'name') ?? '(unnamed)';
   const url = str(website, 'url');

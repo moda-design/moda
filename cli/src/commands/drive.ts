@@ -333,7 +333,7 @@ function countSummary(folder: JsonObject): string {
   return parts.length === 0 ? '(empty)' : `(${parts.join(', ')})`;
 }
 
-function folderLine(folder: JsonObject): string {
+export function folderLine(folder: JsonObject): string {
   const label = str(folder, 'path') ?? str(folder, 'name') ?? '(unnamed)';
   const counts = countSummary(folder);
   return `${label}  ${str(folder, 'id') ?? '?'}${counts.length > 0 ? `  ${counts}` : ''}`;

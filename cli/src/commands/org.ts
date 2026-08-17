@@ -1,13 +1,19 @@
 /** `moda org list|use|current` — orgs are the billing boundary (cli.md §6). */
 import type { Command } from 'commander';
 import { endpoints } from '../api/endpoints.ts';
-import { listItems, str } from '../api/types.ts';
+import { listItems, str, type JsonObject } from '../api/types.ts';
 import { resolveCredential } from '../auth/credentials.ts';
 import { CliError } from '../cliError.ts';
 import { readConfig, writeConfig } from '../config/config.ts';
 import { EXIT_OK } from '../output/exitCodes.ts';
 import { addGlobalFlags, authedClient, buildInvocation, metaBlock, wrapAction } from './runtime.ts';
 import { LIST_ALL_CAP, fetchListPages, listFlagsOf, listOutcome, parseListLimit, parseListOffset } from './listLane.ts';
+
+/** One `moda org list` line. */
+export function orgLine(o: JsonObject): string {
+  const slug = str(o, 'slug');
+  return `${str(o, 'id') ?? '?'}  ${str(o, 'name') ?? ''}${slug !== undefined ? ` (${slug})` : ''}`;
+}
 
 export function registerOrg(program: Command): void {
   const org = program.command('org').description('organization context');
@@ -32,8 +38,7 @@ export function registerOrg(program: Command): void {
         pages,
         flags,
         emptyHint: 'no organizations',
-        itemLine: (o) =>
-          `${str(o, 'id') ?? '?'}  ${str(o, 'name') ?? ''}${str(o, 'slug') !== undefined ? ` (${str(o, 'slug')})` : ''}`,
+        itemLine: orgLine,
       });
     }),
   );
