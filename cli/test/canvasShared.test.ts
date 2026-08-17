@@ -187,3 +187,65 @@ describe('parseSize', () => {
     expect(() => parseSize('x')).toThrow(CliError);
   });
 });
+
+describe('repair warnings render both server shapes (ENG-5007)', () => {
+  function repairLines(warnings: unknown[]): string {
+    const outcome = mutationOutcome('canvas.create_from_markup', 'cvs_A', fakeInvocation(tempEnv()), {
+      body: { requires_repair: true, warnings },
+      durationMs: 1,
+    });
+    const lines: string[] = [];
+    outcome.human?.((line) => lines.push(line));
+    return lines.join('\n');
+  }
+
+  test('bare strings — the shape that rendered as "[warn] : "', () => {
+    const out = repairLines(['Unknown element type: blend', 'Unknown element type: notarealelement']);
+    expect(out).toContain('Unknown element type: blend');
+    expect(out).toContain('Unknown element type: notarealelement');
+    // The regression: a blank line where the message should be.
+    expect(out).not.toContain('[warn] :');
+  });
+
+  test('objects still render severity, code and message', () => {
+    const out = repairLines([
+      {
+        severity: 'error',
+        code: 'flex_child_missing_size',
+        message: '<row> children must have width and height. Child "star" is missing height.',
+      },
+    ]);
+    expect(out).toContain('[error] flex_child_missing_size:');
+    expect(out).toContain('Child "star" is missing height.');
+  });
+
+  test('mixed shapes in one response both survive', () => {
+    const out = repairLines(['Unknown element type: blend', { severity: 'error', code: 'c', message: 'm' }]);
+    expect(out).toContain('Unknown element type: blend');
+    expect(out).toContain('[error] c: m');
+  });
+
+  test('an unrecognized entry falls back to JSON, never to blank', () => {
+    // A codeless/messageless object must not collapse to "[warn] :", and a degenerate empty
+    // string must still render something visible ('""') rather than an empty line.
+    const out = repairLines([{ detail: 'no code or message here' }, '']);
+    expect(out).toContain('no code or message here');
+    const warningLines = out.split('\n').filter((line) => line.startsWith('  '));
+    expect(warningLines).toHaveLength(2);
+    for (const line of warningLines) {
+      expect(line.trim()).not.toBe('[warn] :');
+      expect(line.trim()).not.toBe('');
+    }
+    expect(warningLines[1]?.trim()).toBe('""');
+  });
+
+  test('warnings are only printed when repair is required', () => {
+    const outcome = mutationOutcome('canvas.edit', 'cvs_A', fakeInvocation(tempEnv()), {
+      body: { requires_repair: false, warnings: ['should not appear'] },
+      durationMs: 1,
+    });
+    const lines: string[] = [];
+    outcome.human?.((line) => lines.push(line));
+    expect(lines.join('\n')).not.toContain('should not appear');
+  });
+});
