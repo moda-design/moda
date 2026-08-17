@@ -47,8 +47,8 @@ allowed-tools: Bash(moda:*), Read, Glob, Grep
 
 ## UX rules
 
-- Talk in deliverables, not plumbing: print the canvas URL and export file
-  path. Never show raw JSON, DSL dumps, node ids, or request payloads.
+- Talk in deliverables: print the canvas URL and export path. Decide from
+  `--json` (human output omits caveats); never SHOW raw JSON, DSL, or ids.
 - Canvas references: pass whatever the user gave you — a moda.app canvas
   URL, a share link, a `cvs_` public id, or a raw UUID; the CLI resolves
   them identically. Copy URLs and ids VERBATIM from tool output — never
