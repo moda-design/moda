@@ -426,6 +426,22 @@ describe('media models — human/JSON model-set parity (gate finding F4)', () =>
     ]);
   });
 
+  test('generate-video: --reference-audio values ride the wire in order', async () => {
+    const { base, calls } = captureBody(VIDEO_RESULT);
+    const code = await runCli(
+      [
+        'media', 'generate-video', '--prompt', 'a singer on stage', '--model', 'minimax-h3',
+        '--reference-audio', 'file_01HZX9K2ABCDEFGHJKMNPQRSTV', 'https://example.test/voice.wav', '--json',
+      ],
+      base,
+    );
+    expect(code).toBe(0);
+    expect(calls[0]?.reference_audios).toEqual([
+      'file_01HZX9K2ABCDEFGHJKMNPQRSTV',
+      'https://example.test/voice.wav',
+    ]);
+  });
+
   test('generate-video: the key is absent entirely when no --reference-video is passed', async () => {
     const { base, calls } = captureBody(VIDEO_RESULT);
     const code = await runCli(
@@ -435,6 +451,7 @@ describe('media models — human/JSON model-set parity (gate finding F4)', () =>
     expect(code).toBe(0);
     // `extra="forbid"` on GenerateVideoRequest tolerates a missing key but not a null one.
     expect(calls[0]).not.toHaveProperty('reference_videos');
+    expect(calls[0]).not.toHaveProperty('reference_audios');
     expect(calls[0]?.prompt).toBe('a slow orbit');
   });
 

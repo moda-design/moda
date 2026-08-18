@@ -1176,10 +1176,12 @@ REFERENCE_PASSAGES["video"] = [
     ),
     (
         "There is no video-to-video edit and no source-video input for GENERATION\n"
-        "except reference video on the models whose cards declare it; the only verb\n"
+        "except reference video on the models whose cards declare it; reference audio\n"
+        "is likewise available only where its card declares it. The only verb\n"
         "that takes a video as its subject is `moda media upscale-video`.",
         "There is no video-to-video edit and no source-video input for GENERATION\n"
-        "except reference video on the models whose cards declare it; the only tool\n"
+        "except reference video on the models whose cards declare it; reference audio\n"
+        "is likewise available only where its card declares it. The only tool\n"
         "that takes a video as its subject is `media_upscale`.",
     ),
     (
@@ -1531,6 +1533,12 @@ REFERENCE_PASSAGES["video"] += [
         "**Reference video** rides `reference_videos` (a list of `file_` refs or\n"
         "http(s) video URLs), and only models whose card declares reference videos\n"
         "accept any.",
+    ),
+    (
+        "**Reference audio** rides repeatable `--reference-audio <ref-or-url>` "
+        "(`reference_audios` on the wire). Read limits from the model card.",
+        "**Reference audio** rides `reference_audios` (a list of `file_` refs or\n"
+        "http(s) audio URLs). Read support and limits from the model card.",
     ),
     # Workflow 6 — the canvas-video composite lane. Every verb in it moves.
     (
