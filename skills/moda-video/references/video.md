@@ -105,7 +105,7 @@ to the registry when it disagrees):
   gets: put anything to avoid in the prompt itself, there is no
   negative-prompt knob. `shot_type` picks one continuous take
   (`customize`, default) or model-chosen shot division (`intelligent`).
-- **Kling 3 Turbo Standard / Pro** — rapid iteration: fixed 720p at $0.112/s or 1080p at $0.14/s,
+- **Kling 3 Turbo Standard / Kling 3 Turbo Pro** — rapid iteration: fixed 720p at $0.112/s or 1080p at $0.14/s,
   with native audio. Text has three aspect ratios; image takes one frame. No seed, silence, or end frame.
 - **Wan 2.7** — reaches shorter than anything else here: a 2 s clip no
   other model will render (Kling 3 and Gemini stop at 3 s, Seedance at
