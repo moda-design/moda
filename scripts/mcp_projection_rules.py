@@ -1175,14 +1175,10 @@ REFERENCE_PASSAGES["video"] = [
         "   is format-implied.",
     ),
     (
-        "There is no video-to-video edit and no source-video input for GENERATION\n"
-        "except reference video on the models whose cards declare it; reference audio\n"
-        "is likewise available only where its card declares it. The only verb\n"
-        "that takes a video as its subject is `moda media upscale-video`.",
-        "There is no video-to-video edit and no source-video input for GENERATION\n"
-        "except reference video on the models whose cards declare it; reference audio\n"
-        "is likewise available only where its card declares it. The only tool\n"
-        "that takes a video as its subject is `media_upscale`.",
+        "There is no video-to-video edit. Source video/audio inputs for GENERATION exist\n"
+        "only as declared references; `moda media upscale-video` is the only video-input verb.",
+        "There is no video-to-video edit. Source video/audio inputs for GENERATION exist\n"
+        "only as declared references; `media_upscale` is the only video-input tool.",
     ),
     (
         "`moda media models` prints one capability card per video model — its modes\n"
