@@ -29,7 +29,8 @@ it stays in the media lane; type, brand geometry, or a cut belongs on an
 animation canvas exported to mp4/gif.
 
 There is no video-to-video edit and no source-video input for GENERATION
-except reference video on the models whose cards declare it; the only tool
+except reference video on the models whose cards declare it; reference audio
+is likewise available only where its card declares it. The only tool
 that takes a video as its subject is `media_upscale`.
 
 ## Model choice — registry-driven
@@ -48,6 +49,7 @@ can do it. Read those instead of guessing.
 Strengths of the current roster, one line each, to route the choice (defer
 to the registry when it disagrees):
 
+- **MiniMax Hailuo H3** — up to 4K, intrinsic audio, end-frame control, and image/video/audio references.
 - **Gemini Omni Flash** — the default: strong quality/cost for ordinary
   text- and image-to-video, coherent motion, 3–10 s. **720p is its only
   resolution on all three modes** (a 1080p ask snaps down and is reported),
@@ -129,6 +131,10 @@ accept any. Clip count, per-clip and combined length caps, price
 multiplier, and whether the input's running time bills are all per-model —
 read them off the card, and a 422 names the whole envelope back to you.
 Each clip also lands as a durable file in the team's library.
+
+**Reference audio** rides `reference_audios` (a list of `file_` refs or
+http(s) audio URLs). Read support and limits from the model card.
+For H3, bind references in the prompt by modality and 1-based list order: `Image 1`, `Video 1`, `Audio 1`.
 
 Native audio: every audio-capable model on the roster generates audio by
 DEFAULT — describe the soundtrack in the prompt, and `generate_audio=true`
