@@ -4930,7 +4930,7 @@
         },
         {
           "flag": "--reference-video",
-          "description": "reference clips (models whose card shows 'ref videos'): file_ refs, URLs, or local paths — count and length caps are per-model; the input's own running time is billed on top",
+          "description": "reference clips (models whose card shows 'ref videos'): file_ refs, URLs, or local paths — count, length, and input-duration billing are model-specific",
           "takes_value": true,
           "required": false
         },

@@ -28,9 +28,8 @@ never as a still. Route by the deliverable: a raw clip with no design over
 it stays in the media lane; type, brand geometry, or a cut belongs on an
 animation canvas exported to mp4/gif.
 
-There is no video-to-video edit and no source-video input for GENERATION
-except reference video on the models whose cards declare it; reference audio
-is likewise available only where its card declares it. The only tool
+There is no video-to-video edit and no source-video input for GENERATION except
+card-declared video/audio references. The only tool
 that takes a video as its subject is `media_upscale`.
 
 ## Model choice — registry-driven
@@ -132,9 +131,8 @@ multiplier, and whether the input's running time bills are all per-model —
 read them off the card, and a 422 names the whole envelope back to you.
 Each clip also lands as a durable file in the team's library.
 
-**Reference audio** rides `reference_audios` (a list of `file_` refs or
-http(s) audio URLs). Read support and limits from the model card.
-For H3, bind references in the prompt by modality and 1-based list order: `Image 1`, `Video 1`, `Audio 1`.
+**Reference audio** uses `reference_audios`; read support and limits from the model card.
+For H3 prompts, cite inputs by modality and order: `Image 1`, `Video 1`, `Audio 1`.
 
 Native audio: every audio-capable model on the roster generates audio by
 DEFAULT — describe the soundtrack in the prompt, and `generate_audio=true`

@@ -112,7 +112,7 @@ export function registerMedia(program: Command): void {
       .option(
         '--reference-video <refs...>',
         "reference clips (models whose card shows 'ref videos'): file_ refs, URLs, or local paths — " +
-          "count and length caps are per-model; the input's own running time is billed on top",
+          'count, length, and input-duration billing are model-specific',
       )
       .option(
         '--reference-audio <refs...>',
