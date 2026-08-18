@@ -29,7 +29,7 @@ it stays in the media lane; type, brand geometry, or a cut belongs on an
 animation canvas exported to mp4/gif.
 
 There is no video-to-video edit. Source video/audio inputs for GENERATION exist
-only as declared references; `media_upscale` is the only video-input tool.
+only as declared references; `media_upscale` is the only tool that takes a video as its subject.
 
 ## Model choice — registry-driven
 
