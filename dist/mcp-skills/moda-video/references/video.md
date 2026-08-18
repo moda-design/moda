@@ -107,8 +107,12 @@ to the registry when it disagrees):
   (`customize`, default) or model-chosen shot division (`intelligent`).
 - **Kling 3 Turbo Standard / Kling 3 Turbo Pro** — rapid iteration: fixed 720p at $0.112/s or 1080p at $0.14/s,
   with native audio. Text has three aspect ratios; image takes one frame. No seed, silence, or end frame.
+- **Kling O3 Standard / Pro / 4K** — cheaper native audio, off by default. Standard has no declared output size;
+  Pro is 1080p and 4K is native 4k. All make whole 3–15 s clips with an optional end frame. Text supports
+  landscape/square/portrait; image follows the source frame (≤10MB, ≥300×300, aspect ratio 0.4:1–2.5:1).
+  O3 exposes `shot_type`, but not Kling 3's guidance/negative prompt; describe multi-shot sequences in one prompt.
 - **Wan 2.7** — reaches shorter than anything else here: a 2 s clip no
-  other model will render (Kling 3 and Gemini stop at 3 s, Seedance at
+  other model will render (Kling and Gemini stop at 3 s, Seedance at
   4 s), whole-second control from 2–15 s, flat $0.10/s (720p) or $0.15/s
   (1080p) with the frame not entering the price. **Reach for it when you
   need a clip shorter than anything else will render** — at ordinary 5–15 s
@@ -136,17 +140,12 @@ Each clip also lands as a durable file in the team's library.
 http(s) audio URLs). Read support and limits from the model card.
 For H3, bind references in the prompt by modality and 1-based list order: `Image 1`, `Video 1`, `Audio 1`.
 
-Native audio: every audio-capable model on the roster generates audio by
-DEFAULT — describe the soundtrack in the prompt, and `generate_audio=true`
-only re-states that default explicitly. `generate_audio=false` buys the
-SILENT rate where the model's audio is controllable — on Kling 3 Standard
-and Pro that is a third off, so pass it whenever the clip does not need
-sound. Whether audio can be turned off at all is per-model, and the card is
-the answer: it reports `generate_audio_controllable`, and where that is
-false audio is INTRINSIC — the model accepts the parameter, reports it as
-an adjustment, and produces audio anyway, so it buys nothing there. Read
-that field instead of memorising which models those are; the receipt is
-the truth.
+Native audio: O3 defaults audio OFF; pass `generate_audio=true` when sound is wanted. Other audio-capable models
+default it on. `generate_audio=false` buys the SILENT rate where audio is controllable — on Kling 3 Standard
+and Pro that is a third off, so use it whenever the clip does not need sound. The model card is the authority:
+it reports `generate_audio_controllable`. Models where it is false have INTRINSIC audio: they accept the
+parameter, report it as an adjustment, and produce audio anyway, so it buys nothing there. Read that field;
+the receipt is the truth.
 
 ## Pin the knobs — before EVERY generation
 
