@@ -116,14 +116,32 @@ describe('canvas show rendering', () => {
 
   test('omits the id column entirely against a server that sends no ids', () => {
     // Deploy skew, and the pre-#9863 server: the column must vanish rather than pad blanks.
+    // Asserted as the WHOLE row — a looser check ("no wide gap before the name") passes for a
+    // renderer that moved the id somewhere else on the line, and cannot see a stray empty cell
+    // anywhere but that one gutter.
     const lines = canvasShowLines(canvasShowBody());
-    const pageRow = lines.find((line) => line.includes('Cover'));
 
-    expect(pageRow).toBeDefined();
-    expect(pageRow).toContain('1');
-    expect(pageRow).toContain('Cover');
-    // No double gap where the absent id column would have been.
-    expect(pageRow).not.toMatch(/ {3,}Cover/);
+    expect(lines.find((line) => line.includes('Cover'))).toBe('  1  Cover         960×540  10 nodes');
+    expect(lines.find((line) => line.includes('The Problem'))).toBe('  2  The Problem   960×540  12 nodes');
+  });
+
+  test('pads the id column to the widest id when only some pages carry one', () => {
+    // The realistic mixed payload: a page minted before the mapping was stored has a short ref,
+    // one created after it has only its real id — which is ~30 chars. The column must stay
+    // aligned rather than ragged, and the id-less row must leave the cell blank, not collapse it.
+    const body = canvasShowBody();
+    (body.pages as Record<string, unknown>).pages = [
+      { page_number: 1, id: 'page-1786730909610-939578431', name: 'Cover', width: 960, height: 540, node_count: 10 },
+      { page_number: 2, name: 'The Problem', width: 960, height: 540, node_count: 12 },
+    ];
+    const lines = canvasShowLines(body);
+
+    expect(lines.find((line) => line.includes('Cover'))).toBe(
+      '  1  page-1786730909610-939578431  Cover        960×540  10 nodes',
+    );
+    expect(lines.find((line) => line.includes('The Problem'))).toBe(
+      '  2                                The Problem  960×540  12 nodes',
+    );
   });
 
   test('says so when the server sends fewer pages than it counted', () => {
