@@ -49,8 +49,7 @@ can do it. Read those instead of guessing.
 Strengths of the current roster, one line each, to route the choice (defer
 to the registry when it disagrees):
 
-- **MiniMax Hailuo H3** — the high-resolution multimodal pick: up to 4K,
-  intrinsic audio, end-frame control, and image/video/audio references.
+- **MiniMax Hailuo H3** — up to 4K, intrinsic audio, end-frame control, and image/video/audio references.
 - **Gemini Omni Flash** — the default: strong quality/cost for ordinary
   text- and image-to-video, coherent motion, 3–10 s. **720p is its only
   resolution on all three modes** (a 1080p ask snaps down and is reported),
@@ -135,6 +134,7 @@ Each clip also lands as a durable file in the team's library.
 
 **Reference audio** rides `reference_audios` (a list of `file_` refs or
 http(s) audio URLs). Read support and limits from the model card.
+For H3, bind references in the prompt by modality and 1-based list order: `Image 1`, `Video 1`, `Audio 1`.
 
 Native audio: every audio-capable model on the roster generates audio by
 DEFAULT — describe the soundtrack in the prompt, and `generate_audio=true`
