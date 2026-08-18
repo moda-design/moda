@@ -112,7 +112,11 @@ export function registerMedia(program: Command): void {
       .option(
         '--reference-video <refs...>',
         "reference clips (models whose card shows 'ref videos'): file_ refs, URLs, or local paths — " +
-          "count and length caps are per-model; the input's own running time is billed on top",
+          'count, length, and input-duration billing are model-specific',
+      )
+      .option(
+        '--reference-audio <refs...>',
+        "reference audio (models whose card shows 'ref audio'): file_ refs, URLs, or local paths",
       )
       .option('--duration <seconds>', 'clip duration — ALWAYS pass one; it is the dominant cost driver')
       .option('--aspect-ratio <ratio>', 'aspect ratio, e.g. 16:9')
@@ -152,6 +156,9 @@ export function registerMedia(program: Command): void {
         // so nothing is capped here — a client-side number would drift the moment a model is added.
         ...(Array.isArray(opts.referenceVideo)
           ? { reference_videos: await mediaInputs(opts.referenceVideo as string[], client) }
+          : {}),
+        ...(Array.isArray(opts.referenceAudio)
+          ? { reference_audios: await mediaInputs(opts.referenceAudio as string[], client) }
           : {}),
         // Schema: duration_seconds is float|str — numeric strings travel as numbers, model
         // enums like "8s" pass through verbatim for the server to resolve.
@@ -762,6 +769,7 @@ function rejectRemoteInputsForBackground(opts: Record<string, unknown>): void {
     opts.endImage,
     ...(Array.isArray(opts.reference) ? opts.reference : []),
     ...(Array.isArray(opts.referenceVideo) ? opts.referenceVideo : []),
+    ...(Array.isArray(opts.referenceAudio) ? opts.referenceAudio : []),
   ].filter((value): value is string => typeof value === 'string');
   const remote = inputs.filter((value) => value.startsWith('http://') || value.startsWith('https://'));
   if (remote.length === 0) return;
