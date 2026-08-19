@@ -109,7 +109,7 @@ to the registry when it disagrees):
   with native audio. Text has three aspect ratios; image takes one frame. No seed, silence, or end frame.
 - **Kling O3 Standard / Pro / 4K** — cheaper native audio, off by default. Standard has no declared output size;
   Pro is 1080p and 4K is native 4k. All make whole 3–15 s clips with an optional end frame. Text supports
-  landscape/square/portrait; image follows the source frame (≤10MB, ≥300×300, aspect ratio 0.4:1–2.5:1).
+  landscape/square/portrait; image follows the source frame (≤50MB, ≥300×300, aspect ratio 0.4:1–2.5:1).
   O3 exposes `shot_type`, but not Kling 3's guidance/negative prompt; describe multi-shot sequences in one prompt.
 - **Wan 2.7** — reaches shorter than anything else here: a 2 s clip no
   other model will render (Kling and Gemini stop at 3 s, Seedance at
