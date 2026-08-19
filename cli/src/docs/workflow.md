@@ -48,8 +48,8 @@ Resources:
   and media inputs (`--folder fld_…` files it into a drive folder); `moda file search QUERY`
   finds existing team assets, `moda file list|show` browse the drive library, and
   `moda file download file_…` fetches the bytes back (files:read scope).
-- Metered lanes (always labeled, never hidden): `moda task start --prompt "…"` (Omni
-  escalation) and `moda media generate-image --prompt "…" --model …`. Both are labeled
+- Metered lanes (always labeled, never hidden): the media lanes, e.g.
+  `moda media generate-image --prompt "…" --model …`. Metered calls are labeled
   `usage.class: "metered"`; exact credits are enriched asynchronously on your account usage.
 
 ## The --json envelope (versioned machine surface)

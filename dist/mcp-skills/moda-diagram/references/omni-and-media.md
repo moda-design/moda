@@ -1,6 +1,6 @@
-# The metered lanes — media generation and the Omni escalation
+# The metered lanes — media generation and web research
 
-These are the metered lanes — the `media_*` tools and `task_start` — and they are the QUALITY levers on this surface. Generated imagery, footage, and Moda's own designer are how good work gets made: reach for them wherever they serve the deliverable, never ask permission first, and report the usage receipt after each call as information (`usage.class: "metered"` on the response). Cost is a topic only when the USER raises it.
+These are the metered lanes — the `media_*` tools — and they are the QUALITY levers on this surface. Generated imagery and footage are how good work gets made: reach for them wherever they serve the deliverable, never ask permission first, and report the usage receipt after each call as information (`usage.class: "metered"` on the response). Cost is a topic only when the USER raises it.
 
 The one fact worth carrying: a metered call can fail the billing precheck (`insufficient_credits` and friends), which means the TEAM is out of credits or has hit a plan cap, not that you did something wrong. Say so plainly, surface the hint verbatim, and stop — never retry it, and never quietly drop the quality lever and deliver the lesser thing instead.
 
@@ -57,32 +57,3 @@ Results return durable refs that feed markup `image(...)` fills and `src` attrib
 ## Imagery is a default quality lever
 
 Generated imagery is a DEFAULT quality lever, not a last resort. Covers, heroes, section breaks, and full-bleed closers get generated imagery wherever it elevates the design — styled to the brand's palette and mood. Reuse brand-kit assets and the user's own uploads (`file_search` / the `upload` tool) when they are the actual subject matter; `file_search(query, source='stock')` adds stock photography (place the `stock_unsplash_…` id verbatim; credit the result's `attribution` wherever the photo appears); markup `<image icon="query"/>` covers functional UI icons; an icon/vector-only system is a deliberate style choice, never a cost fallback.
-
-## `task_start` — the Omni escalation lane (metered)
-
-Handing the whole job to Moda's own agent. It plans, designs, sources imagery, and builds on a canvas server-side — the lane where Moda's models run.
-
-```
-task_start(prompt, canvas_ref=…, canvas_name=…, brand_kit_ref=…,
-           number_of_slides=…, attachments=[file_…], quote=…)
-task_status(task_ref)            task_cancel(task_ref)
-```
-
-**When to escalate** (instead of authoring markup yourself):
-
-- A genuinely open-ended creative brief where the user wants Moda's designer to own the direction ("surprise me", "make it beautiful", multiple concepts to choose from).
-- Imagery-heavy work where generation, art direction, and layout must co-evolve.
-- Brand-guide generation (a new identity — see references/brand.md).
-- Motion choreography beyond the deterministic lane (motion v3 via `canvas_edit` on an animation-category canvas covers the basics; preset animations on ordinary canvases remain app-only).
-
-**When NOT to escalate:** anything you can author deterministically. You are the agent; a known layout with known content is your job, and faster to iterate on.
-
-### Task-lane rules
-
-- A task delegates the whole job — mention, matter-of-fact, that you're starting one (no permission-seeking), and report the receipt after.
-- `task_start` is idempotent: an identical re-run replays the already-started task instead of spending again — within the server's idempotency window (the result says so when it detects the replay). A deliberate new attempt — e.g. after `task_failed` — takes a fresh `repeat_token`.
-- Omit `canvas_ref` for net-new work — the task creates and designs its own canvas. Pass it only when the job must land on an existing one; a running task **owns its canvas** — your writes fail typed as busy until it finishes. Recovery: poll the task handle you hold with `task_status`, then wait or `task_cancel`.
-- Pass `brand_kit_ref` rather than restating colors/fonts/logos in the prompt — the resolved kit owns them. Put the slide/page count in `number_of_slides` or the prompt explicitly.
-- A completed task returns the finished canvas — `export` it yourself when the user wants a file.
-- Typed failures follow the standard error contract: billing precheck and plan caps fail with the cap in the message; a live run owning the canvas fails as a conflict. Surface hints verbatim.
-- After a task completes you can resume surgical control: `canvas_read` the result, then targeted `canvas_edit` / `canvas_apply_markup` refinements — the hybrid is often the best workflow.

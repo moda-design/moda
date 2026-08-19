@@ -77,7 +77,7 @@ Extraction is good, not perfect — a slightly-off primary, a missed accent, a w
 - Images: `moda brand images BRAND_REF` lists attachments with `bki_` ids; `add-image --file FILE_REF --role logo|reference|asset` attaches an upload; `remove-image BRAND_REF BKI_ID` detaches. Roles: logo = brand marks, reference = style hints for the agent, asset = placeable imagery.
 - Confirm destructive edits with the user before running them (removing images, replacing a palette) — kit changes affect every future branded artifact, not just this session.
 - **Read the guide prose before branded work.** A kit's GUIDES are the written brand rules Moda's own agent honors — voice, imagery doctrine, usage law beyond colors/fonts/logos. `moda brand guides KIT_REF` lists them (id, title, description); `moda brand guide KIT_REF GUIDE_ID` returns the full markdown. Read the relevant guide(s) before any branded deliverable and follow them with the same force as the kit's fields; where guides are silent, ask the user rather than inventing brand law.
-- Full brand-**guide** generation — a new identity, multiple creative directions, logo concepts — is creative work for the metered Omni lane: `moda task start --prompt "…"` (see references/omni-and-media.md). Do not try to hand-author a brand identity out of markup primitives.
+- Full brand-**guide** generation — a new identity, multiple creative directions, logo concepts — is creative work for the Moda app: hand the user the app link and let them run it there. Do not try to hand-author a brand identity out of markup primitives.
 
 ## Honest gaps
 

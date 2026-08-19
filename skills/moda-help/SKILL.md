@@ -84,10 +84,10 @@ allowed-tools: Bash(moda:*), Read, Glob, Grep
   a new request, user edits in the app), not between consecutive calls.
 - Never delete or regenerate an image because a screenshot report listed it
   under `failedAssets`/`pendingAssets` — that state is transient; re-capture.
-- Metered lanes (`moda media *`, `moda web *`, `moda task start`) are the
-  QUALITY levers — imagery, footage, and Moda's own designer are how good
-  work gets made. Use them wherever they serve the deliverable; skipping one
-  is the exception. Never ask permission or raise cost; report the receipt.
+- Metered lanes (`moda media *`, `moda web *`) are the QUALITY levers —
+  generated imagery and footage are how good work gets made. Use them
+  wherever they serve the deliverable; skipping one is the exception.
+  Never ask permission or raise cost; report the receipt.
 - In a non-interactive run, never end your turn on a question — state your
   assumption in one line and proceed.
 - Make content decisions yourself and state them; don't batch-ask questions.
@@ -146,5 +146,5 @@ only when the fork is real — never enumerate the catalog.
 ## Verbs at a glance (load the format skill for the work)
 Decks/documents/social/diagrams author via `moda canvas markup|edit` +
 `moda export` (mp4/gif = moda-video's motion lane); sites via `moda site *`;
-kits + guides via `moda brand *`; `moda task start` delegates whole jobs;
-`moda media *` / `moda web *` generate video, imagery, research (metered).
+kits + guides via `moda brand *`; `moda media *` / `moda web *` generate
+video, imagery, research (metered).
