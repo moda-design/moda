@@ -35,14 +35,14 @@ allowed-tools: Bash(moda:*), Read, Glob, Grep
      initiative — org decides whose workspace and billing everything lands in.
    - Any entitlement gate (e.g. the account cannot author canvases yet): relay doctor's actionable hint verbatim and stop. Never retry in a loop.
 2. Run `moda account status --json`. Note the org and plan.
-3. Run `moda brand list` — one cheap deterministic call, never skipped, even
-   for simple asks. Kits exist: use the default (or the one context implies);
-   several plausible → ask which, never guess between clients' kits — and read
-   the kit before designing (references/brand.md). An explicit "no brand" from
-   the user wins over everything. NO kits: offer once, briefly — "Want me to
-   set up a brand kit first? It's free and makes everything come out on-brand"
-   — yes → `moda brand create` from their URL, or manually with no website
-   (--name/--color/--font, references/brand.md); no → unbranded, no nagging.
+3. Run `moda brand list` — one cheap deterministic call, never skipped, even for simple asks. Kits
+   exist: use the default (or the one context implies); several plausible → ask which, never guess
+   between clients' kits; read it before designing. Then BIND it — `moda canvas create --brand …`,
+   or `moda canvas brand` on an existing canvas — and NAME the kit when you hand over: palette-in-
+   markup is only half of on-brand, and an unbound canvas opens in Moda with an empty brand-kit
+   dropdown (references/brand.md). An explicit "no brand" from the user wins over everything. NO
+   kits: offer once, briefly — "Want me to set up a brand kit first? It's free and makes everything
+   come out on-brand" — yes → `moda brand create` from their URL, or manually (--name/--color/--font, references/brand.md); no → unbranded, no nagging.
 4. Note whether you can VIEW images: screenshot review assumes vision. A vision-less harness follows the degraded verify loop in references/reading-and-verifying.md.
 
 ## UX rules

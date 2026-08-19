@@ -1514,13 +1514,97 @@
       }
     },
     {
+      "name": "canvas brand",
+      "description": "bind the canvas to a brand kit (omit the kit with --clear to unbind)",
+      "positionals": [
+        {
+          "name": "canvas",
+          "required": true,
+          "variadic": false
+        },
+        {
+          "name": "brand",
+          "required": false,
+          "variadic": false
+        }
+      ],
+      "flags": [
+        {
+          "flag": "--api-base",
+          "description": "endpoint override (staging/dev)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--clear",
+          "description": "unbind: the canvas belongs to no brand kit",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--json",
+          "description": "machine output: exactly one compact JSON document on stdout; implies --no-input",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-input",
+          "description": "fail instead of prompting (implied by --json)",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--no-retry",
+          "description": "disable the built-in busy/transport retry",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--org",
+          "description": "override the configured org context for this invocation",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--pretty",
+          "description": "pretty-print the --json document",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--quiet",
+          "description": "suppress non-essential stderr",
+          "takes_value": false,
+          "required": false
+        },
+        {
+          "flag": "--timeout",
+          "description": "per-command ceiling override, seconds",
+          "takes_value": true,
+          "required": false
+        }
+      ],
+      "markers": {
+        "mutating": true,
+        "destructive": false,
+        "metered": false,
+        "read_lane": false
+      }
+    },
+    {
       "name": "canvas create",
-      "description": "create a canvas (brand application is client-side: read the kit, author with its tokens)",
+      "description": "create a canvas (pass --brand to bind its kit; author the palette into your markup as usual)",
       "positionals": [],
       "flags": [
         {
           "flag": "--api-base",
           "description": "endpoint override (staging/dev)",
+          "takes_value": true,
+          "required": false
+        },
+        {
+          "flag": "--brand",
+          "description": "bind the canvas to this brand kit (bk_… from moda brand list) — the kit the editor shows and Moda's own agent inherits; it records the brand, it does not restyle anything",
           "takes_value": true,
           "required": false
         },

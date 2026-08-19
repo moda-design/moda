@@ -18,6 +18,7 @@ const SEMANTICS: Record<string, VerbSemantics> = {
   'canvas edit': { mutating: true },
   'canvas delete-items': { mutating: true },
   'canvas rename': { mutating: true },
+  'canvas brand': { mutating: true },
   'canvas import-pages': { mutating: true },
   'canvas import-pptx': { mutating: true },
   'canvas duplicate': { mutating: true },

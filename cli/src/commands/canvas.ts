@@ -10,6 +10,7 @@ import { shotsDir } from '../config/state.ts';
 import { alert, type CommandOutcome } from '../output/emit.ts';
 import { EXIT_OK } from '../output/exitCodes.ts';
 import { parseRef, toWireId, refUuid, extractShortIds } from '../refs.ts';
+import { signalCanvasHandOff } from './handOff.ts';
 import { openLaneContext, openUrlOutcome, resourceOpenOutcome, type OpenLaneContext } from './open.ts';
 import { previewText, writeResultFile } from '../output/resultFile.ts';
 import { parseFolderRef, parseVisibility } from './drive.ts';
@@ -147,6 +148,14 @@ export async function performCanvasOpen(client: ApiClient, ctx: OpenLaneContext,
     if (!(err instanceof CliError) || !tolerated.includes(err.fields.code) || refUuid(ref) === undefined) throw err;
     ctx.note(`canvas read unavailable (${err.fields.code}) — opening the constructed editor URL`);
   }
+  // The hand-off (ENG-5160). Showing the user the canvas IS the end of the run,
+  // so this is where the "your agent is working" state should stop — not
+  // minutes later when its timer runs out. Awaited so the state is already gone
+  // by the time the browser opens; bounded and silent, so it can never cost the
+  // user the verb (see signalCanvasHandOff). Not on the share-link branch above:
+  // that path never reads the canvas and the opener is usually a recipient, not
+  // the agent whose record it would be.
+  await signalCanvasHandOff(client, ref);
   return resourceOpenOutcome(ctx, {
     operation: 'canvas.open',
     sources: [root],
@@ -384,8 +393,13 @@ export function registerCanvas(program: Command): void {
   addGlobalFlags(
     canvas
       .command('create')
-      .description('create a canvas (brand application is client-side: read the kit, author with its tokens)')
+      .description('create a canvas (pass --brand to bind its kit; author the palette into your markup as usual)')
       .requiredOption('--name <name>', 'canvas name')
+      .option(
+        '--brand <brand_ref>',
+        'bind the canvas to this brand kit (bk_… from moda brand list) — the kit the editor shows and ' +
+          "Moda's own agent inherits; it records the brand, it does not restyle anything",
+      )
       .option('--size <WxH>', 'page size, e.g. 1920x1080')
       .option('--pages <n>', 'initial page count', (v: string) => Number.parseInt(v, 10))
       .option('--category <category>', 'canvas category (drives export defaults and multi-page semantics)')
@@ -396,7 +410,7 @@ export function registerCanvas(program: Command): void {
       )
       .option('--visibility <visibility>', 'team | private — private hides it from teammates; only when the user asks'),
   )
-    .addHelpText('after', '\nExamples:\n  moda canvas create --name "Q3 deck" --size 1920x1080 --pages 1 --category slides\n  moda canvas create --name "One-pager" --size 816x1056\n  moda canvas create --name "Q3 QBR" --template cvs_… (copy of a team template; edit the copy)\n\nNot for: adding pages to an existing canvas (moda canvas add-pages), or\nreworking an existing design (moda canvas read, then markup/edit).\n')
+    .addHelpText('after', '\nExamples:\n  moda canvas create --name "Q3 deck" --size 1920x1080 --pages 1 --category slides --brand bk_…\n  moda canvas create --name "One-pager" --size 816x1056\n  moda canvas create --name "Q3 QBR" --template cvs_… (copy of a team template; keeps its brand kit)\n\nNot for: adding pages to an existing canvas (moda canvas add-pages), or\nreworking an existing design (moda canvas read, then markup/edit).\n')
     .action(
     wrapAction(async (_args, opts, cmd) => {
       const inv = buildInvocation(cmd);
@@ -409,13 +423,15 @@ export function registerCanvas(program: Command): void {
           ...(typeof opts.category === 'string' ? ['--category'] : []),
           ...(typeof opts.folder === 'string' ? ['--folder'] : []),
           ...(typeof opts.visibility === 'string' ? ['--visibility'] : []),
+          ...(typeof opts.brand === 'string' ? ['--brand'] : []),
         ];
         if (conflicting.length > 0) {
           throw CliError.usage(
             `--template cannot be combined with ${conflicting.join(', ')}.`,
-            'The template defines the page size, page count, and category, and placement is not wired through ' +
-              'the copy yet — drop those flags (or drop --template); place the copy afterwards with ' +
-              '`moda drive move` / `moda drive visibility`.',
+            'The template defines the page size, page count, and category, it keeps its own brand kit, and ' +
+              'placement is not wired through the copy yet — drop those flags (or drop --template); place the ' +
+              'copy afterwards with `moda drive move` / `moda drive visibility`, and rebind its kit with ' +
+              '`moda canvas brand <canvas> <kit>`.',
           );
         }
       }
@@ -434,6 +450,7 @@ export function registerCanvas(program: Command): void {
         ...(typeof opts.category === 'string' ? { category: opts.category } : {}),
         ...(typeof opts.folder === 'string' ? { folder_id: parseFolderRef(opts.folder) } : {}),
         ...(typeof opts.visibility === 'string' ? { visibility: parseVisibility(opts.visibility) } : {}),
+        ...(typeof opts.brand === 'string' ? { brand_kit_id: opts.brand } : {}),
       };
       const response = await client.request({
         method: 'POST',
@@ -1157,6 +1174,46 @@ export function registerCanvas(program: Command): void {
       return passthroughOutcome('canvas.rename', response, inv);
     }),
   );
+
+  addGlobalFlags(
+    canvas
+      .command('brand <canvas> [brand]')
+      .description('bind the canvas to a brand kit (omit the kit with --clear to unbind)')
+      .option('--clear', 'unbind: the canvas belongs to no brand kit'),
+  )
+    .addHelpText('after', '\nExamples:\n  moda canvas brand cvs_… bk_…      (bind)\n  moda canvas brand cvs_… --clear   (unbind)\n\nThis records which brand the canvas BELONGS to — the kit the editor\'s brand-kit\ndropdown shows, and the one Moda\'s own agent inherits when the user keeps\nediting in the app. It restyles nothing: author the kit\'s palette and fonts into\nyour markup as usual (moda brand show).\n')
+    .action(
+      wrapAction(async (args, opts, cmd) => {
+        const inv = buildInvocation(cmd);
+        const brand = args[1] as string | undefined;
+        const clear = opts.clear === true;
+        // Contradictory inputs are refused, never partially honored: an unbind
+        // that silently beat an explicit bind is the worst of both readings.
+        if (brand !== undefined && clear) {
+          throw CliError.usage(
+            'Pass either a brand kit or --clear, not both.',
+            'moda canvas brand <canvas> bk_…  to bind; moda canvas brand <canvas> --clear to unbind.',
+          );
+        }
+        if (brand === undefined && !clear) {
+          throw CliError.usage(
+            'Which brand kit?',
+            'moda brand list shows the kits on this workspace. To unbind instead, pass --clear.',
+          );
+        }
+        const { client } = await authedClient(inv, READ_TIMEOUT_MS);
+        const ref = await resolveCanvasRef(args[0] as string, client);
+        // Server contract: UpdateCanvasRequest treats an explicitly-sent null as
+        // "clear", and an OMITTED field as "leave alone" — so the unbind has to
+        // send the key with a null rather than skip it.
+        const response = await client.request({
+          method: 'PATCH',
+          path: endpoints.canvasRename(ref),
+          body: { brand_kit_id: clear ? null : brand },
+        });
+        return passthroughOutcome('canvas.brand', response, inv);
+      }),
+    );
 
   addGlobalFlags(
     canvas
