@@ -244,9 +244,9 @@ then animate it.
 - Export per page: `export(canvas_ref, format='mp4'|'gif', page=N)` —
   mp4/gif REQUIRE `page`, and a page with NO animation rejects typed
   `no_animation` (that is the honest answer: deliver a still + the link).
-- Choreography beyond what you can author confidently → escalate to
-  `task_start` (metered) rather than thrashing; the canvas link keeps
-  the user in the loop either way.
+- Choreography beyond what you can author confidently → stop rather than
+  thrashing; hand the user the canvas link — the app's motion tools pick
+  up from there.
 
 **5. The enhance chain** — refs are the chain handles: every media result
 returns a durable `file_` ref, and every media input takes one. Generate →

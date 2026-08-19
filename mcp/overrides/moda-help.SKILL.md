@@ -63,7 +63,7 @@ is real — never enumerate the catalog.
 ## Tools at a glance (load the format skill for the work)
 Decks/documents/social/diagrams author via `canvas_apply_markup`/`canvas_edit`
 and deliver files via `export`; kits read via `brand_list`/`brand_show`
-(created and edited in the Moda app); `task_start` delegates whole jobs to
-Moda's own designer; `media_generate_image`/`media_generate_video`/
-`media_upscale` generate imagery and video (metered). Hosted websites are
-built in the Moda app — moda-website routes the user there.
+(created and edited in the Moda app); `media_generate_image`/
+`media_generate_video`/`media_upscale` generate imagery and video (metered).
+Hosted websites are built in the Moda app — moda-website routes the user
+there.

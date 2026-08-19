@@ -1,21 +1,13 @@
 /**
  * Agent-ergonomics wave: standard --version, compact-vs---pretty JSON, last-error persistence,
- * the task-start replay ledger, and the list-lane returned/empty sugar.
+ * and the list-lane returned/empty sugar.
  */
 import { describe, expect, test } from 'bun:test';
 import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { statSync, readFileSync, writeFileSync } from 'node:fs';
-import {
-  clearLastError,
-  persistLastError,
-  readLastError,
-  readTaskStart,
-  recordTaskStart,
-  recordTaskStatus,
-} from '../src/config/state.ts';
-import { detectStartReplay } from '../src/commands/task.ts';
+import { clearLastError, persistLastError, readLastError } from '../src/config/state.ts';
 import { passthroughOutcome } from '../src/commands/canvasShared.ts';
 import type { Invocation } from '../src/commands/runtime.ts';
 
@@ -127,66 +119,6 @@ describe('last-error security (review blocking finding)', () => {
     expect(readLastError(env)).toBeDefined();
     clearLastError(env);
     expect(readLastError(env)).toBeUndefined();
-  });
-});
-
-describe('detectStartReplay (skew-safe replay claims)', () => {
-  const NOW = Date.parse('2026-08-11T12:00:00Z');
-
-  test('ledger match is a confident claim and never re-records', () => {
-    const verdict = detectStartReplay({
-      taskId: 'task_1',
-      fresh: false,
-      prior: { task_id: 'task_1', started_at: 'x', last_status: 'failed' },
-      localNowMs: NOW,
-    });
-    expect(verdict.replayed).toBe(true);
-    expect(verdict.note).toContain('last seen failed');
-    expect(verdict.record).toBe(false);
-  });
-
-  test('skewed-ahead LOCAL clock alone never claims replay — hedged note only', () => {
-    // Local clock 60s ahead of the server: created_at appears 60s in the past. No server time.
-    const verdict = detectStartReplay({
-      taskId: 'task_2',
-      fresh: false,
-      createdAtMs: NOW - 60_000,
-      localNowMs: NOW,
-    });
-    expect(verdict.replayed).toBe(false);
-    expect(verdict.note).toContain('possible replay');
-    expect(verdict.note).not.toContain('pass --fresh');
-  });
-
-  test('server Date header is the trusted reference: predate → confident claim', () => {
-    const verdict = detectStartReplay({
-      taskId: 'task_3',
-      fresh: false,
-      createdAtMs: NOW - 60_000,
-      serverNowMs: NOW,
-      localNowMs: NOW + 3_600_000, // local clock wildly ahead — irrelevant
-    });
-    expect(verdict.replayed).toBe(true);
-    expect(verdict.note).toContain('pass --fresh');
-  });
-
-  test('fresh starts are NEVER recorded (salted keys would evict the real ledger)', () => {
-    const verdict = detectStartReplay({ taskId: 'task_4', fresh: true, localNowMs: NOW });
-    expect(verdict.replayed).toBe(false);
-    expect(verdict.record).toBe(false);
-    const normal = detectStartReplay({ taskId: 'task_5', fresh: false, localNowMs: NOW });
-    expect(normal.record).toBe(true);
-  });
-});
-
-describe('task-start replay ledger', () => {
-  test('record → read → terminal-status update', () => {
-    const env = { MODA_STATE_DIR: mkdtempSync(join(tmpdir(), 'moda-ledger-')) };
-    expect(readTaskStart('ik_x', env)).toBeUndefined();
-    recordTaskStart('ik_x', { task_id: 'task_1', started_at: new Date().toISOString() }, env);
-    expect(readTaskStart('ik_x', env)?.task_id).toBe('task_1');
-    recordTaskStatus('task_1', 'failed', env);
-    expect(readTaskStart('ik_x', env)?.last_status).toBe('failed');
   });
 });
 

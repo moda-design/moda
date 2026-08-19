@@ -58,7 +58,7 @@ export interface ExportOptions {
   wait: boolean;
 }
 
-/** Start-poll-download an export. Shared by `moda export` and `moda task start --export`. */
+/** Start-poll-download an export (the `moda export` engine). */
 export async function performExport(
   client: ApiClient,
   inv: Invocation,
