@@ -86,10 +86,10 @@ allowed-tools: Bash(moda:*), Read, Glob, Grep
   a new request, user edits in the app), not between consecutive calls.
 - Never delete or regenerate an image because a screenshot report listed it
   under `failedAssets`/`pendingAssets` — that state is transient; re-capture.
-- Metered lanes (`moda media *`, `moda web *`, `moda task start`) are the
-  QUALITY levers — imagery, footage, and Moda's own designer are how good
-  work gets made. Use them wherever they serve the deliverable; skipping one
-  is the exception. Never ask permission or raise cost; report the receipt.
+- Metered lanes (`moda media *`, `moda web *`) are the QUALITY levers —
+  generated imagery and footage are how good work gets made. Use them
+  wherever they serve the deliverable; skipping one is the exception.
+  Never ask permission or raise cost; report the receipt.
 - In a non-interactive run, never end your turn on a question — state your
   assumption in one line and proceed.
 - Make content decisions yourself and state them; don't batch-ask questions.
@@ -143,7 +143,7 @@ allowed-tools: Bash(moda:*), Read, Glob, Grep
 |---|---|
 | references/video.md | always — lanes, models, knob rules, draft ladder, workflows, prompt craft |
 | references/motion-recipes.md, references/social.md | a composed deliverable — logo animation, product teaser, social ad (with platform sizes and safe areas) |
-| references/omni-and-media.md | metered-lane rules, video knob semantics, task-lane escalation |
+| references/omni-and-media.md | metered-lane rules, video knob semantics |
 | references/brand.md | a brand kit exists — logo refs, variant choice, guides |
 | references/export.md | any canvas export (frames, mp4/gif ceremony, --page rules) |
 | references/markup.md, references/design-quality.md, references/edit-code.md | vector-native motion: authoring, shader fills, animation edits |

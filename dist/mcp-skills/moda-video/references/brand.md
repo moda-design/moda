@@ -71,7 +71,7 @@ Extraction is good, not perfect — a slightly-off primary, a missed accent, a w
 - Kit edits (fields, palette, fonts, logo attachments) happen in the Moda app's brand-kit editor — hand the user the kit's app link from `brand_show` and name the exact fix ("the extracted primary looks like #0E1620, the site's is #0F172A").
 - Confirm destructive changes with the user before recommending them (removing images, replacing a palette) — kit changes affect every future branded artifact, not just this session.
 - **Honor the kit's written brand rules.** The `brand_show` result's voice, tone, values, and usage fields are the rules Moda's own agent honors — follow them with the same force as the palette; where they are silent, ask the user rather than inventing brand law (full guide documents live in the Moda app).
-- Full brand-**guide** generation — a new identity, multiple creative directions, logo concepts — is creative work for the metered Omni lane: `task_start` (see references/omni-and-media.md). Do not try to hand-author a brand identity out of markup primitives.
+- Full brand-**guide** generation — a new identity, multiple creative directions, logo concepts — is creative work for the Moda app: hand the user the app link and let them run it there. Do not try to hand-author a brand identity out of markup primitives.
 
 ## Honest gaps
 
