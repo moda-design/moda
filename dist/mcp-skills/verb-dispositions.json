@@ -75,6 +75,10 @@
       "target": "`canvas_edit` code `create('page', …)`",
       "status": "folded"
     },
+    "moda canvas brand": {
+      "target": "`canvas_update(brand_kit_id=…)` (or `clear_brand_kit=true`)",
+      "status": "folded"
+    },
     "moda canvas create": {
       "target": "`canvas_create`",
       "status": "live"

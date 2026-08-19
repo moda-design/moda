@@ -835,9 +835,27 @@ REFERENCE_PASSAGES["design-quality"] = [
 
 REFERENCE_PASSAGES["brand"] = [
     (
+        "2. **Bind the kit to the canvas** — `--brand` on `moda canvas create`, or `moda canvas brand CANVAS_REF BRAND_REF` afterwards. This records which brand the canvas BELONGS to. It changes no pixels.",
+        "2. **Bind the kit to the canvas** — `brand_kit_id` on `canvas_create`, or `canvas_update(canvas_ref, brand_kit_id=…)` afterwards. This records which brand the canvas BELONGS to. It changes no pixels.",
+    ),
+    (
+        "- **Binding:** first, so it cannot be forgotten last. `moda canvas create --name \"…\" --brand BRAND_REF`; on a canvas that already exists, `moda canvas brand CANVAS_REF BRAND_REF`. A template-sourced create (`--template`) keeps the SOURCE canvas's kit and refuses `--brand` — rebind the copy afterwards if the user wants a different brand.",
+        "- **Binding:** first, so it cannot be forgotten last. `canvas_create(name='…', brand_kit_id='bk_…')`; on a canvas that already exists, `canvas_update(canvas_ref, brand_kit_id='bk_…')`. A template-sourced create (`template_canvas_id`) keeps the SOURCE canvas's kit and refuses a brand kit — rebind the copy afterwards if the user wants a different brand.",
+    ),
+    (
+        "`moda canvas read CANVAS_REF` reports the canvas's brand kit alongside its content.",
+        "`canvas_read(canvas_ref)` reports the canvas's brand kit alongside its content.",
+    ),
+    (
+        "- Binding is metadata, not a restyle: `moda canvas brand` will not recolor an off-brand design.",
+        "- Binding is metadata, not a restyle: `canvas_update(brand_kit_id=…)` will not recolor an off-brand design.",
+    ),
+    (
         "## Verbs\n\n"
         "```\n"
         "moda brand list                          # kits in the workspace (name, id, default marker)\n"
+        "moda canvas create --brand BRAND_REF …   # create a canvas already bound to a kit\n"
+        "moda canvas brand CANVAS_REF BRAND_REF   # bind an existing canvas (--clear to unbind)\n"
         "moda brand show BRAND_REF --json         # model-safe summary: palette, fonts, logo refs\n"
         "moda brand use BRAND_REF [--local]       # persist as the default kit (config or repo context)\n"
         "moda brand pull BRAND_REF --output brand.json   # the full kit document\n"
@@ -853,6 +871,8 @@ REFERENCE_PASSAGES["brand"] = [
         "```\n"
         "brand_list()            # kits in the workspace (name, id, default marker)\n"
         "brand_show(brand_kit_ref)   # model-safe summary: palette, fonts, voice, logo refs\n"
+        "canvas_create(brand_kit_id=…)         # create a canvas already bound to a kit\n"
+        "canvas_update(canvas_ref, brand_kit_id=…)   # bind an existing canvas (clear_brand_kit=true unbinds)\n"
         "```\n\n"
         "Kit creation, updates, defaults, and image management are not available on this surface — they live in the Moda app's brand-kit editor (`brand_show` returns the kit's app link to hand over).\n\n"
         "`brand_show` returns colors, fonts, voice fields, and per-logo durable `file_` references — never signed preview URLs (they don't exist on this surface). The `file_` ref is the only thing that ever goes into markup or media inputs — refs resolve server-side; never retype a URL or a hex you think you remember.",
@@ -1370,6 +1390,7 @@ VERB_DISPOSITION: dict[str, tuple[str, str]] = {
     "moda canvas lint": ("`canvas_read(lint=true)`", "folded"),
     "moda canvas screenshot": ("`canvas_screenshot`", "live"),
     "moda canvas share": ("`canvas_share`", "live"),
+    "moda canvas brand": ("`canvas_update(brand_kit_id=…)` (or `clear_brand_kit=true`)", "folded"),
     "moda canvas open": ("hand over the canvas link (no local browser)", "app-only"),
     "moda canvas show": ("`canvas_read(summary=true)`", "folded"),
     "moda canvas instructions": ("`guidance` on the read result", "folded"),
@@ -1462,6 +1483,7 @@ NON_TOOL_TOKENS = {
     "brand_tone_of_voice",
     "canvas_crdt_state_corrupt",
     "template_canvas_id",
+    "brand_kit_id",
     "task_failed",
     "moda_bootstrap",
 }
