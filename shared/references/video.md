@@ -60,10 +60,10 @@ to the registry when it disagrees):
   including reference VIDEO (up to 3 clips, 2–15 s each, 15 s combined, and
   they discount the call to 0.6× — though the input clips' own running time
   bills on top).
-- **Seedance 2.0 Fast** — 2.0's iteration lane: the same controls,
-  envelope and reference paths — including the same 3 reference clips — at
-  80% of the price, capped at 720p and taking no seed. Explore here, then
-  re-run the keeper on 2.0 for the taller frame.
+- **Seedance 2.0 Fast** — 2.0's iteration lane: the same controls and reference paths at 80% of the price,
+  capped at 720p with no seed. Explore here, then re-run the keeper on 2.0 for the taller frame.
+- **Seedance 2.0 Mini** — the budget tier: 4–15 s at 480p/720p, end frames, and image/video/audio references
+  at half standard's token rate. Audio needs a visual; bind as `@Image1`/`@Video1`/`@Audio1`. No seed; use 2.0 for taller output and 2.5 for shots over 15 s.
 - **Seedance 2.5** — the long-form pick: up to ~30 s in ONE native shot and
   large reference boards (address them in the prompt as `@Image1`,
   `@Image2`, …). Costs meaningfully more per second than 2.0 — use 2.0 when
