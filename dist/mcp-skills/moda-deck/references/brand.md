@@ -14,11 +14,12 @@ Skipping (2) is the quiet failure: the deck looks perfectly on-brand, and then t
 ```
 brand_list()            # kits in the workspace (name, id, default marker)
 brand_show(brand_kit_ref)   # model-safe summary: palette, fonts, voice, logo refs
+brand_create(url=… | name=…, colors=[…], fonts=[…])   # new kit: site extraction or described tokens
 canvas_create(brand_kit_id=…)         # create a canvas already bound to a kit
 canvas_update(canvas_ref, brand_kit_id=…)   # bind an existing canvas (clear_brand_kit=true unbinds)
 ```
 
-Kit creation, updates, defaults, and image management are not available on this surface — they live in the Moda app's brand-kit editor (`brand_show` returns the kit's app link to hand over).
+Kit updates, defaults, and image management are not available on this surface — they live in the Moda app's brand-kit editor (`brand_show` returns the kit's app link to hand over).
 
 `brand_show` returns colors, fonts, voice fields, and per-logo durable `file_` references — never signed preview URLs (they don't exist on this surface). The `file_` ref is the only thing that ever goes into markup or media inputs — refs resolve server-side; never retype a URL or a hex you think you remember.
 
@@ -67,12 +68,12 @@ The auditable brand check no competitor offers — pure read verbs:
 
 ## Creating and escalating
 
-Kit creation is not available on this surface — it lives in the Moda app at moda.app, free, with two paths worth explaining to the user:
+Two creation paths, both **deterministic and unmetered**, right on this surface:
 
-- **URL extraction — the fast path.** The app extracts colors, fonts, and logos from the brand's live website. Prefer it whenever the brand has a website: it captures more than the user would dictate.
-- **Manual build — for brands without a website** (or when the user already holds the ground truth: a style guide, a logo file, exact hexes), built field by field in the app's brand-kit editor.
+- **URL extraction — the fast path.** `brand_create(url='https://…')` runs Moda's server-side extraction (colors, fonts, logos from a live site). Prefer it whenever the brand has a website: it captures more than the user would dictate.
+- **Manual build — for brands without a website** (or when the user already holds the ground truth: exact hexes, named fonts). `brand_create(name='Acme', colors=[{color:'#0F172A', label:'Primary'}, {color:'#F97316', label:'Accent'}], fonts=[{family:'Inter', label:'title', weight:600}])`. Logo files attach later in the Moda app's brand-kit editor.
 
-Once the user creates the kit there, `brand_list` picks it up here immediately.
+Exactly one path per create — never both `url` and manual fields. An identical repeat replays the same kit instead of minting a duplicate.
 
 ### Fixing a kit in place
 

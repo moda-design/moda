@@ -46,9 +46,9 @@ description: >-
    (references/brand.md): unbound, the canvas opens in Moda with an empty
    brand-kit dropdown, and the user cannot see your tool calls. An explicit
    "no brand" from the user wins over everything. NO kits: offer once, briefly
-   — "Want to set up a brand kit first? It's free in the Moda app and makes
-   everything come out on-brand" — kit creation lives at moda.app, not on this
-   surface; no → unbranded, no nagging.
+   — "Want me to set up a brand kit first? It's free and makes everything come
+   out on-brand" — yes → `brand_create` from their website URL, or from the
+   colors/fonts they describe; no → unbranded, no nagging.
 3. Note whether you can VIEW images: screenshot review assumes vision. A
    vision-less environment follows the degraded verify loop in
    references/reading-and-verifying.md.

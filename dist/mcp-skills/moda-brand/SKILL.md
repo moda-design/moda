@@ -42,9 +42,9 @@ description: >-
    (references/brand.md): unbound, the canvas opens in Moda with an empty
    brand-kit dropdown, and the user cannot see your tool calls. An explicit
    "no brand" from the user wins over everything. NO kits: offer once, briefly
-   — "Want to set up a brand kit first? It's free in the Moda app and makes
-   everything come out on-brand" — kit creation lives at moda.app, not on this
-   surface; no → unbranded, no nagging.
+   — "Want me to set up a brand kit first? It's free and makes everything come
+   out on-brand" — yes → `brand_create` from their website URL, or from the
+   colors/fonts they describe; no → unbranded, no nagging.
 3. Note whether you can VIEW images: screenshot review assumes vision. A
    vision-less environment follows the degraded verify loop in
    references/reading-and-verifying.md.
@@ -118,11 +118,13 @@ description: >-
   reporting pass/fail per element — off-kit colors (with node ids and nearest
   kit color), non-kit fonts, logo size/variant/contrast. Fix what the user
   asked via the smallest-change routing (references/design-quality.md).
-- **Create**: not available on this surface — kits are created in the Moda
-  app at moda.app (URL extraction from the brand's website, or a manual
-  build), free either way. Offer the pointer once; after the user creates
-  the kit there, `brand_list` picks it up here immediately. Details:
-  references/brand.md.
+- **Create** (deterministic — two paths): `brand_create(url='https://…')`
+  runs server-side extraction (the fast path when a website exists); no
+  website → build from tokens the user described:
+  `brand_create(name='Acme', colors=[{color:'#0F172A', label:'Primary'}],
+  fonts=[{family:'Inter'}])`. One path per create; an identical repeat
+  replays instead of minting a duplicate. Logo/image attachments still
+  happen in the Moda app. Details: references/brand.md.
 - **Update / fix in place**: extraction got a value slightly wrong, or the
   brand evolved → kit edits happen in the Moda app's brand-kit editor (the
   `brand_show` result carries the kit's app link). Fix the kit there rather
