@@ -39,14 +39,14 @@ allowed-tools: Bash(moda:*), Read, Glob, Grep
      initiative — org decides whose workspace and billing everything lands in.
    - Any entitlement gate (e.g. the account cannot author canvases yet): relay doctor's actionable hint verbatim and stop. Never retry in a loop.
 2. Run `moda account status --json`. Note the org and plan.
-3. Run `moda brand list` — one cheap deterministic call, never skipped, even
-   for simple asks. Kits exist: use the default (or the one context implies);
-   several plausible → ask which, never guess between clients' kits — and read
-   the kit before designing (references/brand.md). An explicit "no brand" from
-   the user wins over everything. NO kits: offer once, briefly — "Want me to
-   set up a brand kit first? It's free and makes everything come out on-brand"
-   — yes → `moda brand create` from their URL, or manually with no website
-   (--name/--color/--font, references/brand.md); no → unbranded, no nagging.
+3. Run `moda brand list` — one cheap deterministic call, never skipped. Use a kit unprompted only on a real
+   signal: ONE kit, one marked `(default)`, one remembered via `moda brand use`, or one the request names
+   outright ("the Acme deck" → the Acme kit). Otherwise ASK — topic-fit alone is never the signal, and
+   near-identical names (Acme, Acme 2) mean ask even when named. Read the kit, then BIND it
+   (`moda canvas create --brand …`, or `moda canvas brand` later) and NAME it at hand-over
+   (references/brand.md): unbound, the canvas opens in Moda with an empty brand-kit dropdown. More work
+   coming? Offer `moda brand use KIT` (`--local` for this repo). An explicit "no brand" wins. NO kits: offer
+   once — "Want me to set up a brand kit first? It's free" — yes → `moda brand create`; no → unbranded.
 4. Note whether you can VIEW images: screenshot review assumes vision. A vision-less harness follows the degraded verify loop in references/reading-and-verifying.md.
 
 ## UX rules
@@ -84,10 +84,10 @@ allowed-tools: Bash(moda:*), Read, Glob, Grep
   a new request, user edits in the app), not between consecutive calls.
 - Never delete or regenerate an image because a screenshot report listed it
   under `failedAssets`/`pendingAssets` — that state is transient; re-capture.
-- Metered lanes (`moda media *`, `moda web *`, `moda task start`) are the
-  QUALITY levers — imagery, footage, and Moda's own designer are how good
-  work gets made. Use them wherever they serve the deliverable; skipping one
-  is the exception. Never ask permission or raise cost; report the receipt.
+- Metered lanes (`moda media *`, `moda web *`) are the QUALITY levers —
+  generated imagery and footage are how good work gets made. Use them
+  wherever they serve the deliverable; skipping one is the exception.
+  Never ask permission or raise cost; report the receipt.
 - In a non-interactive run, never end your turn on a question — state your
   assumption in one line and proceed.
 - Make content decisions yourself and state them; don't batch-ask questions.

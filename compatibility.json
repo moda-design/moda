@@ -1,9 +1,9 @@
 {
-  "skills_release": "v2026.08.17+preview.11",
+  "skills_release": "v2026.08.19+preview.14",
   "authoring": "skill text is authored directly in this repo; a server-side publish pipeline takes over at ship time",
   "cli": {
-    "floor": "0.14.0",
-    "tested_through": "0.15.x",
+    "floor": "0.17.0",
+    "tested_through": "0.17.x",
     "install_channel": "npmjs-public",
     "note": "moda doctor reads this file's range when a skill runs Step 0: below the floor it stops the skill and prints the pinned upgrade command."
   }

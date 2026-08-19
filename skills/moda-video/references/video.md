@@ -28,9 +28,8 @@ never as a still. Route by the deliverable: a raw clip with no design over
 it stays in the media lane; type, brand geometry, or a cut belongs on an
 animation canvas exported to mp4/gif.
 
-There is no video-to-video edit and no source-video input for GENERATION
-except reference video on the models whose cards declare it; the only verb
-that takes a video as its subject is `moda media upscale-video`.
+There is no video-to-video edit. Source video/audio inputs for GENERATION exist
+only as declared references; `moda media upscale-video` is the only verb that takes a video as its subject.
 
 ## Model choice — registry-driven
 
@@ -48,6 +47,7 @@ can do it. Read those instead of guessing.
 Strengths of the current roster, one line each, to route the choice (defer
 to the registry when it disagrees):
 
+- **MiniMax Hailuo H3** — up to 4K, intrinsic audio, end-frame control, and image/video/audio references.
 - **Gemini Omni Flash** — the default: strong quality/cost for ordinary
   text- and image-to-video, coherent motion, 3–10 s. **720p is its only
   resolution on all three modes** (a 1080p ask snaps down and is reported),
@@ -105,8 +105,14 @@ to the registry when it disagrees):
   gets: put anything to avoid in the prompt itself, there is no
   negative-prompt knob. `shot_type` picks one continuous take
   (`customize`, default) or model-chosen shot division (`intelligent`).
+- **Kling 3 Turbo Standard / Kling 3 Turbo Pro** — rapid iteration: fixed 720p at $0.112/s or 1080p at $0.14/s,
+  with native audio. Text has three aspect ratios; image takes one frame. No seed, silence, or end frame.
+- **Kling O3 Standard / Pro / 4K** — cheaper native audio, off by default. Standard has no declared output size;
+  Pro is 1080p and 4K is native 4k. All make whole 3–15 s clips with an optional end frame. Text supports
+  landscape/square/portrait; image follows the source frame (≤50MB, ≥300×300, aspect ratio 0.4:1–2.5:1).
+  O3 exposes `shot_type`, but not Kling 3's guidance/negative prompt; describe multi-shot sequences in one prompt.
 - **Wan 2.7** — reaches shorter than anything else here: a 2 s clip no
-  other model will render (Kling 3 and Gemini stop at 3 s, Seedance at
+  other model will render (Kling and Gemini stop at 3 s, Seedance at
   4 s), whole-second control from 2–15 s, flat $0.10/s (720p) or $0.15/s
   (1080p) with the frame not entering the price. **Reach for it when you
   need a clip shorter than anything else will render** — at ordinary 5–15 s
@@ -130,17 +136,15 @@ multiplier, and whether the input's running time bills are all per-model —
 read them off the card, and a 422 names the whole envelope back to you.
 Each clip also lands as a durable file in the team's library.
 
-Native audio: every audio-capable model on the roster generates audio by
-DEFAULT — describe the soundtrack in the prompt, and `--generate-audio`
-only re-states that default explicitly. `--no-generate-audio` buys the
-SILENT rate where the model's audio is controllable — on Kling 3 Standard
-and Pro that is a third off, so pass it whenever the clip does not need
-sound. Whether audio can be turned off at all is per-model, and the card is
-the answer: `moda media models` reports `generate_audio_controllable`,
-which the human card renders as "audio always on" for the models where
-audio is INTRINSIC (they accept the flag, report it as an adjustment, and
-produce audio anyway — so it buys nothing there). Read that field instead
-of memorising which models those are; the receipt is the truth.
+**Reference audio** rides repeatable `--reference-audio <ref-or-url>` (`reference_audios` on the wire). Read limits from the model card.
+For H3, bind references in the prompt by modality and 1-based list order: `Image 1`, `Video 1`, `Audio 1`.
+
+Native audio: O3 defaults audio OFF; pass `--generate-audio` when sound is wanted. Other audio-capable models
+default it on. `--no-generate-audio` buys the SILENT rate where audio is controllable — on Kling 3 Standard
+and Pro that is a third off, so use it whenever the clip does not need sound. The model card is the authority:
+`moda media models` reports `generate_audio_controllable`. Models where it is false have INTRINSIC audio: they
+accept the flag, report it as an adjustment, and produce audio anyway, so it buys nothing there. Read that field;
+the receipt is the truth.
 
 ## Pin the knobs — before EVERY generation
 
@@ -236,9 +240,9 @@ then animate it.
 - Export per page: `moda export CANVAS_REF --format mp4|gif --page N` —
   mp4/gif REQUIRE `--page`, and a page with NO animation rejects typed
   `no_animation` (that is the honest answer: deliver a still + the link).
-- Choreography beyond what you can author confidently → escalate to
-  `moda task start` (metered) rather than thrashing; the canvas link keeps
-  the user in the loop either way.
+- Choreography beyond what you can author confidently → stop rather than
+  thrashing; hand the user the canvas link — the app's motion tools pick
+  up from there.
 
 **5. The enhance chain** — refs are the chain handles: every media result
 returns a durable `file_` ref, and every media input takes one. Generate →

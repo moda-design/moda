@@ -146,8 +146,8 @@ PASSAGES["shared/ux-rules.md"] = [
         "  anyway, call `canvas_screenshot` right after the mutation.",
     ),
     (
-        "- Metered lanes (`moda media *`, `moda web *`, `moda task start`) are the",
-        "- Metered lanes (the `media_*` tools and `task_start`) are the",
+        "- Metered lanes (`moda media *`, `moda web *`) are the QUALITY levers —",
+        "- Metered lanes (the `media_*` tools) are the QUALITY levers —",
     ),
     (
         "  authoring: \"follow along live here — it builds up as I work.\" In an\n"
@@ -183,13 +183,13 @@ PASSAGES["skills/moda-deck/SKILL.md"] = [
     (
         "5. **Author per slide** with `moda canvas markup CANVAS_REF --file - --page P`\n"
         "   — one slide per apply; add remaining slides via `moda canvas add-pages`\n"
-        "   (page ids from its result; author with the kit's tokens — create takes no\n"
-        "   brand flag). `requires_repair`/skipped ops → fix before the next slide.",
+        "   (page ids from its result; author with the kit's tokens — the `--brand`\n"
+        "   binding styles nothing). `requires_repair`/skipped ops → fix before the next slide.",
         "5. **Author per slide** with `canvas_apply_markup(canvas_ref, page, markup)`\n"
         "   — one slide per apply; create remaining slides in `canvas_edit` code\n"
         "   (`create('page', …)`, then re-read for the fresh page ids; author with\n"
-        "   the kit's tokens — create takes no brand argument). `requires_repair`/\n"
-        "   skipped ops → fix before the next slide.",
+        "   the kit's tokens — the `brand_kit_id` binding styles nothing).\n"
+        "   `requires_repair`/skipped ops → fix before the next slide.",
     ),
     (
         "PPTX/PDF too?\"): `moda export CANVAS_REF --format pptx|pdf -o …`.",
@@ -268,11 +268,13 @@ PASSAGES["skills/moda-brand/SKILL.md"] = [
         "  --name \"Acme\" --color '#0F172A:Primary' --font 'Inter:title' --logo\n"
         "  FILE_REF`, or `--from-file kit.json` for a rich palette. One path per\n"
         "  create. Details: references/brand.md.",
-        "- **Create**: not available on this surface — kits are created in the Moda\n"
-        "  app at moda.app (URL extraction from the brand's website, or a manual\n"
-        "  build), free either way. Offer the pointer once; after the user creates\n"
-        "  the kit there, `brand_list` picks it up here immediately. Details:\n"
-        "  references/brand.md.",
+        "- **Create** (deterministic — two paths): `brand_create(url='https://…')`\n"
+        "  runs server-side extraction (the fast path when a website exists); no\n"
+        "  website → build from tokens the user described:\n"
+        "  `brand_create(name='Acme', colors=[{color:'#0F172A', label:'Primary'}],\n"
+        "  fonts=[{family:'Inter'}])`. One path per create; an identical repeat\n"
+        "  replays instead of minting a duplicate. Logo/image attachments still\n"
+        "  happen in the Moda app. Details: references/brand.md.",
     ),
     (
         "- **Update / fix in place**: extraction got a value slightly wrong, or the\n"
@@ -783,8 +785,8 @@ REFERENCE_PASSAGES["gotchas"] = [
         "- **Deletion is intentionally absent from edit code.** `remove()` throws. `canvas_delete(ids=[…])` is the only deletion path.",
     ),
     (
-        "animated shader fills move on any canvas, and `moda export --format mp4|gif --page N` delivers the motion (the moda-video skill owns these workflows). Preset animations on ordinary canvases are still app-only; for choreography beyond what you can author confidently, escalate to `moda task start` (metered) or hand the user the canvas link.",
-        "animated shader fills move on any canvas, and `export(format='mp4'|'gif', page=N)` delivers the motion (the moda-video skill owns these workflows). Preset animations on ordinary canvases are still app-only; for choreography beyond what you can author confidently, escalate to `task_start` (metered) or hand the user the canvas link.",
+        "animated shader fills move on any canvas, and `moda export --format mp4|gif --page N` delivers the motion (the moda-video skill owns these workflows). Preset animations on ordinary canvases are still app-only; for choreography beyond what you can author confidently, hand the user the canvas link.",
+        "animated shader fills move on any canvas, and `export(format='mp4'|'gif', page=N)` delivers the motion (the moda-video skill owns these workflows). Preset animations on ordinary canvases are still app-only; for choreography beyond what you can author confidently, hand the user the canvas link.",
     ),
     (
         "(or canvas-absolute only with `--page canvas` on a Design canvas)",
@@ -835,9 +837,27 @@ REFERENCE_PASSAGES["design-quality"] = [
 
 REFERENCE_PASSAGES["brand"] = [
     (
+        "2. **Bind the kit to the canvas** — `--brand` on `moda canvas create`, or `moda canvas brand CANVAS_REF BRAND_REF` afterwards. This records which brand the canvas BELONGS to. It changes no pixels.",
+        "2. **Bind the kit to the canvas** — `brand_kit_id` on `canvas_create`, or `canvas_update(canvas_ref, brand_kit_id=…)` afterwards. This records which brand the canvas BELONGS to. It changes no pixels.",
+    ),
+    (
+        "- **Binding:** first, so it cannot be forgotten last. `moda canvas create --name \"…\" --brand BRAND_REF`; on a canvas that already exists, `moda canvas brand CANVAS_REF BRAND_REF`. A template-sourced create (`--template`) keeps the SOURCE canvas's kit and refuses `--brand` — rebind the copy afterwards if the user wants a different brand.",
+        "- **Binding:** first, so it cannot be forgotten last. `canvas_create(name='…', brand_kit_id='bk_…')`; on a canvas that already exists, `canvas_update(canvas_ref, brand_kit_id='bk_…')`. A template-sourced create (`template_canvas_id`) keeps the SOURCE canvas's kit and refuses a brand kit — rebind the copy afterwards if the user wants a different brand.",
+    ),
+    (
+        "`moda canvas read CANVAS_REF` reports the canvas's brand kit alongside its content.",
+        "`canvas_read(canvas_ref)` reports the canvas's brand kit alongside its content.",
+    ),
+    (
+        "- Binding is metadata, not a restyle: `moda canvas brand` will not recolor an off-brand design.",
+        "- Binding is metadata, not a restyle: `canvas_update(brand_kit_id=…)` will not recolor an off-brand design.",
+    ),
+    (
         "## Verbs\n\n"
         "```\n"
         "moda brand list                          # kits in the workspace (name, id, default marker)\n"
+        "moda canvas create --brand BRAND_REF …   # create a canvas already bound to a kit\n"
+        "moda canvas brand CANVAS_REF BRAND_REF   # bind an existing canvas (--clear to unbind)\n"
         "moda brand show BRAND_REF --json         # model-safe summary: palette, fonts, logo refs\n"
         "moda brand use BRAND_REF [--local]       # persist as the default kit (config or repo context)\n"
         "moda brand pull BRAND_REF --output brand.json   # the full kit document\n"
@@ -853,8 +873,11 @@ REFERENCE_PASSAGES["brand"] = [
         "```\n"
         "brand_list()            # kits in the workspace (name, id, default marker)\n"
         "brand_show(brand_kit_ref)   # model-safe summary: palette, fonts, voice, logo refs\n"
+        "brand_create(url=… | name=…, colors=[…], fonts=[…])   # new kit: site extraction or described tokens\n"
+        "canvas_create(brand_kit_id=…)         # create a canvas already bound to a kit\n"
+        "canvas_update(canvas_ref, brand_kit_id=…)   # bind an existing canvas (clear_brand_kit=true unbinds)\n"
         "```\n\n"
-        "Kit creation, updates, defaults, and image management are not available on this surface — they live in the Moda app's brand-kit editor (`brand_show` returns the kit's app link to hand over).\n\n"
+        "Kit updates, defaults, and image management are not available on this surface — they live in the Moda app's brand-kit editor (`brand_show` returns the kit's app link to hand over).\n\n"
         "`brand_show` returns colors, fonts, voice fields, and per-logo durable `file_` references — never signed preview URLs (they don't exist on this surface). The `file_` ref is the only thing that ever goes into markup or media inputs — refs resolve server-side; never retype a URL or a hex you think you remember.",
     ),
     (
@@ -898,10 +921,10 @@ REFERENCE_PASSAGES["brand"] = [
         "Two creation paths, both **deterministic and unmetered** (ignore any legacy metered labels in the response envelope while the server sheds them):\n\n"
         "- **URL extraction — the fast path.** `moda brand create --url …` runs Moda's server-side extraction (colors, fonts, logos from a live site). Prefer it whenever the brand has a website: it captures more than the user would dictate.\n"
         "- **Manual build — for brands without a website** (or when the user already holds the ground truth: a style guide, a logo file, exact hexes). `moda brand create --name \"Acme\" --color '#0F172A:Primary' --color '#F97316:Accent' --font 'Inter:title:600' --logo FILE_REF`. Upload logos first (`moda file upload logo.png` → `file_` ref). For a rich palette, a kit file beats a wall of flags: write `kit.json` (`{\"name\", \"colors\": [{\"color\",\"label\"}], \"fonts\": [{\"family\",\"label\",\"weight\"}], \"logo_file_ids\": []}`) and run `moda brand create --from-file kit.json`. Exactly one path per create — never both `--url` and manual fields.",
-        "Kit creation is not available on this surface — it lives in the Moda app at moda.app, free, with two paths worth explaining to the user:\n\n"
-        "- **URL extraction — the fast path.** The app extracts colors, fonts, and logos from the brand's live website. Prefer it whenever the brand has a website: it captures more than the user would dictate.\n"
-        "- **Manual build — for brands without a website** (or when the user already holds the ground truth: a style guide, a logo file, exact hexes), built field by field in the app's brand-kit editor.\n\n"
-        "Once the user creates the kit there, `brand_list` picks it up here immediately.",
+        "Two creation paths, both **deterministic and unmetered**, right on this surface:\n\n"
+        "- **URL extraction — the fast path.** `brand_create(url='https://…')` runs Moda's server-side extraction (colors, fonts, logos from a live site). Prefer it whenever the brand has a website: it captures more than the user would dictate.\n"
+        "- **Manual build — for brands without a website** (or when the user already holds the ground truth: exact hexes, named fonts). `brand_create(name='Acme', colors=[{color:'#0F172A', label:'Primary'}, {color:'#F97316', label:'Accent'}], fonts=[{family:'Inter', label:'title', weight:600}])`. Logo files attach later in the Moda app's brand-kit editor.\n\n"
+        "Exactly one path per create — never both `url` and manual fields. An identical repeat replays the same kit instead of minting a duplicate.",
     ),
     (
         "### Fixing a kit in place (the update verbs)",
@@ -913,11 +936,11 @@ REFERENCE_PASSAGES["brand"] = [
         "- Images: `moda brand images BRAND_REF` lists attachments with `bki_` ids; `add-image --file FILE_REF --role logo|reference|asset` attaches an upload; `remove-image BRAND_REF BKI_ID` detaches. Roles: logo = brand marks, reference = style hints for the agent, asset = placeable imagery.\n"
         "- Confirm destructive edits with the user before running them (removing images, replacing a palette) — kit changes affect every future branded artifact, not just this session.\n"
         "- **Read the guide prose before branded work.** A kit's GUIDES are the written brand rules Moda's own agent honors — voice, imagery doctrine, usage law beyond colors/fonts/logos. `moda brand guides KIT_REF` lists them (id, title, description); `moda brand guide KIT_REF GUIDE_ID` returns the full markdown. Read the relevant guide(s) before any branded deliverable and follow them with the same force as the kit's fields; where guides are silent, ask the user rather than inventing brand law.\n"
-        "- Full brand-**guide** generation — a new identity, multiple creative directions, logo concepts — is creative work for the metered Omni lane: `moda task start --prompt \"…\"` (see references/omni-and-media.md). Do not try to hand-author a brand identity out of markup primitives.",
+        "- Full brand-**guide** generation — a new identity, multiple creative directions, logo concepts — is creative work for the Moda app: hand the user the app link and let them run it there. Do not try to hand-author a brand identity out of markup primitives.",
         "- Kit edits (fields, palette, fonts, logo attachments) happen in the Moda app's brand-kit editor — hand the user the kit's app link from `brand_show` and name the exact fix (\"the extracted primary looks like #0E1620, the site's is #0F172A\").\n"
         "- Confirm destructive changes with the user before recommending them (removing images, replacing a palette) — kit changes affect every future branded artifact, not just this session.\n"
         "- **Honor the kit's written brand rules.** The `brand_show` result's voice, tone, values, and usage fields are the rules Moda's own agent honors — follow them with the same force as the palette; where they are silent, ask the user rather than inventing brand law (full guide documents live in the Moda app).\n"
-        "- Full brand-**guide** generation — a new identity, multiple creative directions, logo concepts — is creative work for the metered Omni lane: `task_start` (see references/omni-and-media.md). Do not try to hand-author a brand identity out of markup primitives.",
+        "- Full brand-**guide** generation — a new identity, multiple creative directions, logo concepts — is creative work for the Moda app: hand the user the app link and let them run it there. Do not try to hand-author a brand identity out of markup primitives.",
     ),
     (
         "- Kit edits the update verbs don't reach — image group naming/reordering, gradients, light/dark color modes, guide prose editing — happen in the Moda app's brand-kit editor. Fields, palette, fonts, and image attach/detach are covered by `moda brand update` / `add-image` / `remove-image` above.",
@@ -929,9 +952,9 @@ REFERENCE_PASSAGES["omni-and-media"] = [
     # The metered-lane posture. Same content both sides — only the lane names
     # and the failure shape are transport-specific (no exit codes here).
     (
-        "These are the metered lanes — `moda media *`, `moda web *`, and `moda task start` — and they are the QUALITY levers on this surface. Generated imagery, footage, research, and Moda's own designer are how good work gets made: reach for them wherever they serve the deliverable, never ask permission first, and report the usage receipt after each call as information (`usage.class: \"metered\"` on the response). Cost is a topic only when the USER raises it.\n\n"
+        "These are the metered lanes — `moda media *` and `moda web *` — and they are the QUALITY levers on this surface. Generated imagery, footage, and research are how good work gets made: reach for them wherever they serve the deliverable, never ask permission first, and report the usage receipt after each call as information (`usage.class: \"metered\"` on the response). Cost is a topic only when the USER raises it.\n\n"
         "The one fact worth carrying: a metered call can fail the billing precheck — exit 6, the quota lane (`insufficient_credits` and friends) — which means the TEAM is out of credits or has hit a plan cap, not that you did something wrong. Say so plainly, surface the hint verbatim, and stop — never retry it, and never quietly drop the quality lever and deliver the lesser thing instead.",
-        "These are the metered lanes — the `media_*` tools and `task_start` — and they are the QUALITY levers on this surface. Generated imagery, footage, and Moda's own designer are how good work gets made: reach for them wherever they serve the deliverable, never ask permission first, and report the usage receipt after each call as information (`usage.class: \"metered\"` on the response). Cost is a topic only when the USER raises it.\n\n"
+        "These are the metered lanes — the `media_*` tools — and they are the QUALITY levers on this surface. Generated imagery and footage are how good work gets made: reach for them wherever they serve the deliverable, never ask permission first, and report the usage receipt after each call as information (`usage.class: \"metered\"` on the response). Cost is a topic only when the USER raises it.\n\n"
         "The one fact worth carrying: a metered call can fail the billing precheck (`insufficient_credits` and friends), which means the TEAM is out of credits or has hit a plan cap, not that you did something wrong. Say so plainly, surface the hint verbatim, and stop — never retry it, and never quietly drop the quality lever and deliver the lesser thing instead.",
     ),
     (
@@ -974,37 +997,6 @@ REFERENCE_PASSAGES["omni-and-media"] = [
     (
         "Reuse brand-kit assets and the user's own uploads (`moda file search` / `moda file upload`, `--from-url`) when they are the actual subject matter; `moda file search QUERY --source stock` adds stock photography",
         "Reuse brand-kit assets and the user's own uploads (`file_search` / the `upload` tool) when they are the actual subject matter; `file_search(query, source='stock')` adds stock photography",
-    ),
-    (
-        "```\n"
-        "moda task start --prompt PROMPT [--canvas CANVAS_REF] [--files FILE_REF...]\n"
-        "                [--brand BRAND_REF] [--format slides|one-pager|social|...]\n"
-        "                [--wait] [--export pptx -o out.pptx]\n"
-        "moda task status TASK_REF        moda task list [--active]        moda task cancel TASK_REF\n"
-        "```",
-        "```\n"
-        "task_start(prompt, canvas_ref=…, canvas_name=…, brand_kit_ref=…,\n"
-        "           number_of_slides=…, attachments=[file_…], quote=…)\n"
-        "task_status(task_ref)            task_cancel(task_ref)\n"
-        "```",
-    ),
-    (
-        "- `moda task start` is idempotent: an identical re-run replays the already-started task instead of spending again — within the server's idempotency window (the CLI says so when it detects the replay). A deliberate new attempt — e.g. after `task_failed` — takes `--fresh`.",
-        "- `task_start` is idempotent: an identical re-run replays the already-started task instead of spending again — within the server's idempotency window (the result says so when it detects the replay). A deliberate new attempt — e.g. after `task_failed` — takes a fresh `repeat_token`.",
-    ),
-    (
-        "- Omit `--canvas` for net-new work — the task creates and designs its own canvas. Pass `--canvas` only when the job must land on an existing one; a running task **owns its canvas** — your writes exit 5 as busy until it finishes, and the CLI already retried. Recovery: find the owner with `moda task list --active` (newer servers also accept `--canvas CANVAS_REF` to filter; on older servers match the canvas id in the listing), then wait or `moda task cancel`.",
-        "- Omit `canvas_ref` for net-new work — the task creates and designs its own canvas. Pass it only when the job must land on an existing one; a running task **owns its canvas** — your writes fail typed as busy until it finishes. Recovery: poll the task handle you hold with `task_status`, then wait or `task_cancel`.",
-    ),
-    (
-        "- Pass `--brand` rather than restating colors/fonts/logos in the prompt — the resolved kit owns them. Put the slide/page count and format in the flags or the prompt explicitly.",
-        "- Pass `brand_kit_ref` rather than restating colors/fonts/logos in the prompt — the resolved kit owns them. Put the slide/page count in `number_of_slides` or the prompt explicitly.",
-    ),
-    (
-        "- A completed task returns a finished, already-exported result when `--export` was chained — don't re-export in a different verb unless you need another format.\n"
-        "- Typed failures map to the standard exits: billing precheck and plan caps exit 6 with the cap in the message; a live run owning the canvas exits 5. Surface hints verbatim.",
-        "- A completed task returns the finished canvas — `export` it yourself when the user wants a file.\n"
-        "- Typed failures follow the standard error contract: billing precheck and plan caps fail with the cap in the message; a live run owning the canvas fails as a conflict. Surface hints verbatim.",
     ),
 ]
 
@@ -1175,12 +1167,10 @@ REFERENCE_PASSAGES["video"] = [
         "   is format-implied.",
     ),
     (
-        "There is no video-to-video edit and no source-video input for GENERATION\n"
-        "except reference video on the models whose cards declare it; the only verb\n"
-        "that takes a video as its subject is `moda media upscale-video`.",
-        "There is no video-to-video edit and no source-video input for GENERATION\n"
-        "except reference video on the models whose cards declare it; the only tool\n"
-        "that takes a video as its subject is `media_upscale`.",
+        "There is no video-to-video edit. Source video/audio inputs for GENERATION exist\n"
+        "only as declared references; `moda media upscale-video` is the only verb that takes a video as its subject.",
+        "There is no video-to-video edit. Source video/audio inputs for GENERATION exist\n"
+        "only as declared references; `media_upscale` is the only tool that takes a video as its subject.",
     ),
     (
         "`moda media models` prints one capability card per video model — its modes\n"
@@ -1274,9 +1264,9 @@ REFERENCE_PASSAGES["video"] = [
         "- Export per page: `moda export CANVAS_REF --format mp4|gif --page N` —\n"
         "  mp4/gif REQUIRE `--page`, and a page with NO animation rejects typed\n"
         "  `no_animation` (that is the honest answer: deliver a still + the link).\n"
-        "- Choreography beyond what you can author confidently → escalate to\n"
-        "  `moda task start` (metered) rather than thrashing; the canvas link keeps\n"
-        "  the user in the loop either way.",
+        "- Choreography beyond what you can author confidently → stop rather than\n"
+        "  thrashing; hand the user the canvas link — the app's motion tools pick\n"
+        "  up from there.",
         "- Animated shader fills are the instant premium lever on ANY canvas: author\n"
         "  per references/design-quality.md (motion is automatic), then\n"
         "  `export(canvas_ref, format='mp4', page=N)` — shaders freeze in static\n"
@@ -1290,9 +1280,9 @@ REFERENCE_PASSAGES["video"] = [
         "- Export per page: `export(canvas_ref, format='mp4'|'gif', page=N)` —\n"
         "  mp4/gif REQUIRE `page`, and a page with NO animation rejects typed\n"
         "  `no_animation` (that is the honest answer: deliver a still + the link).\n"
-        "- Choreography beyond what you can author confidently → escalate to\n"
-        "  `task_start` (metered) rather than thrashing; the canvas link keeps\n"
-        "  the user in the loop either way.",
+        "- Choreography beyond what you can author confidently → stop rather than\n"
+        "  thrashing; hand the user the canvas link — the app's motion tools pick\n"
+        "  up from there.",
     ),
     (
         "**5. The enhance chain** — refs are the chain handles: every media result\n"
@@ -1339,7 +1329,6 @@ GENERIC: list[tuple[str, str]] = [
     ("moda canvas read", "canvas_read"),
     ("moda media generate-image", "media_generate_image"),
     ("moda brand show", "brand_show"),
-    ("moda task start", "task_start"),
 ]
 
 # --------------------------------------------------------------------------
@@ -1404,6 +1393,7 @@ VERB_DISPOSITION: dict[str, tuple[str, str]] = {
     "moda canvas lint": ("`canvas_read(lint=true)`", "folded"),
     "moda canvas screenshot": ("`canvas_screenshot`", "live"),
     "moda canvas share": ("`canvas_share`", "live"),
+    "moda canvas brand": ("`canvas_update(brand_kit_id=…)` (or `clear_brand_kit=true`)", "folded"),
     "moda canvas open": ("hand over the canvas link (no local browser)", "app-only"),
     "moda canvas show": ("`canvas_read(summary=true)`", "folded"),
     "moda canvas instructions": ("`guidance` on the read result", "folded"),
@@ -1432,7 +1422,6 @@ VERB_DISPOSITION: dict[str, tuple[str, str]] = {
     "moda brand remove-image": ("manage in the Moda app", "app-only"),
     "moda brand guides": ("voice/tone/values on `brand_show`; guides in-app", "app-only"),
     "moda brand guide": ("voice/tone/values on `brand_show`; guides in-app", "app-only"),
-    "moda task start": ("`task_start`", "live"),
     "moda task status": ("`task_status`", "live"),
     "moda task cancel": ("`task_cancel`", "live"),
     "moda task list": ("poll the handle you hold with `task_status`", "folded"),
@@ -1497,32 +1486,25 @@ NON_TOOL_TOKENS = {
     "brand_tone_of_voice",
     "canvas_crdt_state_corrupt",
     "template_canvas_id",
+    "brand_kit_id",
     "task_failed",
     "moda_bootstrap",
 }
 
 REFERENCE_PASSAGES["video"] += [
     (
-        "DEFAULT — describe the soundtrack in the prompt, and `--generate-audio`\n"
-        "only re-states that default explicitly. `--no-generate-audio` buys the\n"
-        "SILENT rate where the model's audio is controllable — on Kling 3 Standard\n"
-        "and Pro that is a third off, so pass it whenever the clip does not need\n"
-        "sound. Whether audio can be turned off at all is per-model, and the card is\n"
-        "the answer: `moda media models` reports `generate_audio_controllable`,\n"
-        "which the human card renders as \"audio always on\" for the models where\n"
-        "audio is INTRINSIC (they accept the flag, report it as an adjustment, and\n"
-        "produce audio anyway — so it buys nothing there). Read that field instead\n"
-        "of memorising which models those are; the receipt is the truth.",
-        "DEFAULT — describe the soundtrack in the prompt, and `generate_audio=true`\n"
-        "only re-states that default explicitly. `generate_audio=false` buys the\n"
-        "SILENT rate where the model's audio is controllable — on Kling 3 Standard\n"
-        "and Pro that is a third off, so pass it whenever the clip does not need\n"
-        "sound. Whether audio can be turned off at all is per-model, and the card is\n"
-        "the answer: it reports `generate_audio_controllable`, and where that is\n"
-        "false audio is INTRINSIC — the model accepts the parameter, reports it as\n"
-        "an adjustment, and produces audio anyway, so it buys nothing there. Read\n"
-        "that field instead of memorising which models those are; the receipt is\n"
-        "the truth.",
+        "O3 defaults audio OFF; pass `--generate-audio` when sound is wanted. Other audio-capable models\n"
+        "default it on. `--no-generate-audio` buys the SILENT rate where audio is controllable — on Kling 3 Standard\n"
+        "and Pro that is a third off, so use it whenever the clip does not need sound. The model card is the authority:\n"
+        "`moda media models` reports `generate_audio_controllable`. Models where it is false have INTRINSIC audio: they\n"
+        "accept the flag, report it as an adjustment, and produce audio anyway, so it buys nothing there. Read that field;\n"
+        "the receipt is the truth.",
+        "O3 defaults audio OFF; pass `generate_audio=true` when sound is wanted. Other audio-capable models\n"
+        "default it on. `generate_audio=false` buys the SILENT rate where audio is controllable — on Kling 3 Standard\n"
+        "and Pro that is a third off, so use it whenever the clip does not need sound. The model card is the authority:\n"
+        "it reports `generate_audio_controllable`. Models where it is false have INTRINSIC audio: they accept the\n"
+        "parameter, report it as an adjustment, and produce audio anyway, so it buys nothing there. Read that field;\n"
+        "the receipt is the truth.",
     ),
     (
         "**Reference video** rides `--reference-video <ref-or-url>` (repeatable; the\n"
@@ -1531,6 +1513,12 @@ REFERENCE_PASSAGES["video"] += [
         "**Reference video** rides `reference_videos` (a list of `file_` refs or\n"
         "http(s) video URLs), and only models whose card declares reference videos\n"
         "accept any.",
+    ),
+    (
+        "**Reference audio** rides repeatable `--reference-audio <ref-or-url>` "
+        "(`reference_audios` on the wire). Read limits from the model card.",
+        "**Reference audio** rides `reference_audios` (a list of `file_` refs or\n"
+        "http(s) audio URLs). Read support and limits from the model card.",
     ),
     # Workflow 6 — the canvas-video composite lane. Every verb in it moves.
     (

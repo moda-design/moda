@@ -75,6 +75,10 @@
       "target": "`canvas_edit` code `create('page', …)`",
       "status": "folded"
     },
+    "moda canvas brand": {
+      "target": "`canvas_update(brand_kit_id=…)` (or `clear_brand_kit=true`)",
+      "status": "folded"
+    },
     "moda canvas create": {
       "target": "`canvas_create`",
       "status": "live"
@@ -286,10 +290,6 @@
     "moda task list": {
       "target": "poll the handle you hold with `task_status`",
       "status": "folded"
-    },
-    "moda task start": {
-      "target": "`task_start`",
-      "status": "live"
     },
     "moda task status": {
       "target": "`task_status`",

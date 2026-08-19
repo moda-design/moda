@@ -28,19 +28,25 @@ description: >-
      `moda_bootstrap` again. Never fake Moda output while disconnected; no
      Mermaid/HTML/prose stand-in replaces the stop.
    - Several teams listed and the user names one: pass that team on the tools
-     that take a `team` argument (the create/list/write/upload/media/task
+     that take a `team` argument (the create/list/write/upload/media
      lanes; read tools follow the canvas) — team decides whose workspace and
      billing everything lands in. Never switch teams on your own initiative.
    - Any entitlement gate (e.g. the account cannot author canvases yet): relay
      the result's actionable hint verbatim and stop. Never retry in a loop.
 2. Call `brand_list` — one cheap deterministic call, never skipped, even
-   for simple asks. Kits exist: use the default (or the one context implies);
-   several plausible → ask which, never guess between clients' kits — and read
-   the kit before designing (references/brand.md). An explicit "no brand" from
-   the user wins over everything. NO kits: offer once, briefly — "Want to set
-   up a brand kit first? It's free in the Moda app and makes everything come
-   out on-brand" — kit creation lives at moda.app, not on this surface; no →
-   unbranded, no nagging.
+   for simple asks. Use a kit unprompted only on a real signal: ONE kit, one
+   marked `(default)`, or one the request names outright ("the Acme deck" →
+   the Acme kit). Otherwise ASK which — a workspace of client kits is the
+   normal case, topic-fit alone is never the signal, and near-identical names
+   (Acme, Acme 2) mean ask even when named. Read the kit, then BIND it
+   (`brand_kit_id` on `canvas_create`, or `canvas_update(canvas_ref,
+   brand_kit_id=…)` later) and NAME it when you hand over
+   (references/brand.md): unbound, the canvas opens in Moda with an empty
+   brand-kit dropdown, and the user cannot see your tool calls. An explicit
+   "no brand" from the user wins over everything. NO kits: offer once, briefly
+   — "Want me to set up a brand kit first? It's free and makes everything come
+   out on-brand" — yes → `brand_create` from their website URL, or from the
+   colors/fonts they describe; no → unbranded, no nagging.
 3. Note whether you can VIEW images: screenshot review assumes vision. A
    vision-less environment follows the degraded verify loop in
    references/reading-and-verifying.md.
@@ -80,10 +86,10 @@ description: >-
   a new request, user edits in the app), not between consecutive calls.
 - Never delete or regenerate an image because a screenshot report listed it
   under `failedAssets`/`pendingAssets` — that state is transient; re-capture.
-- Metered lanes (the `media_*` tools and `task_start`) are the
-  QUALITY levers — imagery, footage, and Moda's own designer are how good
-  work gets made. Use them wherever they serve the deliverable; skipping one
-  is the exception. Never ask permission or raise cost; report the receipt.
+- Metered lanes (the `media_*` tools) are the QUALITY levers —
+  generated imagery and footage are how good work gets made. Use them
+  wherever they serve the deliverable; skipping one is the exception.
+  Never ask permission or raise cost; report the receipt.
 - In a non-interactive run, never end your turn on a question — state your
   assumption in one line and proceed.
 - Make content decisions yourself and state them; don't batch-ask questions.

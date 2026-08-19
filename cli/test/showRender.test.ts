@@ -91,6 +91,59 @@ describe('canvas show rendering', () => {
     expect(lines.join('\n')).toContain('0 pages');
   });
 
+  /**
+   * ENG-4983. The renderer was written to print a page id "the moment a server sends it", but
+   * nothing pinned that — a refactor could drop the column and the only symptom would be an
+   * agent reaching a dead end again, because ordinals are the one spelling `--page` refuses.
+   * The server half (studio #9863) makes the payload carry `id`; these two fix the contract.
+   */
+  test('prints the page id the next command needs, once the server sends one', () => {
+    const body = canvasShowBody();
+    (body.pages as Record<string, unknown>).pages = [
+      { page_number: 1, id: 'p_a', name: 'Cover', width: 960, height: 540, node_count: 10 },
+      { page_number: 2, id: 'p_b', name: 'The Problem', width: 960, height: 540, node_count: 12 },
+    ];
+    const lines = canvasShowLines(body);
+    const text = lines.join('\n');
+
+    expect(text).toContain('p_a');
+    expect(text).toContain('p_b');
+    // Same row as its page, so the id is copyable next to the name it belongs to.
+    expect(lines.find((line) => line.includes('Cover'))).toContain('p_a');
+    expect(lines.find((line) => line.includes('The Problem'))).toContain('p_b');
+    expectNoJsonDump(lines);
+  });
+
+  test('omits the id column entirely against a server that sends no ids', () => {
+    // Deploy skew, and the pre-#9863 server: the column must vanish rather than pad blanks.
+    // Asserted as the WHOLE row — a looser check ("no wide gap before the name") passes for a
+    // renderer that moved the id somewhere else on the line, and cannot see a stray empty cell
+    // anywhere but that one gutter.
+    const lines = canvasShowLines(canvasShowBody());
+
+    expect(lines.find((line) => line.includes('Cover'))).toBe('  1  Cover         960×540  10 nodes');
+    expect(lines.find((line) => line.includes('The Problem'))).toBe('  2  The Problem   960×540  12 nodes');
+  });
+
+  test('pads the id column to the widest id when only some pages carry one', () => {
+    // The realistic mixed payload: a page minted before the mapping was stored has a short ref,
+    // one created after it has only its real id — which is ~30 chars. The column must stay
+    // aligned rather than ragged, and the id-less row must leave the cell blank, not collapse it.
+    const body = canvasShowBody();
+    (body.pages as Record<string, unknown>).pages = [
+      { page_number: 1, id: 'page-1786730909610-939578431', name: 'Cover', width: 960, height: 540, node_count: 10 },
+      { page_number: 2, name: 'The Problem', width: 960, height: 540, node_count: 12 },
+    ];
+    const lines = canvasShowLines(body);
+
+    expect(lines.find((line) => line.includes('Cover'))).toBe(
+      '  1  page-1786730909610-939578431  Cover        960×540  10 nodes',
+    );
+    expect(lines.find((line) => line.includes('The Problem'))).toBe(
+      '  2                                The Problem  960×540  12 nodes',
+    );
+  });
+
   test('says so when the server sends fewer pages than it counted', () => {
     const body = canvasShowBody();
     (body.pages as Record<string, unknown>).total_pages = 40;

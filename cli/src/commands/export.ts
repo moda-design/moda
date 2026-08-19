@@ -7,6 +7,7 @@ import { writeBytesToStdout, type CommandOutcome } from '../output/emit.ts';
 import { endpoints } from '../api/endpoints.ts';
 import { asObject, str } from '../api/types.ts';
 import { CliError } from '../cliError.ts';
+import { signalCanvasHandOff } from './handOff.ts';
 import { EXIT_OK } from '../output/exitCodes.ts';
 import { addGlobalFlags, authedClient, buildInvocation, metaBlock, wrapAction, type Invocation } from './runtime.ts';
 import { resolveCanvasRef } from './canvasShared.ts';
@@ -58,7 +59,7 @@ export interface ExportOptions {
   wait: boolean;
 }
 
-/** Start-poll-download an export. Shared by `moda export` and `moda task start --export`. */
+/** Start-poll-download an export (the `moda export` engine). */
 export async function performExport(
   client: ApiClient,
   inv: Invocation,
@@ -146,6 +147,12 @@ export async function performExport(
     mkdirSync(dirname(outPath), { recursive: true });
     writeFileSync(outPath, bytes);
   }
+  // The hand-off (ENG-5160): a completed export is the other end-of-run moment,
+  // and the canvas it came from should stop claiming an agent is still editing
+  // it. AFTER the file is on disk, and silent — the artifact is already
+  // delivered, so nothing here may turn a successful export into a failure.
+  // Only on the waited path: `--no-wait` returns with the render still running.
+  await signalCanvasHandOff(client, ref);
   return {
     body: {
       ok: true,

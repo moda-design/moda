@@ -18,6 +18,7 @@ const SEMANTICS: Record<string, VerbSemantics> = {
   'canvas edit': { mutating: true },
   'canvas delete-items': { mutating: true },
   'canvas rename': { mutating: true },
+  'canvas brand': { mutating: true },
   'canvas import-pages': { mutating: true },
   'canvas import-pptx': { mutating: true },
   'canvas duplicate': { mutating: true },
@@ -55,7 +56,6 @@ const SEMANTICS: Record<string, VerbSemantics> = {
   'media remove-background': { metered: true, mutating: true },
   'web search': { metered: true },
   'web read': { metered: true },
-  'task start': { metered: true, mutating: true },
   'task cancel': { mutating: true },
   // Pure reads / local-state / meta verbs — explicitly classified as marker-free so that a
   // NEWLY REGISTERED verb fails the build until someone classifies it (see the leaf sweep).

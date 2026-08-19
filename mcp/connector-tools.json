@@ -17,8 +17,8 @@
     "upload",
     "brand_list",
     "brand_show",
+    "brand_create",
     "export",
-    "task_start",
     "task_status",
     "task_cancel",
     "media_generate_image",
@@ -41,7 +41,7 @@
     "site (write)": "Hosted-site authoring/publishing is app-only on this surface; moda-website routes to moda.app. Site READS are live via site_list/site_show.",
     "web search/read": "The host (claude.ai) provides native web search and page reading; the metered Moda research lane is not projected.",
     "canvas duplicate / import-pages / import-pptx": "No connector lane; the app owns reuse-by-copy. Projection says so honestly.",
-    "brand create/update/use/pull/images/guides": "Kit management is app-only; brand_list/brand_show are the read lane.",
+    "brand update/use/pull/images/guides": "Kit editing is app-only; brand_list/brand_show are the read lane and brand_create (ENG-5159) is the one write.",
     "file download (bytes)": "file_list proves existence; file bytes stay REST/app-side (file_show did not ship).",
     "org/auth/doctor/describe/last-error/account": "CLI lifecycle machinery; moda_bootstrap and typed tool errors replace it."
   }

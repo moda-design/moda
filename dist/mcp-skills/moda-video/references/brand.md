@@ -1,20 +1,31 @@
 # Brand kits — deterministic on-brand authoring
 
-A brand kit is Moda's canonical record of a brand: palette, font families, logo assets, and usage guidance. On-brand authoring is client-side by design: **you read the kit, then author markup with its tokens.** There is no server "apply brand to canvas" verb.
+A brand kit is Moda's canonical record of a brand: palette, font families, logo assets, and usage guidance.
+
+On-brand work is **two things, and you owe both**:
+
+1. **Author with the kit's tokens** — client-side by design: you read the kit, then write its colors and fonts into your markup. There is no server verb that restyles a design for you.
+2. **Bind the kit to the canvas** — `brand_kit_id` on `canvas_create`, or `canvas_update(canvas_ref, brand_kit_id=…)` afterwards. This records which brand the canvas BELONGS to. It changes no pixels.
+
+Skipping (2) is the quiet failure: the deck looks perfectly on-brand, and then the user opens it in Moda and the brand-kit dropdown in the toolbar is empty, Moda's own agent inherits no brand context for their next edit, and nothing in the workspace knows the canvas is theirs. Bind it, and **tell the user which kit you used** — they cannot see your tool calls.
 
 ## Tools
 
 ```
 brand_list()            # kits in the workspace (name, id, default marker)
 brand_show(brand_kit_ref)   # model-safe summary: palette, fonts, voice, logo refs
+brand_create(url=… | name=…, colors=[…], fonts=[…])   # new kit: site extraction or described tokens
+canvas_create(brand_kit_id=…)         # create a canvas already bound to a kit
+canvas_update(canvas_ref, brand_kit_id=…)   # bind an existing canvas (clear_brand_kit=true unbinds)
 ```
 
-Kit creation, updates, defaults, and image management are not available on this surface — they live in the Moda app's brand-kit editor (`brand_show` returns the kit's app link to hand over).
+Kit updates, defaults, and image management are not available on this surface — they live in the Moda app's brand-kit editor (`brand_show` returns the kit's app link to hand over).
 
 `brand_show` returns colors, fonts, voice fields, and per-logo durable `file_` references — never signed preview URLs (they don't exist on this surface). The `file_` ref is the only thing that ever goes into markup or media inputs — refs resolve server-side; never retype a URL or a hex you think you remember.
 
 ## Applying a kit (the deterministic lane)
 
+- **Binding:** first, so it cannot be forgotten last. `canvas_create(name='…', brand_kit_id='bk_…')`; on a canvas that already exists, `canvas_update(canvas_ref, brand_kit_id='bk_…')`. A template-sourced create (`template_canvas_id`) keeps the SOURCE canvas's kit and refuses a brand kit — rebind the copy afterwards if the user wants a different brand.
 - **Colors:** the kit owns them. Use kit palette values (and canvas `$variables` seeded from them) — never re-type hex codes from memory. Prefer creating canvas variables for kit colors used in multiple places (`create('variable', …)` in edit code, then `$name` in markup) so a later brand change is one update.
 - **Fonts:** the kit's families are the font menu. There is no list-fonts verb — the kit (plus families already used on the canvas) defines what is safely available. Kit-listed fonts are loaded and safe to use as named; substitute only a font the kit explicitly marks unavailable, preferring its listed alternative.
 - **Voice:** the kit's `tagline`, `brand_values`, `brand_tone_of_voice`, and usage rules (all on the `brand_show` result) govern copy. Read them before writing any headline or body text on a branded artifact — a visually on-brand deck with off-brand copy is still off-brand.
@@ -57,12 +68,12 @@ The auditable brand check no competitor offers — pure read verbs:
 
 ## Creating and escalating
 
-Kit creation is not available on this surface — it lives in the Moda app at moda.app, free, with two paths worth explaining to the user:
+Two creation paths, both **deterministic and unmetered**, right on this surface:
 
-- **URL extraction — the fast path.** The app extracts colors, fonts, and logos from the brand's live website. Prefer it whenever the brand has a website: it captures more than the user would dictate.
-- **Manual build — for brands without a website** (or when the user already holds the ground truth: a style guide, a logo file, exact hexes), built field by field in the app's brand-kit editor.
+- **URL extraction — the fast path.** `brand_create(url='https://…')` runs Moda's server-side extraction (colors, fonts, logos from a live site). Prefer it whenever the brand has a website: it captures more than the user would dictate.
+- **Manual build — for brands without a website** (or when the user already holds the ground truth: exact hexes, named fonts). `brand_create(name='Acme', colors=[{color:'#0F172A', label:'Primary'}, {color:'#F97316', label:'Accent'}], fonts=[{family:'Inter', label:'title', weight:600}])`. Logo files attach later in the Moda app's brand-kit editor.
 
-Once the user creates the kit there, `brand_list` picks it up here immediately.
+Exactly one path per create — never both `url` and manual fields. An identical repeat replays the same kit instead of minting a duplicate.
 
 ### Fixing a kit in place
 
@@ -71,9 +82,14 @@ Extraction is good, not perfect — a slightly-off primary, a missed accent, a w
 - Kit edits (fields, palette, fonts, logo attachments) happen in the Moda app's brand-kit editor — hand the user the kit's app link from `brand_show` and name the exact fix ("the extracted primary looks like #0E1620, the site's is #0F172A").
 - Confirm destructive changes with the user before recommending them (removing images, replacing a palette) — kit changes affect every future branded artifact, not just this session.
 - **Honor the kit's written brand rules.** The `brand_show` result's voice, tone, values, and usage fields are the rules Moda's own agent honors — follow them with the same force as the palette; where they are silent, ask the user rather than inventing brand law (full guide documents live in the Moda app).
-- Full brand-**guide** generation — a new identity, multiple creative directions, logo concepts — is creative work for the metered Omni lane: `task_start` (see references/omni-and-media.md). Do not try to hand-author a brand identity out of markup primitives.
+- Full brand-**guide** generation — a new identity, multiple creative directions, logo concepts — is creative work for the Moda app: hand the user the app link and let them run it there. Do not try to hand-author a brand identity out of markup primitives.
+
+## Auditing: is the canvas even bound?
+
+`canvas_read(canvas_ref)` reports the canvas's brand kit alongside its content. An unbound canvas in a workspace that has kits is a finding in its own right — report it with the rest of the audit below, and offer to bind it.
 
 ## Honest gaps
 
 - No list-fonts verb exists: font discovery = the kit + the canvas's existing families. A font-substitution event surfaces as a structured warning on the mutation result (e.g. `font_substituted`) — read it and either accept the substitute or switch to a kit family.
+- Binding is metadata, not a restyle: `canvas_update(brand_kit_id=…)` will not recolor an off-brand design. Fix the design through the edit lane; the binding just records whose brand it is.
 - All kit editing happens in the Moda app's brand-kit editor; this surface reads kits (`brand_list` / `brand_show`) and authors with their tokens.
