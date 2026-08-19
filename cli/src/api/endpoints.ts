@@ -39,6 +39,10 @@ export const endpoints = {
   canvasTokens: (ref: string) => `/v1/canvases/${enc(ref)}/tokens`,
   canvasRename: (ref: string) => `/v1/canvases/${enc(ref)}`,
   canvasShare: (ref: string) => `/v1/canvases/${enc(ref)}/share`,
+  // The hand-off signal: "I am done working on this canvas". Without it the
+  // "your agent is working" state only ever expires on a timer, so a finished
+  // deck goes on claiming an agent that stopped minutes ago (ENG-5160).
+  canvasAgentActivityDone: (ref: string) => `/v1/canvases/${enc(ref)}/agent-activity/done`,
   canvasExport: (ref: string) => `/v1/canvases/${enc(ref)}/export`,
   canvasExportStatus: (ref: string) => `/v1/canvases/${enc(ref)}/export-status`,
   shareLinkResolve: () => '/v1/share_links/resolve',

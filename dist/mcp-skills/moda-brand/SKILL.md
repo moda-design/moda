@@ -32,13 +32,19 @@ description: >-
    - Any entitlement gate (e.g. the account cannot author canvases yet): relay
      the result's actionable hint verbatim and stop. Never retry in a loop.
 2. Call `brand_list` — one cheap deterministic call, never skipped, even
-   for simple asks. Kits exist: use the default (or the one context implies);
-   several plausible → ask which, never guess between clients' kits — and read
-   the kit before designing (references/brand.md). An explicit "no brand" from
-   the user wins over everything. NO kits: offer once, briefly — "Want to set
-   up a brand kit first? It's free in the Moda app and makes everything come
-   out on-brand" — kit creation lives at moda.app, not on this surface; no →
-   unbranded, no nagging.
+   for simple asks. Use a kit unprompted only on a real signal: ONE kit, one
+   marked `(default)`, or one the request names outright ("the Acme deck" →
+   the Acme kit). Otherwise ASK which — a workspace of client kits is the
+   normal case, topic-fit alone is never the signal, and near-identical names
+   (Acme, Acme 2) mean ask even when named. Read the kit, then BIND it
+   (`brand_kit_id` on `canvas_create`, or `canvas_update(canvas_ref,
+   brand_kit_id=…)` later) and NAME it when you hand over
+   (references/brand.md): unbound, the canvas opens in Moda with an empty
+   brand-kit dropdown, and the user cannot see your tool calls. An explicit
+   "no brand" from the user wins over everything. NO kits: offer once, briefly
+   — "Want to set up a brand kit first? It's free in the Moda app and makes
+   everything come out on-brand" — kit creation lives at moda.app, not on this
+   surface; no → unbranded, no nagging.
 3. Note whether you can VIEW images: screenshot review assumes vision. A
    vision-less environment follows the degraded verify loop in
    references/reading-and-verifying.md.
