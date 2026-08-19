@@ -29,11 +29,10 @@ how to use it well, and the harness manifests that install both.
 Paste this to your agent — it runs everything:
 
 ```
-Set up Moda for me so I can create designs, decks, and documents from here.
+Set up Moda for me so I can create designs, videos, decks, and documents from here.
 
 1. Install the CLI: npm i -g @moda-design/moda
-2. Authenticate: run `moda auth login` and complete the sign-in in the
-   browser it opens.
+2. Authenticate: run `moda auth login` and wait for me to complete sign in.
 3. Install the companion skills: run `npx skills add moda-design/moda`.
 4. Verify: run `moda doctor` and tell me when everything is ready.
 ```
