@@ -423,6 +423,9 @@ export function registerCanvas(program: Command): void {
           ...(typeof opts.category === 'string' ? ['--category'] : []),
           ...(typeof opts.folder === 'string' ? ['--folder'] : []),
           ...(typeof opts.visibility === 'string' ? ['--visibility'] : []),
+          // The FLAG only: a standing `moda brand use` default must not turn a
+          // perfectly valid template create into a usage error the user cannot
+          // see the cause of. The context kit is simply not applied below.
           ...(typeof opts.brand === 'string' ? ['--brand'] : []),
         ];
         if (conflicting.length > 0) {
@@ -442,6 +445,31 @@ export function registerCanvas(program: Command): void {
       // the copy, then place it with `moda drive move`). Placement/visibility are OPTIONAL —
       // omitted, the workspace's default save location governs where the canvas lands.
       const size = typeof opts.size === 'string' ? parseSize(opts.size) : undefined;
+      // `--brand`, else the kit the user remembered with `moda brand use` (config,
+      // or repo context with --local). Honoring it here is what makes that verb
+      // mean anything: it resolves into `inv.context.brand` and, until now, only
+      // `moda context show` ever read it.
+      //
+      // Note the asymmetry with the server, which never infers a kit — an omitted
+      // brand_kit_id on POST /v1/canvases stays UNBOUND rather than picking the
+      // team default (ENG-3215/ENG-3012 were both "the agent silently applied the
+      // wrong kit"). This is not that: it is one user's explicit standing choice
+      // on their own machine or repo, the same shape as `context.org`, and the
+      // result names the kit either way so it is never a silent substitution.
+      // ...except on the template lane, which keeps the SOURCE canvas's kit and
+      // rejects any brand_kit_id. A standing context default must not be what
+      // turns a valid template create into a 422.
+      const brand =
+        typeof opts.template === 'string'
+          ? undefined
+          : typeof opts.brand === 'string'
+            ? opts.brand
+            : inv.context.brand.value;
+      if (brand !== undefined && typeof opts.brand !== 'string') {
+        // Never a silent substitution: say where the kit came from, and how to
+        // stop using it.
+        inv.note(`using remembered brand kit ${brand} (${inv.context.brand.source}) — override with --brand`);
+      }
       const payload = {
         name: opts.name as string,
         ...(typeof opts.template === 'string' ? { template_canvas_id: opts.template } : {}),
@@ -450,7 +478,7 @@ export function registerCanvas(program: Command): void {
         ...(typeof opts.category === 'string' ? { category: opts.category } : {}),
         ...(typeof opts.folder === 'string' ? { folder_id: parseFolderRef(opts.folder) } : {}),
         ...(typeof opts.visibility === 'string' ? { visibility: parseVisibility(opts.visibility) } : {}),
-        ...(typeof opts.brand === 'string' ? { brand_kit_id: opts.brand } : {}),
+        ...(brand !== undefined ? { brand_kit_id: brand } : {}),
       };
       const response = await client.request({
         method: 'POST',
