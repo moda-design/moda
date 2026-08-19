@@ -1144,14 +1144,10 @@ REFERENCE_PASSAGES["video"] = [
         "   is format-implied.",
     ),
     (
-        "There is no video-to-video edit and no source-video input for GENERATION\n"
-        "except reference video on the models whose cards declare it; reference audio\n"
-        "is likewise available only where its card declares it. The only verb\n"
-        "that takes a video as its subject is `moda media upscale-video`.",
-        "There is no video-to-video edit and no source-video input for GENERATION\n"
-        "except reference video on the models whose cards declare it; reference audio\n"
-        "is likewise available only where its card declares it. The only tool\n"
-        "that takes a video as its subject is `media_upscale`.",
+        "There is no video-to-video edit. Source video/audio inputs for GENERATION exist\n"
+        "only as declared references; `moda media upscale-video` is the only verb that takes a video as its subject.",
+        "There is no video-to-video edit. Source video/audio inputs for GENERATION exist\n"
+        "only as declared references; `media_upscale` is the only tool that takes a video as its subject.",
     ),
     (
         "`moda media models` prints one capability card per video model — its modes\n"
@@ -1472,26 +1468,18 @@ NON_TOOL_TOKENS = {
 
 REFERENCE_PASSAGES["video"] += [
     (
-        "DEFAULT — describe the soundtrack in the prompt, and `--generate-audio`\n"
-        "only re-states that default explicitly. `--no-generate-audio` buys the\n"
-        "SILENT rate where the model's audio is controllable — on Kling 3 Standard\n"
-        "and Pro that is a third off, so pass it whenever the clip does not need\n"
-        "sound. Whether audio can be turned off at all is per-model, and the card is\n"
-        "the answer: `moda media models` reports `generate_audio_controllable`,\n"
-        "which the human card renders as \"audio always on\" for the models where\n"
-        "audio is INTRINSIC (they accept the flag, report it as an adjustment, and\n"
-        "produce audio anyway — so it buys nothing there). Read that field instead\n"
-        "of memorising which models those are; the receipt is the truth.",
-        "DEFAULT — describe the soundtrack in the prompt, and `generate_audio=true`\n"
-        "only re-states that default explicitly. `generate_audio=false` buys the\n"
-        "SILENT rate where the model's audio is controllable — on Kling 3 Standard\n"
-        "and Pro that is a third off, so pass it whenever the clip does not need\n"
-        "sound. Whether audio can be turned off at all is per-model, and the card is\n"
-        "the answer: it reports `generate_audio_controllable`, and where that is\n"
-        "false audio is INTRINSIC — the model accepts the parameter, reports it as\n"
-        "an adjustment, and produces audio anyway, so it buys nothing there. Read\n"
-        "that field instead of memorising which models those are; the receipt is\n"
-        "the truth.",
+        "O3 defaults audio OFF; pass `--generate-audio` when sound is wanted. Other audio-capable models\n"
+        "default it on. `--no-generate-audio` buys the SILENT rate where audio is controllable — on Kling 3 Standard\n"
+        "and Pro that is a third off, so use it whenever the clip does not need sound. The model card is the authority:\n"
+        "`moda media models` reports `generate_audio_controllable`. Models where it is false have INTRINSIC audio: they\n"
+        "accept the flag, report it as an adjustment, and produce audio anyway, so it buys nothing there. Read that field;\n"
+        "the receipt is the truth.",
+        "O3 defaults audio OFF; pass `generate_audio=true` when sound is wanted. Other audio-capable models\n"
+        "default it on. `generate_audio=false` buys the SILENT rate where audio is controllable — on Kling 3 Standard\n"
+        "and Pro that is a third off, so use it whenever the clip does not need sound. The model card is the authority:\n"
+        "it reports `generate_audio_controllable`. Models where it is false have INTRINSIC audio: they accept the\n"
+        "parameter, report it as an adjustment, and produce audio anyway, so it buys nothing there. Read that field;\n"
+        "the receipt is the truth.",
     ),
     (
         "**Reference video** rides `--reference-video <ref-or-url>` (repeatable; the\n"
