@@ -287,10 +287,6 @@
       "target": "poll the handle you hold with `task_status`",
       "status": "folded"
     },
-    "moda task start": {
-      "target": "`task_start`",
-      "status": "live"
-    },
     "moda task status": {
       "target": "`task_status`",
       "status": "live"

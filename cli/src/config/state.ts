@@ -150,53 +150,6 @@ export function readLastError(env: NodeJS.ProcessEnv = process.env): Record<stri
   return value !== undefined && typeof value === 'object' ? value : undefined;
 }
 
-// --- Task-start replay ledger (the server sends no replayed flag on task.start) ---
-
-export interface TaskStartEntry {
-  task_id: string;
-  started_at: string;
-  /** Terminal status when observed by --wait / task status (failed | succeeded | ...). */
-  last_status?: string;
-}
-
-type TaskStartLedger = Record<string, TaskStartEntry>;
-
-const TASK_LEDGER_CAP = 50;
-
-function taskStartsPath(env: NodeJS.ProcessEnv): string {
-  return join(stateDir(env), 'task-starts.json');
-}
-
-export function readTaskStart(key: string, env: NodeJS.ProcessEnv = process.env): TaskStartEntry | undefined {
-  return readJson<TaskStartLedger>(taskStartsPath(env), {})[key];
-}
-
-export function recordTaskStart(key: string, entry: TaskStartEntry, env: NodeJS.ProcessEnv = process.env): void {
-  const ledger = readJson<TaskStartLedger>(taskStartsPath(env), {});
-  ledger[key] = entry;
-  const keys = Object.keys(ledger);
-  if (keys.length > TASK_LEDGER_CAP) {
-    keys
-      .sort((a, b) => (ledger[a]?.started_at ?? '').localeCompare(ledger[b]?.started_at ?? ''))
-      .slice(0, keys.length - TASK_LEDGER_CAP)
-      .forEach((k) => delete ledger[k]);
-  }
-  writeJson(taskStartsPath(env), ledger);
-}
-
-/** Note a task's terminal status on whichever ledger entry started it (best-effort). */
-export function recordTaskStatus(taskId: string, status: string, env: NodeJS.ProcessEnv = process.env): void {
-  const ledger = readJson<TaskStartLedger>(taskStartsPath(env), {});
-  let changed = false;
-  for (const entry of Object.values(ledger)) {
-    if (entry.task_id === taskId && entry.last_status !== status) {
-      entry.last_status = status;
-      changed = true;
-    }
-  }
-  if (changed) writeJson(taskStartsPath(env), ledger);
-}
-
 // --- Ask-session continuity (`moda ask`; server-minted `ask_<uuid>`) ---
 
 /**

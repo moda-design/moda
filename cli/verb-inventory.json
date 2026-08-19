@@ -4923,8 +4923,14 @@
           "required": false
         },
         {
+          "flag": "--reference-audio",
+          "description": "reference audio (models whose card shows 'ref audio'): file_ refs, URLs, or local paths",
+          "takes_value": true,
+          "required": false
+        },
+        {
           "flag": "--reference-video",
-          "description": "reference clips (models whose card shows 'ref videos'): file_ refs, URLs, or local paths — count and length caps are per-model; the input's own running time is billed on top",
+          "description": "reference clips (models whose card shows 'ref videos'): file_ refs, URLs, or local paths — count, length, and input-duration billing are model-specific",
           "takes_value": true,
           "required": false
         },
@@ -6679,127 +6685,6 @@
         "mutating": false,
         "destructive": false,
         "metered": false,
-        "read_lane": false
-      }
-    },
-    {
-      "name": "task start",
-      "description": "start an Omni task (spends Moda credits; labeled metered, finalized credits via moda account usage)",
-      "positionals": [],
-      "flags": [
-        {
-          "flag": "--api-base",
-          "description": "endpoint override (staging/dev)",
-          "takes_value": true,
-          "required": false
-        },
-        {
-          "flag": "--brand",
-          "description": "brand kit ref",
-          "takes_value": true,
-          "required": false
-        },
-        {
-          "flag": "--callback-url",
-          "description": "CI callback (server-side validated)",
-          "takes_value": true,
-          "required": false
-        },
-        {
-          "flag": "--canvas",
-          "description": "target canvas",
-          "takes_value": true,
-          "required": false
-        },
-        {
-          "flag": "--export",
-          "description": "chain an export on completion (implies --wait)",
-          "takes_value": true,
-          "required": false
-        },
-        {
-          "flag": "--files",
-          "description": "input file refs",
-          "takes_value": true,
-          "required": false
-        },
-        {
-          "flag": "--format",
-          "description": "output format hint (slides | one-pager | social | …)",
-          "takes_value": true,
-          "required": false
-        },
-        {
-          "flag": "--fresh",
-          "description": "force a NEW task: salt the idempotency key instead of replaying an identical earlier start",
-          "takes_value": false,
-          "required": false
-        },
-        {
-          "flag": "--json",
-          "description": "machine output: exactly one compact JSON document on stdout; implies --no-input",
-          "takes_value": false,
-          "required": false
-        },
-        {
-          "flag": "--no-input",
-          "description": "fail instead of prompting (implied by --json)",
-          "takes_value": false,
-          "required": false
-        },
-        {
-          "flag": "--no-retry",
-          "description": "disable the built-in busy/transport retry",
-          "takes_value": false,
-          "required": false
-        },
-        {
-          "flag": "--org",
-          "description": "override the configured org context for this invocation",
-          "takes_value": true,
-          "required": false
-        },
-        {
-          "flag": "--output",
-          "description": "output path for the chained export",
-          "takes_value": true,
-          "required": false
-        },
-        {
-          "flag": "--pretty",
-          "description": "pretty-print the --json document",
-          "takes_value": false,
-          "required": false
-        },
-        {
-          "flag": "--prompt",
-          "description": "the task prompt",
-          "takes_value": true,
-          "required": true
-        },
-        {
-          "flag": "--quiet",
-          "description": "suppress non-essential stderr",
-          "takes_value": false,
-          "required": false
-        },
-        {
-          "flag": "--timeout",
-          "description": "per-command ceiling override, seconds",
-          "takes_value": true,
-          "required": false
-        },
-        {
-          "flag": "--wait",
-          "description": "poll until the task completes, streaming progress to stderr",
-          "takes_value": false,
-          "required": false
-        }
-      ],
-      "markers": {
-        "mutating": true,
-        "destructive": false,
-        "metered": true,
         "read_lane": false
       }
     },

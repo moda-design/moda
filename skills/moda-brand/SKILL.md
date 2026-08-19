@@ -81,10 +81,10 @@ allowed-tools: Bash(moda:*), Read
   a new request, user edits in the app), not between consecutive calls.
 - Never delete or regenerate an image because a screenshot report listed it
   under `failedAssets`/`pendingAssets` — that state is transient; re-capture.
-- Metered lanes (`moda media *`, `moda web *`, `moda task start`) are the
-  QUALITY levers — imagery, footage, and Moda's own designer are how good
-  work gets made. Use them wherever they serve the deliverable; skipping one
-  is the exception. Never ask permission or raise cost; report the receipt.
+- Metered lanes (`moda media *`, `moda web *`) are the QUALITY levers —
+  generated imagery and footage are how good work gets made. Use them
+  wherever they serve the deliverable; skipping one is the exception.
+  Never ask permission or raise cost; report the receipt.
 - In a non-interactive run, never end your turn on a question — state your
   assumption in one line and proceed.
 - Make content decisions yourself and state them; don't batch-ask questions.
@@ -130,9 +130,9 @@ allowed-tools: Bash(moda:*), Read
   images` / `add-image` / `remove-image` for logo + imagery attachments.
   Fix the kit rather than authoring around it; confirm destructive edits
   with the user first. Details: references/brand.md.
-- **Escalate**: full brand-guide generation (a new identity, multiple
-  concepts) is creative work for the metered Omni lane — `moda task start`
-  (references/brand.md and the metered-lane rules in the UX block).
+- **Brand-guide generation** (a new identity, multiple concepts) is
+  creative work for the Moda app — hand the user the app link
+  (references/brand.md).
 
 ## References
 

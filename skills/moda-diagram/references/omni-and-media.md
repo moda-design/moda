@@ -1,6 +1,6 @@
-# The metered lanes — media generation and the Omni escalation
+# The metered lanes — media generation and web research
 
-These are the metered lanes — `moda media *`, `moda web *`, and `moda task start` — and they are the QUALITY levers on this surface. Generated imagery, footage, research, and Moda's own designer are how good work gets made: reach for them wherever they serve the deliverable, never ask permission first, and report the usage receipt after each call as information (`usage.class: "metered"` on the response). Cost is a topic only when the USER raises it.
+These are the metered lanes — `moda media *` and `moda web *` — and they are the QUALITY levers on this surface. Generated imagery, footage, and research are how good work gets made: reach for them wherever they serve the deliverable, never ask permission first, and report the usage receipt after each call as information (`usage.class: "metered"` on the response). Cost is a topic only when the USER raises it.
 
 The one fact worth carrying: a metered call can fail the billing precheck — exit 6, the quota lane (`insufficient_credits` and friends) — which means the TEAM is out of credits or has hit a plan cap, not that you did something wrong. Say so plainly, surface the hint verbatim, and stop — never retry it, and never quietly drop the quality lever and deliver the lesser thing instead.
 
@@ -57,33 +57,3 @@ Results return durable refs that feed markup `image(...)` fills and `src` attrib
 ## Imagery is a default quality lever
 
 Generated imagery is a DEFAULT quality lever, not a last resort. Covers, heroes, section breaks, and full-bleed closers get generated imagery wherever it elevates the design — styled to the brand's palette and mood. Reuse brand-kit assets and the user's own uploads (`moda file search` / `moda file upload`, `--from-url`) when they are the actual subject matter; `moda file search QUERY --source stock` adds stock photography (place the `stock_unsplash_…` id verbatim; credit the result's `attribution` wherever the photo appears); markup `<image icon="query"/>` covers functional UI icons; an icon/vector-only system is a deliberate style choice, never a cost fallback.
-
-## `moda task start` — the Omni escalation lane (metered)
-
-Handing the whole job to Moda's own agent. It plans, designs, sources imagery, and builds on a canvas server-side — the lane where Moda's models run.
-
-```
-moda task start --prompt PROMPT [--canvas CANVAS_REF] [--files FILE_REF...]
-                [--brand BRAND_REF] [--format slides|one-pager|social|...]
-                [--wait] [--export pptx -o out.pptx]
-moda task status TASK_REF        moda task list [--active]        moda task cancel TASK_REF
-```
-
-**When to escalate** (instead of authoring markup yourself):
-
-- A genuinely open-ended creative brief where the user wants Moda's designer to own the direction ("surprise me", "make it beautiful", multiple concepts to choose from).
-- Imagery-heavy work where generation, art direction, and layout must co-evolve.
-- Brand-guide generation (a new identity — see references/brand.md).
-- Motion choreography beyond the deterministic lane (motion v3 via `moda canvas edit` on an animation-category canvas covers the basics; preset animations on ordinary canvases remain app-only).
-
-**When NOT to escalate:** anything you can author deterministically. You are the agent; a known layout with known content is your job, and faster to iterate on.
-
-### Task-lane rules
-
-- A task delegates the whole job — mention, matter-of-fact, that you're starting one (no permission-seeking), and report the receipt after.
-- `moda task start` is idempotent: an identical re-run replays the already-started task instead of spending again — within the server's idempotency window (the CLI says so when it detects the replay). A deliberate new attempt — e.g. after `task_failed` — takes `--fresh`.
-- Omit `--canvas` for net-new work — the task creates and designs its own canvas. Pass `--canvas` only when the job must land on an existing one; a running task **owns its canvas** — your writes exit 5 as busy until it finishes, and the CLI already retried. Recovery: find the owner with `moda task list --active` (newer servers also accept `--canvas CANVAS_REF` to filter; on older servers match the canvas id in the listing), then wait or `moda task cancel`.
-- Pass `--brand` rather than restating colors/fonts/logos in the prompt — the resolved kit owns them. Put the slide/page count and format in the flags or the prompt explicitly.
-- A completed task returns a finished, already-exported result when `--export` was chained — don't re-export in a different verb unless you need another format.
-- Typed failures map to the standard exits: billing precheck and plan caps exit 6 with the cap in the message; a live run owning the canvas exits 5. Surface hints verbatim.
-- After a task completes you can resume surgical control: `moda canvas read` the result, then targeted `moda canvas edit` / `moda canvas markup` refinements — the hybrid is often the best workflow.

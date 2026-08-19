@@ -29,7 +29,7 @@ description: >-
      `moda_bootstrap` again. Never fake Moda output while disconnected; no
      Mermaid/HTML/prose stand-in replaces the stop.
    - Several teams listed and the user names one: pass that team on the tools
-     that take a `team` argument (the create/list/write/upload/media/task
+     that take a `team` argument (the create/list/write/upload/media
      lanes; read tools follow the canvas) — team decides whose workspace and
      billing everything lands in. Never switch teams on your own initiative.
    - Any entitlement gate (e.g. the account cannot author canvases yet): relay
@@ -81,10 +81,10 @@ description: >-
   a new request, user edits in the app), not between consecutive calls.
 - Never delete or regenerate an image because a screenshot report listed it
   under `failedAssets`/`pendingAssets` — that state is transient; re-capture.
-- Metered lanes (the `media_*` tools and `task_start`) are the
-  QUALITY levers — imagery, footage, and Moda's own designer are how good
-  work gets made. Use them wherever they serve the deliverable; skipping one
-  is the exception. Never ask permission or raise cost; report the receipt.
+- Metered lanes (the `media_*` tools) are the QUALITY levers —
+  generated imagery and footage are how good work gets made. Use them
+  wherever they serve the deliverable; skipping one is the exception.
+  Never ask permission or raise cost; report the receipt.
 - In a non-interactive run, never end your turn on a question — state your
   assumption in one line and proceed.
 - Make content decisions yourself and state them; don't batch-ask questions.

@@ -10,7 +10,7 @@
      `moda_bootstrap` again. Never fake Moda output while disconnected; no
      Mermaid/HTML/prose stand-in replaces the stop.
    - Several teams listed and the user names one: pass that team on the tools
-     that take a `team` argument (the create/list/write/upload/media/task
+     that take a `team` argument (the create/list/write/upload/media
      lanes; read tools follow the canvas) — team decides whose workspace and
      billing everything lands in. Never switch teams on your own initiative.
    - Any entitlement gate (e.g. the account cannot author canvases yet): relay
