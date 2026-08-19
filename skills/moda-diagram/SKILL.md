@@ -39,14 +39,14 @@ allowed-tools: Bash(moda:*), Read, Glob, Grep
      initiative — org decides whose workspace and billing everything lands in.
    - Any entitlement gate (e.g. the account cannot author canvases yet): relay doctor's actionable hint verbatim and stop. Never retry in a loop.
 2. Run `moda account status --json`. Note the org and plan.
-3. Run `moda brand list` — one cheap deterministic call, never skipped, even for simple asks. Kits
-   exist: use the default (or the one context implies); several plausible → ask which, never guess
-   between clients' kits; read it before designing. Then BIND it — `moda canvas create --brand …`,
-   or `moda canvas brand` on an existing canvas — and NAME the kit when you hand over: palette-in-
-   markup is only half of on-brand, and an unbound canvas opens in Moda with an empty brand-kit
-   dropdown (references/brand.md). An explicit "no brand" from the user wins over everything. NO
-   kits: offer once, briefly — "Want me to set up a brand kit first? It's free and makes everything
-   come out on-brand" — yes → `moda brand create` from their URL, or manually (--name/--color/--font, references/brand.md); no → unbranded, no nagging.
+3. Run `moda brand list` — one cheap deterministic call, never skipped. ONE kit, one marked `(default)`, or
+   one remembered in context: use it. Otherwise ASK which — a workspace of client kits is the normal case,
+   "the topic implies it" is no tiebreak, and near-identical names (Acme, Acme 2) mean ask anyway. Read the
+   kit, then BIND it (`moda canvas create --brand …`, or `moda canvas brand` later) and NAME it when you
+   hand over (references/brand.md): unbound, the canvas opens in Moda with an empty brand-kit dropdown, and
+   the user cannot see your tool calls. More work coming? Offer `moda brand use KIT` (`--local` for this
+   repo). An explicit "no brand" wins. NO kits: offer once — "Want me to set up a brand kit first? It's
+   free" — yes → `moda brand create` from their URL or manually (--name/--color/--font); no → unbranded.
 4. Note whether you can VIEW images: screenshot review assumes vision. A vision-less harness follows the degraded verify loop in references/reading-and-verifying.md.
 
 ## UX rules
