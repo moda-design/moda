@@ -183,13 +183,13 @@ PASSAGES["skills/moda-deck/SKILL.md"] = [
     (
         "5. **Author per slide** with `moda canvas markup CANVAS_REF --file - --page P`\n"
         "   — one slide per apply; add remaining slides via `moda canvas add-pages`\n"
-        "   (page ids from its result; author with the kit's tokens — create takes no\n"
-        "   brand flag). `requires_repair`/skipped ops → fix before the next slide.",
+        "   (page ids from its result; author with the kit's tokens — the `--brand`\n"
+        "   binding styles nothing). `requires_repair`/skipped ops → fix before the next slide.",
         "5. **Author per slide** with `canvas_apply_markup(canvas_ref, page, markup)`\n"
         "   — one slide per apply; create remaining slides in `canvas_edit` code\n"
         "   (`create('page', …)`, then re-read for the fresh page ids; author with\n"
-        "   the kit's tokens — create takes no brand argument). `requires_repair`/\n"
-        "   skipped ops → fix before the next slide.",
+        "   the kit's tokens — the `brand_kit_id` binding styles nothing).\n"
+        "   `requires_repair`/skipped ops → fix before the next slide.",
     ),
     (
         "PPTX/PDF too?\"): `moda export CANVAS_REF --format pptx|pdf -o …`.",
