@@ -37,6 +37,8 @@ Results return durable refs that feed markup `image(...)` fills and `src` attrib
 - **GPT Image 2.0** — Strong in-image text rendering.
 - **Ideogram V4** — Crisp posters, logos and accurate in-image text.
 - **FLUX.2 Pro** — High-quality general-purpose generation, and multi-reference image editing.
+- **FLUX.2 Flex** — The only image model with sampler control: guidance scale and inference steps.
+- **FLUX.2 Max** — The FLUX.2 family's top tier for realism and precision; dearest at ordinary sizes.
 - **Seedream V5 Lite** — High-resolution output (up to 4K) at the family's lowest price.
 - **Seedream V5 Pro** — The family's premium tier: more detail per pixel than Lite, at a smaller maximum size (2K).
 - **Recraft V3** — Style-rich design generation and single-image editing; vector styles cost 2x.
