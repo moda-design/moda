@@ -10,9 +10,9 @@ user the pinned command and WAIT for them to run it.
    - Codex CLI / Cursor / other shell-capable harness → tell the user to run:
      `npx skills add moda-design/moda`
      (fallback: `git clone https://github.com/moda-design/moda && cd moda && ./setup`)
-   - No shell available → stop: this build is CLI-lane only. Tell the user
-     that claude.ai has its own lane (INSTALL-CLAUDE-AI.md) and that a hosted
-     connector lane is coming.
+   - No shell available → stop and tell the user that the skills also ship in a
+     connector-flavored form for claude.ai Agent Skills; see
+     [INSTALL-CLAUDE-AI.md](INSTALL-CLAUDE-AI.md).
 
 2. **Check the CLI.** Run `moda doctor --json`.
    - `moda` missing or below the compatibility floor: STOP and show the user

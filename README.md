@@ -28,10 +28,8 @@ you ──► your agent ──► moda CLI ──► Moda canvas ──► deck
 
 ## Install
 
-> **Early access.** Moda for Agents is rolling out workspace by workspace. If
-> `moda doctor` reports your workspace doesn't have API access yet, the
-> install is fine — access just hasn't reached your workspace. Watch
-> [moda.app](https://moda.app) for the open rollout.
+> **Available now.** Public Moda-for-Agents API access rolled out to 100% of
+> users, unfiltered, on 2026-08-17.
 
 Paste this to your agent — it runs everything:
 
