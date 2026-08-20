@@ -78,10 +78,10 @@ to the registry when it disagrees):
   first-and-last-frame morph takes 8 s only (4/6/8 without an end frame).
 - **Grok Imagine Video 1.5** — the framing pick for short social clips:
   seven aspect ratios including square, portrait and 3:2. Fixed 5–8 s,
-  audio always on and not disableable. **Reach for it when the frame shape
-  is the point** — no other model offers that many ratios; per second it is
-  dearer than Veo 3.1 Lite at every resolution both offer, and its 1080p is
-  the dearest on the roster, so let the framing be the reason you pick it.
+  audio always on and not disableable. **Reach for it when 3:2 or 2:3 is
+  the point** — those two are its alone. Per second it is dearer than Veo
+  3.1 Lite at every resolution both offer, and its 1080p is the dearest on
+  the roster, so let the framing be the reason you pick it.
   Its three modes disagree more than any other
   model's — reference stops at 720p and defaults to 480p and 8 s, the other
   two reach 1080p and default to 720p and 6 s — and animating a start frame
@@ -128,6 +128,12 @@ to the registry when it disagrees):
   on Veo 3.1 and Veo 3.1 Fast, which likewise fold 720p and 1080p into one
   rate and step only at 4K. fal bills each input clip's own running time on
   top of the output's, so an 8 s clip driving a 3 s render bills 11 s.
+- **Happy Horse 1.1** — the lip-sync pick: synchronized native audio and
+  multilingual lip-sync on every mode, and the widest framing menu here —
+  nine ratios, 21:9 to 9:21. 3–15 s, $0.14/s (720p) or $0.18/s (1080p,
+  its default). No end frame, and no aspect control when animating a start
+  frame. Its reference mode takes up to 9 images at no extra charge;
+  address the subjects as `character1`, `character2`, … in supply order.
 
 **Reference video** rides `--reference-video <ref-or-url>` (repeatable; the
 wire field is `reference_videos`), and only models whose card shows "ref
