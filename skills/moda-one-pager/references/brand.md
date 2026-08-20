@@ -63,13 +63,12 @@ The auditable brand check no competitor offers — pure read verbs:
 
 1. `moda brand show BRAND_REF --json` — the reference tokens.
 2. `moda canvas read CANVAS_REF` — every node's fills, strokes, fonts, and the `## Vars` legend.
-3. `moda canvas lint CANVAS_REF` — catches undersized logos and contrast defects.
-4. Compare and report pass/fail per element:
+3. Compare and report pass/fail per element:
    - Every fill/stroke color is a kit palette value, a `$variable` bound to one, or neutral (white/black/gray scale).
    - Every text node's family is a kit family (or a family the kit lists as an approved alternative).
    - Logo present where expected, at legible size, correct variant for its background, undistorted (contain fit, aspect preserved).
    - No off-kit accent colors introduced "for pop" — flag each with node id and the nearest kit color.
-5. Fix what the user asked you to fix via the smallest-change routing (references/design-quality.md); report the rest.
+4. Fix what the user asked you to fix via the smallest-change routing (references/design-quality.md); report the rest.
 
 ## Creating and escalating
 

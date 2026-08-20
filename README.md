@@ -88,7 +88,7 @@ Three things every skill shares:
   *stops* and shows you the pinned command. It never installs anything
   itself, never pipes a script to a shell, never uses sudo.
 - **Deliverables over plumbing.** The agent verifies its own output
-  (screenshot, lint) before it replies, and ends on an artifact — a URL and a
+  (screenshot) before it replies, and ends on an artifact — a URL and a
   file — not a status report.
 - **Honest metering.** Deterministic authoring costs nothing. The metered
   verbs (image/video generation, upscales) are labeled with their cost class

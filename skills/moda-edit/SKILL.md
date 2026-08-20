@@ -6,7 +6,7 @@ description: >-
   delete a section, fix a slide someone touched in the editor. Use when the user
   pastes a moda.app canvas or share URL (or a cvs_ id) and asks for changes, or
   to revise a design a previous moda skill or Moda's AI built. Deterministic:
-  reads canvas state, applies targeted markup/code edits, verifies with lint and
+  reads canvas state, applies targeted markup/code edits, verifies with
   screenshots. Requires the moda CLI and a Moda account (Step 0 checks both; it
   never installs anything itself).
 argument-hint: "<canvas URL or id> <what to change>"
@@ -54,21 +54,21 @@ allowed-tools: Bash(moda:*), Read
   them identically. Copy URLs and ids VERBATIM from tool output — never
   retype or transform them (one dropped UUID group points nowhere).
 - Result reading: exit 0 with `"requires_repair": true` means the mutation
-  COMMITTED but needs fixing (skipped ops, error-severity lint) — repair
+  COMMITTED but needs fixing (skipped ops, error-severity warnings) — repair
   before building more. Any nonzero exit means nothing committed — safe to
   retry after the typed error's hint (`stale_revision` → re-read, re-apply).
 - The same typed error twice on one operation: STOP retrying it; report the
   code and what you tried, and deliver everything that succeeded.
-- The revise loop is explicit: mutate, then screenshot/read/lint when you need
+- The revise loop is explicit: mutate, then screenshot/read when you need
   to see the result. Mutations don't attach state; when a screenshot is next
   anyway, pass `--screenshot PATH` on markup/edit to fold it in. Canvas history
   is the recovery mechanism — never rebuild a page to undo a bad edit.
-- Work in small batches: one section or slide per markup apply; lint once per
-  finished section; screenshot at milestones only (it is the slowest verb).
+- Work in small batches: one section or slide per markup apply; screenshot at
+  milestones only (it is the slowest verb).
 - Match effort to the ask. A simple single-artifact request (one graphic,
   one page, a quick edit) goes direct — create, author, one screenshot
   check, deliver (the Step-0 brand rule always applies). Reserve concept
-  fan-out, multi-pass verify, and lint-until-clean for multi-page, branded,
+  fan-out and multi-pass verify for multi-page, branded,
   or high-stakes work: scale simple asks DOWN — never relax the full
   workflows or their verification, never pad a simple ask with process.
 - Run independent calls in parallel when your harness supports it: reads and
@@ -135,9 +135,8 @@ hint); never re-run a command that exited 0.
    `STALE_REVISION` and commits nothing: re-read, then re-apply. A busy canvas
    (running task) also exits 5 after built-in retries: back off or
    `moda task cancel`.
-5. **Verify**: `moda canvas lint` once when the edits are done (fix every
-   error-severity finding, one confirm re-lint max), `moda canvas screenshot`
-   the changed pages and review with your own vision.
+5. **Verify**: `moda canvas screenshot` the changed pages and review with
+   your own vision.
 6. Close with the canvas URL; export only if the user asked for a file.
 
 ## References
@@ -145,6 +144,6 @@ hint); never re-run a command that exited 0.
 | Doc | Load when |
 |---|---|
 | references/edit-code.md | before writing any edit code — API, limits, results |
-| references/reading-and-verifying.md | DSL reading, revision, lint/screenshot |
+| references/reading-and-verifying.md | DSL reading, revision, screenshot |
 | references/markup.md | recreating sections; markup grammar |
 | references/design-quality.md, references/gotchas.md | routing, data preservation, typography; anything surprising |

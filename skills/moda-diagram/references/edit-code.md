@@ -87,7 +87,6 @@ Key fields in the `--json` result of a committed edit:
 - `warnings` — structured, per-op. **Any entry with `severity: "error"` requires remediation even on exit 0.**
 - `requires_repair`, `no_op_reason` (`lexically_mutates_zero_applied` | `all_queued_ops_skipped` | `partial_no_op`) — the edit committed but did nothing useful; repair before building more.
 - `revision` — the post-commit revision token (the CLI caches it for your next write).
-- `lint { errors, warnings }` — summary counts only; full findings via `moda canvas lint`.
 - Any `print`/`inspect` output rides in the result.
 
 ## Failure semantics — NOTHING applied

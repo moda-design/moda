@@ -54,21 +54,21 @@ allowed-tools: Bash(moda:*), Read, Glob, Grep
   them identically. Copy URLs and ids VERBATIM from tool output — never
   retype or transform them (one dropped UUID group points nowhere).
 - Result reading: exit 0 with `"requires_repair": true` means the mutation
-  COMMITTED but needs fixing (skipped ops, error-severity lint) — repair
+  COMMITTED but needs fixing (skipped ops, error-severity warnings) — repair
   before building more. Any nonzero exit means nothing committed — safe to
   retry after the typed error's hint (`stale_revision` → re-read, re-apply).
 - The same typed error twice on one operation: STOP retrying it; report the
   code and what you tried, and deliver everything that succeeded.
-- The revise loop is explicit: mutate, then screenshot/read/lint when you need
+- The revise loop is explicit: mutate, then screenshot/read when you need
   to see the result. Mutations don't attach state; when a screenshot is next
   anyway, pass `--screenshot PATH` on markup/edit to fold it in. Canvas history
   is the recovery mechanism — never rebuild a page to undo a bad edit.
-- Work in small batches: one section or slide per markup apply; lint once per
-  finished section; screenshot at milestones only (it is the slowest verb).
+- Work in small batches: one section or slide per markup apply; screenshot at
+  milestones only (it is the slowest verb).
 - Match effort to the ask. A simple single-artifact request (one graphic,
   one page, a quick edit) goes direct — create, author, one screenshot
   check, deliver (the Step-0 brand rule always applies). Reserve concept
-  fan-out, multi-pass verify, and lint-until-clean for multi-page, branded,
+  fan-out and multi-pass verify for multi-page, branded,
   or high-stakes work: scale simple asks DOWN — never relax the full
   workflows or their verification, never pad a simple ask with process.
 - Run independent calls in parallel when your harness supports it: reads and
@@ -129,8 +129,7 @@ allowed-tools: Bash(moda:*), Read, Glob, Grep
    — one slide per apply; add remaining slides via `moda canvas add-pages`
    (page ids from its result; author with the kit's tokens — the `--brand`
    binding styles nothing). `requires_repair`/skipped ops → fix before the next slide.
-6. **Verify**: `moda canvas lint` per finished section (fix error-severity
-   findings); screenshot at milestones and review with your own vision —
+6. **Verify**: screenshot at milestones and review with your own vision —
    layout balance, dead zones, clipped text.
 7. **Deliver**: point back to the link ("still open — everything stays
    editable"); export on request or one brief offer ("Want this as a
@@ -145,6 +144,6 @@ allowed-tools: Bash(moda:*), Read, Glob, Grep
 | references/design-quality.md, references/charts.md | typography ladder, imagery, recreate rules; any data slide |
 | references/templates.md | the ask looks like a recurring artifact your team may have a template for |
 | references/edit-code.md | targeted fixes via `moda canvas edit` |
-| references/reading-and-verifying.md | DSL reading, lint/screenshot loop |
+| references/reading-and-verifying.md | DSL reading, screenshot loop |
 | references/brand.md, references/web.md | a brand kit exists; content needs live web research |
 | references/export.md, references/omni-and-media.md, references/gotchas.md | delivering; media; anything surprising |

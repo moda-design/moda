@@ -9,7 +9,7 @@ Canvas verbs execute on Moda's tool host, not a full browser tab. Most things be
 3. **Selection is not a document operation.** Nothing in this surface selects nodes for the user; the change itself is what collaborators see.
 4. **Cross-session agent memory does not reach this surface.** Standing preferences and history the user saved with Moda's in-app agent are not readable from the CLI — no verb recalls them. Solicit standing preferences from the user or the repo context instead of assuming the account "remembers" them here.
 
-Other minor divergences worth knowing: shrink-fit font sizes can land within a ±6% band; non-catalog fonts are heuristically measured; lint contrast sampling degrades over image fills; screenshot bytes differ slightly from the browser.
+Other minor divergences worth knowing: shrink-fit font sizes can land within a ±6% band; non-catalog fonts are heuristically measured; screenshot bytes differ slightly from the browser.
 
 ## Curated risk list
 

@@ -1,6 +1,6 @@
 # Reading & verifying the canvas
 
-Three verbs give you eyes on the canvas: **`moda canvas read`** (the DSL — structure + ids + revision), **`moda canvas lint`** (design-issue checks), **`moda canvas screenshot`** (pixels). Read before you write; verify after.
+Two verbs give you eyes on the canvas: **`moda canvas read`** (the DSL — structure + ids + revision) and **`moda canvas screenshot`** (pixels). Read before you write; verify after.
 
 ## `moda canvas read` — the DSL
 
@@ -71,22 +71,6 @@ n8  group [background]      z:1 0,0 500x500 contains:{n1,n2,n3}
 
 **Asset refs:** image URLs are replaced by short refs (`img1`, `img2`, …) with natural dimensions after them. Reuse a ref by short name in new markup (`<image src="img1">`); the server resolves it. Never invent, guess, or autoincrement a ref.
 
-## `moda canvas lint` — design-issue checks
-
-```
-moda canvas lint CANVAS_REF [--page PAGE_ID] [--json]
-```
-
-Reports issues as `{type, severity: "error"|"warning"|"info", message, pageId, nodeId}` — in `--json` the array lives at `detail.issues`. Checks: off-page/clipped nodes, text occluded by front layers, low text/background contrast, undersized logos. The lint verb itself exits 0 whenever the lint ran; findings never change a mutation's exit code (the mutation committed — exit 0 with `requires_repair: true` when error-severity findings ride its summary).
-
-**The lint discipline (mandatory):**
-
-- After creating or editing designs — ANY edits, including a single one — run `moda canvas lint` on the pages you changed, once, when your edits are done and before your final reply. Not after each call; a session that changed nothing needs no lint.
-- Every `severity: "error"` finding is a defect the user will see — invisible text, content off the page, artwork that renders nothing. Fixing them is mandatory, not a judgment call. Warnings stay your judgment; fix the ones that matter and leave the rest.
-- After fixing errors you may run `moda canvas lint` exactly ONE more time on the affected pages to confirm, then stop — never lint/fix ping-pong, and do NOT re-lint at all if the report came back clean or warnings-only.
-- If an error genuinely cannot be fixed, say so plainly in your reply rather than staying silent.
-- Contrast sampling degrades over image fills, so treat contrast warnings on image-backed text as advisory.
-
 ## `moda canvas screenshot` — pixels
 
 ```
@@ -107,19 +91,17 @@ Renders pages to image files at `--output` (one file per page, extension from th
 Mutations attach nothing — no screenshot, no state echo. Verification is a loop you drive:
 
 1. Mutate (`moda canvas markup` / `moda canvas edit`) in small batches.
-2. `moda canvas lint` once per finished section; fix error-severity findings.
-3. `moda canvas screenshot` at milestones (it is the slowest verb) and review the PNG with your own vision.
-4. **Layout-balance check while reviewing:** on a fixed-size page, a large empty band (the bottom quarter or more left blank under top-packed content) reads as unfinished. Distribute whitespace as deliberate spacing and/or anchor trailing elements (signatures, footers) toward the bottom margin. Tasteful whitespace is fine; an accidental dead zone is not. Also catch clipped/overlapping text and broken layout the DSL and lint can't show.
-5. Fix problems with targeted `moda canvas edit` calls BEFORE building more — never build on a broken foundation. One confirm re-lint max.
+2. `moda canvas screenshot` at milestones (it is the slowest verb) and review the PNG with your own vision.
+3. **Layout-balance check while reviewing:** on a fixed-size page, a large empty band (the bottom quarter or more left blank under top-packed content) reads as unfinished. Distribute whitespace as deliberate spacing and/or anchor trailing elements (signatures, footers) toward the bottom margin. Tasteful whitespace is fine; an accidental dead zone is not. Also catch clipped/overlapping text and broken layout the DSL can't show.
+4. Fix problems with targeted `moda canvas edit` calls BEFORE building more — never build on a broken foundation.
 
 **Always re-read (`moda canvas read`) after a structural change** before referencing new ids — created nodes get fresh short refs, and the read refreshes your revision token.
 
 ### No vision? The degraded verify loop
 
-Step 3 assumes a multimodal harness: you open the screenshot files and SEE them. If your harness cannot view images, verification degrades — it never disappears:
+Step 2 assumes a multimodal harness: you open the screenshot files and SEE them. If your harness cannot view images, verification degrades — it never disappears:
 
 - Say so once in your reply ("I can't view images in this environment, so I verified structurally and left the visual check to you"). Never claim you visually verified anything you could not see.
-- Lint heavier: the once-at-the-end lint discipline relaxes — run `moda canvas lint` on each finished page/batch and fix error-severity findings as you go, since lint is the only defect detector you have left.
 - Check structure with `moda canvas read --summary` (pages, names, node counts match your plan) and re-read the DSL of changed pages, checking the numbers: out-of-bounds coordinates and overlapping boxes are clipping you can catch without eyes.
 - Hand the eyes to a human: still capture screenshots at milestones and give the user the file paths (or the share link) with a one-line "please eyeball page N for layout problems" — the human closes the loop your vision can't.
 

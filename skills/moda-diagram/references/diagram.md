@@ -2,7 +2,7 @@
 
 Three intents, one deterministic toolkit: shapes with embedded text,
 `<connector>` for anchored links, `<path>` for custom marks, containers for
-lanes, lint to catch collisions, and `moda export --format png|pdf` (png
+lanes, and `moda export --format png|pdf` (png
 `--pixel-ratio 2` for docs and chat; pdf when it's headed into a document).
 
 ## Diagrams and flowcharts
@@ -103,8 +103,7 @@ skill). Pick the viewport before composing; it decides everything:
 
 ## Verify and deliver
 
-Lint after each section (`moda canvas lint` — overlapping-node and contrast
-findings matter most here), screenshot and LOOK: no connector crossing a
+Screenshot and LOOK: no connector crossing a
 node, no label collisions, consistent gaps. Deliver png (`--pixel-ratio 2`)
 for chat/docs, pdf for print/documents, and the canvas link — diagrams get
 edited later more than any other format.
