@@ -91,7 +91,7 @@ Renders pages to image files at `--output` (one file per page, extension from th
 Mutations attach nothing — no screenshot, no state echo. Verification is a loop you drive:
 
 1. Mutate (`moda canvas markup` / `moda canvas edit`) in small batches.
-2. `moda canvas screenshot` at milestones (it is the slowest verb) and review the PNG with your own vision.
+2. `moda canvas screenshot` at milestones (it is the slowest verb) and review the image with your own vision.
 3. **Layout-balance check while reviewing:** on a fixed-size page, a large empty band (the bottom quarter or more left blank under top-packed content) reads as unfinished. Distribute whitespace as deliberate spacing and/or anchor trailing elements (signatures, footers) toward the bottom margin. Tasteful whitespace is fine; an accidental dead zone is not. Also catch clipped/overlapping text and broken layout the DSL can't show.
 4. Fix problems with targeted `moda canvas edit` calls BEFORE building more — never build on a broken foundation.
 

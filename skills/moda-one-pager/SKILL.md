@@ -127,7 +127,7 @@ it with the `moda` CLI and author by writing markup — a design is a file you e
 5. **Author** with `moda canvas markup CANVAS_REF --file -` — one page or
    section per apply, with the kit's tokens (brand application is
    client-side). Read every result; repair before building more.
-6. **Verify**: `moda canvas screenshot` and review the PNG — vertical
+6. **Verify**: `moda canvas screenshot` and review the image — vertical
    balance, dead zones, clipped text.
 7. **Deliver**: the live link IS the handoff. This lane's asks usually name
    a PDF/print artifact — format words win, so export (`moda export
