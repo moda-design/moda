@@ -34,10 +34,10 @@ Results return durable refs that feed markup `image(...)` fills and `src` attrib
 - **GPT Image 2.0** — Strong in-image text rendering.
 - **Ideogram V4** — Crisp posters, logos and accurate in-image text.
 - **FLUX.2 Pro** — High-quality general-purpose generation, and multi-reference image editing.
-- **Seedream V5 Lite** — High-resolution output (up to 3K) at moderate cost.
+- **Seedream V5 Lite** — High-resolution output (up to 4K) at the family's lowest price.
 - **Seedream V5 Pro** — The family's premium tier: more detail per pixel than Lite, at a smaller maximum size (2K).
 - **Recraft V3** — Style-rich design generation and single-image editing; vector styles cost 2x.
-- **Seedream 4.5** — The previous Seedream generation, and the family's largest output: up to 4K.
+- **Seedream 4.5** — The previous Seedream generation, kept for its own look rather than its size.
 - **Recraft V4.1** — Design-first generation for production-ready raster artwork.
 - **Recraft V4.1 Pro** — High-resolution generation for hero imagery, campaigns, and print.
 - **Recraft V4.1 Utility** — A faster, lighter Recraft variant for high-volume raster workflows.
