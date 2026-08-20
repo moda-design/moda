@@ -48,6 +48,12 @@ Strengths of the current roster, one line each, to route the choice (defer
 to the registry when it disagrees):
 
 - **MiniMax Hailuo H3** — up to 4K, intrinsic audio, end-frame control, and image/video/audio references.
+- **MiniMax Hailuo 2.3 / MiniMax Hailuo 2.3 Pro / MiniMax Hailuo 2.3 Fast /
+  MiniMax Hailuo 2.3 Fast Pro** — the cheap SILENT preview lane, priced per
+  render from $0.19. No audio, seed, end frame, resolution or aspect control
+  (both asks are dropped and reported): standard is always 768p and runs 6 or
+  10 s, Pro is always 1080p and takes no duration. Both Fast tiers are IMAGE
+  ANIMATORS ONLY. Below H3 on every axis — iterate here, render elsewhere.
 - **Gemini Omni Flash** — the default: strong quality/cost for ordinary
   text- and image-to-video, coherent motion, 3–10 s. **720p is its only
   resolution on all three modes** (a 1080p ask snaps down and is reported),
