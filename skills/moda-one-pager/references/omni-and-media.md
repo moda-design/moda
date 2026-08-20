@@ -47,6 +47,8 @@ Results return durable refs that feed markup `image(...)` fills and `src` attrib
 - **Grok Imagine** — Generation and multi-image editing with a separate 1K/2K resolution axis.
 - **Grok Imagine 2.0** — Generation and multi-image editing with priced quality and 1K/2K resolution axes.
 - **Grok Imagine Pro** — The quality half of the v1 generation: the same surface, priced by 1K/2K resolution.
+- **Kling Image V3** — Kling's image line: eight aspect ratios, 1K/2K, and one-image editing at a flat rate.
+- **Kling Image O3** — The 4K Kling image line, with a multi-image edit list; 4K costs double.
 <!-- /generated: image-model roster -->
 
 ### Image rules
