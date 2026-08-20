@@ -35,14 +35,14 @@ allowed-tools: Bash(moda:*), Read
      initiative — org decides whose workspace and billing everything lands in.
    - Any entitlement gate (e.g. the account cannot author canvases yet): relay doctor's actionable hint verbatim and stop. Never retry in a loop.
 2. Run `moda account status --json`. Note the org and plan.
-3. Run `moda brand list` — one cheap deterministic call, never skipped. Use a kit unprompted only on a real
-   signal: ONE kit, one marked `(default)`, one remembered via `moda brand use`, or one the request names
-   outright ("the Acme deck" → the Acme kit). Otherwise ASK — topic-fit alone is never the signal, and
-   near-identical names (Acme, Acme 2) mean ask even when named. Read the kit, then BIND it
-   (`moda canvas create --brand …`, or `moda canvas brand` later) and NAME it at hand-over
-   (references/brand.md): unbound, the canvas opens in Moda with an empty brand-kit dropdown. More work
-   coming? Offer `moda brand use KIT` (`--local` for this repo). An explicit "no brand" wins. NO kits: offer
-   once — "Want me to set up a brand kit first? It's free" — yes → `moda brand create`; no → unbranded.
+3. Run `moda brand list` — one cheap deterministic call, never skipped. Use a kit unprompted only on a real signal: ONE kit, one marked `(default)`, one
+   remembered via `moda brand use`, or one the request names outright ("the Acme deck" → the Acme kit). Otherwise ASK — topic-fit alone is never the signal,
+   and near-identical names (Acme, Acme 2) mean ask even when named. NONE of them fitting — a personal or off-topic ask among other people's brands — is a
+   real answer too, and the only one you may take unasked: say so in one line ("None of your kits look like a fit for this — going unbranded unless
+   you'd rather I use one") and design unbranded, never in silence. Read the kit, then BIND it (`moda canvas create --brand …`, or `moda canvas brand`
+   later) and NAME it at hand-over (references/brand.md): unbound, the canvas opens in Moda with an empty brand-kit dropdown. More work coming? Offer
+   `moda brand use KIT` (`--local` for this repo). An explicit "no brand" wins. NO kits: offer once — "Want me to set up a brand kit first? It's free"
+   — yes → `moda brand create`; no → unbranded.
 4. Note whether you can VIEW images: screenshot review assumes vision. A vision-less harness follows the degraded verify loop in references/reading-and-verifying.md.
 
 ## UX rules
