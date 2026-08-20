@@ -136,6 +136,20 @@ multiplier, and whether the input's running time bills are all per-model —
 read them off the card, and a 422 names the whole envelope back to you.
 Each clip also lands as a durable file in the team's library.
 
+**Extending an existing clip** rides `--extend-video <ref-or-url>` (`extend_video`
+on the wire), and only models whose card shows "extend video" accept it — today
+Grok Imagine Video 1.5 alone. Pass the clip and a prompt for what happens NEXT;
+the source comes back with new footage on the end. No images or references
+alongside it. Three things are unlike every other call here, and each one costs
+money if you assume otherwise: **`--duration` is the ADDED segment**, not the
+clip you get back (10 more seconds on a 15 s source is a 25 s file); **that
+whole returned clip is billed AND every second of the source is billed again**
+on its own rate, so the 25 s example is 25 x $0.07 + 15 x $0.01 = $1.90, not the
+$0.70 the number you passed suggests; and **the source decides the frame**, so
+`--resolution`/`--aspect-ratio` do nothing and the source's own size picks the
+rate tier. Source envelope is on the card (today 2-15 s, at most 921,600 px per
+frame, MP4) and Moda refuses one outside it before anything uploads or charges.
+
 **Reference audio** rides repeatable `--reference-audio <ref-or-url>` (`reference_audios` on the wire). Read limits from the model card.
 For H3, bind references in the prompt by modality and 1-based list order: `Image 1`, `Video 1`, `Audio 1`.
 
