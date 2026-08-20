@@ -13,6 +13,9 @@ moda media edit-image --prompt "..." --model M --source FILE_REF|URL|PATH [same 
 moda media generate-video --prompt "..." --model M [--duration S] [--aspect-ratio R]
                           [--resolution T] [--generate-audio] [--seed N]
                           [--image REF] [--end-image REF] [--reference REFS...] [--output PATH]
+moda media generate-audio --mode text_to_speech|text_to_music|text_to_sfx --prompt "..."
+                          --model M [--voice V] [--duration S] [--num-samples N]
+                          [--model-params JSON] [--output PATH]
 moda media remove-background FILE_REF|URL|PATH
 moda media upscale FILE_REF|URL|PATH [--scale 2|4]
 moda media upscale-video FILE_REF|URL|PATH [--resolution 720p|1080p|1440p|2160p]
@@ -58,6 +61,16 @@ Results return durable refs that feed markup `image(...)` fills and `src` attrib
 - There is no separate edit tool: to edit an image generatively, pass it as a source image and describe the complete edit. Source images are modified/preserved content; reference images guide style, palette, or composition.
 - Each result returns an image ref — the canonical handle. Place it in markup (`<image src="…"/>`), pass it to later verbs, and never invent, alter, or reconstruct a ref.
 - Inspect the returned image with your own vision before claiming visual details the prompt doesn't guarantee. If it misses, retry with a refined prompt or a different model — nothing falls back silently.
+
+### Audio rules
+
+- Reach for `generate-audio` when the deliverable wants a voiceover, narration, background music, a jingle, a sound effect, or an ambience — including unprompted, when a video or slideshow obviously needs one.
+- `--mode` is **required and stated, not derived**: every mode takes only text, so there is nothing to infer from the inputs. `text_to_speech` speaks your prompt VERBATIM — write the script and nothing else, no stage directions. `text_to_music` and `text_to_sfx` take a description (genre, instrumentation, mood, tempo, texture).
+- `--model` is required (no "auto"), and `moda media models` prints the audio cards: which modes each model serves, its duration envelope, prompt-character ceiling, take limit, preset voices, and billing basis. Most models take `--voice` as one of the presets on the card; where a card lists no presets but marks the mode free-form, `--voice` takes any provider voice name or cloned-voice id instead. Omitting it uses the model's default.
+- **Duration and `--num-samples` are the cost.** Music bills per second PER TAKE, and where a card shows a billing floor each shorter take bills at that floor — four 5s takes against a 10s floor cost the same as 40s, not 20s. Ask for the shortest length that serves the deliverable and leave `--num-samples` alone unless the user wants alternatives to choose between. Speech usually bills per character of the prompt — except on a model whose card says it bills per second of the audio produced, where a slower `--speed` costs more for the same script. Read the card's billing basis rather than assuming.
+- `--duration` applies to music and sfx only; it snaps into the model's range and the adjustment is reported. Speech has no duration axis — the clip is as long as the script takes to read, and a duration passed there is dropped and reported.
+- The call is **synchronous** and speech returns in seconds, but music and sfx can be asked for at up to 600s of output and take longer. A render that outruns the wait comes back as a retryable error: **re-run the same command** to collect it if it finished anyway (that adopts the existing job and can never pay twice). Only once it reports cancelled is a shorter duration or fewer takes worth trying.
+- Results are durable file refs like every other media verb — but audio has **no canvas or timeline slot**. It is a file to hand the user (`-o` downloads it), and `moda media generate-video --reference-audio` is the only verb that consumes one. Never imply it has been placed in a design.
 
 ### Video rules
 
