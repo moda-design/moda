@@ -79,9 +79,9 @@ it with the `moda` CLI and author by writing markup — a design is a file you e
   The same typed error twice on one operation: stop retrying, report the code
   and what you tried, and deliver everything that succeeded.
 - The revise loop is explicit: mutate, then screenshot/read when you need to
-  see the result. Mutations don't attach state; when a screenshot is next
-  anyway, pass `--screenshot PATH` on markup/edit to fold it in. Canvas history
-  is the recovery mechanism — never rebuild a page to undo a bad edit.
+  see the result; when a screenshot is next anyway, pass `--screenshot PATH`
+  on markup/edit to fold it in. There is NO undo — no history verb exists.
+  Recover a broken page by rewriting it (`--mode replace`, fresh revision).
 - Work in small batches: one section or slide per markup apply; screenshot at
   milestones only (it is the slowest verb).
 - Mutations on the SAME canvas stay serial — per-page markups of one canvas
