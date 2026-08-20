@@ -19,8 +19,8 @@ user the pinned command and WAIT for them to run it.
      the pinned install command from INSTALL.md section 2 (verbatim). Wait
      for "done", then re-run doctor. Never pipe curl to sh, never use sudo,
      never install anything yourself. If their install fails with a 401 or a
-     registry error, have them retry against the public registry (`npm i -g @moda-design/moda --registry https://registry.npmjs.org`) — the
-     package is on GitHub Packages until the npm publish lands.
+     registry error, have them retry explicitly against the public registry (`npm i -g @moda-design/moda --registry https://registry.npmjs.org`) — a
+     locally configured private registry or proxy can shadow it.
    - `authenticated: false`: tell the user to run `moda auth login`
      (browser key mint; `--paste` on headless boxes). Wait, then re-check.
      Never ask for, print, or handle keys.

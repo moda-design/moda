@@ -1,8 +1,0 @@
-blank_issues_enabled: true
-contact_links:
-  - name: Security vulnerability
-    url: https://github.com/moda-design/moda/security/advisories/new
-    about: Report privately — please do not open a public issue for a security problem.
-  - name: Moda product support
-    url: https://moda.app
-    about: Questions about your Moda account, billing, or the app itself.

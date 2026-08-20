@@ -1,4 +1,4 @@
-# moda — design skills + CLI for your agent
+# moda — design skills for your agent
 
 **Moda is a design runtime your agent can drive.** Point any shell-capable
 agent — Claude Code, Codex, Cursor — at the `moda` CLI and the nine skills in
@@ -14,8 +14,15 @@ collaborative canvas with a URL you can share, plus the exported file.
 you ──► your agent ──► moda CLI ──► Moda canvas ──► deck.pptx + a share URL
 ```
 
-This repo is the client half: the CLI source, the skills that teach an agent
-how to use it well, and the harness manifests that install both.
+> **This repository is a generated artifact.** It carries the published
+> skills, harness manifests, and install docs — exactly what
+> `npx skills add moda-design/moda` and the plugin marketplaces consume — and
+> it is regenerated automatically from the Moda platform on every change, so
+> it is always current. The CLI itself ships on npm
+> (`@moda-design/moda`); its source is developed on the Moda platform and is
+> not in this repo. **Issues and feedback are welcome here** — the tracker is
+> read by the team. Pull requests can't be accepted against generated
+> content.
 
 ---
 
@@ -37,26 +44,6 @@ Set up Moda for me so I can create designs, videos, decks, and documents from he
 4. Verify: run `moda doctor` and tell me when everything is ready.
 ```
 
-
-<details>
-<summary>Fallback: standalone binary (air-gapped / no npm)</summary>
-
-os: darwin | linux, arch: arm64 | x64; on macOS verify with
-`shasum -a 256 -c` instead of `sha256sum -c`:
-
-```sh
-gh release download --repo moda-design/moda -p moda-<os>-<arch> -p SHA256SUMS
-grep moda-<os>-<arch> SHA256SUMS | sha256sum -c -
-install -m 755 moda-<os>-<arch> ~/.local/bin/moda && rm moda-<os>-<arch> SHA256SUMS
-```
-
-Windows (x64) ships `moda-win32-x64.exe` — same CLI, suffixed because Windows
-needs it. Download it, verify against `SHA256SUMS`, and put it on `PATH` as
-`moda.exe`. The npm path above is the supported one; the `.exe` is **beta**
-(cross-compiled and unit-tested on Windows CI, not yet soaked in real use).
-
-</details>
-
 Per harness:
 
 - **Claude Code** — the paste block works as-is. Alternative:
@@ -73,26 +60,6 @@ Per harness:
 Full detail, including checksum-verified installs:
 [INSTALL.md](INSTALL.md). Agent-facing instructions to hand an agent
 directly: [INSTALL_FOR_AGENTS.md](INSTALL_FOR_AGENTS.md).
-
-## Quickstart
-
-```sh
-moda auth login     # opens the browser; mints a scoped key into your OS keychain
-moda doctor         # CLI version, auth, API reachability, entitlements — one call
-```
-
-Then start a new agent session and ask for something real:
-
-> "Make a one-pager from this README and give me the PDF and a link."
-
-The agent picks the right skill, checks the CLI and your auth first, designs
-on a real canvas, screenshots it to verify its own work, and finishes with a
-canvas URL plus the exported file. No verb names, no flags, no coaching from
-you.
-
-Headless or CI: set `MODA_API_KEY` to a scoped key
-(`moda auth login --paste` mints one for a machine with no browser). No CLI
-verb ever prints a credential.
 
 ## The skills
 
@@ -127,8 +94,8 @@ Three things every skill shares:
   verbs (image/video generation, upscales) are labeled with their cost class
   and report a receipt in the delivery note.
 
-Exactly one skill claims any given ask — the mutual-exclusivity contract is
-written down and maintained in [docs/routing-table.md](docs/routing-table.md).
+Exactly one skill claims any given ask — routing is mutually exclusive by
+contract, and `moda-help` owns the tie-breaks.
 
 ## Update
 
@@ -148,61 +115,11 @@ The CLI and the skills update separately: installed skills are hash-pinned in
 CLI prints a once-daily stderr notice naming the update command whenever a
 newer version exists.
 
-## Repo layout
+## Security
 
-- `cli/` — TypeScript source of the `moda` CLI, compiled with Bun into
-  per-platform standalone binaries (`bun scripts/build.ts`).
-- `skills/` — the nine skills, each self-contained with its `references/`.
-- `shared/` — the canonical authored copy of the shared blocks and
-  references; `scripts/fanout.sh` fans them into the skills.
-- `commands/` — the `/moda` router command (Claude Code).
-- `packages/` — npm distribution: `moda` wrapper + per-platform
-  `optionalDependencies` packages (the esbuild/biome pattern).
-- `scripts/` — build matrix (`build.ts`), npm stamping, release/checksums
-  (`release.ts`), inventory parity, and `validate.py` (frontmatter lint,
-  shared-block/fan-out integrity, banned-name greps, verb parity, markup
-  element completeness, size budgets).
-- `mcp/` + `dist/mcp-skills/` — the connector-flavored projection of the nine
-  skills for claude.ai Agent Skills upload: `scripts/project-mcp.py`
-  re-speaks every CLI verb as the Moda connector's tools (rules in
-  `scripts/mcp_projection_rules.py`; `mcp/connector-tools.json` is the tool
-  roster). The projection is a committed build artifact — regenerate with
-  `python3 scripts/project-mcp.py build`; CI fails on drift. Per-skill
-  `moda-*.skill.zip` uploads are attached to each release; install steps in
-  [INSTALL-CLAUDE-AI.md](INSTALL-CLAUDE-AI.md).
-- Manifests: `.claude-plugin/` (marketplace + plugin — the repo IS a Claude
-  Code marketplace: `/plugin marketplace add moda-design/moda`),
-  `.codex-plugin/`, `.cursor-plugin/`, `compatibility.json`.
-- `setup` — POSIX skills drop for file-based harnesses; prints the pinned CLI
-  install command, never runs it.
-
-## Develop (CLI)
-
-```sh
-cd cli
-bun install
-bun test            # unit suite
-bun run typecheck
-bun src/main.ts …   # run from source
-bun ../scripts/build.ts --host   # compile dist/moda-host
-```
-
-Integration tests run against a live API base: set `MODA_API_BASE` +
-`MODA_API_KEY` and run `bun test cli/test/integration/` — see
-`cli/test/integration/integration.test.ts`.
-
-## Contributing and security
-
-- [CONTRIBUTING.md](CONTRIBUTING.md) — the current stance (we are not taking
-  outside code contributions yet) and how to work on the skills.
-- [SECURITY.md](SECURITY.md) — how to report a vulnerability. Please don't
-  open a public issue for one.
-- Issues are welcome for bugs and rough edges in the skills or the CLI.
-- [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md) — the open-source
-  libraries bundled into the compiled CLI, with their license texts.
-
-Moda itself lives at [moda.app](https://moda.app).
+See [SECURITY.md](SECURITY.md) for how to report a vulnerability.
 
 ## License
 
-[Apache-2.0](LICENSE) © Nullframe, Inc. (Moda). Bundled third-party licenses are listed in [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
+[Apache-2.0](LICENSE) © Nullframe, Inc. (Moda). Bundled third-party licenses
+are listed in [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).

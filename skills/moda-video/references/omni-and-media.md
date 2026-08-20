@@ -27,14 +27,25 @@ Results return durable refs that feed markup `image(...)` fills and `src` attrib
 
 `--model` is **required — there is no "auto"**. The authoritative model list, with each model's aspect ratios, resolutions, and controls, comes from the CLI itself (`moda media models`) — defer to it; never hardcode capabilities from memory. Strengths in one line each, to route the choice:
 
-- **NanoBanana 2** — fast, low-cost baseline; the default when nothing else is demanded.
-- **NanoBanana 2 Pro** — hi-res path for higher-fidelity output.
-- **GPT Image 2.0** — strong in-image text rendering.
-- **Ideogram V4** — crisp posters, logos, and accurate in-image text; the logo-preset lane.
-- **FLUX.2 Pro** — high-quality general-purpose text-to-image.
-- **Seedream V5 Lite** — high-resolution output at moderate cost.
-- **Recraft V4 Pro** — design/brand-focused generation with palette control.
-- **Grok Imagine** — separate 1K/2K resolution axis.
+<!-- generated: image-model roster. Authored in backend/app/services/media/image_registry.py (label + skill_card_line, falling back to description); regenerate with: uv run python -m scripts.render_model_roster -->
+- **NanoBanana 2 Lite** — Fastest, lowest-cost baseline; the default when nothing else is demanded.
+- **NanoBanana 2** — Balanced speed and quality with flexible output up to 4K.
+- **NanoBanana Pro** — Premium tier for the most complex, high-fidelity visual tasks.
+- **GPT Image 2.0** — Strong in-image text rendering.
+- **Ideogram V4** — Crisp posters, logos and accurate in-image text.
+- **FLUX.2 Pro** — High-quality general-purpose generation, and multi-reference image editing.
+- **Seedream V5 Lite** — High-resolution output (up to 3K) at moderate cost.
+- **Seedream V5 Pro** — The family's premium tier: more detail per pixel than Lite, at a smaller maximum size (2K).
+- **Recraft V3** — Style-rich design generation and single-image editing; vector styles cost 2x.
+- **Seedream 4.5** — The previous Seedream generation, and the family's largest output: up to 4K.
+- **Recraft V4.1** — Design-first generation for production-ready raster artwork.
+- **Recraft V4.1 Pro** — High-resolution generation for hero imagery, campaigns, and print.
+- **Recraft V4.1 Utility** — A faster, lighter Recraft variant for high-volume raster workflows.
+- **Recraft V4.1 Utility Pro** — High-resolution Recraft Pro output with a faster, cost-efficient runtime.
+- **Recraft V4.1 Vector** — Editable SVG generation for logos, icons, and illustration systems.
+- **Recraft V4.1 Pro Vector** — Large-format editable SVG generation for detailed professional illustration.
+- **Grok Imagine** — Generation and multi-image editing with a separate 1K/2K resolution axis.
+<!-- /generated: image-model roster -->
 
 ### Image rules
 

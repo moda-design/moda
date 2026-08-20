@@ -54,14 +54,14 @@ to the registry when it disagrees):
   and its audio is INTRINSIC — nothing can silence it, so steer the
   soundtrack through the prompt. No seed.
 - **Seedance 2.0** — the control pick: end frames, square/portrait/cinema
-  aspect ratios beyond 16:9/9:16, seeds, reference-heavy product work,
+  aspect ratios beyond 16:9/9:16, reference-heavy product work,
   including reference VIDEO (up to 3 clips, 2–15 s each, 15 s combined, and
   they discount the call to 0.6× — though the input clips' own running time
   bills on top).
-- **Seedance 2.0 Fast** — 2.0's iteration lane: the same controls,
-  envelope and reference paths — including the same 3 reference clips — at
-  80% of the price, capped at 720p and taking no seed. Explore here, then
-  re-run the keeper on 2.0 for the taller frame.
+- **Seedance 2.0 Fast** — 2.0's iteration lane: the same controls and reference paths, including 3 video clips,
+  at 80% of the price, capped at 720p. Explore here, then re-run the keeper on 2.0 for 1080p.
+- **Seedance 2.0 Mini** — the budget tier: 480p/720p, 4–15 s or `auto`, optional end frame, and image/video/audio
+  references (`@Image1`, `@Video1`, `@Audio1`). Use 2.0 for 1080p or 2.5 for longer clips.
 - **Seedance 2.5** — the long-form pick: up to ~30 s in ONE native shot and
   large reference boards (address them in the prompt as `@Image1`,
   `@Image2`, …). Costs meaningfully more per second than 2.0 — use 2.0 when
