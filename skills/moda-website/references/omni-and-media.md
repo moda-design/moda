@@ -46,6 +46,7 @@ Results return durable refs that feed markup `image(...)` fills and `src` attrib
 - **Recraft V4.1 Pro Vector** — Large-format editable SVG generation for detailed professional illustration.
 - **Grok Imagine** — Generation and multi-image editing with a separate 1K/2K resolution axis.
 - **Grok Imagine 2.0** — Generation and multi-image editing with priced quality and 1K/2K resolution axes.
+- **Grok Imagine Pro** — The quality half of the v1 generation: the same surface, priced by 1K/2K resolution.
 <!-- /generated: image-model roster -->
 
 ### Image rules
