@@ -7,8 +7,8 @@ description: >-
   user pastes a moda.app canvas or share URL (or a cvs_ id) and asks for
   changes, or to revise a design a previous moda skill or Moda's AI built.
   Deterministic: reads canvas state, applies targeted markup/code edits,
-  verifies with lint and screenshots. Adding or changing motion on the
-  canvas: load moda-video.
+  verifies with screenshots. Adding or changing motion on the canvas: load
+  moda-video.
 argument-hint: "<canvas URL or id> <what to change>"
 allowed-tools: Bash(moda:*), Read
 ---
