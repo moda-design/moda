@@ -109,8 +109,10 @@ it with the `moda` CLI and author by writing markup — a design is a file you e
 
 - **List / read**: `moda brand list`, then `moda brand show BRAND_REF --json`
   — a model-safe summary: palette, font references, logo file references,
-  never signed URLs. `moda brand pull BRAND_REF --output brand.json` for the
-  full document; `moda brand use BRAND_REF` to persist a default.
+  never signed URLs; `moda brand images BRAND_REF` for the attachment roster.
+  `moda brand pull BRAND_REF --output brand.json` for the full document;
+  `moda brand update BRAND_REF --default` sets the TEAM default — `moda brand
+  use BRAND_REF` only records a local preference for this CLI.
 - **Apply** = author with kit tokens: markup `$variables` and kit palette
   values, kit font families, logos by file reference — never re-typed hex
   codes from memory; the kit owns colors. Full rules: references/brand.md.
@@ -127,8 +129,9 @@ it with the `moda` CLI and author by writing markup — a design is a file you e
   create. Details: references/brand.md.
 - **Update / fix in place**: extraction got a value slightly wrong, or the
   brand evolved → `moda brand update BRAND_REF` (fields; `--color`/`--font`
-  REPLACE the whole list — re-send the full corrected set), `moda brand
-  images` / `add-image` / `remove-image` for logo + imagery attachments.
+  REPLACE the whole list — re-send the full corrected set; `--default`
+  promotes the kit for the team), `moda brand images` / `add-image` /
+  `remove-image` for logo + imagery attachments.
   Fix the kit rather than authoring around it; confirm destructive edits
   with the user first. Details: references/brand.md.
 - **Brand-guide generation** (a new identity, multiple concepts) is

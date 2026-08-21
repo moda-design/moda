@@ -16,7 +16,8 @@ moda brand list                          # kits in the workspace (name, id, defa
 moda canvas create --brand BRAND_REF …   # create a canvas already bound to a kit
 moda canvas brand CANVAS_REF BRAND_REF   # bind an existing canvas (--clear to unbind)
 moda brand show BRAND_REF --json         # model-safe summary: palette, fonts, logo refs
-moda brand use BRAND_REF [--local]       # persist as the default kit (config or repo context)
+moda brand use BRAND_REF [--local]       # persist as YOUR default kit locally (config or repo context)
+moda brand update BRAND_REF --default    # make it the TEAM's default kit, server-side, for everyone
 moda brand pull BRAND_REF --output brand.json   # the full kit document
 moda brand create --url https://acme.com # extraction from a website — deterministic, free
 moda brand create --name "Acme" --color '#0F172A:Primary' --font 'Inter:title'  # manual build — no website needed
@@ -82,6 +83,7 @@ Two creation paths, both **deterministic and unmetered** (ignore any legacy mete
 Extraction is good, not perfect — a slightly-off primary, a missed accent, a wrong font role. **Fix the kit, don't work around it**: authoring around a wrong kit value re-breaks every future branded artifact.
 
 - Fields: `moda brand update BRAND_REF --tagline "…" --values 'transparent,fast' --tone 'direct,friendly' --company-name "…" --description "…" --title "…"`.
+- Team default: `moda brand update BRAND_REF --default` promotes the kit for the whole team, clearing whichever kit held it — it rides the same call as the field flags, so correcting and promoting is one write. Do not confuse it with `moda brand use`, which records a preference for this CLI only and changes nothing for teammates.
 - Palette/fonts: `--color` / `--font` flags **replace the entire list** — read `moda brand show --json` first, then pass the full corrected set (e.g. extracted primary is off: re-send every color with the fixed hex). Partial flags silently drop the rest.
 - Images: `moda brand images BRAND_REF` lists attachments with `bki_` ids; `add-image --file FILE_REF --role logo|reference|asset` attaches an upload; `remove-image BRAND_REF BKI_ID` detaches. Roles: logo = brand marks, reference = style hints for the agent, asset = placeable imagery.
 - Confirm destructive edits with the user before running them (removing images, replacing a palette) — kit changes affect every future branded artifact, not just this session.
