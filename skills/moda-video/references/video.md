@@ -141,6 +141,19 @@ to the registry when it disagrees):
   frame. Its reference mode takes up to 9 images at no extra charge;
   address the subjects as `character1`, `character2`, … in supply order.
 
+- **LTX-2.5 Pro / LTX-2.5 Fast** — the only models that generate video FROM a
+  track: pass a reference audio on its own (no image or video reference) and the
+  clip is rendered to that audio, which comes back in the output; add a start
+  image and it becomes the opening frame. The clip's length IS the track's
+  (2–10 s Pro, 2–20 s Fast), so a duration you ask for comes back adjusted —
+  pick the audio, not the seconds. Otherwise 6/8/10 s (Pro) or 6–20 s in 2 s
+  steps (Fast), `auto` by default on both, so pin the duration or you reserve
+  the ceiling. Pro is $0.12/s (720p) and $0.17/s (1080p); Fast is cheaper at both
+  ($0.09/$0.13) and the only tier reaching 1440p ($0.19/s), 4K ($0.30/s) or
+  clips past 10 s. Native audio on by default and free at every resolution; the
+  audio-driven route bills a flat $0.17/s (Pro) or $0.13/s (Fast) of the track.
+  `camera_motion` scripts one move on the text and image routes only. No seed.
+
 **Reference video** rides `--reference-video <ref-or-url>` (repeatable; the
 wire field is `reference_videos`), and only models whose card shows "ref
 videos" accept any. Clip count, per-clip and combined length caps, price
@@ -164,6 +177,9 @@ frame, MP4) and Moda refuses one outside it before anything uploads or charges.
 
 **Reference audio** rides repeatable `--reference-audio <ref-or-url>` (`reference_audios` on the wire). Read limits from the model card.
 For H3, bind references in the prompt by modality and 1-based list order: `Image 1`, `Video 1`, `Audio 1`.
+What it MEANS depends on what it arrives with: beside an image or video reference it is one reference among
+several (H3 and Seedance 2.0 Mini both require that visual reference), while ALONE it drives the whole clip on a
+model whose card shows an `audio→video` mode. An audio-only ask elsewhere is refused before anything is billed.
 
 Native audio: O3 defaults audio OFF; pass `--generate-audio` when sound is wanted. Other audio-capable models
 default it on. `--no-generate-audio` buys the SILENT rate where audio is controllable — on Kling 3 Standard
@@ -180,7 +196,9 @@ call:
 
 1. **Pin the duration explicitly** (`--duration N`). Omitting it lets the
    server reserve the model's LONGEST clip, which is rarely the clip you
-   meant to make.
+   meant to make. The one exception is an audio→video render: there the clip
+   IS the driving track's length, a duration you pass is reported back as
+   adjusted, and the way to a shorter (cheaper) clip is a shorter track.
 2. **Pick the resolution the pass needs** — draft small so the frames come
    back while you can still change your mind, then render or upscale the
    winner large.
