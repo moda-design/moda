@@ -74,7 +74,7 @@ Over-limit calls are ignored with a structured warning, not a hard error — wat
 
 ## Sandbox constraints
 
-- **Code cap: 16,384 chars.** Execution budget: **100 ms, synchronous.** Runaway loops trip an "execution timeout" (a loop guard covers every loop form). Heavy O(n²) work over thousands of snapshots is the classic trip — **batch across multiple `moda canvas edit` calls.**
+- **Code cap: 16,384 chars** — over it the program is rejected whole and nothing runs. Execution budget: **100 ms, synchronous.** Runaway loops trip an "execution timeout" (a loop guard covers every loop form). Heavy O(n²) work over thousands of snapshots is the classic trip — **batch across multiple `moda canvas edit` calls.**
 - **Must be synchronous.** These get a clear pre-run error: `eval`, `new Function`, `import`, `require`, `fetch(`, `await`, `async`, `window`, `document`, `globalThis`, `process`, `console` (use `print`/`inspect`).
 - The sandbox is a speedbump, not a hard security boundary — don't rely on it to contain untrusted code.
 
@@ -95,6 +95,7 @@ When the call exits nonzero (typed `invalid_edit_program`, exit 2), no ops are a
 
 - **Parse failure** — fix the *syntax*; do NOT strip APIs you think are blocked.
 - **Blocked pattern** — a sandbox speedbump was tripped (or you called `remove()`). Remove the forbidden pattern.
+- **Code too large** — the program is over the 16,384-char cap and is rejected whole; do NOT hunt for a syntax error. Split the work across several calls.
 - **Runtime throw** in code with mutation call sites: queued ops are NOT applied. Diagnostics carry `{line, column, code_excerpt}` plus any prints before the throw. (A read-only probe that throws recovers as a warning instead.)
 - **No nodes found** — empty scope, no mutations; the error details list valid page ids.
 - **Invalid page** — the `--page` you scoped to is not in the live document (deleted mid-session, or your view is stale). Nothing was edited. Do NOT recreate the lost work: `moda canvas read` for current page ids and retry against a page that exists.
