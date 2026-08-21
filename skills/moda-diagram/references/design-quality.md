@@ -87,7 +87,7 @@ Before writing any markup, decide what makes THIS brand or subject look like its
 
 The single most common failure is defaulting to **a gradient background, a couple of decorative circles, and a centered or left-aligned title** — for the cover, for every brand, and then again on every page. If you find yourself reaching for it, stop and think harder.
 
-**Styling from another canvas.** When the user points at an existing canvas as the style source ("like that deck"), don't style from memory: `moda canvas read` it for its fonts, `$variables`, and palette, and `moda canvas screenshot` a page or two to see the system with your own vision — then carry those tokens into the new work.
+**Styling from another canvas.** When the user points at an existing canvas as the style source ("like that deck"), don't style from memory: `moda canvas read` it for its fonts, its `variables[…]` VALUES, and its palette, and `moda canvas screenshot` a page or two to see the system with your own vision — then author the new work with those resolved hex values (carry a variable's value, never its name: a name means nothing on a different canvas).
 
 ## Imagery — a default quality lever, and crop discipline
 

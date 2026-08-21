@@ -32,7 +32,7 @@ moda brand remove-image BRAND_REF BKI_ID # detach by bki_ id
 ## Applying a kit (the deterministic lane)
 
 - **Binding:** first, so it cannot be forgotten last. `moda canvas create --name "…" --brand BRAND_REF`; on a canvas that already exists, `moda canvas brand CANVAS_REF BRAND_REF`. A template-sourced create (`--template`) keeps the SOURCE canvas's kit and refuses `--brand` — rebind the copy afterwards if the user wants a different brand.
-- **Colors:** the kit owns them. Use kit palette values (and canvas `$variables` seeded from them) — never re-type hex codes from memory. Prefer creating canvas variables for kit colors used in multiple places (`create('variable', …)` in edit code, then `$name` in markup) so a later brand change is one update.
+- **Colors:** the kit owns them — copy the exact hex from `moda brand show`, never re-type one from memory. In MARKUP that hex is what you write: `$name` and `var()` do not resolve there. To make a kit color reusable so a later brand change is one update, bind it on the EDIT lane — `create('variable', …)` in edit code, then apply it as a variable-reference color value: type `variable`, with the key `variableId` set to the id from the read's `variables[…]` entry. `variableId` is the ONLY key that resolves — a bound fill DISPLAYS `variableName` in the read, but echoing that key back, or a bare `id`, is accepted without complaint and paints BLACK.
 - **Fonts:** the kit's families are the font menu. There is no list-fonts verb — the kit (plus families already used on the canvas) defines what is safely available. Kit-listed fonts are loaded and safe to use as named; substitute only a font the kit explicitly marks unavailable, preferring its listed alternative.
 - **Voice:** the kit's `tagline`, `brand_values`, `brand_tone_of_voice`, and usage rules (all in `moda brand show --json`) govern copy. Read them before writing any headline or body text on a branded artifact — a visually on-brand deck with off-brand copy is still off-brand.
 - **Logos:** place by file reference from the kit (`<image src="ref" fit="contain"/>`), never re-hosted or retyped URLs. Check contrast against the background; kits often carry light/dark logo variants — pick the one that contrasts.
@@ -63,9 +63,10 @@ Budget rule: `moda brand show --json` is the token read; use `pull` only when yo
 The auditable brand check no competitor offers — pure read verbs:
 
 1. `moda brand show BRAND_REF --json` — the reference tokens.
-2. `moda canvas read CANVAS_REF` — every node's fills, strokes, fonts, and the `## Vars` legend.
+2. `moda canvas read CANVAS_REF` — every node's fills, strokes, fonts, and the read's top-level
+`variables[…]` list.
 3. Compare and report pass/fail per element:
-   - Every fill/stroke color is a kit palette value, a `$variable` bound to one, or neutral (white/black/gray scale).
+   - Every fill/stroke color is a kit palette value (the literal hex), a real variable binding (a `type: variable` block whose `variableName` is in the read's `variables[…]`, resolving to a kit value), or neutral (white/black/gray scale). A BARE `$name` or `var()` string sitting in a fill is a FAIL, not a binding: markup never resolved it, so that node is painting the renderer's fallback — repair that one with the kit's hex. Never "repair" a real binding into a literal; that de-binds the canvas.
    - Every text node's family is a kit family (or a family the kit lists as an approved alternative).
    - Logo present where expected, at legible size, correct variant for its background, undistorted (contain fit, aspect preserved).
    - No off-kit accent colors introduced "for pop" — flag each with node id and the nearest kit color.

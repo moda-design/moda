@@ -113,9 +113,9 @@ it with the `moda` CLI and author by writing markup — a design is a file you e
   `moda brand pull BRAND_REF --output brand.json` for the full document;
   `moda brand update BRAND_REF --default` sets the TEAM default — `moda brand
   use BRAND_REF` only records a local preference for this CLI.
-- **Apply** = author with kit tokens: markup `$variables` and kit palette
-  values, kit font families, logos by file reference — never re-typed hex
-  codes from memory; the kit owns colors. Full rules: references/brand.md.
+- **Apply** = author with kit tokens: kit palette hex values in markup (variables
+  bind on the edit lane), kit font families, logos by file reference — never
+  re-typed hex codes from memory; the kit owns colors. Full rules: references/brand.md.
 - **Check** (audit a canvas against the kit): `moda canvas read CANVAS_REF`
   + token comparison against `moda brand show --json`,
   reporting pass/fail per element — off-kit colors (with node ids and nearest
@@ -143,6 +143,6 @@ it with the `moda` CLI and author by writing markup — a design is a file you e
 | Doc | Load when |
 |---|---|
 | references/brand.md | always — the apply/check/create contract |
-| references/markup.md | authoring with `$var` tokens and fills |
+| references/markup.md | authoring fills and colors — markup takes literal hex |
 | references/design-quality.md | imagery routing, typography, edit-vs-markup |
 | references/gotchas.md | anything surprising |
