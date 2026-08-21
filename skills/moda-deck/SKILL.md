@@ -110,8 +110,10 @@ it with the `moda` CLI and author by writing markup — a design is a file you e
 1. **Template check, then create + link**: recurring deck type (QBR, board,
    launch)? Check team templates, view thumbnails — a fitting one beats
    scratch (references/templates.md): `moda canvas create --template cvs_…
-   --name "…"`; else `moda canvas create --name "…" --size 1920x1080 --pages
-   1 --category slides`. Send the link at once (`moda canvas share CANVAS_REF`).
+   --name "…"`; else `moda canvas create --name "…" --intent "a 6-page Q3 QBR
+   deck" --size 1920x1080 --pages 1 --category slides` — `--intent` is what
+   explains the blank page to whoever opens the link before you have filled it
+   (not on the template lane). Send the link at once (`moda canvas share CANVAS_REF`).
 2. **Gather** with your harness's file-reading/search tools (your own
    research; `moda web search`/`moda web read` — references/web.md; a given
    .pptx imports first: `moda canvas import-pptx deck.pptx`, free). Distill

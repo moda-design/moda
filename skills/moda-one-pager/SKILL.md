@@ -113,7 +113,9 @@ it with the `moda` CLI and author by writing markup — a design is a file you e
    one-pager, product brief, report)? Check team templates, view thumbnails
    — a fitting one beats scratch (references/templates.md): `moda canvas
    create --template cvs_… --name "…"`; else `moda canvas create --name "…"
-   --size 816x1056` (A4: 794x1123; `--pages N`). Send the link right away.
+   --intent "a launch one-pager" --size 816x1056` (A4: 794x1123; `--pages N`) —
+   `--intent` explains the blank page to whoever opens the link before you have
+   filled it (not on the template lane). Send the link right away.
 2. **Read the source** with your harness's file-reading/search tools (own
    research; `moda web search`/`moda web read` — references/web.md). Scope
    per references/document-design.md: one dense page, or one system/outline.

@@ -118,9 +118,11 @@ it with the `moda` CLI and author by writing markup — a design is a file you e
 2. **Template check, then create + link**: recurring post type (launch,
    hiring, quote series)? Check team templates, view thumbnails — a fitting
    one beats scratch (references/templates.md): `moda canvas create
-   --template cvs_… --name "…"`; else `moda canvas create --name "…" --size
-   1080x1350` with `--category carousel` / `web-ads` / `other` (platformless)
-   / `social`. Send the link immediately ("follow along live here").
+   --template cvs_… --name "…"`; else `moda canvas create --name "…" --intent
+   "a launch carousel" --size 1080x1350` with `--category carousel` / `web-ads`
+   / `other` (platformless) / `social` — `--intent` explains the blank page to
+   whoever opens the link first (not on the template lane). Send the link
+   immediately ("follow along live here").
 3. **Read the design references**: references/markup.md before any markup;
    type ladder per references/design-quality.md. Brand kit in play → `moda
    brand show` and LOOK at its assets first (references/brand.md).

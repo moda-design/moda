@@ -116,10 +116,11 @@ it with the `moda` CLI and author by writing markup — a design is a file you e
    BEFORE designing. Distill the content first: nodes and edges for a
    diagram, axes and players for a matrix, viewport and sections for a
    mockup. Fewer primitives, shorter labels.
-2. **Create + link**: `moda canvas create --name "…" --size WxH --category
-   ui` (wireframes/mockups) or `--category diagram` — 1600x1000 suits most
-   diagrams; matrices ride 960x540; UI mockups use the real viewport
-   (references/diagram.md) — then send the link ("follow along live here").
+2. **Create + link**: `moda canvas create --name "…" --intent "an auth flow
+   diagram" --size WxH --category ui` (wireframes/mockups) or `--category
+   diagram` — 1600x1000 suits most diagrams; matrices ride 960x540; UI mockups
+   use the real viewport (references/diagram.md). `--intent` explains the blank
+   page to whoever opens the link first. Then send it ("follow along live here").
 3. **Read references/markup.md** (connector grammar, containers, path) and
    compute the type ladder per references/design-quality.md. Brand kit in
    play → `moda brand show` and use its palette for the accent semantics.
