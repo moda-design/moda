@@ -12,7 +12,7 @@ Skipping (2) is the quiet failure: the deck looks perfectly on-brand, and then t
 ## Verbs
 
 ```
-moda brand list                          # kits in the workspace (name, id, default marker)
+moda brand list [--query TEXT]           # kits in the workspace (name, id, default marker); --query filters by kit title or company name
 moda canvas create --brand BRAND_REF …   # create a canvas already bound to a kit
 moda canvas brand CANVAS_REF BRAND_REF   # bind an existing canvas (--clear to unbind)
 moda brand show BRAND_REF --json         # model-safe summary: palette, fonts, logo refs
