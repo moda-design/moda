@@ -99,6 +99,15 @@ to the registry when it disagrees):
   else when a ratio is non-negotiable. Only model that charges per
   reference image ($0.01 each, 1–7) on top of the clip; address them in the
   prompt as `<IMAGE_0>`, `<IMAGE_1>`, …
+- **PixVerse V6** — the flexible low-cost pick: text, required-first-frame
+  animation, required-first-and-last-frame transition, and source-video
+  extension, all at any whole 1–15 s. It reaches 360p/540p as well as
+  720p/1080p, with native audio off by default. Plain image animation follows
+  the first frame; transition exposes eight aspect ratios through 21:9.
+  `negative_prompt`, style, prompt optimization, and one-file multi-clip
+  storytelling live in `model_params`. Prompts and negative prompts are capped
+  at 2,048 UTF-8 bytes, not characters. Extension returns source plus tail but
+  bills only the requested tail duration.
 - **Kling 3 Standard / Pro / 4K** — a quality lane of its own, and the one
   family where the TIER IS THE RESOLUTION: 4K is a separate model, not a
   setting, so the output size is the entry you pick. Asking `kling-3-4k`
@@ -165,19 +174,10 @@ multiplier, and whether the input's running time bills are all per-model —
 read them off the card, and a 422 names the whole envelope back to you.
 Each clip also lands as a durable file in the team's library.
 
-**Extending an existing clip** rides `--extend-video <ref-or-url>` (`extend_video`
-on the wire), and only models whose card shows "extend video" accept it — today
-Grok Imagine Video 1.5 alone. Pass the clip and a prompt for what happens NEXT;
-the source comes back with new footage on the end. No images or references
-alongside it. Three things are unlike every other call here, and each one costs
-money if you assume otherwise: **`--duration` is the ADDED segment**, not the
-clip you get back (10 more seconds on a 15 s source is a 25 s file); **that
-whole returned clip is billed AND every second of the source is billed again**
-on its own rate, so the 25 s example is 25 x $0.07 + 15 x $0.01 = $1.90, not the
-$0.70 the number you passed suggests; and **the source decides the frame**, so
-`--resolution`/`--aspect-ratio` do nothing and the source's own size picks the
-rate tier. Source envelope is on the card (today 2-15 s, at most 921,600 px per
-frame, MP4) and Moda refuses one outside it before anything uploads or charges.
+**Extending an existing clip** rides `--extend-video <ref-or-url>` (`extend_video` on the wire). Pass what happens NEXT; no other inputs may accompany it, and **`--duration` is the ADDED segment**, not the final file.
+Read `billing.duration_quantity`, source envelope, and resolutions in `moda media models`: **PixVerse V6** meters only that segment at the selected 360p/540p/720p/1080p and audio tier (`--resolution` works; `--aspect-ratio` does not), and publishes no source envelope.
+**Grok Imagine Video 1.5** meters the whole return plus every source second again (10 s added to a 15 s, 720p source: 25 x $0.07 + 15 x $0.01 = $1.90); its source decides the frame/rate and both framing flags do nothing.
+Grok's source must be 2–15 s, at most 921,600 px per frame, and MP4 with a supported codec.
 
 **Reference audio** rides repeatable `--reference-audio <ref-or-url>` (`reference_audios` on the wire). Read limits from the model card.
 For H3, bind references in the prompt by modality and 1-based list order: `Image 1`, `Video 1`, `Audio 1`.
@@ -185,12 +185,11 @@ What it MEANS depends on what it arrives with: beside an image or video referenc
 several (H3 and Seedance 2.0 Mini both require that visual reference), while ALONE it drives the whole clip on a
 model whose card shows an `audio→video` mode. An audio-only ask elsewhere is refused before anything is billed.
 
-Native audio: O3 defaults audio OFF; pass `--generate-audio` when sound is wanted. Other audio-capable models
-default it on. `--no-generate-audio` buys the SILENT rate where audio is controllable — on Kling 3 Standard
-and Pro that is a third off, so use it whenever the clip does not need sound. The model card is the authority:
-`moda media models` reports `generate_audio_controllable`. Models where it is false have INTRINSIC audio: they
-accept the flag, report it as an adjustment, and produce audio anyway, so it buys nothing there. Read that field;
-the receipt is the truth.
+Native-audio defaults are model-specific. The model card is the authority: `moda media models` reports
+`generate_audio_default` and `generate_audio_controllable`; pass `--generate-audio` whenever sound is wanted and
+the default is off. `--no-generate-audio` buys the SILENT rate where audio is controllable — on Kling 3 Standard
+and Pro that is a third off, so use it whenever the clip does not need sound. Models where controllable is false
+have INTRINSIC audio: they accept the flag but still produce audio, so silence buys nothing. The receipt is the truth.
 
 ## Pin the knobs — before EVERY generation
 
