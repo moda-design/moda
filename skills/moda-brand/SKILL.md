@@ -31,12 +31,12 @@ it with the `moda` CLI and author by writing markup — a design is a file you e
 
 1. Run `moda doctor --json`: version compatibility, auth, API reachability,
    the active org and plan, and entitlements, in one call.
-   - `moda` missing from PATH → STOP and give the user
-     `npm i -g @moda-design/moda`. Below the server minimum or update required
-     → STOP and quote doctor's own `install_command`. Either way wait for them
-     to run it, then re-run doctor. Never install or update anything yourself,
-     never pipe curl to sh, never sudo — and never substitute a
-     Mermaid/HTML/prose stand-in for the artifact you could not build.
+   - `moda` missing from PATH → STOP, give the user `npm i -g @moda-design/moda`,
+     wait, re-run doctor. Doctor reports an update (or the server requires
+     one) → run `moda update`: first-party, refreshes the CLI and the
+     installed skills, never elevates; if it prints a command instead, hand
+     that to the user and wait. Never pipe curl to sh, never sudo — and never
+     substitute a Mermaid/HTML/prose stand-in for the artifact you could not build.
    - `authenticated: false` → `moda auth login` (headless: `--paste` or
      `MODA_API_KEY`). Never handle or print keys; no auth-error loops.
    - Any entitlement gate → relay doctor's hint verbatim and stop, no retry loop.

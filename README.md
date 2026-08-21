@@ -102,16 +102,18 @@ Paste this to your agent:
 ```
 Update Moda to the latest version for me.
 
-1. Update the CLI: npm i -g @moda-design/moda
-2. Update the companion skills: npx skills add moda-design/moda
-3. Verify: run `moda doctor` and confirm everything is healthy, then tell
+1. Run `moda update` — it updates the CLI and the companion skills in one
+   step, and prints the exact command to run yourself for anything it
+   cannot do from inside the session.
+2. Verify: run `moda doctor` and confirm everything is healthy, then tell
    me the update succeeded.
 ```
 
-The CLI and the skills update separately: installed skills are hash-pinned in
-`skills-lock.json` and never auto-update (step 2 re-resolves them), while the
-CLI prints a once-daily stderr notice naming the update command whenever a
-newer version exists.
+`moda update` covers both halves: the CLI (a plain `npm i -g` reinstall —
+printed rather than run on Windows, where the running binary is locked) and
+the installed skills (re-resolving the hash pins in `skills-lock.json`).
+Nothing updates silently: the once-daily stderr notice and `moda doctor`
+only ever *suggest* the verb.
 
 ## Security
 
