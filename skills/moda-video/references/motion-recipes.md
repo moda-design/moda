@@ -38,9 +38,9 @@ it. `moda media models` is the authority when any of that has moved.
 5. **Layout pass, THEN motion pass.** Text presets and recipes refuse a node
    created in the same edit batch, so motion is always a later
    `moda canvas edit` call.
-6. **Live link first, mp4/gif second.** Never hand over a png/pdf/pptx of a
-   page holding a video node — those frames render blank today
-   (`video_poster_unavailable`, references/gotchas.md).
+6. **Live link first, mp4/gif second.** A png/jpeg/pdf/pptx export preserves
+   only the clip's poster frame, not its motion. If placement warned
+   `video_poster_unavailable`, that clip exports blank (references/gotchas.md).
 
 ## Recipe 1 — Logo animation
 
@@ -275,10 +275,10 @@ identically. Re-generate when the crop actually breaks the composition.
 
 ## What every recipe inherits
 
-- **Static exports of these pages are blank.** png/jpeg/pdf/pptx of a
-  video-filled node render nothing today. An ask that ends in a PDF or a deck
-  gets a page with NO video node on it — a generated still, a product photo,
-  or a shader-filled background — not a video page exported flat.
+- **Static exports of these pages preserve poster frames, not clip motion.**
+  If a placement warned `video_poster_unavailable`, that clip's rectangle is
+  blank in png/jpeg/pdf/pptx. For a PDF or deck, use the poster still when it
+  serves the design, or use a generated still, product photo, or shader fill.
 - **A page with no animation rejects `no_animation`** on mp4/gif. That is the
   honest answer, not a retry: deliver the still and the link.
 - **Never ask a video model for text.** Headlines, prices and CTAs are canvas
