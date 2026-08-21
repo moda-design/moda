@@ -63,6 +63,48 @@ persist one, never hand one to the user. They expire.
 - Tell the user which template you started from — it is a decision they may
   want to correct.
 
+## Contributing one back
+
+The template library only stays useful if it grows, and the work most worth
+reusing is often the work you just built. When the user calls something
+recurring — "we do this every quarter", "make this our standard deck" — flag
+it, and it joins `moda template list` for the whole team:
+
+```
+moda canvas template cvs_…            # a reusable team template
+moda canvas template cvs_… --clear    # un-flag it again
+```
+
+- **This is a team-visible curation decision, not a local one.** Every
+  colleague sees it in their template list from then on. Offer it when the user
+  signals reuse; never flag a one-off, and never flag unasked.
+- **Template a COPY when the original should stay an ordinary canvas**: `moda
+  canvas duplicate CANVAS_REF --name "QBR template"`, then flag the copy.
+  Flagging in place is right when the canvas was BUILT to be the template.
+- Tell the user you did it. On a canvas that is not a theme, `--clear` is an
+  exact reverse.
+- **Check the canvas is team-visible.** `moda template list` hides canvases the
+  viewer cannot see, so flagging a private canvas produces a template only you
+  can find. `moda drive visibility CANVAS_REF team` shares it; otherwise say
+  plainly that you could not.
+
+### `theme` is a different thing — don't reach for it
+
+`moda canvas template CANVAS_REF theme` does not make a second flavour of
+template. A theme is a slides-only layout source applied automatically through
+a brand kit, and it deliberately **does not appear in `moda template list`** —
+so flagging one and then telling the user "it's in your templates now" is
+wrong. Use it only when the user is specifically talking about layouts a brand
+kit applies for them; `template` is the right answer for everything else.
+
+**Moving a canvas off `theme` is not reversible** — and that means changing it
+to `template` just as much as clearing it. Either one clears every deck's link
+to that theme and every brand kit that auto-applied it, and re-flagging restores
+none of those links. **Check before you write:** `moda canvas show CANVAS_REF`
+reports `template_type`, so on a canvas you did not flag yourself, read it first
+and only then decide — "make this our standard template" on the team's theme is
+the request that quietly breaks every deck using it.
+
 ## Honest gaps
 
 - The team may not have templates yet: an empty list is a normal answer, and
@@ -70,5 +112,7 @@ persist one, never hand one to the user. They expire.
 - The server may report this surface as unavailable (a 404) on an account
   where it is not enabled yet. Treat that exactly like "no templates" and
   move on — do not retry it, and do not mention it to the user.
-- Templates are created in the Moda app (mark a canvas as a team template);
-  there is no verb here that makes one.
+- Some organizations restrict template management to admins. There the flag
+  call is refused with a 403 — tell the user an admin has to make this one a
+  template, in one line, and move on. Nothing else about the canvas is
+  affected, and reads are unaffected.
