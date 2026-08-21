@@ -11,9 +11,9 @@ that renders to mp4/gif**:
    author, precise; the live canvas link is the handoff and the file is
    format-implied.
 
-Route by what the ask needs: cinematic/photographic motion, a logo brought
-to life, "make a video" → generated. Crisp type, exact brand geometry,
-UI/diagram motion, looping background texture → vector-native. A video ask
+Route by what the ask needs: cinematic/photographic motion or a logo brought to
+life → generated; crisp type, exact brand geometry, UI/diagram motion, looping
+texture → vector-native. Bare "make a video" decides nothing — read the brief. A video ask
 IS format words — the motion file is the deliverable, so exporting or
 downloading it is compliant, never a ceremony violation.
 
@@ -28,8 +28,8 @@ never as a still. Route by the deliverable: a raw clip with no design over
 it stays in the media lane; type, brand geometry, or a cut belongs on an
 animation canvas exported to mp4/gif.
 
-There is no video-to-video edit. Source video/audio inputs for GENERATION exist
-only as declared references; `moda media upscale-video` is the only verb that takes a video as its subject.
+There is no free-form video-to-video edit. A source clip is a declared reference,
+the base of an `--extend-video` extension (below), or the subject of `moda media upscale-video` — nothing else.
 
 ## Model choice — registry-driven
 

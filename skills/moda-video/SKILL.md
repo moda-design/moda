@@ -111,30 +111,44 @@ it with the `moda` CLI and author by writing markup — a design is a file you e
 
 ## Workflow
 
-1. **Route the lane** — read references/video.md BEFORE anything else:
-   generated video (metered `moda media`) for cinematic/photographic
-   motion; vector-native (animation canvas or shader fills → `moda export
-   --format mp4|gif --page N`) for crisp type and exact brand geometry; a
-   composed deliverable (logo animation, teaser, social ad) → the recipes
-   in references/motion-recipes.md. A video ask IS format words — the
-   motion file is the deliverable, not a ceremony violation.
-2. **Gather the start assets**: brand kit in play → `moda brand show
-   BRAND_REF --json` for durable logo `file_` refs, and LOOK at them first
-   (references/brand.md). A canvas frame → `moda export --format png
-   --page N`. User files → `moda file upload` (local paths also upload
-   themselves as media inputs).
-3. **Pick the model from the registry**: `moda media models` for the
-   capability cards (bare ids on an older server); route by the strengths
-   table in references/video.md; knobs snap and `adjustments` reports what
-   ran.
-4. **Draft fast, verify, then commit** (references/video.md): the ladder
-   is the DEFAULT — draft on `veo-3.1-lite` (4 s, 720p, silent), fix the
-   PROMPT, then take the hero render on the model the ask deserves. Every
-   pass: explicit `--duration`, the resolution the pass needs.
-5. **Look at what you made** — `moda media video-frames file_… -o frames/`
-   is FREE and the only way to SEE a render: judge the frames against the
-   brief, regenerate or accept; `applied`/`warnings` too — no claimed look.
-6. **Enhance and deliver**: `moda media upscale-video` on the winner only;
+1. **Plan the piece — there is no fixed shape.** Read references/video.md
+   first, then decide for yourself. Toolkit: video models (text→, image→,
+   reference→video), image and audio models (speech, music, SFX), `moda file
+   upload` for real footage and photos, the vector canvas for type and brand
+   geometry, an animation canvas (`--category animation`) carrying keyframes,
+   easing, staggers, effects and a clip track, mp4/gif export, and free
+   `video-frames` to look. Use one, some or all — brief decides:
+   - product ad — photos → image gen (model wearing it) → video gen → animation canvas + sale type → mp4
+   - explainer — no footage at all: vector motion on an animation canvas → mp4
+   - social cut — two real clips and one generated shot on the clip track, brand type over
+2. **Hard edges** (facts, not preferences): video models mangle text, prices
+   and logos — real type and brand marks go on the canvas, never in a prompt.
+   A source clip is a generation reference, an `--extend-video` base (models
+   whose card shows it), or `upscale-video`'s subject — no free-form
+   video-to-video edit. Generated audio has no canvas slot: it ships as its own
+   file or rides a generation. Server mp4 is SILENT and a page with an audible
+   clip is DECLINED — mute what you place (`muted=""`), say the cut is silent,
+   sound-on stays in the app. Keyframes and clip sequencing need `--category
+   animation`; shader fills animate anywhere. Static video-page exports are blank.
+3. **Gather the start assets**: brand kit in play → `moda brand show BRAND_REF
+   --json` for durable logo `file_` refs, and LOOK at them first
+   (references/brand.md). A canvas frame → `moda export --format png --page N`.
+   User files → `moda file upload` (local paths self-upload as inputs).
+4. **Generating footage? Pick the model** (no footage in the plan → skip to 7):
+   `moda media models` for the capability cards; route by the strengths table in
+   references/video.md; knobs snap and `adjustments` reports what ran.
+5. **Draft fast, verify, then commit** (references/video.md): the ladder is the
+   DEFAULT — draft on `veo-3.1-lite` (4 s, 720p, silent), fix the PROMPT, then
+   take the hero render. Every pass: explicit `--duration` and resolution.
+6. **Look at what you made** — `moda media video-frames file_… -o frames/`
+   is FREE and the only way to SEE a render: judge frames against the brief,
+   regenerate or accept; read `applied`/`warnings` — never claim a look.
+7. **Compose whenever the clip alone cannot carry it** — exact type, a price, a
+   logo, a second shot: `moda canvas create --category animation`, place the clip
+   MUTED, author type/shapes/motion with `moda canvas markup` and `moda canvas
+   edit`, then `moda export --format mp4|gif --page N` (references/markup.md,
+   references/edit-code.md, references/export.md).
+8. **Enhance and deliver**: `moda media upscale-video` on the winner only;
    file path + usage receipt, and the live canvas link FIRST when one exists.
 
 ## References
@@ -142,9 +156,5 @@ it with the `moda` CLI and author by writing markup — a design is a file you e
 | Doc | Load when |
 |---|---|
 | references/video.md | always — lanes, models, knob rules, draft ladder, workflows, prompt craft |
-| references/motion-recipes.md, references/social.md | a composed deliverable — logo animation, product teaser, social ad (with platform sizes and safe areas) |
-| references/omni-and-media.md | metered-lane rules, video knob semantics |
-| references/brand.md | a brand kit exists — logo refs, variant choice, guides |
-| references/export.md | any canvas export (frames, mp4/gif ceremony, --page rules) |
-| references/markup.md, references/design-quality.md, references/edit-code.md | vector-native motion: authoring, shader fills, animation edits |
-| references/reading-and-verifying.md, references/gotchas.md | reading canvases, degraded verify; the blank-static-export video trap and others |
+| references/motion-recipes.md, references/social.md, references/markup.md, references/edit-code.md, references/design-quality.md, references/export.md | a composed deliverable (logo animation, teaser, social ad — platform sizes, safe areas) and composing it on a canvas: authoring, animation edits, shader fills, export rules |
+| references/brand.md, references/omni-and-media.md, references/reading-and-verifying.md, references/gotchas.md | a brand kit exists; metered-lane and knob semantics; reading canvases, degraded verify, the blank-static-export video trap |
