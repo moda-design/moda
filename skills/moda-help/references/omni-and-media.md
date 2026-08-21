@@ -34,7 +34,7 @@ Results return durable refs that feed markup `image(...)` fills and `src` attrib
 
 `--model` is **required — there is no "auto"**. The authoritative model list, with each model's aspect ratios, resolutions, and controls, comes from the CLI itself (`moda media models`) — defer to it; never hardcode capabilities from memory. Strengths in one line each, to route the choice:
 
-<!-- generated: image-model roster. Authored in backend/app/services/media/image_registry.py (label + skill_card_line, falling back to description); regenerate with: uv run python -m scripts.render_model_roster -->
+<!-- generated: image-model roster. Authored in backend/app/services/media/image/ (label + skill_card_line, falling back to description); regenerate with: uv run python -m scripts.render_model_roster -->
 - **NanoBanana 2 Lite** — Fastest, lowest-cost baseline; the default when nothing else is demanded.
 - **NanoBanana 2** — Balanced speed and quality with flexible output up to 4K.
 - **NanoBanana Pro** — Premium tier for the most complex, high-fidelity visual tasks.
