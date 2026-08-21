@@ -64,6 +64,8 @@ it with the `moda` CLI and author by writing markup — a design is a file you e
 3. Note whether you can VIEW images: screenshot review assumes vision. A
    vision-less harness follows the degraded verify loop in
    references/reading-and-verifying.md.
+4. Unsure of the approach, or a call failed? `moda ask "<question>"` is free
+   and fast — ask early, never guess; `--context "<error>"`, `--brand KIT`.
 
 ## UX rules
 
@@ -138,13 +140,11 @@ page is live (website); decorative shapes → social; mp4/gif output → video.
 
 ## When nothing fits
 Consult the table above; a format skill that fits after all wins — load it,
-don't narrate the detour. Capability unclear? `moda describe [verb] --json`
-is ground truth (`moda docs` for authoring). Outside Moda's powers? Say so
-honestly, offer the nearest thing Moda CAN do, and ask exactly ONE question,
-only when the fork is real — never enumerate the catalog.
+don't narrate the detour (`moda docs` covers authoring). Outside Moda's
+powers? Say so honestly, offer the nearest thing Moda CAN do, and ask
+exactly ONE question, only when the fork is real — never enumerate the catalog.
 
 ## Verbs at a glance (load the format skill for the work)
-Decks/documents/social/diagrams author via `moda canvas markup|edit` +
-`moda export` (mp4/gif = moda-video's motion lane); sites via `moda site *`;
-kits + guides via `moda brand *`; `moda media *` / `moda web *` generate
-video, imagery, research (metered).
+Decks/documents/social/diagrams: `moda canvas markup|edit` + `moda export`
+(mp4/gif = moda-video's motion lane); sites: `moda site *`; kits + guides:
+`moda brand *`; the metered lanes: `moda media *` / `moda web *`.

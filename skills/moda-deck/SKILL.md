@@ -60,6 +60,8 @@ it with the `moda` CLI and author by writing markup — a design is a file you e
 3. Note whether you can VIEW images: screenshot review assumes vision. A
    vision-less harness follows the degraded verify loop in
    references/reading-and-verifying.md.
+4. Unsure of the approach, or a call failed? `moda ask "<question>"` is free
+   and fast — ask early, never guess; `--context "<error>"`, `--brand KIT`.
 
 ## UX rules
 
@@ -140,11 +142,9 @@ it with the `moda` CLI and author by writing markup — a design is a file you e
 
 | Doc | Load when |
 |---|---|
-| references/markup.md | before writing any markup |
-| references/deck-design.md, references/deck-playbooks.md | planning slides |
+| references/markup.md, references/deck-design.md, references/deck-playbooks.md | before any markup; planning slides |
 | references/design-quality.md, references/charts.md | typography ladder, imagery, recreate rules; any data slide |
 | references/templates.md | the ask looks like a recurring artifact your team may have a template for |
-| references/edit-code.md | targeted fixes via `moda canvas edit` |
-| references/reading-and-verifying.md | DSL reading, screenshot loop |
+| references/edit-code.md, references/reading-and-verifying.md | targeted fixes via `moda canvas edit`; DSL reading, screenshot loop |
 | references/brand.md, references/web.md | a brand kit exists; content needs live web research |
 | references/export.md, references/omni-and-media.md, references/gotchas.md | delivering; media; anything surprising |

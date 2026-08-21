@@ -64,6 +64,8 @@ it with the `moda` CLI and author by writing markup — a design is a file you e
 3. Note whether you can VIEW images: screenshot review assumes vision. A
    vision-less harness follows the degraded verify loop in
    references/reading-and-verifying.md.
+4. Unsure of the approach, or a call failed? `moda ask "<question>"` is free
+   and fast — ask early, never guess; `--context "<error>"`, `--brand KIT`.
 
 ## UX rules
 
@@ -145,5 +147,4 @@ it with the `moda` CLI and author by writing markup — a design is a file you e
 | references/brand.md | a brand kit exists |
 | references/edit-code.md | targeted fixes via `moda canvas edit` |
 | references/reading-and-verifying.md | DSL reading, screenshot loop |
-| references/export.md | delivering png/pdf |
-| references/gotchas.md | anything surprising |
+| references/export.md, references/gotchas.md | delivering png/pdf; anything surprising |
