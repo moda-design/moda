@@ -11,6 +11,15 @@ moda canvas markup CANVAS_REF --file - --page PAGE_ID < page.xml     # stdin —
 - `--mode replace` is the atomic full-page rewrite: it deletes every node on the page and then adds the markup — deletion happens only after a clean parse, so an interrupted call can never leave the page empty. Default is `append`. Replace requires a revision token: the CLI uses your cached last `moda canvas read` automatically, so read first (or pass `--revision`).
 - `--screenshot PATH` captures the touched page right after the commit — the same capture and files as `moda canvas screenshot -o PATH`, folded into one invocation. Use it when a screenshot is your next step anyway (`--page canvas` falls back to the default capture; a capture failure never changes the mutation's exit code).
 
+## Text is auto-fitted after the fonts load — read the warnings
+
+A `<text>` whose copy does not fit its box is shrunk below the `font-size` you declared, by a fit that runs once the real fonts have downloaded. It is reported in `warnings[]`; a success can still carry type you did not ask for.
+
+- `text_auto_shrunk` — the node was shrunk. `details.declaredFontSizePx` → `details.fittedFontSizePx` are the real numbers; `details.classConsistencyDriven` means a `<styles>` class sibling forced it, so THAT node's box is the lever, not this one's; `details.truncated` means it *still* didn't fit and copy was discarded.
+- `text_truncated` — the node was already at the minimum font size, so the fit discarded copy instead of shrinking. Always a real content loss.
+- `text_fit_failed` — the fit broke for the nodes in `details.nodeIds`. `details.stage == 'measure'` means they kept their authored size and may overflow; `'apply'` means they were measured but the write failed, so what's on the canvas may not be what the fit computed. Check their bounds either way.
+- `text_fit_pending` — the fit was still loading fonts when the result was built, so the sizes above may still move. Re-read the nodes before trusting the type.
+
 ## Root & flow
 
 - **All markup wraps in `<content>`** (aliases: `<svg>`, `<body>`). `<content>` attributes (e.g. `font-family`) become defaults for every text descendant.
