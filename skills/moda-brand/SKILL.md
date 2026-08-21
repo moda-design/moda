@@ -126,7 +126,8 @@ it with the `moda` CLI and author by writing markup — a design is a file you e
   exists); no website → build manually from fields: `moda brand create
   --name "Acme" --color '#0F172A:Primary' --font 'Inter:title' --logo
   FILE_REF`, or `--from-file kit.json` for a rich palette. One path per
-  create. Details: references/brand.md.
+  create — though `--name` is fine alongside `--url`, where it titles the
+  kit. Details: references/brand.md.
 - **Update / fix in place**: extraction got a value slightly wrong, or the
   brand evolved → `moda brand update BRAND_REF` (fields; `--color`/`--font`
   REPLACE the whole list — re-send the full corrected set; `--default`
