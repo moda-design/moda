@@ -19,10 +19,13 @@ moda media generate-audio --mode text_to_speech|text_to_music|text_to_sfx --prom
 moda media remove-background FILE_REF|URL|PATH
 moda media upscale FILE_REF|URL|PATH [--scale 2|4]
 moda media upscale-video FILE_REF|URL|PATH [--resolution 720p|1080p|1440p|2160p]
+moda media outpaint FILE_REF|PATH --aspect-ratio R | --expand-top/-bottom/-left/-right PX [--mode high|fast]
 moda media video-frames FILE_REF|PATH [--count N | --timestamps MS...] [-o DIR]   # FREE
 ```
 
 **`moda media models` is the capability source**: each model's supported aspect ratios, resolution tiers, durations, and extra `--model-params` come from it — read it before passing per-model knobs; never hardcode capabilities from memory.
+
+`moda media outpaint` EXTENDS an image past its own borders — the new margins painted as a continuation of the frame. Give it a target `--aspect-ratio` **or** per-side pixels, never both (passing both is refused). It takes no prompt: it continues what is already in frame and cannot be steered with words — to change what is IN the image, use `edit-image`. Two limits, and the second is the one that bites: 2048px on any one side, and an expanded canvas within 4MP (4 x 1024 x 1024 pixels) — past either the call is refused naming the size, never shrunk to fit, and a source already at or past 4MP has to be downscaled before it can be extended at all. The price counts the source AND the rendered canvas together, rounded up to the megapixel, so a bigger source costs more even for a small expansion and the source must be one Moda has measured: a `file_` ref or a local path, not a bare URL.
 
 Results return durable refs that feed markup `image(...)` fills and `src` attributes directly — never a raw URL.
 
