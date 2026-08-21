@@ -29,7 +29,11 @@ it stays in the media lane; type, brand geometry, or a cut belongs on an
 animation canvas exported to mp4/gif.
 
 There is no free-form video-to-video edit. A source clip is a declared reference,
-the base of an `--extend-video` extension (below), or the subject of `moda media upscale-video` — nothing else.
+the base of an `--extend-video` extension (below), or the subject of one of the two
+verbs that take a video as their SUBJECT: `moda media upscale-video` (bigger) and
+`moda media reframe-video` (a new shape — the shot is kept and the newly exposed
+edges are painted in, so the 16:9 becomes the 9:16 story cut without regenerating
+it). Nothing else.
 
 ## Model choice — registry-driven
 
@@ -253,7 +257,8 @@ model and a one-off throwaway clip.
    rather than be frame one.
 3. Pin the knobs, generate, read `applied`/`adjustments`.
 4. Frame-check it with `moda media video-frames`, then deliver the file
-   path + receipt; offer `moda media upscale-video` for the final cut.
+   path + receipt; offer `upscale-video` for the final cut, `reframe-video
+   --aspect-ratio 9:16` for vertical.
 
 **2. Quick text-to-video** — a prompt-only clip: registry pick (default
 model unless the ask demands quality/length/control), pin the knobs,

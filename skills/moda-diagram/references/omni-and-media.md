@@ -20,6 +20,7 @@ moda media remove-background FILE_REF|URL|PATH
 moda media upscale FILE_REF|URL|PATH [--scale 2|4]
 moda media upscale-video FILE_REF|URL|PATH [--resolution 720p|1080p|1440p|2160p]
 moda media outpaint FILE_REF|PATH --aspect-ratio R | --expand-top/-bottom/-left/-right PX [--mode high|fast]
+moda media reframe-video FILE_REF|URL|PATH --aspect-ratio 16:9|5:4|1:1|4:5|9:16 [--resolution 720p|1080p]
 moda media video-frames FILE_REF|PATH [--count N | --timestamps MS...] [-o DIR]   # FREE
 ```
 
