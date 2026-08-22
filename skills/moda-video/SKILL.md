@@ -126,9 +126,9 @@ it with the `moda` CLI and author by writing markup — a design is a file you e
    A source clip is a generation reference, an `--extend-video` base (models
    whose card shows it), or `upscale-video`'s subject — no free-form
    video-to-video edit. Generated audio has no canvas slot: it ships as its own
-   file or rides a generation. Server mp4 is SILENT and a page with an audible
-   clip is DECLINED — mute what you place (`muted=""`), say the cut is silent,
-   sound-on stays in the app. Keyframes and clip sequencing need `--category
+   file or rides a generation. Server mp4 MUXES audible clip audio — leave
+   sound-on clips unmuted; read `warnings[]` for any `audio_source_dropped`
+   (references/export.md). Keyframes and clip sequencing need `--category
    animation`; shader fills animate anywhere. Static video-page exports are blank.
 3. **Gather the start assets**: brand kit in play → `moda brand show BRAND_REF
    --json` for durable logo `file_` refs, and LOOK at them first
