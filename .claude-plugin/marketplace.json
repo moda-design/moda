@@ -12,7 +12,7 @@
     {
       "name": "moda",
       "source": "./",
-      "description": "Nine skills (moda-deck, moda-one-pager, moda-social, moda-diagram, moda-website, moda-video, moda-brand, moda-edit, moda-help) plus the /moda router. Requires the moda CLI; Step 0 in every skill checks it and never installs anything itself."
+      "description": "Moda's skill roster — moda-core plus twelve format skills (deck, document, social, diagram, chart, mockup, website, video, image, audio, brand, edit) with their recipe children, four workspace helpers, and the /moda router. Requires the moda CLI; Step 0 in every skill checks it and never installs anything itself."
     }
   ]
 }

@@ -65,19 +65,25 @@ Nine skills, each self-contained. They are the difference between an agent
 that *can* call the CLI and one that reliably produces something you'd send
 to a customer.
 
-| Skill | What it makes |
-|---|---|
-| `moda-deck` | Slide decks from a brief/doc/repo → native, editable PPTX |
-| `moda-one-pager` | One-pagers, multi-page reports, and print pieces → text-layer PDF |
-| `moda-social` | Social posts, carousels, static ads, banners → png/jpeg (carousel = zip) |
-| `moda-diagram` | Flowcharts, 2×2 matrices, UI wireframes/mockups → png/pdf |
-| `moda-website` | Live websites → published to a public `*.moda.page` URL |
-| `moda-video` | Video and motion: generated clips (brand stingers, image-to-video), animation-canvas exports → mp4/gif |
-| `moda-brand` | Brand-kit reads, creation, and canvas-vs-kit audits |
-| `moda-edit` | Precise edits to an existing canvas from its URL |
-| `moda-help` | Meta home: setup/update, auth + orgs, routing, CLI troubleshooting |
+| Skill | What it makes | Recipe children |
+|---|---|---|
+| `moda-core` | Meta home: setup/update, auth + teams, routing, recovery | — |
+| `moda-deck` | Slide decks from a brief/doc/repo → native, editable PPTX | `-pptx` (import and fix a `.pptx`) |
+| `moda-document` | One-pagers, reports, whitepapers of any length → text-layer PDF | `-print` (poster, flyer, menu, resume, cards, merch) |
+| `moda-social` | Posts, carousels, stories, quote cards, logo/icon design → png/jpeg (carousel = zip) | `-instagram`, `-linkedin`, `-tiktok`, `-youtube`, `-ads` |
+| `moda-diagram` | Flowcharts, org charts, decision trees, swimlanes, 2×2 matrices → png/pdf | — |
+| `moda-chart` | Standalone data charts from real numbers → png/pdf | — |
+| `moda-mockup` | Static UI mockups and wireframes at real viewport sizes → png/pdf | — |
+| `moda-website` | Live websites → published to a public `*.moda.page` URL | — |
+| `moda-video` | Video and motion → mp4/gif | `-clip` (generated clips), `-motion` (vector-native motion) |
+| `moda-image` | Images as the deliverable: generate, edit, upscale, outpaint | — |
+| `moda-audio` | Voiceover, narration, music, jingles, sound effects | — |
+| `moda-brand` | Brand-kit reads, creation, and canvas-vs-kit audits | — |
+| `moda-edit` | Precise edits, exports, and shares of an existing canvas from its URL | — |
 
-Plus `/moda` (Claude Code) as a router.
+Plus four helpers — `moda-library` (workspace, drive, assets), `moda-templates`
+(team templates), `moda-context` (repo-pinned defaults), `moda-automate`
+(recurring work) — and `/moda` (Claude Code) as a router.
 
 Three things every skill shares:
 
@@ -93,7 +99,7 @@ Three things every skill shares:
   and report a receipt in the delivery note.
 
 Exactly one skill claims any given ask — routing is mutually exclusive by
-contract, and `moda-help` owns the tie-breaks.
+contract, and `moda-core` owns the tie-breaks.
 
 ## Update
 

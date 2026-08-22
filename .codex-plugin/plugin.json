@@ -1,16 +1,35 @@
 {
   "name": "moda",
   "version": "0.1.0",
-  "description": "Design on Moda from your agent: editable decks, one-pager and multi-page PDFs, social posts and static ads, diagrams and UI mockups, hosted websites on moda.page, video and motion (generated clips and mp4/gif animation exports), brand kits, precise canvas edits, and a meta/help skill — native PPTX/PDF/PNG exports from a live, collaborative canvas.",
+  "description": "Design on Moda from your agent: editable decks and .pptx cleanup, one-pagers, reports and print pieces, social creative per platform, static ads, diagrams, data charts, UI mockups, hosted websites on moda.page, generated video and vector-native motion, images and audio, brand kits, precise canvas edits, plus workspace, template, repo-context and automation helpers — native PPTX/PDF/PNG/MP4 exports from a live, collaborative canvas.",
   "skills": [
+    "skills/moda-core",
+    "skills/moda-help",
     "skills/moda-deck",
+    "skills/moda-deck-pptx",
+    "skills/moda-document",
+    "skills/moda-document-print",
     "skills/moda-one-pager",
     "skills/moda-social",
+    "skills/moda-social-instagram",
+    "skills/moda-social-linkedin",
+    "skills/moda-social-tiktok",
+    "skills/moda-social-youtube",
+    "skills/moda-social-ads",
     "skills/moda-diagram",
+    "skills/moda-chart",
+    "skills/moda-mockup",
     "skills/moda-website",
+    "skills/moda-video",
+    "skills/moda-video-clip",
+    "skills/moda-video-motion",
+    "skills/moda-image",
+    "skills/moda-audio",
     "skills/moda-brand",
     "skills/moda-edit",
-    "skills/moda-video",
-    "skills/moda-help"
+    "skills/moda-library",
+    "skills/moda-templates",
+    "skills/moda-context",
+    "skills/moda-automate"
   ]
 }

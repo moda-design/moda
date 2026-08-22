@@ -1,9 +1,12 @@
-# Diagrams, 2×2 matrices, and UI wireframes
+# Diagrams and 2×2 matrices
 
-Three intents, one deterministic toolkit: shapes with embedded text,
+Two intents, one deterministic toolkit: shapes with embedded text,
 `<connector>` for anchored links, `<path>` for custom marks, containers for
 lanes, and `moda export --format png|pdf` (png
 `--pixel-ratio 2` for docs and chat; pdf when it's headed into a document).
+
+Neither intent is a data chart (that is `<chart>` — load moda-chart) or a
+screen (load moda-mockup).
 
 ## Diagrams and flowcharts
 
@@ -42,14 +45,6 @@ doesn't fit a box belongs in a caption outside the flow.
 </content>
 ```
 
-## Standalone data charts
-
-A bar/line/pie/scatter graphic that stands alone rides `<chart>` — the
-parser does the math from a pipe-delimited data block; full grammar and
-data-honesty rules in references/charts.md. Give it its own right-sized
-canvas, title it, and export png. The 2×2 matrix below is the deliberate
-exception: shapes and text, not `<chart>`.
-
 ## 2×2 matrices (competitive landscape, quadrant chart)
 
 Build with shapes and text — **not `<chart>`** (it doesn't support this
@@ -72,34 +67,6 @@ format). Inside-out:
    accent circle), name in the accent color, clearly separated.
 5. Optional title above, 24–32px bold. Group the matrix elements so they
    move as one unit.
-
-## UI wireframes and mockups
-
-A static picture of an interface — not a live page (that is the website
-skill). Pick the viewport before composing; it decides everything:
-
-| Viewport | Canvas | Pattern |
-| --- | --- | --- |
-| Desktop app / dashboard | 1440×900 | sidebar nav, multi-column |
-| Marketing/landing mockup | 1440×2000+ | tall single scroll |
-| Tablet landscape / portrait | 1024×768 / 768×1024 | split view / single column |
-| Phone (iOS / Android) | 390×844 / 412×915 | single column, bottom nav |
-
-- UI type uses **real OS point sizes**, not display-scaled canvas type: body
-  small but legible, headings stepping up by viewport. Cut copy before
-  shrinking below the ladder floor (references/design-quality.md).
-- Phone safe bands: ~47pt status bar top, ~34pt home-indicator / ~16dp
-  gesture area bottom; touch targets ≥44pt; no hover-only affordances.
-- Nest `<row>`/`<column>` for the chrome — shell, sidebar, header, card
-  grids — and reserve absolute x/y for decorative accents and full-bleed
-  blocks. Icons come from `<image icon="query"/>` or `moda file search
-  --kind icon` (the shared packs ARE the stock icon library); product
-  screenshots from uploads or `moda media generate-image`.
-- Push past three-equal-cards: a bento grid (a 2fr feature beside stacked
-  1fr cards), a full-bleed color block carrying nav + hero, oversized
-  low-opacity step numerals, colored overline labels. A mockup with a point
-  of view beats a gray wireframe — unless the user asked for a wireframe,
-  in which case grayscale boxes, real hierarchy, and honest labels win.
 
 ## Verify and deliver
 

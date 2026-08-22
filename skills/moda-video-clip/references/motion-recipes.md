@@ -199,8 +199,9 @@ hand over one of the source stills.
 
 Platform-size canvas → one generated clip as a full-bleed video fill →
 headline and CTA in the brand's type inside the safe zone → per-platform mp4.
-Sizes and safe areas come from references/social.md; everything about the
-still formats there still holds, and only the export format changes.
+Sizes and safe areas come from the moda-social family — load `moda-social`
+or its platform child; everything about the still formats there still holds,
+and only the export format changes.
 
 **1. Canvas at the exact platform size**, animation category:
 

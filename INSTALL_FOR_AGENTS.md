@@ -27,5 +27,5 @@ user the pinned command and WAIT for them to run it.
 
 3. **Finish with an artifact, not a config confirmation.** Make a one-pager
    from whatever context is at hand (the current repo's README, a file the
-   user names) using the moda-one-pager skill, and end by printing the canvas
+   user names) using the moda-document skill, and end by printing the canvas
    URL and the exported PDF path.
