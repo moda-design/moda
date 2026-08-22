@@ -26,48 +26,102 @@ Returns the compact authoring DSL — the exact state the canvas contains — pl
 
 ### How to read the DSL
 
-The DSL is Markdown. Pages are `##` headers; nodes are indented lines.
-
-**Page header**
-
-```
-## p_a: PageName (nodeCount) WxH (current page) bg:#color
-```
-
-- `p_a` = page short id. `(nodeCount)` includes ALL nested children, not just top-level.
-- `WxH` = page size. `bg:` = background (omitted if white).
-- Freeform pages add `at X,Y` (canvas position); floating nodes appear under a `## Canvas (N floating nodes)` section with canvas-absolute coords.
-
-**Node line**
+Reads come back as **TOON**, an indentation-structured document. A whole-canvas read is
+`meta:`, `v:` (format version), `canvas:` (`w`/`h`), a **flat top-level `nodes[]`**, then
+`pages[]`:
 
 ```
-id type [name] z:N x,y WxH properties...
+meta:
+  format: toon
+  lossless: true
+  currentPage: p_a
+v: 2
+canvas:
+  w: 1080
+  h: 1080
+nodes[2]:
+  - id: n1
+    t: rectangle
+    x: 10
+    y: 20
+    w: 300
+    h: 200
+    fill: #0F172A
+    st: #FF0000
+    stW: 4
+    cR: 80
+  - id: n2
+    t: richtext
+    x: 40
+    y: 260
+    w: 300
+    h: 80
+    fill:
+      type: variable
+      variableName: Brand
+pages[1]:
+  - id: p_a
+    name: Cover
+    size[2]: 1080,1080
+    f: #FFFFFF
+    nodes[2]: n1,n2
 ```
 
-Examples:
+**Nodes live at the top level; a page lists ids.** `pages[].nodes[N]: n1,n2` is an id list in
+**back-to-front order** — that ordering *is* the z-order, and there is no `z:` property. Look up
+each id in the top-level `nodes[]` for its properties. A group node's `children[N]: n1,n2` is
+the same kind of id list, resolved the same way.
+
+**Keys are abbreviated.** The optimizer renames before encoding, so the read is neither the old
+single-letter shorthand nor the long scene names:
+
+| keys in a NODE record | what they are |
+| -- | -- |
+| `t` `w` `h` `r` `o` `s` | type, size, rotation, opacity, scale. `x` and `y` keep their names |
+| `st` `stW` `cR` | stroke, stroke width, corner radius. A NODE's fill stays `fill` |
+| `shC` `shB` `shOff` `shO` `shBehind` | shadow colour, blur, offset, opacity, show-behind — flat keys, not one object |
+| `fF` `fS` `fSt` `tAl` `vAl` `lH` `lS` | font family/size/style, align, line height, letter spacing |
+| `fillMode` `gradStart` `gradEnd` `gradStops` | fill mode, and a linear gradient's start, end and colour stops |
+| `radGradStart` `radGradStops` `radGradRX` `radGradRY` | a radial gradient's start, colour stops and x/y radii |
+| `fillImg` `fillImgOff` `fillImgScale` `fillImgDims` `fillImgX` `fillImgY` `fillImgRepeat` `fillImgRot` | a pattern-image fill and its placement |
+| `imgSrc` `cX` `cY` `cW` `cH` | image source and crop box |
+| `htmlContent` `textContent` `innerRadiusRatio` `metadata` `hidden` `locked` `children` | not abbreviated — these keep their scene names |
+
+That table is the complete rename set for a NODE: anything absent from the left column keeps
+its scene name.
+
+**A page renames far less.** Pages go through a different path, so do not carry the node table
+over to them.
+
+| keys in a PAGE record | what they are |
+| -- | -- |
+| `f` `size` `nodes` | background fill, dimensions as `size[2]: W,H`, and the back-to-front id list |
+| `fillImg` `fillImgDims` `fillImgScale` `fillImgOff` `fillImgRepeat` | a pattern background. `fillImgDims` is an object here, where a node's is a pair |
+| `fillPriority` | the fill mode — a page keeps the full name |
+| `fillLinearGradientStartPoint` `fillLinearGradientColorStops` `fillRadialGradientRadiusX` | gradient backgrounds, spelled out in full |
+
+Those are the only renames a page has; everything else on a page keeps its full scene name. A
+page never uses the node spellings `fillMode`, `gradStart`, `gradStops`, `radGradRX`, `w`, `h`,
+`width` or `height`.
+
+**Compact forms.** TOON writes `key: value`, `key[N]: v1,v2` for a flat list, `key[N]{f1,f2}:` +
+one row per line for a uniform table, and `key[N]:` + `- ` records otherwise. The encoder picks
+the compact form whenever the rows are uniform, so the same key can appear either way — read the
+header, do not assume a shape. `shOff[2]: 2,3` is an xy pair; `gradStops[4]: 0,#000,1,#fff` is
+offset/colour interleaved, not a table.
+
+**A fill bound to a variable is a block**, and the variable is named rather than `$`-referenced:
 
 ```
-n11 ellipse(image) [avatar] z:3 227,227 134x134 img:img1 400x400 s:$stroke-color/4px
-n9  rectangle [pillbox]     z:2 80,80 920x1065 cr:80 f:#fff s:$text-primary/4px
-n10 richtext [page_body]    z:5 160,347 762x719 font:Inter/700/24px color:#333 "Hello world"
-n8  group [background]      z:1 0,0 500x500 contains:{n1,n2,n3}
+fill:
+  type: variable
+  variableName: Brand
 ```
 
-- **`z:N`** — layer order (1 = back, higher = front). **`[name]`** — the node's metadata name.
-- **`x,y`** — top-left origin (page-relative, or canvas-absolute for floating nodes). **`WxH`** — bounding box.
-- **`type(image)`** marker + **`img:imgN WxH`** — image-filled shape with a short image ref and natural dimensions. `type(shader:…)`, `generated(qr|latex|map|chart)` mark those variants.
-
-**Common node properties**
-
-- Fill `f:#color` or `f:$varName`; stroke `s:color/Npx` (or `s:$var/4px`); `salign:inside|outside`.
-- `cr:80` corner radius; `rot:45°`; `o:0.6` opacity; `hidden`; `locked`; `do-not-edit` (must not be edited or deleted); `animated`.
-- Shadow `shadow:color/blurN/dx,dy[/oN]`; inner shadow `inset-shadow:…` (rect/ellipse only); `blend:multiply|screen|overlay`; `backdrop:glass|blur|…`.
-- Gradient fills `grad:c1→c2@x1,y1→x2,y2` (linear), `rgrad:…` (radial), `cgrad:…` (conic); shader `shaderColors:[#c1,#c2,#c3]`.
-- Ellipse arcs `sa:45°` (start), `sw:180°` (sweep), `ir:0.5` (inner-radius ratio / donut).
-- Richtext `font:Family/weight/sizepx` + `color:#xxx` + the literal text in quotes.
-- Groups/containers `contains:{n1,n2,n3}` and recursively serialize each child indented 2 spaces deeper.
-
-**Legend sections** (when present): `## Vars` (variables as `name: value`, referenced elsewhere as `$name`), `## Animations`, `## Continuous Effects`, `## Comments` (`c1 open page:p_a 812,240 node:n7` with indented author/text lines).
+There is no `## Vars` legend — variables are a top-level `variables[]` array. `animations` is a
+top-level object holding the whole animation document — `pages[]` with a `stack[]` per page
+plus `continuousTracks[]`, or `pageTimelines[]` — and an individual animation's `id` sits on a
+record **inside** those arrays. It is not keyed by animation id, so do not index it by one.
 
 **Asset refs:** image URLs are replaced by short refs (`img1`, `img2`, …) with natural dimensions after them. Reuse a ref by short name in new markup (`<image src="img1">`); the server resolves it. Never invent, guess, or autoincrement a ref.
 
