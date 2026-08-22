@@ -76,7 +76,7 @@ The parser dispatches all 24 elements below — including `<chart>`, `<path>`, `
 - **Audio is ON by default** for a clip you place (the generators produce native audio and the export mixer only pulls un-muted clips) — the opposite of a clip a user drags in.
 - Placing N clips creates N independent elements; sequencing them is `t.video` on an animation canvas (references/edit-code.md).
 - **Not authorable here** (narrower than `<image>`): `crop`, `perspective`/`corner-pin`, `icon`, `shadow`, `stroke`, `blend-mode`, `backdrop` (that one warns `backdrop_unsupported_for_element`).
-- **Static exports of a video-filled node are blank today** — placement warns `video_poster_unavailable`. Deliver mp4/gif, not png/pdf/pptx (references/gotchas.md).
+- **Static exports draw a video-filled node's poster frame when one is available.** If poster derivation fails, placement warns `video_poster_unavailable` and static exports of that clip are blank; deliver mp4/gif instead when motion must be preserved (references/gotchas.md).
 
 ## Sizing & layout semantics
 

@@ -21,9 +21,9 @@ Canvases DO take video (see references/markup.md and references/gotchas.md):
 `<video src="file_…"/>` places a clip as a video fill, and on an animation
 canvas `t.video` sequences clips on the page timeline — so compositing type
 over a clip and cutting two shots together are real moves. The catch is
-delivery: static exports (png/pdf/pptx) of a video-filled node render BLANK
-today (no poster frame yet; placement warns `video_poster_unavailable`), so
-deliver canvas-video work as an mp4/gif export or as the standalone clip,
+delivery: static exports (png/pdf/pptx) draw only a video-filled node's poster
+frame (a clip whose placement warned `video_poster_unavailable` renders blank),
+so deliver canvas-video work as an mp4/gif export or as the standalone clip,
 never as a still. Route by the deliverable: a raw clip with no design over
 it stays in the media lane; type, brand geometry, or a cut belongs on an
 animation canvas exported to mp4/gif.
@@ -349,8 +349,8 @@ a cut, over generated footage.
    trim/speed/loop go on the fill through `update()`
    (references/edit-code.md).
 4. Deliver `moda export CANVAS_REF --format mp4 --page N` plus the live
-   link. Do NOT deliver a png/pdf of a video-filled page — it renders the
-   clip blank today (`video_poster_unavailable`); say so if asked for one.
+   link — png/pdf keeps only each clip's poster frame (blank if placement
+   warned `video_poster_unavailable`); say so if a still is asked for.
 
 **7. Finished cuts** — a logo animation, a product teaser, a social ad: the
 composed, branded DELIVERABLE rather than a clip, which is where this
