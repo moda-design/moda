@@ -28,12 +28,49 @@ never as a still. Route by the deliverable: a raw clip with no design over
 it stays in the media lane; type, brand geometry, or a cut belongs on an
 animation canvas exported to mp4/gif.
 
-There is no free-form video-to-video edit. A source clip is a declared reference,
-the base of an `--extend-video` extension (below), or the subject of one of the two
-verbs that take a video as their SUBJECT: `moda media upscale-video` (bigger) and
-`moda media reframe-video` (a new shape — the shot is kept and the newly exposed
-edges are painted in, so the 16:9 becomes the 9:16 story cut without regenerating
-it). Nothing else.
+There is no generative free-form video-to-video edit. A source clip is a declared
+generation reference, the base of an `--extend-video` extension (below), or the
+subject of one of the two media verbs that take a video as their SUBJECT: `moda
+media upscale-video` (bigger) and `moda media reframe-video` (a new shape — the
+shot is kept and the newly exposed edges are painted in, so the 16:9 becomes the
+9:16 story cut without regenerating it).
+
+## Main Edit service — composition-only P1
+
+Use the Edit service for deterministic cut-list changes to the Main Edit:
+
+- `moda edit read CANVAS_REF --json` returns compact tracks and clips with stable
+  ids, links, transitions, and exact rational times. Each time carries an integer
+  string `value` numerator and a positive integer `timescale` denominator; for
+  example, value `3000` at timescale `1000` is exactly three seconds.
+- Put an array of `insert_clip`, `move_clip`, `trim_clip`, `remove_clip`, and
+  `reorder_clip` operations in a JSON file. Run `moda edit validate CANVAS_REF
+  --file operations.json` before a mutation when planning or debugging.
+- Operation shapes are exact:
+
+  ```json
+  {"op":"move_clip","clip_id":"clip-a","track_id":"track-v1","start":{"value":"3000","timescale":1000}}
+  {"op":"trim_clip","clip_id":"clip-a","edge":"end","time":{"value":"5000","timescale":1000}}
+  {"op":"remove_clip","clip_id":"clip-a"}
+  {"op":"reorder_clip","track_id":"track-v1","clip_id":"clip-a","before_clip_id":"clip-b"}
+  {"op":"insert_clip","track_id":"track-v1","clip":{"id":"clip-new","source":{"kind":"composition","composition_id":"composition-page-id"},"start":{"value":"0","timescale":1},"duration":{"value":"5","timescale":1}}}
+  ```
+
+  The inserted clip `id` is a new caller-chosen unique id; every track, canvas,
+  source composition, existing clip, and relationship id must come from
+  `moda edit read` rather than being invented.
+- Apply atomically with `moda edit apply CANVAS_REF --file operations.json
+  --revision REV`. The whole batch commits or none of it does; re-read
+  after `stale_revision` and retry with the new revision.
+
+P1 accepts composition clips only and keeps the visual track ripple-contiguous.
+Raw media sources, source-audio policy, non-`hold` visual end behavior, audio
+tracks or mixing, and transition authoring are deliberately unsupported.
+Rejections name the runtime capability
+(for example `edit.visual.media-source`, `edit.audio.track`, or
+`edit.transition`) instead of silently dropping authored state. Never replace the
+Edit document as raw JSON; these operations preserve fields a newer producer may
+have written even when this client does not understand them.
 
 ## Model choice — registry-driven
 
