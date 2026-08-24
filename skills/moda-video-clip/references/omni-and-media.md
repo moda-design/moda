@@ -34,30 +34,30 @@ Results return durable refs that feed markup `image(...)` fills and `src` attrib
 
 `--model` is **required — there is no "auto"**. The authoritative model list, with each model's aspect ratios, resolutions, and controls, comes from the CLI itself (`moda media models`) — defer to it; never hardcode capabilities from memory. Strengths in one line each, to route the choice:
 
-<!-- generated: image-model roster. Authored in backend/app/services/media/image/ (label + skill_card_line, falling back to description); regenerate with: uv run python -m scripts.render_model_roster -->
+<!-- generated: image-model roster. Authored in backend/app/services/media/image/ (label + roster_line, falling back to description); regenerate with: uv run python -m scripts.render_model_roster -->
 - **NanoBanana 2 Lite** — Fastest, lowest-cost baseline; the default when nothing else is demanded.
-- **NanoBanana 2** — Balanced speed and quality with flexible output up to 4K.
-- **NanoBanana Pro** — Premium tier for the most complex, high-fidelity visual tasks.
+- **NanoBanana 2** — The balanced Gemini tier — better than Lite for everyday work, well short of Pro's price.
+- **NanoBanana Pro** — The Gemini premium tier for the most complex, high-fidelity briefs, and the dearest of the three.
 - **GPT Image 2.0** — Strong in-image text rendering.
-- **Ideogram V4** — Crisp posters, logos and accurate in-image text.
-- **FLUX.2 Pro** — High-quality general-purpose generation, and multi-reference image editing.
+- **Ideogram V4** — Crisp posters, logos and accurate in-image text. Billed by megapixel rather than per call, so cost tracks output size.
+- **FLUX.2 Pro** — The FLUX.2 workhorse: general-purpose quality with multi-reference editing, at the family's lowest price.
 - **FLUX.2 Flex** — The only image model with sampler control: guidance scale and inference steps.
-- **FLUX.2 Max** — The FLUX.2 family's top tier for realism and precision; dearest at ordinary sizes.
-- **Seedream V5 Lite** — High-resolution output (up to 4K) at the family's lowest price.
-- **Seedream V5 Pro** — The family's premium tier: more detail per pixel than Lite, at a smaller maximum size (2K).
+- **FLUX.2 Max** — The FLUX.2 family's top tier for realism and precision, and its dearest at ordinary sizes.
+- **Seedream V5 Lite** — The Seedream workhorse: full-size output at the family's lowest price.
+- **Seedream V5 Pro** — More detail per pixel than Lite, but a smaller maximum size; pick Lite for large canvases.
 - **Recraft V3** — Style-rich design generation and single-image editing; vector styles cost 2x.
 - **Seedream 4.5** — The previous Seedream generation, kept for its own look rather than its size.
-- **Recraft V4.1** — Design-first generation for production-ready raster artwork.
-- **Recraft V4.1 Pro** — High-resolution generation for hero imagery, campaigns, and print.
-- **Recraft V4.1 Utility** — A faster, lighter Recraft variant for high-volume raster workflows.
-- **Recraft V4.1 Utility Pro** — High-resolution Recraft Pro output with a faster, cost-efficient runtime.
-- **Recraft V4.1 Vector** — Editable SVG generation for logos, icons, and illustration systems.
-- **Recraft V4.1 Pro Vector** — Large-format editable SVG generation for detailed professional illustration.
-- **Grok Imagine** — Generation and multi-image editing with a separate 1K/2K resolution axis.
-- **Grok Imagine 2.0** — Generation and multi-image editing with priced quality and 1K/2K resolution axes.
-- **Grok Imagine Pro** — The quality half of the v1 generation: the same surface, priced by 1K/2K resolution.
-- **Kling Image V3** — Kling's image line: eight aspect ratios, 1K/2K, and one-image editing at a flat rate.
-- **Kling Image O3** — The 4K Kling image line, with a multi-image edit list; 4K costs double.
+- **Recraft V4.1** — Design-first raster artwork for production — the entry Recraft V4.1 tier.
+- **Recraft V4.1 Pro** — Recraft V4.1 for hero imagery, campaigns and print, at six times the entry tier's price.
+- **Recraft V4.1 Utility** — A faster, lighter Recraft V4.1 for high-volume work, at the entry tier's price.
+- **Recraft V4.1 Utility Pro** — Pro-grade Recraft output on the faster Utility runtime, at Pro's price.
+- **Recraft V4.1 Vector** — Editable SVG output — logos, icons, and illustration systems.
+- **Recraft V4.1 Pro Vector** — Large-format editable SVG for detailed professional illustration — Recraft's top vector tier, and its dearest route.
+- **Grok Imagine** — Cheap generation and multi-image editing — the entry Grok tier.
+- **Grok Imagine 2.0** — The current Grok generation, priced on both quality and resolution.
+- **Grok Imagine Pro** — The quality tier of Grok v1 — the same surface, dearer output.
+- **Kling Image V3** — Kling's image line at one flat rate, with single-image editing.
+- **Kling Image O3** — The 4K Kling line, with a multi-image edit list; 4K costs double.
 <!-- /generated: image-model roster -->
 
 ### Image rules
