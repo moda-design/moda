@@ -119,8 +119,8 @@ to the registry when it disagrees):
 - **Veo 3.1 Fast** — the iteration pick: the same envelope at roughly half
   the price and latency; try a direction here before committing a pricier
   model.
-- **Veo 3.1 Lite** — the cheapest second on the roster: the same Veo
-  envelope again, a third of Fast's rate, with 1080p as its ceiling.
+- **Veo 3.1 Lite** — the cheapest Veo second (PixVerse V6 goes lower): the
+  same Veo envelope again, a third of Fast's rate, 1080p as its ceiling.
   Unlike the other two tiers, 1080p costs more here than 720p, and its
   first-and-last-frame morph takes 8 s only (4/6/8 without an end frame).
 - **Grok Imagine Video 1.5** — the framing pick for short social clips:
