@@ -167,13 +167,11 @@ to the registry when it disagrees):
   Pro is 1080p and 4K is native 4k. All make whole 3–15 s clips with an optional end frame. Text supports
   landscape/square/portrait; image follows the source frame (≤50MB, ≥300×300, aspect ratio 0.4:1–2.5:1).
   O3 exposes `shot_type`, but not Kling 3's guidance/negative prompt; describe multi-shot sequences in one prompt.
-- **Wan 2.7** — reaches shorter than anything else here: a 2 s clip no
-  other model will render (Kling and Gemini stop at 3 s, Seedance at
-  4 s), whole-second control from 2–15 s, flat $0.10/s (720p) or $0.15/s
-  (1080p) with the frame not entering the price. **Reach for it when you
-  need a clip shorter than anything else will render** — at ordinary 5–15 s
-  lengths Seedance 2.0 and Veo 3.1 Lite cost less per second and are the
-  better picks. Audio always on and not disableable. Its
+- **Wan 2.7** — reaches shorter than anything else here: a 2 s clip no other model will render (Kling and Gemini
+  stop at 3 s, Seedance at 4 s), whole-second control from 2–15 s, flat $0.10/s (720p) or $0.15/s (1080p) with the
+  frame not entering the price. **Reach for it when you need a clip shorter than anything else will render** — at
+  ordinary 5–15 s lengths Seedance 2.0 and Veo 3.1 Lite cost less per second and are the better picks. Audio always
+  on and not disableable. Its
   **default is 1080p**, so an unspecified request costs half again what the
   same clip costs at 720p — pin the resolution. First-and-last-frame morphs
   need no special mode; supply both frames and the same endpoint takes
@@ -184,6 +182,9 @@ to the registry when it disagrees):
   on Veo 3.1 and Veo 3.1 Fast, which likewise fold 720p and 1080p into one
   rate and step only at 4K. fal bills each input clip's own running time on
   top of the output's, so an 8 s clip driving a 3 s render bills 11 s.
+- **Wan 3.0 / Wan 3.0 Prime** — text/start-frame/reference video, 2–30 s or `auto`, optional audio/end frame,
+  480p/720p/1080p, and up to 10 images, 5 videos (15 s total, ≥16 fps), plus 5 audios (15 s total; needs a visual).
+  Standard is $0.05/$0.10/$0.20 per second; faster Prime is $0.068/$0.14/$0.28. Default 1080p/audio on.
 - **Happy Horse 1.1** — the lip-sync pick: synchronized native audio and
   multilingual lip-sync on every mode, and the widest framing menu here —
   nine ratios, 21:9 to 9:21. 3–15 s, $0.14/s (720p) or $0.18/s (1080p,
@@ -217,10 +218,9 @@ Read `billing.duration_quantity`, source envelope, and resolutions in `moda medi
 Grok's source must be 2–15 s, at most 921,600 px per frame, and MP4 with a supported codec.
 
 **Reference audio** rides repeatable `--reference-audio <ref-or-url>` (`reference_audios` on the wire). Read limits from the model card.
-For H3, bind references in the prompt by modality and 1-based list order: `Image 1`, `Video 1`, `Audio 1`.
-What it MEANS depends on what it arrives with: beside an image or video reference it is one reference among
-several (H3 and Seedance 2.0 Mini both require that visual reference), while ALONE it drives the whole clip on a
-model whose card shows an `audio→video` mode. An audio-only ask elsewhere is refused before anything is billed.
+For H3, bind by modality/list order: `Image 1`, `Video 1`, `Audio 1`. Wan 3.0/Prime require a visual reference.
+Beside an image/video it is one reference among several; ALONE it drives the clip only on a model whose card shows
+`audio→video`. An audio-only ask elsewhere is refused before anything is billed.
 
 Native-audio defaults are model-specific. The model card is the authority: `moda media models` reports
 `generate_audio_default` and `generate_audio_controllable`; pass `--generate-audio` whenever sound is wanted and
