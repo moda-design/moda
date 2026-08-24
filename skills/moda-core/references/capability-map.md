@@ -106,6 +106,15 @@ native pptx, and mp4 or gif from one animated page (`moda export`). Read the typ
 honestly rather than withholding the file. A long render returns a job handle: poll it with
 `moda task status`. An identical re-call reuses the job instead of running it twice.
 
+A long `queued` is not always queue contention — a task whose attempt died is retried
+automatically and sits in `queued` through the backoff. `attempts_started` counts attempts BEGUN
+(`0` = never claimed), and the claim itself increments it, so `queued` + `attempts_started >= 1` is
+a retry while `running` + `attempts_started == 1` is an ordinary first run — the threshold is `>= 1`,
+not `>= 2`. On a non-terminal task `error` describes the PREVIOUS, already-dead attempt: keep
+polling, do not report the job failed or start a replacement. `created_at` → `first_started_at` is
+the true queue wait (`started_at` restarts on every attempt, so it overstates it); `first_started_at:
+null` means unknown, never "never started".
+
 ## Meta — FREE
 
 `moda doctor` (health), `moda update` (CLI and skills in one command), `moda describe` (any verb's
