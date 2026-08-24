@@ -72,9 +72,10 @@ hint); never re-run a command that exited 0.
 - **Merge or append decks/canvases**: `moda canvas import-pages DST_REF
   --source SRC_REF [--pages p_a p_b]` clones those pages and APPENDS them after
   the last page (team-accessible canvas, share token, or a pasted URL).
-- **Order them afterwards**: `movePages(ids, { index })` or `{ afterPageId }`
-  in a `moda canvas edit` batch — that is the insert-at-position move; there is
-  no positional import.
+- **Order them afterwards**: in a `moda canvas edit` batch, chain ONE page per
+  call — `movePages(['b'], { afterPageId: 'a' })`. A multi-page call moves them
+  as one block in their CURRENT order, never the `ids` order, and naming every
+  page is a no-op. There is no positional import.
 - **Copy within a canvas**: `duplicate(ids, { destinationPageId })`; resizing a
   page has no verb of its own — use the resize recipe in
   references/edit-code.md.
