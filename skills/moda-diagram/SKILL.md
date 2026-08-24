@@ -72,8 +72,9 @@ players for a matrix. Fewer primitives, shorter labels.
 
 - **Links are `<connector>`, never hand-placed lines.** Connectors stay
   anchored when a node moves, including through later incremental edits;
-  `from`/`to` take `@Target:top|bottom|left|right`. Connectors do NOT work
-  inside flex containers — position connected nodes with absolute x/y.
+  `from`/`to` take `@Target:top|bottom|left|right`. A connector may sit inside
+  a `<group>`/`<row>`/`<column>`: it is out-of-flow there (takes no layout
+  slot) and travels with the container.
 - **Clarity beats exhaustiveness.** Flow top-to-bottom or left-to-right
   unless asked otherwise; detail that will not fit a box belongs in a caption
   outside the flow.

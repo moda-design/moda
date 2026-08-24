@@ -25,8 +25,8 @@ doesn't fit a box belongs in a caption outside the flow.
   same page, and within one call the target element must appear BEFORE the
   connector that references it. `routing="straight|elbowed|curved"`
   (`elbowed` takes `corner-radius`); labels via `text` + `text-position`;
-  connectors do NOT work inside flex containers — position connected nodes
-  with absolute x/y.
+  a connector may sit inside a `<group>`, `<row>` or `<column>` — it is
+  out-of-flow there (takes no layout slot) and travels with the container.
 - Color carries meaning: neutral for ordinary steps, green for success, red
   for failure, the accent for emphasis only — never on every node.
 - Node text is the type anchor; connector labels and captions step down.
