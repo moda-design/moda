@@ -22,7 +22,7 @@ never guess.
 
 ## What this is
 
-A wizard-style flow for establishing a deck's visual theme *with* the user before any real content exists. Runs on a blank 1920×1080 slides canvas with a brand kit applied, and ends with twelve placeholder slides that define a complete visual system. If the canvas already has designed slides, or the user wants specific content designed right now, say so and ask how they want to proceed.
+A wizard-style flow for establishing a deck's visual theme *with* the user before any real content exists. Runs on a blank 1920×1080 slides canvas — with a brand kit bound when one is in play — and ends with twelve placeholder slides that define a complete visual system. If the canvas already has designed slides, or the user wants specific content designed right now, say so and ask how they want to proceed.
 
 Five phases, each gated on explicit approval. **Do not generate the next phase without it** — "what's next?" or "let's move on" is the gate. Anything the user said in their opening prompt supersedes the defaults below; acknowledge it so they know you read it.
 
@@ -30,11 +30,22 @@ Set up, then open by setting expectations in a sentence or two — four title di
 
 1. `moda brand list`, then `moda canvas create --name "[Deck] theme" --intent "a slide theme: 4 title directions, ceremonial slides, 8 workhorse layouts" --size 1920x1080 --pages 1 --category slides --brand [KIT]`.
 2. `moda canvas share CANVAS_REF` — send the link at once: "follow along live here."
-3. LOOK at the kit's assets before designing anything (references/brand.md), and compute the type ladder from references/design-quality.md (1920×1080 → body ≈ 40px, floor 18px).
+3. A kit is bound → LOOK at its assets before designing anything (references/brand.md). No kit → read references/no-brand-design.md first. Either way, compute the type ladder from references/design-quality.md (1920×1080 → body ≈ 40px, floor 18px).
+
+**No kit means the theme IS the identity** — never that you design plain.
+`moda brand list` comes back empty, or the user declines one, so step 1 runs
+without naming a kit. Read the binding the create reports back rather than
+assuming it came out empty — a bound kit IS a kit, so design to it or unbind
+(`moda canvas brand`), and say which you did. Genuinely unbound, the
+wizard invents: a palette with two color worlds, distinctive faces, a motif,
+all chosen for this deck's subject (references/no-brand-design.md). Phase 1's
+four directions become four genuinely different *identities*, and Phase 3's
+contract is what locks the chosen one in. A generic blue-and-gray theme is a
+failed run, not a neutral one.
 
 ## Phase 1 — Title slide, 4 variants
 
-`moda canvas add-pages CANVAS_REF --count 3`, then one `moda canvas markup CANVAS_REF --file - --page P` per variant: four title slides, each a genuinely different aesthetic axis, all using the brand kit's real colors, type and logo (the variants explore *design language*, not brand attributes). Pick four from: type-led/anthemic · image-led · editorial · compositional/off-grid · minimalist/reductive · color-shock/block · maximalist/layered · geometric/constructivist · tactile/hand-made · technical/diagrammatic. With directional hints from the user, pick four that fit the direction; without hints, span clearly different territory — one type-driven, one image-driven, one color/composition-driven, one wildcard — and vary your picks across sessions.
+`moda canvas add-pages CANVAS_REF --count 3`, then one `moda canvas markup CANVAS_REF --file - --page P` per variant: four title slides, each a genuinely different aesthetic axis. With a kit, all four use its real colors, type and logo — the variants explore *design language*, not brand attributes. Without one, each variant brings its own invented palette and type pairing, so the pick settles the identity as well as the language. Pick four from: type-led/anthemic · image-led · editorial · compositional/off-grid · minimalist/reductive · color-shock/block · maximalist/layered · geometric/constructivist · tactile/hand-made · technical/diagrammatic. With directional hints from the user, pick four that fit the direction; without hints, span clearly different territory — one type-driven, one image-driven, one color/composition-driven, one wildcard — and vary your picks across sessions.
 
 Name each page with a letter and its approach ("A — Anthemic") so the user can reference them; page names are set in the edit lane (`update(pageId, { name: 'A — Anthemic' })`, references/edit-code.md). `moda canvas screenshot CANVAS_REF` and LOOK before presenting. Present them as a choice, noting that only one moves forward and the other three get deleted, so this is the moment to choose.
 
@@ -56,7 +67,7 @@ Screenshot all three, present them together, and iterate until approved.
 
 ## Phase 3 — Theme contract
 
-Write the locked system out in plain prose to the user (not a slide, no approval needed — it's a status update): type scale (which font for display vs body, exact sizes, caps/weight rules), color roles (which brand color is background, accent, type, data emphasis), layout pattern (grid, alignment, margins, whether off-grid is in play), image treatment, and logo behavior. Close with: every workhorse slide will adhere to this — now's the moment to adjust. **Without this contract Phase 4 drifts**; it's the connective tissue and the thing specific feedback points back to.
+Write the locked system out in plain prose to the user (not a slide, no approval needed — it's a status update): type scale (which font for display vs body, exact sizes, caps/weight rules), color roles (which kit color — or, with no kit, which invented hex — is background, accent, type, data emphasis), layout pattern (grid, alignment, margins, whether off-grid is in play), image treatment, and logo behavior (no kit and no mark from the user → none; never invent one). Close with: every workhorse slide will adhere to this — now's the moment to adjust. **Without this contract Phase 4 drifts**; it's the connective tissue and the thing specific feedback points back to.
 
 ## Phase 4 — Workhorse slides
 
@@ -91,4 +102,5 @@ moda-core — the contract, recovery, everything Moda can do.
 | references/markup.md | before any markup apply |
 | references/design-quality.md | the type ladder, imagery, shaders, the AI-slop list |
 | references/brand.md | a kit is bound — look at its assets, not just its tokens |
+| references/no-brand-design.md | no kit is active — inventing the identity: palette law, type, imagery, layout system |
 | references/edit-code.md | page names; targeted edits to an approved slide |
