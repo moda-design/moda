@@ -109,10 +109,26 @@ to the registry when it disagrees):
   at 80% of the price, capped at 720p. Explore here, then re-run the keeper on 2.0 for 1080p.
 - **Seedance 2.0 Mini** — the budget tier: 480p/720p, 4–15 s or `auto`, optional end frame, and image/video/audio
   references (`@Image1`, `@Video1`, `@Audio1`). Use 2.0 for 1080p or 2.5 for longer clips.
-- **Seedance 2.5** — the long-form pick: up to ~30 s in ONE native shot and
-  large reference boards (address them in the prompt as `@Image1`,
-  `@Image2`, …). Costs meaningfully more per second than 2.0 — use 2.0 when
-  the clip fits in 15 s.
+- **Seedance 2.5** — the long-form pick and the roster's JOINT AUDIO-VIDEO
+  entry: up to ~30 s in ONE native shot, big reference boards and reference
+  video (address inputs in the prompt as `@Image1`, `@Image2`, …). Audio is
+  native and on by default — ambience, effects, and SPOKEN DIALOGUE render
+  jointly with the picture, no separate TTS: quote the line in the prompt, e.g.
+  `moda media generate-video --model seedance-2.5 --duration 8 --prompt 'Close-up, a barista looks up and says: "We open at seven." Natural delivery, normal blinking.'`
+  Caveats: it takes NO audio references (of the Seedance tiers only 2.0
+  Mini does); a
+  photoreal-human image plus a spoken line tends to trip the provider's
+  safety block (`content_policy_violation`) — text-described speakers pass;
+  fast action still decoheres — keep talking shots calm. In a small
+  2026-08 evaluation on this route, its in-prompt speech graded closest to
+  a passable talking human of any roster lane, yet still clearly below the
+  professional bar — frozen torso, lip lag at line starts, a mechanical
+  end-of-line grin, high roll variance; treat that as provisional and
+  re-test before a large spend. Prefer
+  VO-led beats with lips off-camera; when a talking close-up is unavoidable
+  this is the lane, budgeted for heavy best-of-N curation.
+  Dearer per second than 2.0 — use 2.0 when the clip fits in 15 s and
+  nothing needs to speak.
 - **Veo 3.1** — the quality pick: cinematic realism and camera language,
   4K, a true first-to-last-frame morph; fixed short clip lengths (an
   off-menu duration snaps).
@@ -185,6 +201,8 @@ to the registry when it disagrees):
 - **Wan 3.0 / Wan 3.0 Prime** — text/start-frame/reference video, 2–30 s or `auto`, optional audio/end frame,
   480p/720p/1080p, and up to 10 images, 5 videos (15 s total, ≥16 fps), plus 5 audios (15 s total; needs a visual).
   Standard is $0.05/$0.10/$0.20 per second; faster Prime is $0.068/$0.14/$0.28. Default 1080p/audio on.
+  This is the roster's strongest audio-REFERENCE lane: tracks ride beside image/video references, with a
+  SEED, in one native 2–30 s pass — route reference-consistent clips that a supplied track must drive here.
 - **Happy Horse 1.1** — the lip-sync pick: synchronized native audio and
   multilingual lip-sync on every mode, and the widest framing menu here —
   nine ratios, 21:9 to 9:21. 3–15 s, $0.14/s (720p) or $0.18/s (1080p,
@@ -196,8 +214,9 @@ to the registry when it disagrees):
   track: pass a reference audio on its own (no image or video reference) and the
   clip is rendered to that audio, which comes back in the output; add a start
   image and it becomes the opening frame. The clip's length IS the track's
-  (2–10 s Pro, 2–20 s Fast), so a duration you ask for comes back adjusted —
-  pick the audio, not the seconds. Otherwise 6/8/10 s (Pro) or 6–20 s in 2 s
+  (2–10 s Pro, 2–20 s Fast — on Fast a full 20 s VO read or
+  music bed drives the entire clip), so a duration you ask for comes back
+  adjusted — pick the audio, not the seconds. Otherwise 6/8/10 s (Pro) or 6–20 s in 2 s
   steps (Fast), `auto` by default on both, so pin the duration or you reserve
   the ceiling. Pro is $0.12/s (720p) and $0.17/s (1080p); Fast is cheaper at both
   ($0.09/$0.13) and the only tier reaching 1440p ($0.19/s), 4K ($0.30/s) or
@@ -219,13 +238,16 @@ Grok's source must be 2–15 s, at most 921,600 px per frame, and MP4 with a sup
 
 **Reference audio** rides repeatable `--reference-audio <ref-or-url>` (`reference_audios` on the wire). Read limits from the model card.
 For H3, bind by modality/list order: `Image 1`, `Video 1`, `Audio 1`. Wan 3.0/Prime require a visual reference.
+Of the Seedance tiers only 2.0 Mini takes reference audio (addressed as `@Audio1` beside `@Image1`/`@Video1`);
+Seedance 2.0 and 2.0 Fast accept image and video references only.
 Beside an image/video it is one reference among several; ALONE it drives the clip only on a model whose card shows
 `audio→video`. An audio-only ask elsewhere is refused before anything is billed.
 
 Native-audio defaults are model-specific. The model card is the authority: `moda media models` reports
 `generate_audio_default` and `generate_audio_controllable`; pass `--generate-audio` whenever sound is wanted and
 the default is off. `--no-generate-audio` buys the SILENT rate where audio is controllable — on Kling 3 Standard
-and Pro that is a third off, so use it whenever the clip does not need sound. Models where controllable is false
+and Pro that is a third off, so use it whenever the clip does not need sound — including VO-led work
+where the mix discards generated audio anyway; silent is the right default there. Models where controllable is false
 have INTRINSIC audio: they accept the flag but still produce audio, so silence buys nothing. The receipt is the truth.
 
 ## Pin the knobs — before EVERY generation
@@ -533,6 +555,53 @@ a user a generated clip is right without looking first.
 - Canvas-motion exports: a screenshot shows ONE static frame — check
   layout/brand there, and state that the motion itself needs eyes on the
   mp4/gif or the live canvas.
+
+## Post-production routing — canvas owns picture, local owns audio
+
+The default split, learned in production. Do not abandon the canvas
+timeline for local tools because one step must be local:
+
+- The canvas timeline OWNS picture assembly (`t.video` bars are the cuts),
+  trims and retimes, text and supers, vector end cards and overlays,
+  canvas-native motion, and reframing for aspect variants. Prefer it even
+  when local tools feel faster: the canvas artifact is editable,
+  collaborative, and re-exportable; a local concat is a dead end.
+- Local post is legitimate ONLY for the audio mix (music bed, VO,
+  loudness) — the timeline has no standalone audio tracks or mixing
+  today — and for concatenating chunked exports.
+- The hybrid recipe: assemble picture + text on canvas → export video →
+  mux audio locally → deliver. Never assemble picture locally just
+  because audio must be local. The local half needs a general shell
+  (ffmpeg or similar) — in a moda-only harness, hand over the exported
+  picture and the audio files with the mux step stated plainly, and do
+  not claim final delivery.
+
+Constraints that force the local half — plan for them from the start:
+
+1. The timeline carries no standalone audio tracks or mixing — plan the
+   local mix up front, don't discover it at delivery. Video FILLS' own
+   audio IS muxed into mp4 exports (an `audio_source_dropped` warning
+   names any fill whose sound went missing): mute the fills, or
+   account for their sound, before laying a local mix over the picture.
+2. Long-composition exports can be DECLINED. `frame_dump_budget` is
+   content-shaped and TERMINAL — re-running the same composition declines
+   the same way; shrink what one export renders — lower the resolution,
+   shorten the composition, or split it across PAGES: `moda export` has no
+   time-range selector, so the supported chunk recipe is one chunk of the
+   cut per page, exported page-by-page with `--page N`, then concatenated
+   locally (re-encode on concat, never stream-copy across chunks; the
+   local half's shell caveat above applies). `frame_dump_scratch_pressure`
+   is capacity and retryable.
+3. Externally UPLOADED video files can fail to place on a canvas;
+   platform-generated `file_` refs place fine. Route generated media by
+   `file_` ref and treat upload-then-place as unreliable.
+4. A clip whose placement warned `video_poster_unavailable` renders blank
+   in stills — deliver canvas-video work as an mp4/gif export, never a
+   still.
+5. `t.video` bars hide clips outside their bar; to hide arbitrary nodes
+   per shot use `t.setLifetime`. Set the video FILL before authoring the
+   bar — the bar re-derives from the fill. Mechanics live in
+   references/edit-code.md and references/markup.md.
 
 ## Delivery
 
