@@ -68,6 +68,7 @@ verbatim, because a guessed one is a rejected call.
 | Generate audio: voiceover/TTS, music, sound effects, up to 600 s per render | `moda media generate-audio` |
 | Upscale an image, or a video to 1080p and beyond | `moda media upscale`, `moda media upscale-video` |
 | Remove a background, returning a transparent PNG | `moda media remove-background` |
+| Get a real company's own logo files, by domain — FREE | `moda media fetch-logo` |
 | Extend an image past its own frame | `moda media outpaint` |
 | Reframe a video to a new aspect without losing the shot | `moda media reframe-video` |
 | SEE a generated clip — sampled frames, FREE; never present a clip you have not looked at | `moda media video-frames` |

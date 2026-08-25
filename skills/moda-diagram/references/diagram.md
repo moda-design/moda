@@ -67,11 +67,13 @@ format). Inside-out:
    takes dark logos so they're visible, a dark background takes light ones —
    and prefer a brand's compact icon variant over its full wordmark lockup,
    which stops resolving at 40–60px. Real logos look far more professional
-   than generated icons or plain text, so pull the logo assets a brand kit
-   already carries (`moda brand show BRAND_REF --json`) and proactively ask
-   the user for the competitors' logo files (`moda file upload`) rather than
-   settling for muted circles; the circle fallback is for the brands you
-   still have no file for.
+   than generated icons or plain text, so fetch the competitors' official
+   marks by domain (`moda media fetch-logo acme.com rival.com` — up to 10
+   domains per call, FREE, each logo a durable `file_` ref; take the icon
+   variant) and pull the logo assets a brand kit already carries
+   (`moda brand show BRAND_REF --json`) for the user's own brand, rather than
+   settling for muted circles; the circle fallback is for the brands the
+   domain lookup cannot resolve.
 4. **The user's company** in the **upper-right**: larger (56–72px or a 32–40px
    accent circle), name in the accent color, clearly separated.
 5. Optional title above, 24–32px bold. Group the matrix elements so they

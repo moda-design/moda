@@ -129,10 +129,9 @@ Refinement is still not animation.
 ## How many directions get delivered
 
 After the exploration grid, develop **3 concepts** into the delivered set
-unless the user names a different number. Logo work is a taste-sensitive
-one-off: the "default to ONE committed concept" rule in
-references/social-craft.md is the social-post rule and does not govern here —
-a single logo direction handed back after a 15–20-concept grid throws away the
+unless the user names a different number — the same default social-craft.md
+sets for a social one-off. Logo work is a taste-sensitive one-off too, and a
+single direction handed back after a 15–20-concept grid throws away the
 comparison the grid just bought.
 
 ## Hand-off

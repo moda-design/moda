@@ -105,9 +105,10 @@ references/omni-and-media.md). Stock-photo-style imagery kills distinctiveness.
 Generated imagery that matches the topic's visual world is far more compelling.
 Custom imagery, diagrams, mockups, charts, and visual metaphors are often the
 fastest way to make the design feel premium. If a real company is mentioned,
-there is no logo-fetch verb here: ask the user for the file (`moda file
-upload`) or look in team assets (`moda file search`) — never generate an
-imitation of a real mark, and never place one you have not seen.
+fetch its official mark by domain — `moda media fetch-logo acme.com` — or ask
+the user for the file (`moda file upload`) and look in team assets (`moda file
+search`); never generate an imitation of a real mark, and never place one you
+have not seen.
 
 **Default to at least one image-driven moment in slide decks**: Include at
 least one meaningful generated image, most often on the cover or in the first

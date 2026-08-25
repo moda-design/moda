@@ -27,9 +27,9 @@ never guess.
 
 One page or fifty — the page count changes the plan, not the skill.
 
-- **One page** (one-pager, brief, handout, fact sheet, infographic) → one
-  committed concept. Pick the strongest direction, plan it in a paragraph,
-  build it end to end. Alternates only when the user asks for options.
+- **One page** (one-pager, brief, handout, fact sheet, infographic) → two
+  distinct concepts as sibling pages: different layout structure, visual
+  density, type hierarchy, accent treatment. Plan each in a paragraph first.
 - **Multi-page** (report, guide, whitepaper, proposal — any named count) →
   one cohesive document, not alternates: settle the grid, margins, type
   ladder, palette, and headers/footers once, then outline page by page.
@@ -66,9 +66,10 @@ One page or fifty — the page count changes the plan, not the skill.
 6. **Verify**: `moda canvas screenshot` and LOOK — vertical balance, dead
    zones, clipped text, consistent margins across pages.
 7. **Deliver**: the live link IS the handoff. This lane's asks usually name a
-   PDF, and format words win: `moda export CANVAS_REF --format pdf -o …`.
-   Otherwise offer once. Hyperlinks flatten to plain text in the PDF — never
-   promise clickable links.
+   PDF, and format words win: `moda export CANVAS_REF --format pdf -o …`;
+   otherwise offer once. A two-concept one-pager exports per direction
+   (`--page N`), never as one combined file. Hyperlinks flatten to plain text
+   in the PDF — never promise clickable links.
 
 ## The bar
 

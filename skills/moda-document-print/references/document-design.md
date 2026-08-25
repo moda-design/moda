@@ -1,14 +1,28 @@
 # Document design — PDFs, one-pagers, reports
 
-Scope decides the deliverable, so settle it first:
+Scope decides the deliverable, so settle it first. Both bullets are the
+**digital document** rule — a physical print piece is moda-document-print's
+lane, covered two paragraphs down.
 
-- **One page** (one-pager, handout, flyer, single printable) → build **1 committed concept**: pick the strongest direction for the content and brand, plan it in a paragraph (layout structure, visual density, type hierarchy, accent treatment), then build that page end to end on one canvas. Author alternate directions only when the user explicitly asks for options — a second concept roughly doubles wall-clock and canvas churn for a deliverable the user asked for once.
+- **One page** (one-pager, brief, handout, fact sheet, infographic) → build **2 distinct concepts** as alternate directions: different layout structure, visual density, type hierarchy, and accent treatment. Plan each in a paragraph before building, then build both as sibling pages on one canvas so the user can compare them side by side.
 - **Multi-page** (report, guide, proposal, or any request naming several pages) → build **1 cohesive document**, not alternates. Plan one visual system — grid, margins, type, palette, headers/footers — plus a page-by-page outline, then vary page layouts only as the content needs.
 
-That 1-concept default is a **deliberate divergence** from the social and logo
-lanes, which default to 3 (the social-craft reference): those are
-taste-sensitive one-offs where the user is picking a direction, and a document
-is not — while a second document concept roughly doubles wall-clock.
+**Two concepts, one deliverable.** A "one-pager PDF" is one page. The live link
+carries both directions so the user can compare, but never export the combined
+canvas and hand it back as the one-pager — ask which direction wins, or export
+them separately with `moda export CANVAS_REF --format pdf --page N` (lands at
+`<canvas>.pN.pdf`, so the two never clobber).
+
+Two, not three: the social and logo lanes default to 3 (the social-craft
+reference) because a feed post or a mark is a pure taste pick with nothing else
+to judge it by. A one-pager is content-led, so two well-separated directions
+give the user a real choice without paying for a third. Multi-page gets one —
+alternates there are cost without a choice.
+
+**Physical print pieces are moda-document-print's recipe**, not this split:
+business card, resume, certificate, invitation, menu, merch, and a poster or
+flyer going to press. Build the one piece, where a second page means the
+reverse side — never a second concept.
 
 Default page size is US Letter: `moda canvas create --name … --size 816x1056` (A4: 794×1123). Typography is the document ladder — body ≈ 11px at US-Letter size, floor 11px (compute per references/design-quality.md).
 
