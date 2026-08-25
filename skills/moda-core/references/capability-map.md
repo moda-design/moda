@@ -4,7 +4,7 @@ One table set, whole surface. **FREE** = deterministic and unlimited. **METERED*
 credits; `moda media models` publishes each model's price and billing basis, every result carries
 a usage receipt, and `moda account status` shows the balance.
 
-Ids are prefixed (`cvs_`, `bk_`, `file_`, `fld_`, `tsk_`); anywhere a canvas is named you may pass
+Ids are prefixed (`cvs_`, `bk_`, `file_`, `fld_`, `task_`); anywhere a canvas is named you may pass
 its id, a raw UUID, or a pasted moda.app canvas or share URL.
 
 ## Canvas authoring — FREE, the substrate under decks, documents, social, diagrams
