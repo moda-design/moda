@@ -151,7 +151,7 @@ to the registry when it disagrees):
   minutes per job whatever the length, so fire it with `--no-wait` and collect
   it later.
 - **Sync Lipsync 2 / 2 Pro** — the dedicated lip-sync house, priced per minute
-  of the clip handed over and far above Kling's rate for the same footage. Pro
+  of the clip handed over, roughly 3.5x Kling's rate for the same footage. Pro
   bills 1.67× the base tier and fal describes it as enhanced facial animation
   for close-ups and commercial work. Both take a longer source than Kling's
   10 s ceiling, and `--model-params '{"sync_mode":"remap"}'` decides what
