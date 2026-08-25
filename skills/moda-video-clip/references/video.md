@@ -115,20 +115,50 @@ to the registry when it disagrees):
   native and on by default — ambience, effects, and SPOKEN DIALOGUE render
   jointly with the picture, no separate TTS: quote the line in the prompt, e.g.
   `moda media generate-video --model seedance-2.5 --duration 8 --prompt 'Close-up, a barista looks up and says: "We open at seven." Natural delivery, normal blinking.'`
-  Caveats: it takes NO audio references (of the Seedance tiers only 2.0
-  Mini does); a
-  photoreal-human image plus a spoken line tends to trip the provider's
-  safety block (`content_policy_violation`) — text-described speakers pass;
-  fast action still decoheres — keep talking shots calm. In a small
+  Caveats: reference audio landed on this route — up to 10 clips, 2–30 s
+  each and ≤30 s combined, addressed `@Audio1`…`@AudioN` like 2.0 Mini's, and it needs an
+  image or video reference alongside (audio references do not bill; only
+  reference VIDEOS add input seconds and the 0.6× discount); a
+  photoreal HUMAN image input — reference or first frame — is rejected
+  outright (`content_policy_violation`), with or without audio or speech:
+  its reference and audio lanes are for vehicles, products, scenes, and
+  stylized characters, while text-DESCRIBED humans in plain text-to-video
+  render fine. For photoreal-human identity anchors route to the Kling 3
+  family (pick an exact id off `moda media models`; they take the same
+  image anchors) or the Seedance 2.0 tiers (2.0 Fast has taken real human
+  footage as reference video); fast action still decoheres —
+  keep talking shots calm. In a small
   2026-08 evaluation on this route, its in-prompt speech graded closest to
   a passable talking human of any roster lane, yet still clearly below the
   professional bar — frozen torso, lip lag at line starts, a mechanical
   end-of-line grin, high roll variance; treat that as provisional and
-  re-test before a large spend. Prefer
-  VO-led beats with lips off-camera; when a talking close-up is unavoidable
-  this is the lane, budgeted for heavy best-of-N curation.
+  re-test before a large spend. For on-camera speech read
+  "Talking humans" below — in-prompt dialogue is now the LAST of three lanes,
+  not the first.
   Dearer per second than 2.0 — use 2.0 when the clip fits in 15 s and
   nothing needs to speak.
+- **OmniHuman v1.5** — the presenter lane: one photo of a person plus one
+  audio track, and that person delivers the track on camera, with emotion and
+  body movement following the read. Takes `--start-image` (REQUIRED — the
+  character) and one `--reference-audio` of 2–30 s. Unlike Seedance 2.5 it
+  ACCEPTS a photoreal human photo. Billed per second of the delivered clip,
+  which is the track's own length, so a shorter read is a cheaper render; the
+  30 s cap is per CALL, so chunk a longer script and cut the pieces together.
+- **Kling LipSync** — the cheap lip-sync post step: a 2–10 s clip plus a
+  2–60 s track, and the mouth in that clip is re-animated to the track. No
+  prompt, no duration — the shot comes back at its own length. Billing rounds
+  up to a 5-second block, so a 3 s shot costs a 5 s one. SLOW: about 12
+  minutes per job whatever the length, so fire it with `--no-wait` and collect
+  it later.
+- **Sync Lipsync 2 / 2 Pro** — the dedicated lip-sync house, priced per minute
+  of the clip handed over and far above Kling's rate for the same footage. Pro
+  bills 1.67× the base tier and fal describes it as enhanced facial animation
+  for close-ups and commercial work. Both take a longer source than Kling's
+  10 s ceiling, and `--model-params '{"sync_mode":"remap"}'` decides what
+  happens when the track and the clip are different lengths — `cut_off`
+  (truncate the audio, the default), `silence` (hold the picture), or `remap`
+  (time-stretch the audio to fit). The picture keeps the source clip's own
+  length on all three; fal's two picture-repeating modes are not served here.
 - **Veo 3.1** — the quality pick: cinematic realism and camera language,
   4K, a true first-to-last-frame morph; fixed short clip lengths (an
   off-menu duration snaps).
@@ -224,6 +254,53 @@ to the registry when it disagrees):
   audio-driven route bills a flat $0.17/s (Pro) or $0.13/s (Fast) of the track.
   `camera_motion` scripts one move on the text and image routes only. No seed.
 
+## Talking humans — the routing doctrine
+
+Measured 2026-08-24/25. **No general video model on this roster clears a
+professional bar for on-camera speech.** The best measured lane was Seedance
+2.5's in-prompt dialogue at roughly 78% realism with a severity-7 worst case and
+high roll-to-roll variance; LTX, MiniMax H3, Happy Horse and Veo all graded
+below it. So do not open a talking-head brief by prompting for dialogue. Work
+down this list and stop at the first lane that fits:
+
+1. **VO-led (the default).** Cut the beats so lips are never the focus —
+   over-the-shoulder, hands, product, cutaways — and carry the words in a
+   voiceover from `moda media generate-audio`. Nothing here is a lip-sync
+   problem, so nothing here can fail as one, and it is the cheapest lane.
+2. **Lip-sync post.** Generate the performance shot with the actor NOT
+   talking, on a model that accepts a photoreal identity anchor (the Kling 3
+   family does; pick an exact id off `moda media models`). Then lay the cast
+   read over the finished clip with `--lipsync-video`. This is the lane that
+   gets all three at once: a consistent character, a voice you chose, and lips
+   that match. Draft on `kling-lipsync`; escalate a hero close-up to
+   `sync-lipsync-2-pro`.
+3. **Standalone presenter.** When the shot IS a person talking to camera and
+   there is no surrounding action — a spokesperson, an explainer, a testimonial
+   — go straight to `omnihuman-1.5` from one character photo and one audio
+   file. It skips the generate-then-sync round trip entirely.
+
+**Which lip-sync.** `kling-lipsync` is the cheap default: use it for drafts and
+for wide and medium shots where the mouth is not the subject of the frame.
+`sync-lipsync-2-pro` is the escalation for hero close-ups and commercial-grade
+facial animation, at many times the cost — reach for it deliberately, after a
+cheap pass has settled the edit. **This ranking is PROVISIONAL**: it rests on
+provider claims and community reputation, not on a graded head-to-head run
+here. A bakeoff of the same clip and read through all three is planned; if the
+ordering flips, this paragraph changes.
+
+**Identity, not just lips.** Seedance 2.5 rejects ANY photoreal human image
+input, so its reference and audio lanes cannot carry a real person's likeness —
+route that work to the Kling 3 family or the Seedance 2.0 tiers, then lip-sync
+the result.
+
+**Not on the roster, and why** — do not reach for these, they are notes so the
+question is not re-opened: `infinitalk` (image+audio, 720p ceiling,
+open-source class) is a plausible budget lane for long audio and is on the
+watchlist only; `veed/avatars` offers preset characters with no custom photo, so
+it cannot do identity work at all; PixVerse's lip-sync measured worse than the
+lanes above; and OmniHuman v1 exists at a slightly lower rate than v1.5 but with
+weaker motion, so v1.5 is the single entry we carry.
+
 **Reference video** rides `--reference-video <ref-or-url>` (repeatable; the
 wire field is `reference_videos`), and only models whose card shows "ref
 videos" accept any. Clip count, per-clip and combined length caps, price
@@ -236,10 +313,19 @@ Read `billing.duration_quantity`, source envelope, and resolutions in `moda medi
 **Grok Imagine Video 1.5** meters the whole return plus every source second again (10 s added to a 15 s, 720p source: 25 x $0.07 + 15 x $0.01 = $1.90); its source decides the frame/rate and both framing flags do nothing.
 Grok's source must be 2–15 s, at most 921,600 px per frame, and MP4 with a supported codec.
 
+**Lip-syncing an existing clip** rides `--lipsync-video <ref-or-url>` (`lipsync_video` on the wire), and it needs
+exactly one `--reference-audio` beside it — the speech the mouth is re-cut to. Nothing else may accompany the pair:
+no frames, no references, and not `--extend-video`. The clip returns at its OWN length, so `--duration` is not a
+control and the `--prompt` is ignored entirely (pass anything). Read the source envelope off `moda media models`:
+`kling-lipsync` takes 2–10 s of MP4 at up to 1920×1080 and bills in 5-second blocks; the sync tiers take
+up to 2 minutes and bill per minute. Budget the LATENCY, not just the price — `kling-lipsync` runs about 12 minutes
+per job regardless of clip length, so use `--no-wait` and collect the render rather than blocking on it.
+
 **Reference audio** rides repeatable `--reference-audio <ref-or-url>` (`reference_audios` on the wire). Read limits from the model card.
 For H3, bind by modality/list order: `Image 1`, `Video 1`, `Audio 1`. Wan 3.0/Prime require a visual reference.
-Of the Seedance tiers only 2.0 Mini takes reference audio (addressed as `@Audio1` beside `@Image1`/`@Video1`);
-Seedance 2.0 and 2.0 Fast accept image and video references only.
+Seedance 2.5 and 2.0 Mini take reference audio, addressed as `@Audio1` beside `@Image1`/`@Video1` (2.5: up to
+10 clips, 2–30 s each and ≤30 s combined, an image or video reference required alongside); plain Seedance 2.0 and 2.0 Fast
+accept image and video references only.
 Beside an image/video it is one reference among several; ALONE it drives the clip only on a model whose card shows
 `audio→video`. An audio-only ask elsewhere is refused before anything is billed.
 
