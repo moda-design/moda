@@ -10,7 +10,7 @@ content fits — so pick it before composing.
 | --- | --- | --- |
 | Desktop app | 1440×900 | sidebar nav, multi-column content |
 | Dashboard / analytics | 1920×1080 | dense grid, KPI row above charts |
-| Marketing / landing page mock | 1440×2000+ | tall single scroll |
+| Marketing / landing page mock | 1440×4000–6000 | ONE tall scroll — craft in references/landing-page.md |
 | Tablet landscape / portrait | 1024×768 / 768×1024 | split view / single column |
 | Phone (iOS / Android) | 390×844 / 412×915 | single column, bottom nav |
 
@@ -94,6 +94,13 @@ carrying nav and hero together, oversized low-opacity step numerals, colored
 overline labels, a data table with a sticky summary row. Whatever the first
 screen establishes — spacing rhythm, radius, accent, shadow depth — every
 later screen in the flow inherits.
+
+A landing-page mock is not just a tall screen, and none of its craft is
+restated here: the one-page rule, the named dead patterns to refuse, the
+type/grid/color levers, the 5–8-section arc, and the four hero archetypes all
+live in references/landing-page.md. Load it whenever the screen being comped
+is a landing page, homepage, or marketing hero, and treat this file as the
+viewport, shell, and fidelity half only.
 
 ## Verify and deliver
 

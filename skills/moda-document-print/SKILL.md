@@ -33,6 +33,8 @@ All `--category prints`; sizes are canvas pixels at the piece's physical intent.
 | Resume | 816×1056 | one page unless the user says otherwise |
 | Certificate | 1056×816 | landscape Letter |
 | Invitation | 525×750 | 5×7in |
+| Letterhead | 816×1056 | US-Letter (A4: 794×1123); a small mark up top, body left empty |
+| Postcard | 528×384 | 5.5×4in; 2 pages — keep the back's right side clear if it's mailed |
 | Business card | 375×225 | 3.5×2in + bleed; 2 pages (front, back) |
 | Merch (t-shirt, sticker, mug) | see references/print.md | flat art, no bleed assumptions |
 

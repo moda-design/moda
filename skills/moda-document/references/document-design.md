@@ -5,6 +5,11 @@ Scope decides the deliverable, so settle it first:
 - **One page** (one-pager, handout, flyer, single printable) → build **1 committed concept**: pick the strongest direction for the content and brand, plan it in a paragraph (layout structure, visual density, type hierarchy, accent treatment), then build that page end to end on one canvas. Author alternate directions only when the user explicitly asks for options — a second concept roughly doubles wall-clock and canvas churn for a deliverable the user asked for once.
 - **Multi-page** (report, guide, proposal, or any request naming several pages) → build **1 cohesive document**, not alternates. Plan one visual system — grid, margins, type, palette, headers/footers — plus a page-by-page outline, then vary page layouts only as the content needs.
 
+That 1-concept default is a **deliberate divergence** from the social and logo
+lanes, which default to 3 (the social-craft reference): those are
+taste-sensitive one-offs where the user is picking a direction, and a document
+is not — while a second document concept roughly doubles wall-clock.
+
 Default page size is US Letter: `moda canvas create --name … --size 816x1056` (A4: 794×1123). Typography is the document ladder — body ≈ 11px at US-Letter size, floor 11px (compute per references/design-quality.md).
 
 ## Making it good

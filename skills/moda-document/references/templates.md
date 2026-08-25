@@ -63,6 +63,152 @@ persist one, never hand one to the user. They expire.
 - Tell the user which template you started from — it is a decision they may
   want to correct.
 
+## Working inside a theme or an instantiated template
+
+The theme already decided the look. Your job is to fill it: pick the layout
+that fits each slide's content, start from it, and put the real words in.
+Coherence with the theme is the goal here — **a deck where every slide
+visibly belongs to the same theme is the success condition, and variety for
+its own sake is the failure.** That INVERTS the vary-every-slide default the
+deck-design reference teaches: there, a different layout per slide and a mix
+of background treatments across the deck is the bar. Inside a theme, that
+same variety is the failure.
+
+**Layout can flex; the artistic direction cannot.** Switching a slide between
+one and two columns, adding or dropping a bullet, card, or stat, and resizing
+a text block so the copy fits cleanly are all expected and good. Keep the
+theme's backgrounds, motifs, palette, and type scale exactly as they are.
+
+**Do not rebrand to the brand kit.** If a brand kit is present, use it only
+for literal content — the company name, or a logo dropped into a slot the
+theme already has. Never recolor, refont, or re-skin a slide to match it; the
+theme's identity wins. This is a deliberate override of the brand rules:
+references/brand.md says on-brand work means authoring the kit's tokens — its
+exact hexes, its font families — into what you write, and **that rule does
+NOT apply inside a theme.** Reading the kit's palette and painting it over
+the theme's is the exact failure this section exists to prevent. Binding the
+kit to the canvas is still fine and still changes no pixels; authoring with
+it here is not.
+
+**Building a new slide** is for when no listed layout provides a format the
+content needs (a timeline, say, in a theme with no timeline layout). Read an
+existing theme page first — `moda canvas read CANVAS_REF` — and echo it: the
+same background fill, the same motif shapes, the same accent colors, fonts,
+and type scale, so the result is indistinguishable in style from the theme's
+own pages and only the format is new. A new slide carrying a chart or a
+diagram still gets styled into the theme's palette and type scale
+(references/charts.md).
+
+Unsure whether a slide needs a new layout? `moda ask "none of this theme's
+layouts fit a timeline slide — do I build a new page in the theme's style?"`.
+
+Copy budget still applies: ≤10 words per bullet, ≤3 bullets per card. When
+copy overflows, cut the copy rather than shrinking the theme's type scale.
+
+If the user's instructions contradict any of the above, follow the user.
+
+## Instantiating under a different brand
+
+**When the active brand kit differs from the brand the template was designed
+for, rebranding is implicit and MANDATORY** — instantiating under a different
+kit IS the rebrand request, and the user does not need to say "rebrand" or
+"change the colors". So treat the user's prompt as describing **only the
+content theme**: "announce our permissioning feature" means rebrand the whole
+template to the active kit AND rewrite the copy to be about permissioning —
+both. The dominant failure mode is reading the prompt as content-only and
+leaving the template's original colors and hero images in place. If the
+finished canvas still carries them, the run failed.
+
+Rebinding is not this job. `moda canvas brand` records which kit the canvas
+belongs to and changes no pixels (references/brand.md); the restyle below is
+the separate, mandatory second half.
+
+The template was designed by a professional: change the **content layer**
+(colors, fonts, copy, images), never the **structure layer** (positions,
+sizes, spacing, grouping, page count, animation presets, and any asymmetric
+or overlapping layout patterns).
+
+Work from `moda canvas read CANVAS_REF`, then apply the changes as batched
+edit-lane payloads (references/edit-code.md): `update(id, …)` carries `fill`,
+`stroke`, a page's `background`, text color, font, text content, `src`, and
+`metadata.name`. Batch when one change lands across many nodes.
+
+**1 — Plan.** Enumerate every distinct color hex in use across fills,
+strokes, backgrounds and text (typically 3–6 — this is the template's
+palette), note the fonts, and identify every logo, hero image and tinted
+decorative shape. Read the kit's colors, fonts, logos and images
+(`moda brand show BRAND_REF --json`) and count each. Then build a color map:
+template color → brand color (primary → primary, dark ground → dark brand
+color, neutral → neutral). Zero kit images means you will be generating hero
+photos — plan for it now.
+
+Unsure how to map a palette? `moda ask "our brand kit has fewer colors than
+this template's palette — how should I map them?"`.
+
+**2 — Colors.** Issue an `update()` for every node using a template color.
+**Plain hex colors are the default path, not a fallback** — `update('n7',
+{fill: '#0F0F0F'})` — and "the template doesn't define color variables" is
+not a reason to skip. Only when a node's fill is genuinely a variable
+reference do you update the variable or repoint it (`variableId`, per
+references/brand.md). Touch backgrounds, dividers, decorative shapes and
+tinted icons too; rebuild gradients with brand stops; re-check text contrast
+wherever you changed a background. A kit smaller than the template's palette
+still covers it — reuse primary/secondary for the matching slots and pick the
+closest neutral for the rest. Only a *complete absence* of a brand kit
+justifies keeping the template's scheme.
+
+**3 — Fonts.** Brand heading font for headings, brand body font for body,
+keeping the template's sizes and weight choices. No brand fonts → keep the
+template's.
+
+**4 — Copy.** Replace every piece of text with content specific to the user —
+company name, headlines ("Your Solution" → "Acme's AI-Powered Analytics
+Platform"), body copy rewritten in substance rather than name-swapped, CTAs
+made specific ("Visit acme.com"), page names retitled ("Cover" → "Acme Corp
+— Series A"). Use the user's real numbers when given; otherwise plausible
+industry-appropriate placeholders, clearly marked if uncertain. Match the
+template's tone, and keep the new copy close to the original's length so
+nothing overflows.
+
+**5a — Logos.** Cascade, stopping at the first success: the kit's own logo
+files → a logo file the user supplies (ask for it, or upload it with `moda
+file upload logo.png` → a `file_…` ref) → a generated mark (`moda media
+generate-image`) as the last resort. Keep the template's logo sizing and
+placement.
+
+**5b — Hero images, photos and backgrounds.** Cascade per node: a kit image
+that semantically matches the position → `moda file search QUERY` for the
+team's own uploads, `--source stock` for stock photography (a fitting asset
+is cheaper and more on-brand than generating) → `moda media generate-image`
+with a prompt combining the brand's aesthetic and tone, the image's semantic
+role ("hero photo for a fintech product announcement"), and dimensions
+matching the original node. **An empty kit image list is the trigger for the
+next step in the cascade, not for skipping the swap.**
+
+**5c — Icons and decorative shapes.** Keep generic structural icons
+(checkmarks, arrows); replace topic-specific ones (`moda file search QUERY
+--kind icon`). Decorative shapes are color, not imagery — step 2 already
+handled them.
+
+**6 — Review.** Every page, not just the first. Confirm you actually issued
+the color updates (search back through your own calls — if you never touched
+a fill or a background, step 2 didn't happen), that no image node still holds
+its original template URL, that no placeholder text survives ("Your Company",
+"Lorem ipsum"), that logos aren't stretched, and that no swapped background
+broke contrast.
+
+Common mistakes:
+
+- **Keeping the template's colors** because variables aren't defined. Swap
+  the raw hex.
+- **Keeping the template's hero images** because the kit's image list is
+  empty. That is the trigger for `moda file search`, then
+  `moda media generate-image`.
+- **Repositioning nodes** to "fix" layout. Change content and styling; never
+  move or resize a node unless you are correcting a clear bug.
+- **Over-generating** — only photo, hero and background nodes go through the
+  image cascade, so the template's mix of shapes and icons survives.
+
 ## Contributing one back
 
 The template library only stays useful if it grows, and the work most worth

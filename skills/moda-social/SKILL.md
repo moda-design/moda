@@ -68,14 +68,17 @@ references/social-craft.md; moda-mockup owns real app UIs, not these.
 
 ## Logo, icon, and mark design
 
-A new logo/wordmark/icon/favicon is canvas work and belongs here: one square
-canvas (1024x1024, `--category other`), the mark authored as vector shapes
-and type so it stays editable and recolorable — generated imagery explores
-directions, but the delivered mark is authored, never a raster hand-off. Ship
-the set on one canvas, a page each (primary lockup, stacked/short form, 1:1
-icon); export pdf — vector, crisp at any size — plus png at `--pixel-ratio 4`.
-Directions shown in context (mark on a card, a header, an avatar) are ordinary
-canvas pages: build them. Kit files and identity engagements → moda-brand.
+A new logo/wordmark/icon/favicon is canvas work and belongs here. **Explore before
+you deliver**: references/logo-design.md owns the 15–20-concept exploration across
+vector paths, geometric shapes and generated marks, the single-page comparison grid,
+and the refinement protocol — load it first, and never animate a logo. Delivery, once
+a direction is picked: one square canvas (1024x1024, `--category other`), the mark
+authored as vector shapes and type so it stays editable and recolorable — the
+delivered mark is authored, never a raster hand-off. Ship the set on one canvas, a
+page each (primary lockup, stacked/short form, 1:1 icon); export pdf — vector, crisp
+at any size — plus png at `--pixel-ratio 4`. Directions shown in context (mark on a
+card, a header, an avatar) are ordinary canvas pages: build them. Kit files and
+identity engagements → moda-brand.
 
 ## Carousel theory (all platforms — the children apply it)
 
@@ -112,6 +115,7 @@ See also: moda-core — contract, routing ladder, everything Moda can do.
 | Doc | Load when |
 |---|---|
 | references/social-craft.md | concept directions, generated backgrounds, style references, resizing to another platform, the post-in-platform-frame recipe |
+| references/logo-design.md | a logo, wordmark, brand mark, icon, or favicon — always, before exploring |
 | references/markup.md | before any markup apply |
 | references/design-quality.md | type ladder, imagery, shaders, AI-slop list |
 | references/no-brand-design.md | no kit is active — inventing the identity: palette law, type, imagery, layout system |

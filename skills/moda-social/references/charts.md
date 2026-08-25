@@ -29,11 +29,11 @@ Shared chrome attributes: `title-size`, `title-weight`, `font-family`, `backgrou
 
 ## Per-type attributes
 
-- **Bar** — `mode="grouped" | "stacked" | "stacked-percent"`, `orientation="horizontal"` (pair with `bar-radius="0 6 6 0"`; vertical uses `bar-radius="6 6 0 0"`), `label-position="inside" | "outside"`.
-- **Line / area** — `curve="linear" | "smooth" | "step" | "step-before" | "basis" | "cardinal" | "catmull-rom"`, `stroke-width`, `show-points`, `point-size`, `point-fill`, `point-shape="circle" | "square" | "diamond" | "triangle" | "triangle-down" | "cross" | "x" | "star"`. Area adds `mode="stacked"`, `fill`, `fill-opacity`, and inherits every line attribute. To hand a line off to a second series (actual → projected), repeat the overlap point in both series so the lines connect.
-- **Scatter** — `point-opacity`, `point-size`, `show-trend-line`, `trend-style`. Add a `size` column for bubbles, with `size-scale="area"`, `min-point-size`, `max-point-size`.
-- **Combo** — `dual-axis="true"`, `left-axis-label` / `right-axis-label`, `left-axis-format` / `right-axis-format`, and per-series `chart-type="bar" | "line"` with `y-axis="left" | "right"`.
-- **Pie / donut** — `inner-radius` (`0` = pie, `0.5`–`0.7` = donut), `pad-angle`, `center-label`, `center-sublabel`, `label-format="value" | "percent" | "both" | "category"`, `label-position="inside" | "outside" | "callout"`, `explode="SliceName"` with `explode-distance`.
+- **Bar** — `mode="grouped" | "stacked" | "stacked-percent"`, `orientation="horizontal"` (pair with `bar-radius="0 6 6 0"`; vertical uses `bar-radius="6 6 0 0"`), `label-position="inside" | "outside" | "top"`.
+- **Line / area** — `curve="linear" | "smooth" | "step" | "step-before" | "step-after" | "basis" | "cardinal" | "catmull-rom"`, `stroke-width`, `show-points`, `point-size`, `point-fill`, `point-shape="circle" | "square" | "diamond" | "triangle" | "triangle-down" | "cross" | "x" | "star"`. Area adds `mode="stacked"`, `fill`, `fill-opacity`, and inherits every line attribute. To hand a line off to a second series (actual → projected), repeat the overlap point in both series so the lines connect.
+- **Scatter** — `point-opacity`, `point-size`, `show-trend-line`, `trend-style`. Add a `size` column for bubbles, with `size-scale="area" | "radius"`, `min-point-size`, `max-point-size`.
+- **Combo** — `dual-axis="true"`, `left-axis-label` / `right-axis-label`, `left-axis-format` / `right-axis-format`, and per-series `chart-type="bar" | "line" | "area"` with `y-axis="left" | "right"`.
+- **Pie / donut** — `type="donut"` is an alias for `type="pie"` and defaults `inner-radius` to `0.6`; `inner-radius` (`0` = pie, `0.5`–`0.7` = donut), `pad-angle`, `center-label`, `center-sublabel`, `label-format="value" | "percent" | "both" | "category"`, `label-position="inside" | "outside" | "callout" | "none"`, `explode="SliceName"` with `explode-distance`.
 
 ## Styling
 

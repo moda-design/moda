@@ -62,7 +62,16 @@ format). Inside-out:
    plot is a small filled circle (20–28px, muted) with a name label under
    it; when the user supplies logo files or URLs, upload them
    (`moda file upload` / `--from-url`) and place 40–60px image fills
-   instead, one consistent treatment for all.
+   instead, one consistent treatment for all. Pick ONE logo theme for the
+   whole matrix from the ground it sits on — a light or white background
+   takes dark logos so they're visible, a dark background takes light ones —
+   and prefer a brand's compact icon variant over its full wordmark lockup,
+   which stops resolving at 40–60px. Real logos look far more professional
+   than generated icons or plain text, so pull the logo assets a brand kit
+   already carries (`moda brand show BRAND_REF --json`) and proactively ask
+   the user for the competitors' logo files (`moda file upload`) rather than
+   settling for muted circles; the circle fallback is for the brands you
+   still have no file for.
 4. **The user's company** in the **upper-right**: larger (56–72px or a 32–40px
    accent circle), name in the accent color, clearly separated.
 5. Optional title above, 24–32px bold. Group the matrix elements so they

@@ -4,8 +4,8 @@ The platform-neutral half of social work: how a concept is chosen, how
 backgrounds get made, what an attached image means, how a finished piece moves
 to another size, and how to show creative inside a platform frame. Per-platform
 sizes and safe areas live in the platform recipe (moda-social-instagram,
--linkedin, -tiktok, -youtube, -ads); carousel theory lives in the moda-social
-body.
+-linkedin, -tiktok, -youtube, -ads); carousel narrative and the lock system
+live in the moda-social body, and the per-slide push rules are below.
 
 ## Concept directions
 
@@ -14,10 +14,17 @@ body.
   (solid / gradient / generated pattern / photo / shader — directory in
   references/design-quality.md). Across a set, at least one type-led and one
   image-led; never all-dark or all-light.
-- **Default to ONE committed concept.** Fan out to N directions only when the
-  user asks for options — then make them genuinely different playbooks
-  (product-as-hero, before/after, visual metaphor, typographic manifesto,
-  category-code reversal, testimonial, problem-solution), not variants of one.
+- **How many.** An explicit count in the request wins, even beyond four. With
+  no count anywhere, plan 1–4 and **default to 3** — a social post or a logo is
+  a taste-sensitive one-off, and three named directions is what makes one of
+  them land. Note in one line which rule you followed. Each concept is a
+  genuinely different playbook (product-as-hero, before/after, visual metaphor,
+  typographic manifesto, category-code reversal, testimonial,
+  problem-solution), not a variant of one.
+- **Shader quota per set.** Shaders are an instant premium-feel hit, so across
+  N concepts put a shader background on at least 2 (when N=3) or 2–3 (when
+  N=4), a **different shader type on each**, and do NOT default to
+  `mesh-gradient`. Directory: references/design-quality.md.
 - Name the direction in the delivery note ("editorial slab-serif on paper
   stock"), so a revision request has something to aim at.
 - **AI-slop defaults to avoid**: centered headline + subhead + pill button on a
@@ -38,6 +45,64 @@ body.
   inline `<span>` (needs `format="html"` on the `<text>` node), source in a
   small footer. Arrows are real elements (`<line … arrow-end="triangle"/>` or
   an icon), never a "→" glyph.
+
+Unsure how many directions a request wants? `moda ask "how many concepts should
+I make for a social post when the user didn't name a number?"`
+
+## Carousel depth — pushing each slide
+
+**Consistency is not sameness.** Commit to one aesthetic world you could name
+in a phrase, build the strict system, then vary the composition slide to slide
+inside it — loud next to quiet, scale jumps, a full-bleed moment — so the swipe
+has a heartbeat.
+
+- **Vary and push.** Type carries the personality: one opinionated display face
+  plus one calm support face, with deliberate **4–8× contrast** between them;
+  labels and slide numbers get caps, heavy tracking, and the accent color.
+  Overflow means cut copy, never type below the ladder floor.
+- **Build atmosphere, not flat fills.** Default away from pure white grounds; a
+  gradient field, a faint full-bleed texture, a glow on a dark ground, or a
+  duotone photo grade all beat a flat panel. Full-bleed-faint, never
+  corner-faint.
+- **Add depth.** Overlap deliberately — a numeral crossing a photo, a block
+  under a headline, an element bleeding off the canvas. Layering comes from
+  absolute x/y and source order (later paints on top). A deck where every
+  element sits in its own zone reads as a template.
+- **Photography is a material.** Grade every photo to one treatment — a duotone
+  or consistent monochrome grade is the fastest way to make mixed images read
+  as one deck — with consistent crop logic and a scrim under any copy.
+
+**Assign each slide a composition type** and never repeat one on adjacent
+slides: full-bleed type, number-hero, split panel, quiet/breathing, pull-quote,
+designed list (index numerals and accent rules, never literal bullets),
+edge-bleed, photo-led, collage, film strip.
+
+Build slide 1 alone first and screenshot it — proving the look on one cheap
+slide before the deck commits to it. Then one `moda canvas add-pages` call for
+the full list, and one `moda canvas markup` per page **reusing the identical
+`<styles>` block so the system can't drift**.
+
+Unsure which composition types to spread across a deck? `moda ask "which
+composition types should I assign across an 8-slide Instagram carousel?"`
+
+### Before finishing — answer with facts rather than adjectives
+
+Screenshot each slide, then the filmstrip. "Looks clean" is how a weak slide
+passes, so answer with facts. Per slide, name:
+
+- the largest and smallest type size, against the ladder floor;
+- the headline font — a body sans on a headline is a miss;
+- one element that overlaps or bleeds — if you can't name one there's no depth;
+- the dominant element;
+- the one bold move.
+
+Across the filmstrip: adjacent slides differ in composition AND scale; one
+dominant color plus one sharp accent rather than four spread evenly; one slide
+that goes all out; brand held to the last slide.
+
+Fix what's broken or timid — but don't sand off a bold choice because it looks
+risky rendered. **Most AI design fails by being too safe, almost never by being
+too bold.**
 
 ## Generated backgrounds
 
@@ -69,11 +134,20 @@ it is.
 
 ## Resizing to another platform
 
+**Back the page up first.** Resizing is destructive and this surface has **no
+undo** (the working-contract reference), so the recipe opens with a backup: in the same
+`moda canvas edit` call, `duplicate([pageId], { newPageName: '… (backup)' })`
+before the `update(pageId, { width, height })`. Once the resized composition is
+verified by screenshot, remove the backup page with `moda canvas delete-items`.
+
 **Resize in place** — never create a new canvas just to change size. Follow the
 page-resize recipe in references/edit-code.md: group the page's top-level
 nodes, `update(pageId, …)` to the new width/height, then uniform-scale that
 group. It preserves the composition and balances leftover space as margins when
 the aspect ratio changes.
+
+Then **re-breathe the composition**: the focal point, the headline and the CTA
+all need repositioning at the new shape. Never a squish.
 
 Keeping BOTH sizes: `moda canvas add-pages CANVAS_REF --count 1 --size WxH`,
 copy the elements across with `duplicate(ids, { destinationPageId })`, then

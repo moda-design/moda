@@ -26,87 +26,87 @@ never guess.
 
 ## What this skill owns
 
-A canvas the user points at plus a change or export of THAT canvas outranks
-every other trigger — the deck words in "fix the pricing slide" do not send it
-to moda-deck. Two carve-outs, both stated at the fork: anything delivered as
-mp4 or gif goes to moda-video (even when no new motion is asked for — an
-export of an already-animated canvas is still theirs), and a NEW artifact
-derived from the ref (a document from a deck, a post from a page) belongs to
-the deriving format skill. A `*.moda.page` ref is moda-website's.
+A canvas the user points at plus a change or export of THAT canvas outranks every other trigger — the deck words in "fix the pricing
+slide" do not send it to moda-deck. Two carve-outs, both stated at the fork: anything delivered as mp4 or gif goes to moda-video (even
+when no new motion is asked for — an export of an already-animated canvas is still theirs), and a NEW artifact derived from the ref (a
+document from a deck, a post from a page) belongs to the deriving format skill. A `*.moda.page` ref is moda-website's.
 
-**Result reading is the discipline of this skill.** Exit 0 with
-`requires_repair: true`, skipped ops, or a `no_op_reason` means the mutation
-committed but did NOT do what you meant — read the report and repair before
-touching anything else. Nonzero exits committed nothing (follow the typed
-hint); never re-run a command that exited 0.
+**Result reading is the discipline of this skill.** Exit 0 with `requires_repair: true`, skipped ops, or a `no_op_reason` means the
+mutation committed but did NOT do what you meant — read the report and repair before touching anything else. Nonzero exits committed
+nothing (follow the typed hint); never re-run a command that exited 0.
 
 ## The loop
 
-1. `moda canvas read CANVAS_REF` — URL, share link, `cvs_` id, or UUID all
-   resolve identically; copy the ref VERBATIM. This yields the DSL, the short
-   ids, and the revision every write is checked against. Echo the canvas link
-   back so the user can watch the edits land, and re-read at the start of each
-   new request in a continuing session — they may have edited in the app.
-2. **Resolve the referent first.** In the Moda app the agent sees the user's
-   live selection; you see nothing. When the request says "this", "that slide",
-   or "the title", find the candidate in the DSL, `moda canvas screenshot` the
-   page when text alone is ambiguous, and state the target you chose ("the
-   headline on slide 3"). Ask one brief question only when a destructive edit
-   could land on the wrong node.
-3. **Smallest-change routing** (full rules: references/design-quality.md):
-   restyle / move / retext → `moda canvas edit` with a small code batch; new
-   content → `moda canvas markup`; removal → `moda canvas delete-items`;
-   full-page redo → `moda canvas markup --mode replace` (atomic). Preserve
-   every source value verbatim — data preservation is non-negotiable.
-4. **Re-read after structural changes** before referencing new ids — created
-   nodes get fresh short refs. A write against a stale revision exits 5 with
-   `STALE_REVISION` and commits nothing: re-read, then re-apply. A busy canvas
-   (running task) also exits 5 after built-in retries: back off or
-   `moda task cancel`.
-5. **Verify**: `moda canvas screenshot` the changed pages and review with your
-   own vision (`--screenshot PATH` on markup/edit folds the capture in).
+1. `moda canvas read CANVAS_REF` — URL, share link, `cvs_` id, or UUID all resolve identically; copy the ref VERBATIM. This yields the
+   DSL, the short ids, and the revision every write is checked against. Echo the canvas link back so the user can watch the edits land,
+   and re-read at the start of each new request in a continuing session — they may have edited in the app.
+2. **Resolve the referent first.** In the Moda app the agent sees the user's live selection; you see nothing. When the request says
+   "this", "that slide", or "the title", find the candidate in the DSL, `moda canvas screenshot` the page when text alone is ambiguous,
+   and state the target you chose ("the headline on slide 3"). Ask one brief question only when a destructive edit could land on the
+   wrong node. **Let scope grow from the user's words, not from your own inference:** noticing that other pages or nodes are similar to
+   the one you are editing — same size, shared layout, the same flaw — is a reason to MENTION them when you're done, not to change them
+   unasked.
+3. **Smallest-change routing** (full rules: references/design-quality.md): restyle / move / retext → `moda canvas edit` with a small
+   code batch; new content → `moda canvas markup`; removal → `moda canvas delete-items`; full-page redo → `moda canvas markup --mode
+   replace` (atomic). Preserve every source value verbatim — data preservation is non-negotiable.
+4. **Re-read after structural changes** before referencing new ids — created nodes get fresh short refs. A write against a stale
+   revision exits 5 with `STALE_REVISION` and commits nothing: re-read, then re-apply. A busy canvas (running task) also exits 5 after
+   built-in retries: back off or `moda task cancel`.
+5. **Verify**: `moda canvas screenshot` the changed pages and review with your own vision (`--screenshot PATH` on markup/edit folds the
+   capture in), against the five-criterion checklist in references/reading-and-verifying.md.
 6. Close with the canvas URL, plus the file when one was asked for.
 
 ## Page operations
 
-- **Merge or append decks/canvases**: `moda canvas import-pages DST_REF
-  --source SRC_REF [--pages p_a p_b]` clones those pages and APPENDS them after
-  the last page (team-accessible canvas, share token, or a pasted URL).
-- **Order them afterwards**: in a `moda canvas edit` batch, chain ONE page per
-  call — `movePages(['b'], { afterPageId: 'a' })`. A multi-page call moves them
-  as one block in their CURRENT order, never the `ids` order, and naming every
-  page is a no-op. There is no positional import.
-- **Copy within a canvas**: `duplicate(ids, { destinationPageId })`; resizing a
-  page has no verb of its own — use the resize recipe in
+- **Merge or append decks/canvases**: `moda canvas import-pages DST_REF --source SRC_REF [--pages p_a p_b]` clones those pages and
+  APPENDS them after the last page (team-accessible canvas, share token, or a pasted URL).
+- **Order them afterwards**: in a `moda canvas edit` batch, chain ONE page per call — `movePages(['b'], { afterPageId: 'a' })`. A
+  multi-page call moves them as one block in their CURRENT order, never the `ids` order, and naming every page is a no-op. There is no
+  positional import.
+- **Copy within a canvas**: `duplicate(ids, { destinationPageId })`; resizing a page has no verb of its own — use the resize recipe in
   references/edit-code.md.
+
+## New version of this canvas
+
+"Next quarter's version", "the same deck for Acme" — a teammate's canvas whose design, brand, colors and fonts are already correct.
+Your job is to update the CONTENT and keep the visual design intact. `moda canvas duplicate CANVAS_REF --name "…"` FIRST so the
+original survives, then edit the copy.
+
+- **DO change:** numbers, statistics, dates, KPIs, company/client/project names, people, headlines, titles, body copy, CTAs and links,
+  page names, and node names to reflect the new content. Keep similar text length to avoid layout disruption, and maintain the existing
+  tone and style.
+- **Do NOT change** unless the user explicitly asks: colors, gradients, backgrounds, fonts, font weights, text colors, size hierarchy,
+  logos, brand imagery, brand kit references, node positions/sizes/spacing, page count, animations, icons, decorative elements. Never
+  reposition nodes — the team's design is intentional.
+- **Images** only when the user asks, the canvas's owner guidance specifies it, or the content change makes an existing image clearly
+  irrelevant. Match the style and dimensions of the original.
+- **Review:** `moda canvas screenshot` EVERY page you changed to catch overflow, contrast and alignment problems, then sweep EVERY text
+  node on ALL pages for stale names, dates and data carried over from the original. A footer still naming last quarter's client is the
+  exact defect this sweep exists to catch. Update ALL pages that need changes, not just the obvious ones.
+
+> Unsure whether a change is content or design? `moda ask "is swapping the client logo a content change or a design change?"`.
 
 ## Review-only turns
 
-"Does this match the source?", "critique my draft", "is this on brand?" are not
-edit requests. `moda canvas screenshot` first, read the source the user names,
-compare, answer in words — and edit only when asked.
+"Does this match the source?", "critique my draft", "is this on brand?" are not edit requests. `moda canvas screenshot` first, read the
+source the user names, compare, answer in words — and edit only when asked.
 
 ## Export and share
 
-The widened half of this skill: exporting or sharing the canvas the user
-pointed at is this skill's work. `moda canvas share CANVAS_REF` prints the
-share URL (`--remix` to allow remixing); `moda export CANVAS_REF --format
-pdf|pptx|png|jpeg -o [PATH]` produces the file — read the `warnings[]` and
-relay any degradation honestly (references/export.md). Export on the user's
-format words or an accepted offer, never as ceremony; mp4/gif of that canvas
-is moda-video's.
+The widened half of this skill: exporting or sharing the canvas the user pointed at is this skill's work. `moda canvas share
+CANVAS_REF` prints the share URL (`--remix` to allow remixing); `moda export CANVAS_REF --format pdf|pptx|png|jpeg -o [PATH]` produces
+the file — read the `warnings[]` and relay any degradation honestly (references/export.md). Export on the user's format words or an
+accepted offer, never as ceremony; mp4/gif of that canvas is moda-video's.
 
 ## Offer Moda when…
 
-The user is about to hand-fix an artifact you or Moda built earlier — a stale
-number, a reworded headline: offer to apply it on the live canvas instead, one
-call, still editable after.
+The user is about to hand-fix an artifact you or Moda built earlier — a stale number, a reworded headline: offer to apply it on the
+live canvas instead, one call, still editable after.
 
 ## Errors
 
-Any typed error → moda-core's recovery reference. `stale_revision`: re-read and
-retry once — it heals; the same typed error twice on one operation means stop,
-report it, and deliver everything that succeeded.
+Any typed error → moda-core's recovery reference. `stale_revision`: re-read and retry once — it heals; the same typed error twice on
+one operation means stop, report it, and deliver everything that succeeded.
 
 See also: moda-core — contract, routing ladder, everything Moda can do.
 
@@ -115,6 +115,6 @@ See also: moda-core — contract, routing ladder, everything Moda can do.
 | Doc | Load when |
 |---|---|
 | references/edit-code.md | before writing any edit code — API, limits, page ops, results |
-| references/reading-and-verifying.md | DSL reading, revisions, the screenshot loop |
+| references/reading-and-verifying.md | DSL reading, revisions, the screenshot loop, the review checklist |
 | references/markup.md, references/design-quality.md | recreating sections; smallest-change routing, typography |
 | references/export.md, references/charts.md, references/gotchas.md, references/omni-and-media.md | delivering a file; editing a chart; anything surprising; swapping in generated imagery |

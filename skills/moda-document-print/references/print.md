@@ -16,6 +16,7 @@ size below, export a vector PDF, and the piece prints crisp at any scale.
 | Resume | 816×1056 | Letter (A4 outside the US) |
 | Certificate | 1056×816 | Letter landscape |
 | Invitation | 525×750 | 5×7in |
+| Letterhead | 816×1056 | US Letter (A4: 794×1123) |
 | Postcard | 528×384 | 5.5×4in |
 | Business card | 375×225, 2 pages | 3.5×2in + bleed, front and back |
 | Sticker | 300×300 | 3in square; keep art off the die edge |
@@ -45,6 +46,46 @@ stat rows, cards, captions and footers all carry structure. A layout that looks
 generous on a screen looks empty in the hand. Body type sits around 11px at
 Letter scale with an 11px floor — smaller than any screen piece, and correct,
 because the reader's eye is 40cm away and the output is 300dpi.
+
+## What changes versus screen
+
+- **Color drifts on press.** Prefer solid, well-separated palettes over subtle
+  gradients, which band or shift. Skip glows and other RGB-only effects. For
+  large dark fields use `#0B0B0B`, not `#000000` — pure black lays down too much
+  ink and smears.
+- **Print is static.** No animated shader fills.
+- **Raster art doesn't scale up.** Target the print pixel dimensions when
+  generating or sourcing imagery, and remember the user may export at 150 or
+  300 dpi. Vector shapes and large display type are immune, so lean on them when
+  fidelity matters.
+- **Type can go smaller**, which is why the density floor above sits under any
+  screen piece's. Very small contact type still risks legibility on press, so
+  don't undercut it.
+
+Unsure whether a palette survives the press? `moda ask "will this brand kit's
+gradient print cleanly on uncoated stock, or should I flatten it to solids?"`.
+
+## Per format
+
+- **Business cards** are two-sided: the front carries identity — name loudest,
+  role a tier down, wordmark large at top or small at bottom — and the back
+  carries contact details or one distinctive asset. A card gets about two
+  sentences of attention; spend it on the one thing the recipient should
+  remember. Safe area is non-negotiable here: cards are cut on a stack with
+  loose tolerances.
+- **Flyers** want a single-message hero and one CTA (date, place, URL) — treat
+  them like an ad. They are a natural fit for a full-bleed photographic
+  background generated at print resolution, with a scrim under the copy.
+- **Postcards** are flyers with a back: hook on the front, explanation and
+  address block behind. Keep the right side of the back clear if it will be
+  mailed.
+- **Letterheads** are the opposite of stopping power. A small mark at the top, a
+  generous empty body area for correspondence. Don't fill the page.
+- **Trifold brochures** are their own problem — the panel map below is the
+  content plan, not just an export detail.
+
+Unsure what a second side should carry? `moda ask "should this business card's
+back carry contact details or one distinctive asset?"`.
 
 ## The trifold imposition (panel order is NOT reading order)
 

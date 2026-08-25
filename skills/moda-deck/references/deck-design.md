@@ -24,4 +24,6 @@ Failure modes to stay out of:
 - The same layout repeated with only the words swapped.
 - Slides that are visually complete but say nothing: all chrome, no argument.
 
+**A themed or template-derived deck inverts all of this** — there, every slide visibly belonging to the same theme is the success condition and variety for its own sake is the failure: see "Working inside a theme or an instantiated template" in the templates reference before filling one.
+
 If the user's instructions contradict any of the above, follow the user.

@@ -7,7 +7,8 @@ or three shots cut on a timeline, an mp4/gif export, and a live canvas link
 that stays editable afterwards.
 
 Load this file when the ask names a **deliverable** rather than a clip: "a
-logo animation", "a teaser for this product", "an ad for Reels". A
+logo animation", "a teaser for this product", "an ad for Reels", "a 300×250
+that animates". A
 prompt-only clip stays in references/video.md workflow 2 — do not pad a
 simple ask with a canvas.
 
@@ -273,6 +274,90 @@ moda export CANVAS_REF --format mp4 --page 2 -o ad-1x1.mp4
 Reuse the SAME clip across sizes wherever the framing survives the crop —
 re-generating per platform buys nothing when the viewer reads the footage
 identically. Re-generate when the crop actually breaks the composition.
+
+## Recipe 4 — Animated display banner
+
+A 3-frame animated banner outperforms a static one, so plan motion from the
+first sketch rather than as polish. Everything the ads reference says about
+the static piece still holds — the IAB sizes, the Rule of One, per-size
+composition, the button-shaped CTA 8–10px off every edge — and only the
+timeline and the export format are new. Nothing here is generated: on a
+canvas of a few tens of thousands of pixels, solids, gradients, shapes, type
+and shader fills are what the placement can afford.
+
+**1. Canvas at the placement's exact size**, animation category, one page per
+size:
+
+```
+moda canvas create --name "Spring banner — 300x250" --size 300x250 --pages 1 --category animation
+```
+
+**2. Three frames, one message.** The reliable structure, ~6–9s total inside
+the typical 15s / 3-loop network cap:
+
+1. **Hook frame (~1–1.5s)** — headline or hero, brand tucked in a corner.
+2. **Detail frame (~1–1.5s)** — sub-headline, proof point, or product detail.
+3. **Brand + CTA frame** — holds indefinitely. This is what a paused viewer
+   clicks.
+
+**3. Author every frame's elements in one apply**, stacked — the timeline,
+not z-order, decides what is on screen:
+
+```
+moda canvas markup CANVAS_REF --file - --page p_a <<'XML'
+<content font-family="…the kit's title family…">
+  <background fill="#0F172A"/>
+  <text x="20" y="80" width="260" font-size="30" font-weight="700" color="#F8FAFC">Ship it Friday</text>
+  <text x="20" y="80" width="260" font-size="22" color="#CBD5E1">Teams onboard in a day</text>
+  <image src="file_…" x="20" y="20" width="110" height="34" fit="contain"/>
+  <rectangle x="20" y="176" width="150" height="44" corner-radius="22" fill="#22C55E"/>
+  <text x="20" y="189" width="150" font-size="18" font-weight="600" color="#052E16" text-align="center">See the demo</text>
+</content>
+XML
+```
+
+**4. Motion, second call.** `t.setLifetime` is what takes a frame's elements
+off screen when its beat ends (LEAF nodes only); the brand mark and CTA get
+no lifetime, so they land and stay:
+
+```
+moda canvas edit CANVAS_REF --file - <<'JS'
+motion.page('p_a', { durationMs: 7000 }, (t) => {
+  t.setLifetime('n2', { startMs: 0, endMs: 1400 });                        // hook headline
+  t.recipe('n2', 'recipe-rise', { at: 100, durationMs: 500 });
+  t.setLifetime('n3', { startMs: 1400, endMs: 2800 });                     // detail line
+  t.effect('n3', 'opacity-fade-in', { startMs: 1400, durationMs: 400 });
+  t.effect('n4', 'opacity-fade-in', { startMs: 2800, durationMs: 400 });   // wordmark — no lifetime
+  t.effect('n5', 'opacity-fade-in', { startMs: 3200, durationMs: 400 });   // CTA button — no lifetime
+  t.effect('n6', 'opacity-fade-in', { startMs: 3200, durationMs: 400 });   // CTA label — no lifetime
+});
+JS
+```
+
+Type slides or fades; it never bounces (elastic easings read as cheap). Move
+one thing per beat — simultaneous motion on a small canvas is chaos. Once
+brand and CTA land, nothing moves: the user needs a stable click target.
+
+**5. Watch the file-size budget.** Networks cap initial load around 150KB,
+total ~2.2MB, and a single hero photo can spend 80–120KB on its own. Solid
+color, gradients, shapes, type, and generated patterns are nearly free;
+reserve photography for when it IS the ad, and prefer a product silhouette or
+pack shot over scenic imagery. A shader page background is another cheap way
+to buy motion.
+
+**6. Deliver.** One export per page, since mp4/gif require `--page`:
+
+```
+moda export CANVAS_REF --format gif --page 1 -o banner-300x250.gif
+```
+
+Live link first, then the files. A second placement is a second PAGE resized
+in place (the page-resize recipe in references/edit-code.md), re-composed for
+its shape rather than scaled — a 728×90 is a horizontal lockup, not a
+squashed 300×250, and its three beats carry one line of copy each.
+
+Unsure which file an ad network takes? `moda ask "does an ad network want a
+gif or an mp4 for an animated display banner?"`.
 
 ## What every recipe inherits
 

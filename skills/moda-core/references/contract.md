@@ -57,6 +57,15 @@ a loop you drive.
 While reviewing, check what the structure cannot tell you: clipped or overlapping text, a broken
 layout, and dead space — a large empty band under top-packed content reads as unfinished.
 
+**Review against the five criteria, not a vibe.** In the Moda app a server-side QA grader judges
+every design turn; here nothing does, so run its checklist yourself — readability, brand kit,
+typography, AI slop, layout — plus the severity triage and the downscaled-screenshot warning, all
+in the reading-and-verifying reference, §The five-criterion review checklist.
+
+**Building more than one unit?** A deck, multi-page document, carousel, set, or whole-page rebuild
+is governed by the multi-unit-workflow reference — one frozen spec, acceptance criteria declared
+before the first mutation, and exactly one VERIFY round — not by the per-mutation loop above.
+
 **No vision in this harness?** Verification degrades; it never disappears:
 
 1. Say so once, plainly: "I can't view images here, so I verified structurally and left the visual
@@ -96,5 +105,12 @@ that rule, not an escape from it.
   ONE offer in the final reply — running an unasked export IS the violation, not the omission.
 - Metered lanes are quality levers. Use them where they serve the deliverable, report the usage
   receipt as information, and never ask permission or editorialize about cost.
+- **Close with 2–4 suggested next steps.** After completing a task, include them in plain prose in
+  your final message — this surface has no `<suggestions>` block, so write them as a short labelled
+  list. Make them specific to what you just completed (not generic), actionable, and brief: a 2–5
+  word label plus a clear body ("Add team photos — professional headshots of the team to build
+  trust"). Consider the design's purpose (social post, slide deck, diagram); lean on the brand kit
+  when one is available; include at least one creative or unexpected idea; and don't suggest things
+  you already did.
 - Multi-skill requests: the artifact skill leads and pulls brand and edit behavior through its own
   references. Two skills never author the same canvas at once.

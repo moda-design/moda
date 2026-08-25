@@ -88,6 +88,7 @@ one-page leave-behind, or an animated version?"
 <!-- moda:recipes -->
 | Recipe | When it owns the ask |
 |---|---|
+| `moda-deck-theme` | A deck's visual theme, designed with you before any content exists: four title directions, section heads and a closing, then eight workhorse layouts — placeholder only, approved phase by phase. |
 | `moda-deck-pptx` | Import a .pptx into Moda as an editable canvas, then fix it. For "clean up this PowerPoint" or any .pptx in hand. CLI lane; the connector routes to the app. |
 <!-- /moda:recipes -->
 

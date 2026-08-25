@@ -374,10 +374,12 @@ a cut, over generated footage.
    link — png/pdf keeps only each clip's poster frame (blank if placement
    warned `video_poster_unavailable`); say so if a still is asked for.
 
-**7. Finished cuts** — a logo animation, a product teaser, a social ad: the
-composed, branded DELIVERABLE rather than a clip, which is where this
-surface beats a bare video model. Those are recipes 1–3 in
-references/motion-recipes.md, each running the draft ladder end to end.
+**7. Finished cuts** — a logo animation, a product teaser, a social ad, an
+animated display banner: the composed, branded DELIVERABLE rather than a
+clip, which is where this
+surface beats a bare video model. Those are recipes 1–4 in
+references/motion-recipes.md; every one of them that generates footage runs
+the draft ladder end to end.
 Load that file the moment the ask names a deliverable.
 
 ## The motion timeline API — author, don't probe
@@ -511,6 +513,44 @@ this one if they ever disagree):
 LATER edit call — a preset that bakes against the node's live content
 (text presets; any recipe with requirements) refuses a node created in the
 same edit batch. Static pass, then motion pass.
+
+## Motion taste — pacing, preset choice, and the hazards
+
+The rosters above say what exists; this says what to reach for.
+
+- **Pacing.** Typical durations: 600–800 ms for main elements, 400–600 ms
+  for secondary elements. Stagger sequential elements (`t.stagger`, or
+  stepped `startMs`) for a polished entrance flow, and vary the looks
+  across different pages or concepts. Keep animations subtle and
+  professional — don't over-animate every element; decorative elements
+  stay still.
+- **Preset to content.** `text-kinetic` (word × appear, a comfortable
+  speed) for headlines and key text; `count-up` for statistics, monetary
+  values, and metrics; `recipe-slide-in` / `recipe-rise` for supporting
+  text and images; `opacity-fade-in` as a safe default. `recipe-burst-in`
+  is scale + spin + fade — energetic, so use it for one hero element at
+  most.
+- **Ambient loops.** Reach for ONE, on a single focal element; overusing
+  ambient motion reads as noise. `pulse` / `breathe` are the quiet "this
+  is alive" cue for a logo or badge, `float` / `bob` suit a hero element
+  or an icon, `shake` is emphasis and brief — and `heartbeat`, the
+  double-beat "lub-dub", is energetic: one accent element only.
+- **The easing hazard.** The `*Back` curves (`easeInBack`, `easeOutBack`,
+  `easeInOutBack`) overshoot [0,1] — use them for spatial pop, not on
+  `opacity` (`easeOutBounce` stays in range).
+- **Text-kinetic speed is units/sec, not duration.** Its
+  `params: { unit, animation, speed }` set the look, and because speed
+  counts UNITS PER SECOND, longer text takes proportionally longer at a
+  consistent pace rather than being crammed into a fixed window:
+  typewriter = char × appear at speed ≈ 30; reveal by word = word ×
+  appear at ≈ 4; reveal by line = line × appear at ≈ 2. The same three
+  looks also ship pre-grouped as `recipe-typewriter`,
+  `recipe-reveal-word` and `recipe-reveal-line` (with `recipe-fade-word`,
+  `recipe-slide-word`, `recipe-scale-word` and `recipe-rise-line` for the
+  softer per-unit variants).
+
+Unsure which preset a piece of content wants? `moda ask "which entrance
+preset should a stat headline get on an animation canvas?"`.
 
 ## Prompt craft for short brand clips
 

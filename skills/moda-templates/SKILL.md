@@ -21,14 +21,11 @@ never guess.
 <!-- /moda:banner -->
 
 A team template is the canvas someone approved as the starting point for
-recurring work — the QBR deck, the launch post, the customer one-pager. It
-carries layout and structure, one level up from what a brand kit carries.
-
-## Check before designing (one cheap read)
-
-The ask names a recurring artifact type (QBR or board deck, launch post,
-customer one-pager) or the user says "our template", "our usual format", "what
-do we have" → check first. Skip it for genuine one-offs.
+recurring work — the QBR or board deck, the launch post, the customer one-pager.
+It carries layout and structure, one level up from what a brand kit carries.
+Check for one BEFORE designing whenever the ask names such a recurring artifact
+type, or the user says "our template", "our usual format", "what do we have".
+Skip it for genuine one-offs.
 
 ## Instantiate
 
@@ -49,14 +46,18 @@ do we have" → check first. Skip it for genuine one-offs.
    `--intent`, `--folder`, `--visibility` and `--brand` are REJECTED alongside
    it; place the copy afterwards with `moda drive move`, and rebind its kit
    with `moda canvas brand [cvs_…] [bk_…]` when the user's kit differs.
+   Rebinding is metadata only: a different kit makes the RESTYLE mandatory too,
+   prompt or no prompt — work the cross-brand recipe in the templates reference.
 5. The copy is an ordinary canvas — read it, then edit it the normal way
    (moda-edit). Send the link, and name which template you started from: that
    is a decision the user may want to correct.
-6. None fit? One line ("no team template matched, so I designed this fresh")
-   and build from scratch. Never force a bad-fit template.
+6. None fit? One line ("no team template matched, so I designed this fresh") and
+   build from scratch — never force a bad-fit template. Want a copy of an
+   ordinary canvas instead? `moda canvas duplicate [CANVAS_REF] --name "…"`
+   copies as-is anything you can read.
 
-Want a copy of an ordinary canvas instead of a template? `moda canvas
-duplicate [CANVAS_REF] --name "…"` is the as-is copy of anything you can read.
+Every instantiation is a return visit — that is the point. Pair it with
+moda-automate when the cadence is fixed (a monthly menu, a weekly post set).
 
 ## Flag a canvas as the team's template
 
@@ -83,26 +84,36 @@ count — clears every deck's link to it and every kit that auto-applied it, and
 re-flagging restores none of them. On a canvas you did not flag yourself, read
 `moda canvas show [cvs_…]` (`template_type`) BEFORE writing.
 
+## Authoring a template
+
+Building the reusable thing itself? Design STRUCTURE and LAYOUT, not content.
+
+- Placeholder text NAMES its slot — "Headline Text", "Product Description",
+  "Company Name" — never content that only makes sense for one use case.
+- Design for varying text lengths: text boxes with room for typical content
+  variations, spacing consistent enough to survive longer copy.
+- Keep placeholder images generic, and hold contrast and readability with the
+  placeholder content in place.
+- Name elements with `metadata.name` so a later fill can target the slot.
+- Use color variables for backgrounds and text colors — bind them on the edit
+  lane (`variableId`) so one update restyles every page.
+- Apply shared-element edits across ALL pages that share them: a background
+  change, a header or footer edit, is almost never meant for page 1 only.
+
+Unsure which parts to make variable? `moda ask "which parts of a reusable deck
+template should be color variables rather than fixed hexes?"`.
+
 ## Examples
 
-- "start from our QBR template" → list, screenshot the QBR candidates, create
-  with `--template`, then author into the copy.
-- "use our usual layout for this one-pager" → same flow, filtered to 1–2 page
-  document templates.
+- "start from our QBR template" → list, screenshot, create, author into copy.
+- "use our usual layout for this one-pager" → same, filtered to 1–2 page docs.
 - "make this our standard deck" → flag it (after checking `template_type`).
-- "do we have anything for launches?" → list + screenshots, answer honestly if
-  the answer is no.
+- "do we have anything for launches?" → list + screenshots; answer honestly.
 
 ## Errors
 
-Any typed error → load moda-core and read its recovery reference. A 404 here
-means the surface is not enabled on this account: treat it exactly like "no
-templates" — do not retry it, and do not mention it. A 403 means template
-management is admin-only: say an admin has to flag this one, in one line.
-
-## Make it recurring
-
-Every instantiation is a return visit — that is the point. Pair it with
-moda-automate when the cadence is fixed (a monthly menu, a weekly post set).
+Any typed error → moda-core's recovery reference. A 404 = this surface isn't
+enabled on the account: treat it exactly like "no templates"; don't retry,
+don't mention it. A 403 = admin-only: an admin must flag this one, in one line.
 
 See also: moda-core — the contract, recovery, everything Moda can do.

@@ -50,6 +50,44 @@ Person-first when a name is given: the name is the hero lockup and the company
 supports it. Company-led only on request — logo plus one value proposition, no
 headshots. At least one concept should work with no logo at all.
 
+### Treatments
+
+- **Individual banners** (creator, consultant, realtor, lawyer, founder,
+  executive): if they have a personal mark — a signature, a stylized name, a
+  logo — feature it. The name stays the hero and a role sits under it,
+  secondary; prefer a low-copy identity system over marketing copy. If they are
+  selling a course or a service, include a simple CTA like "Book time with me"
+  or "Subscribe".
+- **Company-led** (only when the user explicitly asks for it): the logo
+  prominent but not overpowering, plus a tagline or a single value prop.
+  Optional elements, used sparingly and never allowed to dominate — logos of
+  3–5 marquee customers or partners, with transparency or an overlay so they
+  don't fight the brand; logos of awards (G2, Gartner) or certifications
+  (SOC2, HIPAA); 3 value props with checkmarks next to them.
+- **No headshot or portrait supplied?** Do not default to a generic company
+  banner. Use one or more of: strong typographic name treatment,
+  signature-style name, monogram or personal mark, professional background
+  imagery, abstract brand-aligned motif system.
+
+### Backgrounds and motifs
+
+Workspace, desk, laptop, studio and soft professional lifestyle photography
+works as **atmosphere, not a busy collage**; abstract tech imagery suits modern
+and product leaders. Decorative motifs earn their place as geometric shapes
+sprinkled around the edges, soft grids, lines or abstract network patterns, and
+mesh or full-bleed gradient fields. All of it stays subordinate to the
+name/title lockup.
+
+### Quality bar
+
+At least 1 concept should feel distinctly personal/professional rather than
+corporate-marketing. **If the design could work unchanged for any employee at
+the company, it is too generic.**
+
+Unsure what carries the banner with no photo to work from? `moda ask "what
+should a LinkedIn banner use as its hero when no headshot or personal mark was
+provided?"`
+
 ## Company page cover (1128×191)
 
 A strip, not a canvas: a horizontal lockup, one line of positioning, and a colour

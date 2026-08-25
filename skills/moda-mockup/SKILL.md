@@ -29,8 +29,9 @@ A mockup is a **picture of an interface**. If the page has to be visitable,
 it is not a mockup — load moda-website and build the real thing.
 
 1. **Viewport** decides grid, type sizes, and how much content fits: desktop
-   app 1440×900, dashboard 1920×1080, landing-page mock 1440×2000+, tablet
-   1024×768, phone 390×844. Full table in references/mockup.md.
+   app 1440×900, dashboard 1920×1080, landing-page mock 1440×4000–6000 on ONE
+   page, tablet 1024×768, phone 390×844. Full table in references/mockup.md;
+   landing-page layout craft lives in references/landing-page.md.
 2. **Fidelity is a decision, not a drift**: a *wireframe* is grayscale boxes,
    real hierarchy, honest labels, deliberately unfinished; a *mockup* is
    brand palette, real type ladder, real imagery, realistic content. Default
@@ -99,6 +100,7 @@ typed error live in moda-core's recovery reference.
 | Doc | Load when |
 |---|---|
 | references/mockup.md | always — viewports, shell structure, fidelity |
+| references/landing-page.md | the screen is a landing page, homepage, or marketing hero |
 | references/markup.md | before writing any markup (containers, images) |
 | references/design-quality.md | type ladder, palette discipline, imagery |
 | references/no-brand-design.md | no kit is active — inventing the identity: palette law, type, imagery, layout system |

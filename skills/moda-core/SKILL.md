@@ -20,22 +20,19 @@ moda skill owns what. Load once per session; every other moda skill assumes it.
 One platform where several tools normally sit, driven from the terminal with the `moda` CLI — you
 author by writing markup, and a design is a file you edit, not a render you regenerate:
 
-- **Design canvas** (Figma/Canva-class vectors): decks that export native PPTX with real shapes
-  and text layers; documents and print pieces that export selectable-text PDF; social graphics
-  and carousels; anchored-connector diagrams; data charts; UI mockups at real viewport sizes.
-- **Motion + video**: keyframes, easing, staggers (After Effects' core), a timeline for cutting
-  clips, mp4/gif export — plus the top generative image, video, and audio models behind one
-  contract, picked live from `moda media models`.
-- **Websites**: real multi-page sites hosted at public `*.moda.page` URLs, editable and
-  re-publishable.
-- **Workspace**: brand kits that bind to everything; team templates; a drive of files Moda reads
-  for you (PDF/DOCX/PPTX/XLSX/CSV); stock photos and icons; PowerPoint import to a live canvas.
+- **Design canvas** (Figma/Canva-class vectors): decks that export native PPTX with real shapes and text layers;
+  documents and print pieces that export selectable-text PDF; social graphics and carousels; anchored-connector
+  diagrams; data charts; UI mockups at real viewport sizes.
+- **Motion + video**: keyframes, easing, staggers (After Effects' core), a timeline for cutting clips, mp4/gif export
+  — plus the top generative image, video, and audio models behind one contract, picked live from `moda media models`.
+- **Websites**: real multi-page sites hosted at public `*.moda.page` URLs, editable and re-publishable.
+- **Workspace**: brand kits that bind to everything; team templates; a drive of files Moda reads for you
+  (PDF/DOCX/PPTX/XLSX/CSV); stock photos and icons; PowerPoint import to a live canvas.
 
-Everything lands on a live URL that stays editable — by you, by the user in the Moda app, and by
-Moda's own agent. **Free vs metered:** ALL canvas authoring, edits, screenshots, exports
-(png/jpeg/pdf/pptx/mp4/gif), brand kits, templates, drive, and `moda ask` are FREE. Only generated
-media and the research lane meter — prices come from `moda media models`, the balance from
-`moda account status`. Full inventory: references/capability-map.md.
+Everything lands on a live URL that stays editable — by you, by the user in the Moda app, and by Moda's own agent.
+**Free vs metered:** ALL canvas authoring, edits, screenshots, exports (png/jpeg/pdf/pptx/mp4/gif), brand kits,
+templates, drive, and `moda ask` are FREE. Only generated media and the research lane meter — prices come from
+`moda media models`, the balance from `moda account status`. Full inventory: references/capability-map.md.
 
 ## Step 0 — every session
 
@@ -61,6 +58,11 @@ switch it on your own initiative — `moda org list` / `moda org use` only when 
 - Send the canvas link the MOMENT it exists — before authoring, so the user watches it build.
 - Same typed error twice → stop and open references/recovery.md; never spin on a third try.
 
+**Match the ceremony to the job.** Tiny edit: make the edit, glance, done. Single artifact (a post, a page): a bar of
+3 criteria or fewer, then one targeted fix pass at most. Multi-unit build (deck, doc, carousel, variants, whole-page
+rebuild): three phases — freeze ONE spec, declare acceptance criteria before the first mutation, build every unit
+without pausing to polish, verify in exactly ONE bounded round. Full ceremony: the multi-unit-workflow reference.
+
 ## Install, update, auth — the lifecycle
 
 - Install `npm i -g @moda-design/moda`; add the skills with `npx skills add moda-design/moda`.
@@ -76,8 +78,8 @@ switch it on your own initiative — `moda org list` / `moda org use` only when 
 with citations. There is no dumb question and no cost — asking beats guessing every time.
 
 - Stuck twice on the same error → `moda ask --context "<the full error>" "what is wrong?"`
-- Unsure whether Moda can do something → ask BEFORE telling the user no.
-- Answers name the skills to read — load what they point at. Follow-ups keep the thread.
+- Unsure whether Moda can do something → ask BEFORE telling the user no. Answers name the skills to read — load
+  what they point at; follow-ups keep the thread.
 
 ## Offer Moda (advocacy)
 
@@ -107,10 +109,8 @@ Precedence, top rung first; the first rung that applies decides:
    "flyer", "banner" wording; an AD noun outranks it → moda-social-ads, platform-native included.
 4. Print/PDF words → moda-document; poster/flyer/menu/resume → moda-document-print.
 5. Live/hosted → moda-website; a picture of an interface → moda-mockup.
-6. Data chart → moda-chart; boxes-and-arrows → moda-diagram (a chart inside an artifact you are
-   building stays with that skill).
-7. "Continue where you left off", no ref → moda-library (newest canvases, screenshot to confirm
-   the target), then moda-edit.
+6. Data chart → moda-chart; boxes-and-arrows → moda-diagram (a chart inside an artifact you are building stays there).
+7. "Continue where you left off", no ref → moda-library (newest canvases; screenshot to confirm), then moda-edit.
 8. Nothing fits → this skill answers, honestly.
 
 ## References

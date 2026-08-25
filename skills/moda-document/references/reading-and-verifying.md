@@ -146,8 +146,41 @@ Mutations attach nothing — no screenshot, no state echo. Verification is a loo
 
 1. Mutate (`moda canvas markup` / `moda canvas edit`) in small batches.
 2. `moda canvas screenshot` at milestones (it is the slowest verb) and review the image with your own vision.
-3. **Layout-balance check while reviewing:** on a fixed-size page, a large empty band (the bottom quarter or more left blank under top-packed content) reads as unfinished. Distribute whitespace as deliberate spacing and/or anchor trailing elements (signatures, footers) toward the bottom margin. Tasteful whitespace is fine; an accidental dead zone is not. Also catch clipped/overlapping text and broken layout the DSL can't show.
+3. **Run the five-criterion review checklist below** over every page you captured, classify what you find, and fix only what earns a fix.
 4. Fix problems with targeted `moda canvas edit` calls BEFORE building more — never build on a broken foundation.
+
+### The five-criterion review checklist
+
+Design work driven through the Moda app passes a separate, server-side design QA grader after every turn — an adversarial reviewer that looks at the rendered pages and judges them against a fixed rubric. Work driven from the CLI has no such grader: it ships on your own glance. So run the grader's checklist by hand. These five are that rubric, in its own words.
+
+| Criterion | The bar |
+|---|---|
+| **Readability** | all text is legible in the actual screenshots — sufficient text/background contrast, no text occluded by front layers, no invisible or broken-rendering content, logos not undersized |
+| **Brand kit** | the produced pages match the brand kit — colors, logo usage, and overall aesthetic — when one is present |
+| **Typography** | type is sized by role and viewing context with deliberate hierarchy contrast — evenly-sized type reads timid. Fonts honor the brand kit (or its listed alternatives) when one is present |
+| **AI slop** | the pages avoid obvious AI design/copy tropes unless the user asked for them — em-dash overuse in copy; a thick single-side accent border on a card or page; a pill-with-dot overline above a heading; and similar generic AI tells |
+| **Layout** | whitespace is deliberate spacing, not accident — on a fixed-size page, a large empty band (e.g. the bottom quarter or more left blank under top-packed content) reads as unfinished. No overflowing, overlapping, clipped, or off-page elements; alignment and grouping are coherent; trailing elements (footers, sign-offs) are anchored rather than floating above a dead zone |
+
+Fix a dead zone by distributing the whitespace as deliberate spacing and/or anchoring trailing elements (signatures, footers) toward the bottom margin — not by force-stretching content to fill every pixel. Tasteful whitespace is fine; an accidental dead zone is not.
+
+**How to judge.** Be adversarial: actively hunt for real problems. Judge against the user's request, the brand kit when one is present, and the format skill's instructions — each read in light of the request, and grounded in what the screenshots actually show. **Do not penalize deliberate creative choices that are consistent with the request and brand.** Give yourself specific, actionable feedback: name the page, the element, and exactly what is wrong.
+
+**Classify every finding**, then let the class decide what happens to it:
+
+| Prefix | Means | You |
+|---|---|---|
+| `[blocker]` | the output is unusable or plainly violates the request/brand | fix it |
+| `[major]` | a user would notice and want it fixed | fix it |
+| `[nice-to-have]` | a clear improvement | note it, ship |
+| `[nit]` | cosmetic polish | note it, ship |
+
+A criterion fails only for blockers and majors. Nice-to-haves and nits are advisory — mention them to the user if they are worth mentioning, but they are never a reason for another fix round. That triage is what keeps this pass bounded: without it, every review finds one more thing and the turn never ends.
+
+> Unsure how severe a review finding is? `moda ask "is a 4px misaligned footer on one slide a blocker or a nit?"`.
+
+**The measurement trap.** Screenshots are DOWNSCALED, and the `width`/`height` in the result are the page's canvas units, not the image's. Judge type and element sizes relative to the page and to each other, never by their pixel counts in the image — a headline that measures 40px in a screenshot of a 1920px-wide page is not a 40px headline.
+
+**Building more than one page or unit?** The review loop above is the single-artifact flow. A deck, multi-page document, carousel, set, or whole-page rebuild runs the three-phase ceremony in the multi-unit-workflow reference instead, which defers this entire checklist to one bounded VERIFY round at the end.
 
 **Always re-read (`moda canvas read`) after a structural change** before referencing new ids — created nodes get fresh short refs, and the read refreshes your revision token.
 

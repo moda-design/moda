@@ -77,8 +77,10 @@ re-publishable, not a canvas and not a file. Site verbs are free; only
 
 - **Mobile-first, then desktop.** Most of these sites are opened on a phone
   first; check that viewport before you call anything done.
-- **One page, one job.** A landing page has a single primary action above the
-  fold and repeats it at the bottom; a marketing site's nav is the sitemap.
+- **One page, one job.** A landing page is ONE tall route with a single
+  primary action above the fold, repeated at the bottom — its layout craft
+  (dead patterns, levers, section arc, hero archetypes) lives in
+  references/landing-page.md; a marketing site's nav is the sitemap.
 - **Real copy, real proof.** Product names, plausible metrics, actual value
   propositions — placeholder text on a hosted URL is worse than no site.
 - **Self-contained pages.** Inline the styles, keep to the allowlists, and
@@ -103,6 +105,7 @@ typed error live in moda-core's recovery reference.
 | Doc | Load when |
 |---|---|
 | references/website.md | before authoring any page (always) |
+| references/landing-page.md | the ask is a landing page, homepage, or marketing hero |
 | references/brand.md | a brand kit exists |
 | references/web.md | content needs live research |
 | references/mockup.md | comping a page as a canvas design before building it |
