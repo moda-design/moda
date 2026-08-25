@@ -55,6 +55,11 @@ harness-native lookup genuinely suffices.
 
 ## Data honesty
 
+When the deliverable IS the research — a briefing, a buying guide, a
+competitive analysis, a company or person profile — the genre decides what to
+search for and how the finished document is shaped: load the research-reports
+reference (it ships with moda-document) before planning the searches.
+
 Facts you place in a deliverable must come from a page you actually read in
 this session — never from a snippet alone when the number matters, and never
 invented. Prefer primary sources (the company's own site, the paper, the

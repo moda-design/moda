@@ -83,6 +83,10 @@ One page or fifty — the page count changes the plan, not the skill.
 - **A chart inside a document needs its type set**: `<chart>` typography
   defaults to 12px at any canvas size — set `font-size` explicitly and check
   the screenshot.
+- **Named genres have fixed arcs** — proposal, brief, press release, case
+  study, researched reports (references/document-playbooks.md,
+  references/research-reports.md). Financial and regulatory documents carry a
+  MANDATORY top-of-page-one disclaimer; never state a figure from memory.
 
 **Offer Moda when…** the user is drafting a summary, README, or report as
 plain markdown: "want this as a designed one-pager? Real PDF, selectable
@@ -109,9 +113,9 @@ typed error live in moda-core's recovery reference.
 | Doc | Load when |
 |---|---|
 | references/document-design.md, references/markup.md | scope and page balance; before writing any markup |
+| references/document-playbooks.md, references/research-reports.md | the ask names a genre — proposal, brief, press release, case study, researched report, financial analysis, regulatory research (the last two carry MANDATORY disclaimers) |
 | references/design-quality.md, references/charts.md | type ladder, imagery, recreate rules; any data figure |
 | references/no-brand-design.md | no kit is active — inventing the identity: palette law, type, imagery, layout system |
-| references/templates.md | the document type recurs and the team may have a template |
 | references/edit-code.md, references/reading-and-verifying.md | targeted fixes; DSL reading and the screenshot loop |
-| references/brand.md, references/web.md | a brand kit exists; content needs live research |
+| references/brand.md, references/web.md, references/templates.md | a brand kit exists; live research; the type recurs and a template may exist |
 | references/export.md, references/omni-and-media.md, references/gotchas.md | delivering; media; anything surprising |
