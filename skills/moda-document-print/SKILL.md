@@ -93,3 +93,4 @@ moda-core — the contract, recovery, everything Moda can do.
 | references/print.md | sizes, bleed, print density, the trifold imposition map, merch |
 | references/document-design.md | scope, density, page balance |
 | references/export.md | vector vs flattened PDF, warnings |
+| references/no-brand-design.md | no kit is active — inventing the identity: palette law, type, imagery, layout system |

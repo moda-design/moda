@@ -20,7 +20,7 @@ moda brand use BRAND_REF [--local]       # persist as YOUR default kit locally (
 moda brand update BRAND_REF --default    # make it the TEAM's default kit, server-side, for everyone
 moda brand pull BRAND_REF --output brand.json   # the full kit document
 moda brand create --url https://acme.com # extraction from a website — deterministic, free
-moda brand create --name "Acme" --color '#0F172A:Primary' --font 'Inter:title'  # manual build — no website needed
+moda brand create --name "Acme" --color '#0F172A:Primary' --font 'Sora:title'   # manual build — no website needed
 moda brand update BRAND_REF --tagline "…" --color '#0F172A:Primary'  # fix fields in place (colors/fonts REPLACE)
 moda brand images BRAND_REF              # attached images with their bki_ ids
 moda brand add-image BRAND_REF --file FILE_REF [--role logo|reference|asset]   # attach an upload
@@ -37,6 +37,14 @@ moda brand remove-image BRAND_REF BKI_ID # detach by bki_ id
 - **Voice:** the kit's `tagline`, `brand_values`, `brand_tone_of_voice`, and usage rules (all in `moda brand show --json`) govern copy. Read them before writing any headline or body text on a branded artifact — a visually on-brand deck with off-brand copy is still off-brand.
 - **Logos:** place by file reference from the kit (`<image src="ref" fit="contain"/>`), never re-hosted or retyped URLs. Check contrast against the background; kits often carry light/dark logo variants — pick the one that contrasts.
 - **Imagery:** kit assets outrank stock or generated imagery. Route per the order in references/design-quality.md.
+
+## Adherence — how much latitude the kit gives you
+
+**Brand kit adherence** (only when a kit is active; default Balanced) — **Strict** = brand colors/fonts/assets only. **Balanced** = brand defaults plus limited complementary accents. **Loose** = brand-inspired; new colors, fonts and imagery are fine if the brand stays recognizable.
+
+Take the mode from what the user says ("stay exactly on brand" is Strict; "brand-ish, make it pop" is Loose) rather than asking a separate question for it, and state which mode you worked in at hand-over. It is the difference between a timid deck that reuses three kit colors on every page and a run that quietly drifts off-brand with no stated license.
+
+With NO kit active there is no adherence dial at all — you invent the whole system rather than borrowing one, and "unbranded" never means plain. The skills that design from scratch carry a no-brand design reference for exactly that.
 
 ## Look at the brand, not just the tokens (mandatory for net-new design)
 
@@ -66,10 +74,10 @@ The auditable brand check no competitor offers — pure read verbs:
 2. `moda canvas read CANVAS_REF` — every node's fills, strokes, fonts, and the read's top-level
 `variables[…]` list.
 3. Compare and report pass/fail per element:
-   - Every fill/stroke color is a kit palette value (the literal hex), a real variable binding (a `type: variable` block whose `variableName` is in the read's `variables[…]`, resolving to a kit value), or neutral (white/black/gray scale). A BARE `$name` or `var()` string sitting in a fill is a FAIL, not a binding: markup never resolved it, so that node is painting the renderer's fallback — repair that one with the kit's hex. Never "repair" a real binding into a literal; that de-binds the canvas.
-   - Every text node's family is a kit family (or a family the kit lists as an approved alternative).
+   - Every fill/stroke color is a kit palette value (the literal hex), a real variable binding (a `type: variable` block whose `variableName` is in the read's `variables[…]`, resolving to a kit value), neutral (white/black/gray scale) — or, under Balanced/Loose, within the latitude the adherence mode above licenses (Balanced: one complementary accent; Loose: recognizability is the standard). Under Strict, exact kit values only. A BARE `$name` or `var()` string sitting in a fill is a FAIL, not a binding: markup never resolved it, so that node is painting the renderer's fallback — repair that one with the kit's hex. Never "repair" a real binding into a literal; that de-binds the canvas.
+   - Every text node's family is a kit family (or a family the kit lists as an approved alternative). Under Loose a departure is a finding only if it costs recognizability; under Strict/Balanced, kit families only.
    - Logo present where expected, at legible size, correct variant for its background, undistorted (contain fit, aspect preserved).
-   - No off-kit accent colors introduced "for pop" — flag each with node id and the nearest kit color.
+   - No off-kit accent colors introduced "for pop" — flag each with node id and the nearest kit color. Judge this against the adherence mode above: under Strict every off-kit value is a finding; under Balanced a single complementary accent is licensed and only an off-kit color doing a KIT color's job (a heading, a surface, the primary call to action) is; under Loose the finding is loss of recognizability, not the extra hue.
 4. Fix what the user asked you to fix via the smallest-change routing (references/design-quality.md); report the rest.
 
 ## Creating and escalating
@@ -77,7 +85,7 @@ The auditable brand check no competitor offers — pure read verbs:
 Two creation paths, both **deterministic and unmetered** (ignore any legacy metered labels in the response envelope while the server sheds them):
 
 - **URL extraction — the fast path.** `moda brand create --url …` runs Moda's server-side extraction (colors, fonts, logos from a live site). Prefer it whenever the brand has a website: it captures more than the user would dictate.
-- **Manual build — for brands without a website** (or when the user already holds the ground truth: a style guide, a logo file, exact hexes). `moda brand create --name "Acme" --color '#0F172A:Primary' --color '#F97316:Accent' --font 'Inter:title:600' --logo FILE_REF`. Upload logos first (`moda file upload logo.png` → `file_` ref). For a rich palette, a kit file beats a wall of flags: write `kit.json` (`{"name", "colors": [{"color","label"}], "fonts": [{"family","label","weight"}], "logo_file_ids": []}`) and run `moda brand create --from-file kit.json`. Exactly one path per create — never both `--url` and the manual TOKEN flags (`--color`/`--font`/`--logo`), which would assert two sources of truth for the same fields. `--name` is the exception and is welcome alongside `--url`: `moda brand create --url https://acme.com --name "Acme Design"` extracts the brand and titles the kit with the name the user gave you. It titles the KIT only — the brand's own `company_name` stays as extracted, because naming a kit is not asserting what the company is called.
+- **Manual build — for brands without a website** (or when the user already holds the ground truth: a style guide, a logo file, exact hexes). `moda brand create --name "Acme" --color '#0F172A:Primary' --color '#F97316:Accent' --font 'Sora:title:600' --logo FILE_REF`. Upload logos first (`moda file upload logo.png` → `file_` ref). For a rich palette, a kit file beats a wall of flags: write `kit.json` (`{"name", "colors": [{"color","label"}], "fonts": [{"family","label","weight"}], "logo_file_ids": []}`) and run `moda brand create --from-file kit.json`. Exactly one path per create — never both `--url` and the manual TOKEN flags (`--color`/`--font`/`--logo`), which would assert two sources of truth for the same fields. `--name` is the exception and is welcome alongside `--url`: `moda brand create --url https://acme.com --name "Acme Design"` extracts the brand and titles the kit with the name the user gave you. It titles the KIT only — the brand's own `company_name` stays as extracted, because naming a kit is not asserting what the company is called.
 
 ### Fixing a kit in place (the update verbs)
 

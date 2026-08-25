@@ -109,6 +109,7 @@ typed error live in moda-core's recovery reference.
 | references/deck-design.md, references/deck-playbooks.md | planning slides; the known deck types |
 | references/markup.md | before writing any markup |
 | references/design-quality.md, references/charts.md | type ladder, imagery, recreate rules; any data slide |
+| references/no-brand-design.md | no kit is active — inventing the identity: palette law, type, imagery, layout system |
 | references/templates.md | the deck type recurs and the team may have a template |
 | references/edit-code.md, references/reading-and-verifying.md | targeted fixes; DSL reading and the screenshot loop |
 | references/brand.md, references/web.md | a brand kit exists; content needs live research |

@@ -95,3 +95,4 @@ moda-core — the contract, recovery, everything Moda can do.
 | references/ads.md | depth: IAB set, per-size composition patterns, CTA and stopping power |
 | references/markup.md | before any markup apply |
 | references/export.md | zip semantics, pixel ratio, warnings |
+| references/no-brand-design.md | no kit is active — inventing the identity: palette law, type, imagery, layout system |

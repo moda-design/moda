@@ -86,3 +86,4 @@ moda-core — the contract, recovery, everything Moda can do.
 | references/linkedin.md | depth: document-post conventions, banner lockups, feed legibility |
 | references/markup.md | before any markup apply |
 | references/export.md | PDF vs zip, warnings, pixel ratio |
+| references/no-brand-design.md | no kit is active — inventing the identity: palette law, type, imagery, layout system |

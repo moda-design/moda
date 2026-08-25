@@ -114,5 +114,6 @@ See also: moda-core — contract, routing ladder, everything Moda can do.
 | references/social-craft.md | concept directions, generated backgrounds, style references, resizing to another platform, the post-in-platform-frame recipe |
 | references/markup.md | before any markup apply |
 | references/design-quality.md | type ladder, imagery, shaders, AI-slop list |
+| references/no-brand-design.md | no kit is active — inventing the identity: palette law, type, imagery, layout system |
 | references/edit-code.md | resize in place / duplicate to a second size |
 | references/export.md, references/charts.md, references/gotchas.md, references/omni-and-media.md | delivering; a stat page with a real chart; anything surprising; metered-lane semantics |

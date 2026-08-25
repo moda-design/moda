@@ -25,7 +25,15 @@ body.
   point of view; rounded corners and soft shadows everywhere; the same layout
   with colors swapped; every concept at the same brightness.
 - Headline faces to avoid unless the brand kit names them: Inter, DM Sans,
-  Roboto, Montserrat, Poppins, Oswald, Bebas Neue, Space Grotesk.
+  Roboto, Montserrat, Poppins, Oswald, Bebas Neue, Space Grotesk. Prefer
+  long-tail Google Fonts that fit the brief, and keep body type calmer than the
+  headline. The full ban and its kit carve-out: references/design-quality.md.
+- **Brand kit adherence** (only when a kit is active; default Balanced) —
+  **Strict** = brand colors/fonts/assets only. **Balanced** = brand defaults
+  plus limited complementary accents. **Loose** = brand-inspired; new colors,
+  fonts and imagery are fine if the brand stays recognizable. The mode sets how
+  far concepts may vary — don't reuse the same headline font across concepts
+  unless adherence is Strict — and it decides what a brand audit may flag.
 - One stat per page: numeral oversized in the accent, unit set smaller with an
   inline `<span>` (needs `format="html"` on the `<text>` node), source in a
   small footer. Arrows are real elements (`<line … arrow-end="triangle"/>` or

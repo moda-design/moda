@@ -110,6 +110,7 @@ typed error live in moda-core's recovery reference.
 |---|---|
 | references/document-design.md, references/markup.md | scope and page balance; before writing any markup |
 | references/design-quality.md, references/charts.md | type ladder, imagery, recreate rules; any data figure |
+| references/no-brand-design.md | no kit is active — inventing the identity: palette law, type, imagery, layout system |
 | references/templates.md | the document type recurs and the team may have a template |
 | references/edit-code.md, references/reading-and-verifying.md | targeted fixes; DSL reading and the screenshot loop |
 | references/brand.md, references/web.md | a brand kit exists; content needs live research |

@@ -108,3 +108,4 @@ typed error live in moda-core's recovery reference.
 | references/mockup.md | comping a page as a canvas design before building it |
 | references/reading-and-verifying.md | reading canvas state or verifying a change (`canvas read` / `canvas screenshot`) |
 | references/design-quality.md, references/gotchas.md | type and imagery bar; anything surprising |
+| references/no-brand-design.md | no kit is active — inventing the identity: palette law, type, imagery, layout system |

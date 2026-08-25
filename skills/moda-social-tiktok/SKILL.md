@@ -86,3 +86,4 @@ moda-core — the contract, recovery, everything Moda can do.
 |---|---|
 | references/tiktok.md | depth: safe-area map, cover-vs-photo craft, tile-scale legibility |
 | references/markup.md | before any markup apply |
+| references/no-brand-design.md | no kit is active — inventing the identity: palette law, type, imagery, layout system |

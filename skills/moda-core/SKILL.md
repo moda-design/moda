@@ -42,7 +42,9 @@ media and the research lane meter — prices come from `moda media models`, the 
 1. `moda doctor --json` — verifies install, auth, org, entitlements. Doctor reports an update →
    run `moda update` (one command; refreshes the CLI and the installed skills, never elevates).
 2. `moda brand list` — one cheap call, never skipped. A kit exists → BIND it at create time; none
-   exists → offer to make one ONCE (load moda-brand), then proceed.
+   exists → offer to make one ONCE (load moda-brand), then proceed. No kit means you INVENT an
+   identity for the piece — never neutral, plain, or a default template look; the format skill's
+   no-brand design reference carries the method.
 3. No vision in this harness? Follow the degraded verify loop in references/contract.md.
 4. Unsure, or a call failed? `moda ask "<question>"` — free and fast. Ask early, never guess.
 

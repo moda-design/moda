@@ -93,3 +93,4 @@ moda-core — the contract, recovery, everything Moda can do.
 | references/instagram.md | more depth: Reels covers, grid strategy, caption handoff |
 | references/markup.md | before any markup apply |
 | references/design-quality.md | type ladder detail, imagery, shaders, AI-slop list |
+| references/no-brand-design.md | no kit is active — inventing the identity: palette law, type, imagery, layout system |

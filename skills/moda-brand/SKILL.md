@@ -39,10 +39,16 @@ NEW mark is canvas work → moda-social; the kit stores the logo FILES.
 - several and no such signal → ASK which. Topic fit is never a signal, and
   near-identical names (Acme, Acme 2) mean ask even when named;
 - none fits — a personal or off-topic ask among other people's brands → say so
-  in one line and design unbranded. This is the only exit you may take unasked,
-  and never in silence;
+  in one line and design without a kit. This is the only exit you may take
+  unasked, and never in silence;
 - no kits at all → offer once to make one (`moda brand create`, free); if they
-  decline, unbranded.
+  decline, design without a kit.
+
+**No kit means you invent an identity**, never that you design plain: a
+palette with two color worlds, distinctive faces, a motif, all chosen for this
+subject — references/no-brand-design.md. A generic blue-and-gray result is a
+failed run, not a neutral one. With a kit, the latitude you have is the
+adherence dial in references/brand.md (Balanced by default).
 
 Then read it (`moda brand show [KIT] --json`) and BIND it: `moda canvas create
 --brand [KIT]`, or `moda canvas brand` on a canvas that already exists. Name
@@ -66,7 +72,7 @@ pins it to this repo). An explicit "no brand" from the user wins.
   smallest-change routing (references/design-quality.md).
 - **Create — ONE SOURCE, NEVER BOTH.** Either server-side extraction from a
   site, `moda brand create --url https://…`, or manual tokens:
-  `moda brand create --name "Acme" --color '#0F172A:Primary' --font 'Inter:title' --logo FILE_REF`
+  `moda brand create --name "Acme" --color '#0F172A:Primary' --font 'Sora:title' --logo FILE_REF`
   (`--from-file kit.json` for a rich palette). Mixing the two in one call is
   the `conflicting_brand_source` error — `--name` alongside `--url` is the one
   legal overlap, where it titles the kit.
@@ -114,5 +120,6 @@ See also: moda-core — contract, routing ladder, everything Moda can do.
 |---|---|
 | references/brand.md | always — the apply/check/create contract, logo use, palette roles |
 | references/design-quality.md | typography, imagery routing, edit-vs-markup |
+| references/no-brand-design.md | no kit is active — inventing the identity: palette law, type, imagery, layout system |
 | references/markup.md, references/edit-code.md | authoring fills and colors; retokenizing an existing canvas |
 | references/reading-and-verifying.md, references/charts.md, references/gotchas.md, references/omni-and-media.md | reading a canvas to audit it; chart palettes; anything surprising |

@@ -77,3 +77,4 @@ moda-core — the contract, recovery, everything Moda can do.
 |---|---|
 | references/youtube.md | depth: thumbnail composition patterns, banner device crops |
 | references/markup.md | before any markup apply |
+| references/no-brand-design.md | no kit is active — inventing the identity: palette law, type, imagery, layout system |

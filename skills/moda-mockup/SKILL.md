@@ -101,6 +101,7 @@ typed error live in moda-core's recovery reference.
 | references/mockup.md | always — viewports, shell structure, fidelity |
 | references/markup.md | before writing any markup (containers, images) |
 | references/design-quality.md | type ladder, palette discipline, imagery |
+| references/no-brand-design.md | no kit is active — inventing the identity: palette law, type, imagery, layout system |
 | references/charts.md | a screen contains a chart |
 | references/brand.md | a brand kit exists |
 | references/edit-code.md, references/reading-and-verifying.md | targeted fixes; DSL reading and the screenshot loop |
