@@ -4,12 +4,10 @@
   "description": "Design on Moda from your agent: editable decks and .pptx cleanup, one-pagers, reports and print pieces, social creative per platform, static ads, diagrams, data charts, UI mockups, hosted websites on moda.page, generated video and vector-native motion, images and audio, brand kits, precise canvas edits, plus workspace, template, repo-context and automation helpers — native PPTX/PDF/PNG/MP4 exports from a live, collaborative canvas.",
   "skills": [
     "skills/moda-core",
-    "skills/moda-help",
     "skills/moda-deck",
     "skills/moda-deck-pptx",
     "skills/moda-document",
     "skills/moda-document-print",
-    "skills/moda-one-pager",
     "skills/moda-social",
     "skills/moda-social-instagram",
     "skills/moda-social-linkedin",
