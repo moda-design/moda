@@ -2,20 +2,65 @@
 
 Everything on TikTok is 1080×1920. There is no second size.
 
+The mistake to check for every time is the right icon rail: a headline centred
+on the 1080 width sits partly under the icon column. Centre on the SAFE width
+mapped below (x 120–840), never on the canvas.
+
+<!-- moda:gen-tiktok-safe-area -->
 ## The safe-area map (the reason this file exists)
 
-Design full-bleed; only text, logos, CTAs and focal points respect the zones.
+TikTok has UI that floats above the creative that can cause conflict with the content of the graphic. Listed below are reserved zones which should be avoided by content as described below. Safe areas are also described. The safe area has some padding between it and the reserved zones, so there is some wiggle room.
 
-- **Post**: the UI covers the top band y 0–190 (account and sound chrome), the
-  right icon rail x 900–1080 across y 190–1780 (avatar, like, comment, share,
-  spinning disc), and the caption band y 1780–1920.
-  **Safe zone: x 120–840, y 252–1742.**
-- **Ad**: everything above, plus CTA chrome that reserves the frame from y 1400.
-  **Safe zone: x 120–840, y 252–1280.** Assume a normal post unless the user
-  says ad — the ad zone costs a third of the height.
-- The right rail is the one people forget: a headline that is centred on the
-  1080 width sits partly under the icon column. Centre on the SAFE width (x
-  120–840), not on the canvas.
+### Safe zone
+
+TikTok's UI overlays large portions of the canvas. Anything that *must* be seen — text, logos, faces, CTAs, focal points — must live inside the safe zone or it will be hidden behind UI.
+
+Canvas: 1080×1920 (9:16 vertical).
+
+#### Normal post
+
+Reserved zones (covered by TikTok UI — do not place essential content here):
+- **Top** — y 0–190 (status bar + tabs)
+- **Right** — x 900–1080, y 190–1780 (like / comment / share / profile rail)
+- **Bottom** — y 1780–1920 (caption, CTA button, nav bar)
+
+**Safe zone: x 120–840, y 252–1742** (720×1490).
+
+#### Ad post
+
+TikTok ads may have extra CTA UI at the bottom which needs to be accounted for. If a user didn't state it was an actual ad, assume it's a normal post.
+
+Reserved zones (covered by TikTok UI — do not place essential content here):
+- **Top** — y 0–190 (status bar + tabs)
+- **Right** — x 900–1080, y 190–1400 (like / comment / share / profile rail)
+- **Bottom** — y 1400–1920 (caption, CTA button, nav bar)
+
+**Safe zone: x 120–840, y 252–1280** (720×1028).
+
+### Design full-bleed, keep focal points safe
+
+The safe zone is not a margin. The design should still bleed edge-to-edge — only the critical content needs to stay inside.
+
+**Fine outside the safe zone:**
+- Background colors, gradients, full-bleed photos
+- Decorative patterns, textures, repeating motifs
+- Non-essential parts of an image (edges of a subject, ambient background)
+- Elements meant to bleed off the canvas
+
+**Required inside the safe zone:**
+- All text and copy
+- All logos and brand marks
+- The focal point of any photo or illustration (face, product, hero subject)
+- CTAs, buttons, prices, key info
+
+A full-bleed photo of a person is great — but the face must sit inside the safe zone, not behind the right-rail or under the caption area.
+
+### Quality bar
+
+- No essential element clipped by a reserved zone.
+- The composition feels full-bleed, not a small island floating in the middle of the canvas.
+- Hero text reads at a glance on a phone.
+<!-- /moda:gen-tiktok-safe-area -->
 
 ## Covers
 

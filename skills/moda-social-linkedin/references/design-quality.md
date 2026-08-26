@@ -130,28 +130,52 @@ Never use placeholder shapes or literal "[icon]" text. Ensure logo colors contra
 
 Prefer 2–5 colors unless the type implies a different palette size. Shader motion is automatic.
 
+<!-- moda:gen-paths -->
 ## Decorative paths — use the vetted library
 
-For decorative `<path>` shapes (dividers, blobs, swashes, banners, marks), pick from this library; deviate only for shapes even simpler than these. Icons, glyphs, logos, and illustrations are NEVER path jobs — use `<image icon="…">` or `moda media generate-image`; free-hand path data reliably produces broken-looking clip-art. The `d` string is authored in a natural box (its WxH); the node scales the path to fit its own width/height, so keep the node at the same aspect ratio. FILL entries are closed (set a `fill`, no stroke); STROKE entries are open (set `fill="transparent"` + `stroke` + `stroke-width`, round caps).
+**Contract — agents MUST pick from this library for decorative `<path>` shapes** (dividers, blobs, swashes, banners, marks). Deviate only for shapes even *simpler* than these — a straight-edged wedge, a single quadratic curve, a plain triangle. Icons, glyphs, logos, and illustrations are **NEVER** path jobs: use `<image icon="…">` or `moda file search --kind icon` for icons and glyphs, and `moda media generate-image` for richer marks. Free-hand path data reliably produces broken-looking clip-art, which is why this list exists.
 
-- **wave-divider-single** (100x20, FILL): `d="M0,14 C30,0 70,0 100,14 L100,20 L0,20 Z"` — classic section divider; fill the next section's color and butt to the seam.
-- **wave-divider-double** (100x22, FILL): `d="M0,12 C12,4 24,4 33,12 C42,20 58,20 67,12 C76,4 88,4 100,12 L100,22 L0,22 Z"` — livelier band break.
-- **arc-cap-divider** (100x16, FILL): `d="M0,16 L0,10 C30,0 70,0 100,10 L100,16 Z"` — gentle convex cap; calmer than the waves.
-- **scalloped-edge** (100x16, FILL): `d="M0,6 A10,10 0 0 0 20,6 A10,10 0 0 0 40,6 A10,10 0 0 0 60,6 A10,10 0 0 0 80,6 A10,10 0 0 0 100,6 L100,0 L0,0 Z"` — playful ticket/tag energy; tile nodes for more scallops.
-- **diagonal-cut-divider** (100x20, FILL): `d="M0,20 L0,6 L100,0 L100,20 Z"` — modern architectural break; mirror the node for the opposite lean.
-- **blob-soft** (100x100, FILL): `d="M50,6 C73,6 94,22 94,48 C94,71 78,94 51,94 C27,94 6,76 6,50 C6,25 27,6 50,6 Z"` — friendly background accent at low contrast.
-- **blob-elongated** (100x64, FILL): `d="M26,10 C56,2 90,8 96,30 C101,50 72,60 44,58 C22,56 2,50 4,32 C6,16 12,16 26,10 Z"` — highlight pill behind a headline.
-- **blob-pebble** (100x100, FILL): `d="M22,12 C52,2 84,6 92,30 C99,52 90,84 60,92 C34,98 8,80 6,52 C4,32 10,20 22,12 Z"` — cluster two or three at varied scales/opacities.
-- **plus-sparkle** (100x100, FILL): `d="M50,2 Q56,44 98,50 Q56,56 50,98 Q44,56 2,50 Q44,44 50,2 Z"` — scatter a few for a celebratory accent.
-- **half-circle-sunrise** (100x50, FILL): `d="M0,50 A50,50 0 0 1 100,50 Z"` — rising-sun motif; warm gradient reads as sunrise.
-- **quarter-round-corner** (100x100, FILL): `d="M100,100 L0,100 A100,100 0 0 1 100,0 Z"` — minimal corner accent; mirror/rotate for other corners.
-- **speech-bubble** (100x90, FILL): `d="M12,0 L88,0 A12,12 0 0 1 100,12 L100,58 A12,12 0 0 1 88,70 L40,70 L28,90 L26,70 L12,70 A12,12 0 0 1 0,58 L0,12 A12,12 0 0 1 12,0 Z"` — quote container; text in a separate node on top.
-- **ribbon-banner** (100x40, FILL): `d="M0,4 L100,4 L86,20 L100,36 L0,36 L14,20 Z"` — label strip behind short caps text.
-- **arch-doorway** (60x100, FILL): `d="M0,100 L0,40 A30,30 0 0 1 60,40 L60,100 Z"` — tall portrait mask backdrop.
-- **checkmark-tick** (100x80, STROKE): `d="M8,44 L40,74 L92,8"` — feature-list bullet; bold weight.
-- **underline-swash** (100x16, STROKE): `d="M2,13 C22,0 46,1 60,8 C72,14 87,16 98,3"` — hand-drawn emphasis under a key word.
-- **circle-highlight-sketch** (100x64, STROKE): `d="M74,8 C94,16 98,42 72,54 C46,66 12,58 6,36 C2,20 22,6 54,6 C72,6 86,12 92,24"` — circle a word or figure.
-- **bold-chevron** (60x100, STROKE): `d="M10,8 L54,50 L10,92"` — next/carousel cue; heavy weight, round caps; mirror to point left.
+**How the node scales the path.** The `d` string below is authored in a *natural coordinate box* (its
+`WxH`). On the canvas the path node has its own `x`/`y` offset and `width`/`height`, and the renderer
+**scales the path to fit that box** — so absolute size never matters, only the proportions. Give the
+node the same aspect ratio as the entry's box (or expect stretch). No `transform`, no `clip-path`;
+coordinates are absolute SVG commands and every point stays inside the declared box.
+
+**FILL vs STROKE.** Each entry is tagged:
+
+- **FILL** — a closed path (ends in `Z`, non-self-intersecting). Give the node a `fill` (and usually no
+  stroke). With no fill specified the shape is invisible, so always set one.
+- **STROKE** — an open path (a line, no `Z`). Set `fill="transparent"` plus `stroke` and `stroke-width`.
+  With `fill="transparent"` and no `stroke` the node renders nothing at all (no fill, no stroke) —
+  the shape is invisible, not black. A `stroke` with no `stroke-width` falls back to a 1px hairline,
+  so set the weight and color explicitly for STROKE entries.
+
+---
+
+### FILL shapes (closed — set `fill`, no stroke)
+
+- **wave-divider-single** (100x20, FILL): `d="M0,14 C30,0 70,0 100,14 L100,20 L0,20 Z"` — one smooth crest; the classic section divider between two color bands. Fill it the *next* section's color and butt it to the seam.
+- **wave-divider-double** (100x22, FILL): `d="M0,12 C12,4 24,4 33,12 C42,20 58,20 67,12 C76,4 88,4 100,12 L100,22 L0,22 Z"` — two crests for a livelier, more editorial band break; pair with the single wave on the opposite seam.
+- **arc-cap-divider** (100x16, FILL): `d="M0,16 L0,10 C30,0 70,0 100,10 L100,16 Z"` — a gentle convex cap with straight sides; softens the top of a footer or a full-bleed color block. Calmer than the waves.
+- **scalloped-edge** (100x16, FILL): `d="M0,6 A10,10 0 0 0 20,6 A10,10 0 0 0 40,6 A10,10 0 0 0 60,6 A10,10 0 0 0 80,6 A10,10 0 0 0 100,6 L100,0 L0,0 Z"` — five semicircle scallops; playful, ticket/tag or kids/food-brand energy. Stretch wider for more scallops of the same size only by tiling multiple nodes.
+- **diagonal-cut-divider** (100x20, FILL): `d="M0,20 L0,6 L100,0 L100,20 Z"` — a clean tilted cut; modern, architectural section break. Flip horizontally (mirror the node) for the opposite lean.
+- **blob-soft** (100x100, FILL): `d="M50,6 C73,6 94,22 94,48 C94,71 78,94 51,94 C27,94 6,76 6,50 C6,25 27,6 50,6 Z"` — rounded, gently asymmetric organic shape; a friendly background accent behind a photo or stat. Use a soft brand tint at low contrast.
+- **blob-elongated** (100x64, FILL): `d="M26,10 C56,2 90,8 96,30 C101,50 72,60 44,58 C22,56 2,50 4,32 C6,16 12,16 26,10 Z"` — a wider, lozenge-like organic form; good as a highlight pill behind a headline or as a horizontal backdrop.
+- **blob-pebble** (100x100, FILL): `d="M22,12 C52,2 84,6 92,30 C99,52 90,84 60,92 C34,98 8,80 6,52 C4,32 10,20 22,12 Z"` — slightly angular, pebble-like character; a touch more grounded than blob-soft. Cluster two or three at varied scales/opacities.
+- **plus-sparkle** (100x100, FILL): `d="M50,2 Q56,44 98,50 Q56,56 50,98 Q44,56 2,50 Q44,44 50,2 Z"` — a four-point sparkle/glint; scatter a few at different sizes for an AI/magic or celebratory accent. Keep it a solid accent color.
+- **half-circle-sunrise** (100x50, FILL): `d="M0,50 A50,50 0 0 1 100,50 Z"` — a flat-bottomed semicircle; a rising-sun motif or a rounded cap sitting on a baseline. Warm gradient reads as a sunrise.
+- **quarter-round-corner** (100x100, FILL): `d="M100,100 L0,100 A100,100 0 0 1 100,0 Z"` — a quarter disc filling one corner; a minimal corner accent. Mirror/rotate the node to target the other three corners.
+- **speech-bubble** (100x90, FILL): `d="M12,0 L88,0 A12,12 0 0 1 100,12 L100,58 A12,12 0 0 1 88,70 L40,70 L28,90 L26,70 L12,70 A12,12 0 0 1 0,58 L0,12 A12,12 0 0 1 12,0 Z"` — rounded rectangle with a downward tail, one closed path; a quote or testimonial container. Put the text in a separate node on top.
+- **ribbon-banner** (100x40, FILL): `d="M0,4 L100,4 L86,20 L100,36 L0,36 L14,20 Z"` — a forked-end ribbon body; a label/eyebrow strip behind short caps text. Fill an accent color, text centered on top.
+- **arch-doorway** (60x100, FILL): `d="M0,100 L0,40 A30,30 0 0 1 60,40 L60,100 Z"` — a rounded-top arch; a doorway/window frame or a tall portrait mask backdrop. Tasteful behind a headshot or product shot.
+
+### STROKE shapes (open — set `fill="transparent"`, `stroke`, `stroke-width`)
+
+- **checkmark-tick** (100x80, STROKE): `d="M8,44 L40,74 L92,8"` — a confident checkmark; a feature-list bullet or a success mark. Use `stroke-linecap="round"`, `stroke-linejoin="round"`, and a bold weight.
+- **underline-swash** (100x16, STROKE): `d="M2,13 C22,0 46,1 60,8 C72,14 87,16 98,3"` — a subtle S-curved underline; slip it under a key word for hand-drawn emphasis. Round caps, medium weight, an accent color.
+- **circle-highlight-sketch** (100x64, STROKE): `d="M74,8 C94,16 98,42 72,54 C46,66 12,58 6,36 C2,20 22,6 54,6 C72,6 86,12 92,24"` — a hand-drawn ellipse that overshoots its start; circle a word or figure for annotation energy. Round caps, an accent color.
+- **bold-chevron** (60x100, STROKE): `d="M10,8 L54,50 L10,92"` — a right-pointing chevron; a "next"/carousel cue or a list marker. Weight = boldness, so set a heavy `stroke-width` with round caps/joins. Mirror the node to point left.
+<!-- /moda:gen-paths -->
 
 ## Planning discipline
 
