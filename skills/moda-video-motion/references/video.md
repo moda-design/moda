@@ -127,14 +127,11 @@ to the registry when it disagrees):
   family (pick an exact id off `moda media models`; they take the same
   image anchors) or the Seedance 2.0 tiers (2.0 Fast has taken real human
   footage as reference video); fast action still decoheres —
-  keep talking shots calm. In a small
-  2026-08 evaluation on this route, its in-prompt speech graded closest to
-  a passable talking human of any roster lane, yet still clearly below the
-  professional bar — frozen torso, lip lag at line starts, a mechanical
-  end-of-line grin, high roll variance; treat that as provisional and
-  re-test before a large spend. For on-camera speech read
-  "Talking humans" below — in-prompt dialogue is now the LAST of three lanes,
-  not the first.
+  keep talking shots calm. Its in-prompt speech is the most convincing on
+  the roster but still short of commercial quality — expect a stiff torso, a
+  slight lip lag at line starts, and noticeable variation between takes, so
+  generate several and pick. For on-camera speech read "Talking humans" below
+  before reaching for dialogue in a prompt.
   Dearer per second than 2.0 — use 2.0 when the clip fits in 15 s and
   nothing needs to speak.
 - **OmniHuman v1.5** — the presenter lane: one photo of a person plus one
@@ -254,52 +251,63 @@ to the registry when it disagrees):
   audio-driven route bills a flat $0.17/s (Pro) or $0.13/s (Fast) of the track.
   `camera_motion` scripts one move on the text and image routes only. No seed.
 
-## Talking humans — the routing doctrine
+## Talking humans — how to make someone speak on camera
 
-Measured 2026-08-24/25. **No general video model on this roster clears a
-professional bar for on-camera speech.** The best measured lane was Seedance
-2.5's in-prompt dialogue at roughly 78% realism with a severity-7 worst case and
-high roll-to-roll variance; LTX, MiniMax H3, Happy Horse and Veo all graded
-below it. So do not open a talking-head brief by prompting for dialogue. Work
-down this list and stop at the first lane that fits:
+**On-camera speech from generated video does not yet reach commercial or ad
+quality on any model here**, the dedicated lip-sync and avatar entries included.
+Plan around that rather than trying to prompt through it. Pick the approach that
+matches the bar the work has to clear:
 
-1. **VO-led (the default).** Cut the beats so lips are never the focus —
-   over-the-shoulder, hands, product, cutaways — and carry the words in a
-   voiceover from `moda media generate-audio`. Nothing here is a lip-sync
-   problem, so nothing here can fail as one, and it is the cheapest lane.
-2. **Lip-sync post.** Generate the performance shot with the actor NOT
-   talking, on a model that accepts a photoreal identity anchor (the Kling 3
-   family does; pick an exact id off `moda media models`). Then lay the cast
-   read over the finished clip with `--lipsync-video`. This is the lane that
-   gets all three at once: a consistent character, a voice you chose, and lips
-   that match. Draft on `kling-lipsync`; escalate a hero close-up to
-   `sync-lipsync-2-pro`.
-3. **Standalone presenter.** When the shot IS a person talking to camera and
-   there is no surrounding action — a spokesperson, an explainer, a testimonial
-   — go straight to `omnihuman-1.5` from one character photo and one audio
-   file. It skips the generate-then-sync round trip entirely.
+**For anything commercial or hero-grade**, write the dialogue as VO over
+visuals and keep lips off-frame — off-camera delivery, wide shots, over the
+shoulder, hands, product, cutaways — with the words carried by
+`moda media generate-audio`. Nothing here is a lip-sync problem, so nothing here
+can fail as one, and it is also the cheapest and fastest lane. Real footage is
+the other answer when the face has to be on camera and the bar is high.
 
-**Which lip-sync.** `kling-lipsync` is the cheap default: use it for drafts and
-for wide and medium shots where the mouth is not the subject of the frame.
-`sync-lipsync-2-pro` is the escalation for hero close-ups and commercial-grade
-facial animation, at many times the cost — reach for it deliberately, after a
-cheap pass has settled the edit. **This ranking is PROVISIONAL**: it rests on
-provider claims and community reputation, not on a graded head-to-head run
-here. A bakeoff of the same clip and read through all three is planned; if the
-ordering flips, this paragraph changes.
+**For casual and social content** there are three workable approaches:
+
+1. **Speak it in the prompt.** `seedance-2.5` is the strongest option — quote
+   the line directly in the prompt and it renders the dialogue with the picture,
+   no separate TTS. The Seedance 2.5 entry above carries a worked example.
+   Results vary shot to shot, so generate several takes and pick the best one.
+   Keep the action calm — fast movement makes it worse.
+2. **Dub a line onto a clip you already have.** Use `--lipsync-video` with
+   `kling-lipsync` as the inexpensive default, and `sync-lipsync-2-pro` when the
+   shot is a close-up and the mouth is the subject of the frame. Give it a
+   close-up source whose mouth is visible and **already moving** through the dub
+   window: these routes work against the mouth they are given rather than
+   redrawing it, so a closed-mouth or still source reads as ventriloquism — the
+   audio speaks while the lips stay shut. A small or medium-wide face gives you
+   almost no mouth movement at all. Expect a slight lip lag at the start of a
+   line; trim the first beat of the line or pad the start of the track to hide
+   it.
+3. **Turn a photo into a presenter.** `omnihuman-1.5` takes one photo of a
+   person plus one audio file and returns them delivering it — no
+   generate-then-dub round trip. Good for casual presenter clips; not a hero
+   spot, and framing the photo differently does not change that.
+
+To build a source clip FOR dubbing, generate the shot as a close-up with the
+actor already speaking — mouthing the line, or any placeholder speech — on a
+model that takes a photoreal identity anchor (the Kling 3 family does; pick an
+exact id off `moda media models`). That gets you a consistent character, a voice
+you chose, and moving lips together.
 
 **Identity, not just lips.** Seedance 2.5 rejects ANY photoreal human image
 input, so its reference and audio lanes cannot carry a real person's likeness —
-route that work to the Kling 3 family or the Seedance 2.0 tiers, then lip-sync
-the result.
+route that work to the Kling 3 family or the Seedance 2.0 tiers, then dub the
+result.
 
 **Not on the roster, and why** — do not reach for these, they are notes so the
 question is not re-opened: `infinitalk` (image+audio, 720p ceiling,
 open-source class) is a plausible budget lane for long audio and is on the
 watchlist only; `veed/avatars` offers preset characters with no custom photo, so
-it cannot do identity work at all; PixVerse's lip-sync measured worse than the
-lanes above; and OmniHuman v1 exists at a slightly lower rate than v1.5 but with
+it cannot do identity work at all; PixVerse's lip-sync is weaker than the lanes
+above; and OmniHuman v1 exists at a slightly lower rate than v1.5 but with
 weaker motion, so v1.5 is the single entry we carry.
+
+This lane moves quickly — when a model here gains a new version, re-check what
+it can do rather than assuming the guidance above still describes it.
 
 **Reference video** rides `--reference-video <ref-or-url>` (repeatable; the
 wire field is `reference_videos`), and only models whose card shows "ref
