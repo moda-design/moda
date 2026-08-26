@@ -560,9 +560,17 @@ keyframe verb takes easing PER KEYFRAME instead. Easing values: `linear`,
 `easeOutBack`, `easeInOutBack`, `easeOutBounce`, or
 `'cubic-bezier(x1, y1, x2, y2)'`. The hold contract: a track that ends
 before the page does (an explicit `durationMs`, or keyframes that stop
-early) HOLDS its final value to the page end — set `endMs` only when you
-want a snap-back window. A `tween` with neither `durationMs` nor `endMs`
-ramps from `startMs` all the way to the page end.
+early) HOLDS its final value to the page end — and an `endMs` does NOT undo
+that. An **override** track (the default blend) holds its last keyframe past
+`endMs` forever, so `endMs` is not a snap-back point: author the return as a
+keyframe, or use `blend: 'add'`/`'multiply'`, whose tracks contribute nothing
+outside their window and so do return to base there. A `tween` with neither
+`durationMs` nor `endMs` ramps from `startMs` all the way to the page end.
+And the rest state is canonical: animate from an offset TOWARD the base
+value, never away from it, or the canvas is wrong the moment playback stops.
+The full model — blend composition, hold, ambient loops, one track per
+target — is the opening section of references/motion-recipes.md; read it
+before authoring motion.
 
 **Paths** (scalar verbs): top-level node properties — `x`, `y`, `opacity`,
 `rotation`, `scale`, `scaleX`, `scaleY`, `width`, `height`, `cornerRadius`,

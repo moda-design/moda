@@ -1,12 +1,12 @@
 ---
 name: moda-video
 description: >-
-  Video and motion on Moda — the router for anything delivered as mp4 or
-  gif. Use for: "make a video", GIF, animated ad/post/banner, motion
-  graphic, animate a logo/image/design. Route to the
-  child: generated clips (prompt-to-video, image-to-video, extend, upscale,
-  reframe) → moda-video-clip; canvas motion, timeline cuts, photo slideshows, gif/mp4 export → moda-video-motion. Generation is metered;
-  motion authoring and export are free.
+  Video, motion, and animation on Moda — anything delivered as mp4 or
+  gif. Use for: "make a video", "animate this", "make it move", "animated
+  version", animated ad/post/banner, motion graphic, animate a
+  logo/image/design. Generated clips (prompt-to-video, image-to-video,
+  extend, upscale, reframe) → moda-video-clip; canvas motion, timeline cuts,
+  photo slideshows, gif/mp4 export → moda-video-motion.
 argument-hint: "[what the video shows + what it starts from (brand/canvas/photo)] [--brand <kit>]"
 allowed-tools: Bash(moda:*), Read
 ---

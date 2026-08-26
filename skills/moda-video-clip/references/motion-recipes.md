@@ -10,7 +10,9 @@ Load this file when the ask names a **deliverable** rather than a clip: "a
 logo animation", "a teaser for this product", "an ad for Reels", "a 300×250
 that animates". A
 prompt-only clip stays in references/video.md workflow 2 — do not pad a
-simple ask with a canvas.
+simple ask with a canvas. **"The motion model" below is not recipe-specific:
+read it before authoring ANY keyframed motion**, including a one-off
+`motion.page` pass that never reaches a recipe here.
 
 references/video.md is the prerequisite (lanes, the model roster, the knob
 rules, the draft ladder). Every recipe here RUNS that ladder rather than
@@ -20,6 +22,100 @@ one-shotting the hero model. Registry rates for the lanes below: Veo 3.1 Lite is
 **$0.20/s** (720p and 1080p share that rate; audio doubles it), Seedance 2.0
 Fast **$0.2419/s at 720p** and area-metered, so 480p is materially cheaper on
 it. `moda media models` is the authority when any of that has moved.
+
+## The motion model — what makes the motion CORRECT
+
+The rosters in references/video.md say what exists; this says what makes the
+result right. Every rule below is a SILENT failure mode: the edit applies, the
+warnings come back empty, and the piece is wrong.
+
+**1. The rest state is canonical.** The markup pass places each node at its
+rest state, and the engine evaluates tracks over that rest scene at render
+time. So motion runs *from an offset TOWARD the base*: `[base.y + 80, base.y]`.
+Driving away from the base leaves the canvas wrong the moment playback stops
+and the engine restores state — and that rest frame is what the app shows and
+what a screenshot shows, so a wrong rest state is wrong everywhere the motion
+isn't playing.
+
+**2. One track drives exactly one target.** A track animates one node, or the
+page background — there is no multi-target track and no `targets` array. To
+animate N nodes, author N tracks: `t.stagger(nodes, { at, each, animate })`
+expands to N single-target tracks and realizes the delay as a real `startMs`
+on member i (`at + i * each`), with `m.index` / `m.count` readable inside
+`animate`. Three answer panels revealing in sequence is ONE `t.stagger`, not
+three hand-timed `startMs` values.
+
+**3. `blend` decides what your keyframes MEAN.** Each track's scalar output
+composes per property per frame as `((override ?? base) + Σ add) × Π multiply`:
+
+- `'override'` (the default) — absolute values; a later track wins.
+- `'add'` — keyframes are **deltas** on the live base. `[-40, 0]` slides in
+  from 40px left of wherever the node currently sits.
+- `'multiply'` — keyframes are **factors**. `[0, 1]` fades in relative to the
+  base opacity.
+
+Relative (`add`/`multiply`) tracks survive node moves and stack on the same
+property — that is how a slide preset coexists with a motion path on one node.
+Reading tracks back, interpret their keyframes through their `blend`: they are
+not necessarily absolute.
+
+**4. `endMs` is NOT a snap-back point.** A track is active inside
+`[startMs, endMs]` and holds its last keyframe while active. Outside the
+window an **override** track holds too — the first keyframe before it, the last
+one after it, forever. So `t.tween('n7', 'scale', [1, 1.3], { endMs: 300 })`
+leaves the node at `1.3` for the rest of the page. For a momentary effect,
+AUTHOR THE RETURN:
+
+```
+t.keyframes('n7', 'scale', [{ tMs: 0, value: 1 }, { tMs: 150, value: 1.3 }, { tMs: 300, value: 1 }]);
+```
+
+— or write `0 → delta → 0` under `blend: 'add'`. Relative tracks contribute
+nothing outside their window, so for those the window end IS a real return to
+base. The same rule's upside: a fade `[0, 1]` at `startMs: 800` stays invisible
+until it fires, and "fade in over 600 ms and stay" is
+`{ startMs: 0, durationMs: 600 }` with **no** `endMs` at all.
+
+An ambient track clipped by `endMs` freezes mid-swing at an off-base value:
+`pulse`, `float`, `bob`, `breathe`, `shake`, `wobble` and `shadow-pulse` are
+override tracks despite anchoring to the base. Removing the track is the only
+way to stop one.
+
+**5. There is no page-level loop flag.** A page plays once and stops at
+`durationMs`. A continuous ambient loop — wheels turning, a drifting texture, a
+rotating gradient — is either a renderer-clock shader fill, or a procedural
+`clock` / `lfo` track carrying `{ loop: 'loop', periodMs }`, which the
+evaluator cycles regardless of page playback:
+
+```
+t.procedural('n4', 'clock', ['rotation'], { from: 0, to: 360, sourceDurationMs: 4000 },
+  { blend: 'add', loop: 'loop', periodMs: 4000, description: 'Wheel turns once every 4s, forever' });
+```
+
+A `clock` is anchored at a constant `from`, not at the node's base, so it is
+the one procedural driver that needs an explicit `blend: 'add'` — compose the
+sweep ONTO the rest rotation, or a wheel resting at 12° snaps to 0° the instant
+the track starts, breaking rule 1 in the very example that fixes rule 5.
+`lfo` / `wiggle` / `spring` resolve their anchor to the base already and take
+no blend.
+
+The `spin` preset is that same clock packaged with `blend: 'add'` already set
+(`to` degrees per cycle / `sourceDurationMs`) — reach for `t.effect(node,
+'spin', …)` first, and hand-author the procedural only when spin's knobs don't
+reach. `marching-ants` and `gradient-rotate` are its dashed-stroke and
+radial-gradient siblings. A plain `t.tween` on `rotation` is the wrong tool for
+"slowly and forever": it ramps once and then holds at whatever angle it
+stopped on.
+
+**Prefer data drivers over code.** Curve tracks (`t.tween`, `t.keyframes`,
+`t.motionPath`, `t.colorTween`) and procedural tracks (`t.procedural`) stay
+editable in the app and export to After Effects as real keyframes and
+expressions. `t.compute` is opaque and bakes down to keyframe soup — reach for
+it only when no data driver can express the motion.
+
+**`t.clear()` deletes every track on the page**, including motion someone else
+authored. One node is `t.clearTarget(node)`; one track is
+`t.clearTrack(trackId)`. Reach for `t.clear()` on full rewrites only.
 
 ## The shape all three share
 

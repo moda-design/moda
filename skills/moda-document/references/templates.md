@@ -6,6 +6,41 @@ customer one-pager. Starting from one is how the output comes out looking
 like the team's other work — the brand-consistency argument one level up
 from a kit: it carries the layout and structure, not just the tokens.
 
+**Two opposite modes live in this file.** AUTHORING a template is designing
+the reusable thing; FILLING one is instantiating it for a single use. The
+recipes below are the fill mode — they strip placeholders out and replace every
+line with content specific to this user. If the ask is "build us a reusable
+template", "make this a template we can reuse", "a deck we fill in every
+quarter", you are in the authoring mode directly below, and the fill rules
+invert.
+
+## Authoring a template — structure, not content
+
+Design STRUCTURE and LAYOUT. Content that only makes sense for one use case is
+the failure mode, and it is invisible until someone tries to reuse the thing.
+
+- **Placeholder text NAMES its slot** — "Headline Text", "Product
+  Description", "Company Name" — never a real headline about one launch. A
+  future filler has to be able to read what goes where.
+- **Design for varying text lengths.** Text boxes carry room for typical
+  content variations, and spacing stays consistent enough to survive longer
+  copy: a layout that only works at the exact length you happened to type is
+  not a template. Three cards and four things to say means the layout absorbs
+  a fourth card, not that the copy gets cut to fit.
+- **Keep placeholder images generic**, and hold contrast and readability with
+  the placeholder content in place.
+- **Name elements with `metadata.name`** so a later fill can target the slot.
+- **Use color variables** for backgrounds and text colors — bind them on the
+  edit lane (`variableId`) so one update restyles every page.
+- **Apply shared-element edits across ALL pages that share them**: a
+  background change, a header or footer edit, is almost never meant for page 1
+  only.
+- **Preserve reusability**: before finishing, read every page and delete
+  anything that only makes sense for one specific use case.
+
+Unsure which parts to make variable? `moda ask "which parts of a reusable deck
+template should be color variables rather than fixed hexes?"`.
+
 ## When to check (one cheap read, before designing)
 
 The ask matches a recurring artifact type — something a team plausibly

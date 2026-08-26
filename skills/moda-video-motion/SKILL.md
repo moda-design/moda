@@ -46,7 +46,7 @@ Four facts that decide most of the work:
 1. `moda canvas create --name "[Piece]" --intent "[one-line brief]" --size [WxH] --pages 1 --category animation --brand [KIT]` — send the link immediately.
 2. Author the still frame FIRST — real type, brand geometry, layout: `moda canvas markup [CANVAS_REF] --file - --page [PAGE_ID]` (references/markup.md). Motion on a bad frame is a bad piece that moves.
 3. `moda canvas screenshot [CANVAS_REF]` — fix the frame before animating.
-4. Add motion: `moda canvas edit [CANVAS_REF] --file motion.js` — a `motion.page(...)` program with tweens, effects, staggers and recipes. Shapes and named recipes (logo sting, animated stat, kinetic type, shader background) are in references/motion-recipes.md — author from it, don't probe.
+4. Add motion: `moda canvas edit [CANVAS_REF] --file motion.js` — a `motion.page(...)` program with tweens, effects, staggers and recipes. Read references/motion-recipes.md FIRST: its opening "motion model" section is the five rules that decide whether the motion is correct (rest state, one track per target, what `blend` makes keyframes mean, why `endMs` is not a snap-back point, how an endless loop is authored), and the named recipes — logo sting, animated stat, kinetic type, shader background — follow it. Author from that file; don't probe.
 5. Draft-judge the movement: `moda export [CANVAS_REF] --format gif --page [N] -o draft.gif` and look at it. A screenshot shows one frozen frame — it cannot tell you whether the motion works.
 6. Deliver: live link FIRST, then `moda export [CANVAS_REF] --format mp4 --page [N] -o [piece].mp4`. Read `warnings[]`.
 
@@ -83,6 +83,6 @@ moda-core — the contract, recovery, everything Moda can do.
 
 | Doc | Load when |
 |---|---|
-| references/motion-recipes.md | any named deliverable: logo sting, teaser, animated ad |
+| references/motion-recipes.md | ALWAYS before authoring motion — the motion model, then the named deliverables (logo sting, teaser, animated ad) |
 | references/edit-code.md | before writing an edit program: batches, revisions, warnings |
-| references/video.md | the timeline API, canvas video placement, export rules |
+| references/video.md | the timeline API, canvas video placement, export rules — jump to "The motion timeline API"; the long first half is the generated-clip model roster, which this lane does not need |
