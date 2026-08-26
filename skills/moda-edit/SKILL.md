@@ -75,9 +75,13 @@ references/design-quality.md is the format-neutral taste layer and always applie
 - **a print piece** → references/print.md — bleed, trim and safe area, what changes on press. Landscape Letter (1056×816 — certificate,
   trifold) and the posters (1350×1800, 1800×2700) are print and nothing else; **816×1056 is equally a flyer, menu, resume or letterhead**,
   the most overloaded size on the platform.
-- **anything else** (mockup, diagram, banner, animation) → design-quality.md alone, or that format's own skill if the ask is a rebuild.
+- **boxes and arrows** (any size; nodes joined by connectors, and 960×540 when it is a matrix or quadrant) →
+  references/diagram.md — anchored connectors, rank direction, green and red kept for outcome states.
+- **anything else** (a screen mock, a banner, an animation) → design-quality.md alone, or that format's own skill if the ask is a
+  rebuild. A screen mock is the one that bites: its craft sits behind moda-mockup, and it pulls website craft with it that this lane
+  does not claim (a `*.moda.page` ask is moda-website's) — so load moda-mockup itself when a screen edit needs more than taste.
 
-Orthogonal to all five: **no kit is active** — none bound to this canvas — → references/no-brand-design.md. A restyle or redesign with no kit
+Orthogonal to every lane above: **no kit is active** — none bound to this canvas — → references/no-brand-design.md. A restyle or redesign with no kit
 INVENTS an identity for the piece; "make this look better" is never a licence to drift toward a neutral default. Unbound kits sitting in the
 workspace do not suppress it: the gate is what is ACTIVE, the same condition every other skill states.
 

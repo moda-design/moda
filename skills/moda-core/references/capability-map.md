@@ -133,8 +133,10 @@ browsing of their own, and PowerPoint import (`moda canvas import-pptx`).
 - **Decomposing a flat image into editable layers** — the in-app design agent serves exactly this.
   Hand over the app link; do not decline, and do not fake it with traced shapes.
 - **Stateful hosted web apps** behind a site, and site authoring beyond what moda-website teaches.
-- **Sendable HTML email.** Moda designs the newsletter page and exports png/jpeg/pdf/pptx/mp4/gif —
-  never sendable HTML, and never delivery through a mail provider.
+- **Sending mail.** There is no send verb and no mail provider — delivery is always the user's own
+  ESP. The email HTML itself is NOT outside Moda: the canvas pipeline never emits it (it exports
+  png/jpeg/pdf/pptx/mp4/gif), but you hand-write the self-contained file — load moda-document (or
+  moda-website), which carries the email-HTML craft.
 - **Any generation mode the roster does not list.** `moda media models` is the authority; check it
   before promising a mode, a voice, or a duration.
 

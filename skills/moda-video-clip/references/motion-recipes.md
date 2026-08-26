@@ -107,11 +107,32 @@ radial-gradient siblings. A plain `t.tween` on `rotation` is the wrong tool for
 "slowly and forever": it ramps once and then holds at whatever angle it
 stopped on.
 
-**Prefer data drivers over code.** Curve tracks (`t.tween`, `t.keyframes`,
-`t.motionPath`, `t.colorTween`) and procedural tracks (`t.procedural`) stay
-editable in the app and export to After Effects as real keyframes and
-expressions. `t.compute` is opaque and bakes down to keyframe soup — reach for
-it only when no data driver can express the motion.
+**6. Prefer data drivers over code — and a code driver has three laws.** Curve
+tracks (`t.tween`, `t.keyframes`, `t.motionPath`, `t.colorTween`) and
+procedural tracks (`t.procedural`) stay editable in the app and export to
+After Effects as real keyframes and expressions. `t.compute` is opaque and
+bakes down to keyframe soup — reach for it only when no data driver can
+express the motion. When you do, the function is `(ctx) => ({ prop: value })`,
+every returned property must be declared in `outputs` (undeclared ones are
+dropped with a diagnostic), and `ctx` carries `time` (page ms), `localTime`
+(track-local ms), `frame` / `fps`, `timing: { start, end, duration }`, `base`
+(this target's authored properties), `target`, `params`, `helpers`, and
+`text`. Three laws, each a silent failure:
+
+- **Determinism.** `Math` is in scope but **`Math.random` is not** — the same
+  `t` must always produce the same output, or scrubbing and export disagree
+  with playback. Use `helpers.noise(seed)` → [0,1) and
+  `helpers.randInt(seed, t, n)` → [0,n); `helpers.randInt(i, frame, 94)` is
+  the per-character, per-frame scramble.
+- **Express timing RELATIVELY** — through `ctx.timing` or `localTime`, never
+  raw `time` — so dragging the track's bar on the timeline re-times the motion
+  instead of clipping it:
+  `const p = helpers.clamp01((time - timing.start) / timing.duration)`.
+- **Closures are not preserved.** The sandbox stores `fn.toString()`, so
+  captured variables are gone at playback. Interpolate constants into the code
+  string, or better pass them as `options.params` and read `ctx.params`; for
+  per-node sequencing use `t.stagger`, whose members read `ctx.params.index`
+  and `ctx.params.count`.
 
 **`t.clear()` deletes every track on the page**, including motion someone else
 authored. One node is `t.clearTarget(node)`; one track is

@@ -91,6 +91,33 @@ context" are ordinary canvas graphics — build them (via moda-social) and hand
 off only the full identity engagement (a new mark, a guidelines document,
 multi-concept brand-guide generation), which is creative work for the Moda app.
 
+**Strategy before pixels.** Develop **three** directions, discard the most
+generic, show the survivors. They must hold genuinely different strategic
+territory — bold-maximalist against refined-minimal, technology against nature
+— never three colorways of one idea. Articulate each as its **positioning
+tension** ("technical precision + human warmth"), its **visual territory**
+named as real aesthetics ("Swiss modernism meets Memphis", "1970s NASA
+technical manuals"), and the **differentiation hook** that makes it
+unconfusable with competitors. The default failure is a safe, forgettable
+brand: ground each in one unexpected specific and build outward — the geometry
+of terraced coffee farms, or 1960s Italian espresso-bar typography, not "warm
+and inviting". Inter/Helvetica in navy, a gradient blob, or a teal/coral/purple
+"modern startup" palette means you skipped this step.
+
+**The board wears the identity it proposes.** Each direction gets its own
+palette and type system, isolated from the others' — never one shared page
+style, and never the legacy kit. Set every specimen in the font it names: label
+one "Fraunces" and that word is Fraunces. Use brand-relevant sample text (never
+Lorem ipsum) and give one specimen a hero moment — a huge word that sells the
+type system instantly; tiny restrained specimens are the failure mode unless
+subtlety IS the direction. Present the palette as a **material board, not a
+chip stack** — one oversized hero swatch, supporting tall tiles, long tonal
+runs, small note cards, staggered and mixed in proportion — with CONTIGUOUS
+ramps (a 10–12 step strip at near-zero gap, not isolated pills). Palette
+anatomy itself is references/no-brand-design.md. A rebrand keeps the business
+facts and pushes only the VISUAL identity: an active kit is historical
+reference there, not the default.
+
 **Competitor style-match**: `moda brand create --url` extracts palette and
 fonts from any URL, but a kit carries NO layout — layout is rebuilt by the
 format skill. Name the IP line before building: inspiration, not replication.

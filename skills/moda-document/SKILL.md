@@ -4,8 +4,8 @@ description: >-
   Design documents on Moda — one page or fifty: one-pager, report, brief,
   whitepaper, proposal, fact sheet, handout, infographic; US-Letter/A4 pages
   on a live canvas, exported as a real PDF with selectable text. Use for:
-  PDF (any page count), newsletter, "make this markdown/README look
-  designed". NOT: print pieces (poster, flyer, menu, resume, cards) →
+  PDF (any page count), newsletter, email HTML, "make this markdown/README
+  look designed". NOT: print pieces (poster, flyer, menu, resume, cards) →
   moda-document-print; slides → moda-deck; animated/motion → moda-video.
 argument-hint: "[source file or topic] [--size letter|a4] [--pages N] [--brand <kit>]"
 allowed-tools: Bash(moda:*), Read, Glob, Grep
@@ -33,10 +33,11 @@ One page or fifty — the page count changes the plan, not the skill.
 - **Multi-page** (report, guide, whitepaper, proposal — any named count) →
   one cohesive document, not alternates: settle the grid, margins, type
   ladder, palette, and headers/footers once, then outline page by page.
-- **Email/newsletter-shaped** → a custom tall page (`--size 600x2000`-ish),
-  delivered as PDF or png. Moda designs the page; it does not send mail or
-  emit sendable HTML — say that boundary up front (moda-core's capability
-  map has the list).
+- **Email/newsletter-shaped** → decide which artifact first. A DESIGN to look
+  at is a custom tall page (`--size 600x2000`-ish), delivered as PDF or png.
+  An email that has to SEND is not a canvas at all — it is a self-contained
+  HTML file you write: references/email-html.md. Either way Moda never sends
+  the mail; delivery is the user's ESP, and that boundary goes up front.
 - Print pieces (poster, flyer, menu, resume, certificate, invitation, card) →
   load moda-document-print. Slides → moda-deck. Animated → moda-video.
 - Charts, diagrams, and tables that belong INSIDE this document stay here —

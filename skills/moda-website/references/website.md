@@ -530,15 +530,9 @@ notification. Say so plainly; do not imply push delivery.
 ### Email HTML is a different format
 
 A marketing email is not a web page and is not a site route — it is a
-self-contained file you hand the user, so never publish one as a page. Build
-it as a fixed-width centered **table** layout around 600px with responsive
-fallbacks for small screens; use inline CSS for typography, spacing, colors,
-and buttons, because many clients strip or limit CSS; use table-based
-structure for columns, clear `alt` text on images, and bulletproof CTA
-buttons. Avoid JavaScript, forms, video, external CSS, utility-class
-frameworks, CSS Grid, and complex modern selectors. Keep copy concise,
-scannable, and accessible, and include preheader text plus a simple
-footer/unsubscribe placeholder where appropriate.
+self-contained file you hand the user, so never publish one as a page and
+never route it through `moda site`. The craft (600px table layout, inline
+CSS, bulletproof buttons, images-off) is references/email-html.md.
 
 ## Images & assets
 

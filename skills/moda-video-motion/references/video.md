@@ -650,6 +650,29 @@ The rosters above say what exists; this says what to reach for.
   `recipe-reveal-word` and `recipe-reveal-line` (with `recipe-fade-word`,
   `recipe-slide-word`, `recipe-scale-word` and `recipe-rise-line` for the
   softer per-unit variants).
+- **Text animates on three channels — pick by WHAT CHANGES, not by look.**
+  Choosing wrong costs styling or composability, silently.
+  - *Reveals and entrances* → the `text-kinetic` preset. It bakes per-glyph
+    transforms onto `unitTransforms` and leaves `htmlContent` alone, so the
+    node's per-run styling survives and every text EFFECT pass inherits the
+    per-glyph opacity — an unrevealed glyph shows no fill AND no glow, echo
+    or extrude.
+  - *Content mutation* → `scramble` and `count-up`. Both drive `htmlContent`
+    as string hold-keyframes with every glyph visible: `scramble` cycles
+    unsettled glyphs, `count-up` counts the first integer up to its authored
+    value and preserves the surrounding text ("$50M" counts just the 50).
+  - *Per-unit style, or per-glyph spatial motion beyond `text-kinetic`* →
+    `t.compute`. Per-character color, size, weight or content goes through
+    `htmlContent` with `helpers.text.render` marshalling the HTML; per-glyph
+    offset, scale, rotation and opacity go through `unitTransforms`, a DENSE
+    array with one entry per code point of `ctx.text.chars`, each a delta on
+    the laid-out position so the line never reflows. Declare whichever one
+    you return in `outputs`.
+
+  All of it is richtext-only, and the presets re-bake when the text is
+  edited. The `htmlContent` path re-applies a SINGLE base style (the node's
+  first styled run), so a multi-style node loses its other runs even on an
+  identity re-render — prefer it on single-style headlines.
 
 Unsure which preset a piece of content wants? `moda ask "which entrance
 preset should a stat headline get on an animation canvas?"`.

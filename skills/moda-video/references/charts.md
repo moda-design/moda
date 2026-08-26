@@ -27,6 +27,8 @@ A chart is a single generated node: its bars/series/labels are rendered natively
 
 Shared chrome attributes: `title-size`, `title-weight`, `font-family`, `background`, `corner-radius`, `padding`, `show-legend`, `legend-position`, `show-grid`, `grid-style`, `grid-color`, `show-y-axis`, `x-label`, `y-label`, `x-min`/`x-max`/`y-min`/`y-max`.
 
+**Chart type does not scale with the canvas.** It defaults to 12px whatever the size — legible in a 794px-wide document, sub-legible on a 1920×1080 slide or a poster. Set `font-size` explicitly (plus `title-size` and `value-label-size`) on any canvas wider than a page, then screenshot and read the axis labels before you call it done.
+
 ## Per-type attributes
 
 - **Bar** — `mode="grouped" | "stacked" | "stacked-percent"`, `orientation="horizontal"` (pair with `bar-radius="0 6 6 0"`; vertical uses `bar-radius="6 6 0 0"`), `label-position="inside" | "outside" | "top"`.
