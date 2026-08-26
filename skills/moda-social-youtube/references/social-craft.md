@@ -54,6 +54,15 @@ and per-slide push rules are below.
 Unsure how many directions a request wants? `moda ask "how many concepts should
 I make for a social post when the user didn't name a number?"`
 
+## Plan the carousel
+
+**Slide count** — 5–8 on Instagram, 6–10 on LinkedIn, unless the user names
+one. Past those ranges completion collapses; the platform recipe carries the
+caps and is the only source for dimensions.
+
+**Orientation** — portrait or square, never landscape: landscape wastes mobile
+feed height. Every slide shares the exact same width and height.
+
 ## Carousel depth — pushing each slide
 
 **Lock the system**: 2–4 colors (a dominant ground, text, ONE sharp accent),

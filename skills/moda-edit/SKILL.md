@@ -1,13 +1,13 @@
 ---
 name: moda-edit
 description: >-
-  Change an existing Moda canvas the user points at — a pasted moda.app URL,
-  share link, or cvs_ id: reword, restyle, recolor, resize, swap images,
-  add/delete sections — plus export or share it. Use for: a ref + a
-  change/export of THAT canvas, "fix this slide", revising what Moda or a
-  moda skill built. That pairing outranks all triggers except mp4/gif. NOT:
-  motion or gif/mp4 of it → moda-video; a moda.page ref → moda-website; a
-  new artifact from it (deck → doc, page → post) → its format skill.
+  Change an existing Moda canvas — pasted (moda.app URL, share link, cvs_ id)
+  or already in play this session: reword, restyle, recolor, resize, swap
+  images, add/delete sections — plus export or share it. Use for: a change or
+  export of THAT canvas, "fix this slide", every bare follow-up on what Moda
+  just built. Outranks all triggers except mp4/gif. NOT: motion or gif/mp4 of
+  it → moda-video; a moda.page ref → moda-website; a new artifact from it
+  (deck → doc, page → post) → its format skill.
 argument-hint: "<canvas URL or id> <what to change, export, or share>"
 allowed-tools: Bash(moda:*), Read
 ---
@@ -26,10 +26,13 @@ never guess.
 
 ## What this skill owns
 
-A canvas the user points at plus a change or export of THAT canvas outranks every other trigger — the deck words in "fix the pricing
-slide" do not send it to moda-deck. Two carve-outs, both stated at the fork: anything delivered as mp4 or gif goes to moda-video (even
-when no new motion is asked for — an export of an already-animated canvas is still theirs), and a NEW artifact derived from the ref (a
-document from a deck, a post from a page) belongs to the deriving format skill. A `*.moda.page` ref is moda-website's.
+A canvas plus a change or export of THAT canvas outranks every other trigger — the deck words in "fix the pricing slide" do not send it
+to moda-deck. **The canvas does not have to be pasted.** One you or a moda skill built earlier in the session is already the referent, so
+a bare follow-up on it — "add California", "make it 14pt", "continue", a correction with no noun at all — is this skill's work, not a
+second build by the format skill. Two carve-outs, both stated at the fork: MOTION is moda-video's whatever the canvas and whatever it
+delivers — "make it move" and "animate this" as much as an mp4 or gif, including an export of an already-animated canvas when no new
+motion is asked for — and a NEW artifact derived from the ref (a document from a deck, a post from a page) belongs to the deriving
+format skill. A `*.moda.page` site is moda-website's, pasted or not: a bare follow-up right after one was published is theirs.
 
 **Result reading is the discipline of this skill.** Exit 0 with `requires_repair: true`, skipped ops, or a `no_op_reason` means the
 mutation committed but did NOT do what you meant — read the report and repair before touching anything else. Nonzero exits committed
@@ -55,6 +58,33 @@ nothing (follow the typed hint); never re-run a command that exited 0.
 5. **Verify**: `moda canvas screenshot` the changed pages and review with your own vision (`--screenshot PATH` on markup/edit folds the
    capture in), against the five-criterion checklist in references/reading-and-verifying.md.
 6. Close with the canvas URL, plus the file when one was asked for.
+
+## The canvas decides the craft, not the verb
+
+Before you restyle, recompose, or add a section, read the craft for the format you are editing — exactly as the format skill would have. No
+read verb reports the canvas category (it is a `moda canvas create` flag), so judge from the page size the read DOES report (`canvas: w/h`)
+**and from what is on the page — sizes collide, so a size narrows the field and the content settles it.**
+references/design-quality.md is the format-neutral taste layer and always applies; on top of it:
+
+- **a deck** (1920×1080; 960×540 — which is also where a matrix or quadrant rides, and that is a diagram) → references/deck-design.md —
+  concept-first covers, the layout bar, a bespoke visual over a bullet list.
+- **a document** (794×1123; 816×1056 when nothing says print) → references/document-design.md — packing the page, balancing the vertical
+  composition.
+- **a post or carousel** (1080×1080, 1080×1350, 1080×1920) → references/social-craft.md — aesthetic world per concept, generated
+  backgrounds, style references.
+- **a print piece** → references/print.md — bleed, trim and safe area, what changes on press. Landscape Letter (1056×816 — certificate,
+  trifold) and the posters (1350×1800, 1800×2700) are print and nothing else; **816×1056 is equally a flyer, menu, resume or letterhead**,
+  the most overloaded size on the platform.
+- **anything else** (mockup, diagram, banner, animation) → design-quality.md alone, or that format's own skill if the ask is a rebuild.
+
+Orthogonal to all five: **no kit is active** — none bound to this canvas — → references/no-brand-design.md. A restyle or redesign with no kit
+INVENTS an identity for the piece; "make this look better" is never a licence to drift toward a neutral default. Unbound kits sitting in the
+workspace do not suppress it: the gate is what is ACTIVE, the same condition every other skill states.
+
+These teach the craft, not the ceremony. The bar for the work is the same on an edit as on a build; how much PROCESS it earns is a separate
+question, and references/multi-unit-workflow.md holds that ladder — a tiny edit is one change and one glance, never three phases. So the loop
+above still wins on scope: smallest change, the region the user named, and never an extra page or an extra concept they did not ask for. A
+resize is the one case that flips — it is destructive, and the bar is the NEW size's craft.
 
 ## Page operations
 
@@ -116,5 +146,8 @@ See also: moda-core — contract, routing ladder, everything Moda can do.
 |---|---|
 | references/edit-code.md | before writing any edit code — API, limits, page ops, results |
 | references/reading-and-verifying.md | DSL reading, revisions, the screenshot loop, the review checklist |
+| references/multi-unit-workflow.md | how much process the edit earns — a whole-page rebuild, a set, or many pages runs the three phases; a tiny edit does not |
 | references/markup.md, references/design-quality.md | recreating sections; smallest-change routing, typography |
+| references/deck-design.md, references/document-design.md, references/social-craft.md, references/print.md | the craft for the canvas you're editing — pick by category, see the table above |
+| references/no-brand-design.md | no kit is active — restyling or redesigning without one: invent the identity |
 | references/export.md, references/charts.md, references/gotchas.md, references/omni-and-media.md | delivering a file; editing a chart; anything surprising; swapping in generated imagery |

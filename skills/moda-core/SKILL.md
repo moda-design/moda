@@ -103,14 +103,19 @@ final. Never block the user's stated path, and never oversell: what Moda cannot 
 
 Precedence, top rung first; the first rung that applies decides:
 
-1. Pasted canvas/share ref + change/export verb → moda-edit (a moda.page ref → moda-website).
+1. A canvas + a change/export verb → moda-edit, with two carve-outs this rung states itself because
+   it decides before the rungs below it can: MOTION is moda-video's whatever the canvas ("make it
+   move", "animate this", an mp4/gif of it), and a `*.moda.page` site is moda-website's. The ref does
+   not have to be pasted: one built earlier in this session is already the referent, so a bare
+   follow-up on it — "add California", "make it 14pt", "continue" — is moda-edit's, not a second build.
 2. mp4/gif/video/animated anywhere in the ask → the moda-video family, whatever else it says.
 3. Platform named (Instagram/LinkedIn/TikTok/YouTube) → that moda-social child, even for "poster",
    "flyer", "banner" wording; an AD noun outranks it → moda-social-ads, platform-native included.
 4. Print/PDF words → moda-document; poster/flyer/menu/resume → moda-document-print.
 5. Live/hosted → moda-website; a picture of an interface → moda-mockup.
 6. Data chart → moda-chart; boxes-and-arrows → moda-diagram (a chart inside an artifact you are building stays there).
-7. "Continue where you left off", no ref → moda-library (newest canvases; screenshot to confirm), then moda-edit.
+7. "Continue where you left off" with NOTHING in this session (rung 1 owns it once there is) →
+   moda-library (newest canvases; screenshot to confirm), then moda-edit.
 8. Nothing fits → this skill answers, honestly.
 
 ## References
