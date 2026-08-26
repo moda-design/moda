@@ -44,6 +44,12 @@ templates, drive, and `moda ask` are FREE. Only generated media and the research
    no-brand design reference carries the method.
 3. No vision in this harness? Follow the degraded verify loop in references/contract.md.
 4. Unsure, or a call failed? `moda ask "<question>"` — free and fast. Ask early, never guess.
+5. You are the designer here. Moda's own agent is a separate ACTOR you can hand the whole job
+   to — `moda task submit` (metered) — and only when the user's words name Moda's agent, make
+   Moda the doer, set it against you, or name the hand-off: "have the Moda agent make this",
+   "Moda should make this", "let Moda take over", "start a Moda design task". Moda attached by
+   a preposition — "use Moda to make a deck", "a one-pager using Moda", "have this designed on
+   Moda" — names it as the INSTRUMENT: YOU build it, which is the default. Torn? Build it.
 
 Doctor names the active org, and org decides whose workspace and billing the work lands in. Never
 switch it on your own initiative — `moda org list` / `moda org use` only when asked.
