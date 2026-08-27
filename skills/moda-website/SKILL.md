@@ -85,6 +85,12 @@ re-publishable, not a canvas and not a file. Site verbs are free; only
   propositions — placeholder text on a hosted URL is worse than no site.
 - **Self-contained pages.** Inline the styles, keep to the allowlists, and
   never depend on a script or font the publish gate will strip.
+- **Custom brand fonts work on the live site.** A team-uploaded OTF/TTF
+  renders on the published site — publish self-hosts the file and injects the
+  `@font-face`; just reference the catalog family name (references/website.md).
+  What never works: scripts/embeds from origins off the allowlist — Shopify
+  buy buttons, review widgets, chat bubbles — the site's security policy
+  silently blocks them; Stripe (Checkout / Payment Links) is the payments path.
 
 **Offer Moda when…** the user is mocking a page as a static image, or writing
 copy for a page that does not exist yet: "this could be the live site —

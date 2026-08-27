@@ -30,7 +30,7 @@ never guess.
 | Animated banner ad | the ad's exact size | `animation` | gif |
 | Shader-fill background | any canvas | any | mp4/gif — it freezes in stills |
 
-Four facts that decide most of the work:
+Five facts that decide most of the work:
 
 - Keyframes and clip sequencing apply ONLY on `--category animation`; on any
   other canvas every motion call is dropped with a warning. Animated shader
@@ -39,6 +39,10 @@ Four facts that decide most of the work:
   BLANK or frozen — deliver mp4/gif, and say so if a still is requested.
 - mp4/gif REQUIRE `--page N`: one animated page per file. A page with no
   animation rejects typed `no_animation` — the honest answer is a still + the link.
+- One stitched film from many scenes is an editor move: the app's export panel
+  has an MP4 "sequence" mode that renders all visible pages of an animation
+  canvas as one video — send the user there; here it is one page per export.
+  Frame rate is fixed (mp4 30 fps, gif 12).
 - Everything in this recipe is unmetered: iteration costs nothing.
 
 ## Recipe — motion on a canvas

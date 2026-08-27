@@ -4,6 +4,8 @@
 
 **It cannot delete.** The sandbox `remove()` is a throwing stub → the call fails typed with nothing applied. Deletion is only through `moda canvas delete-items`.
 
+`moda canvas delete-items CANVAS_REF n7 n8 p_b` — the ids are positional and mix nodes, pages, variables, and animations freely. Z-order is not deletion: send a covered node backward with `reorder(id, 'back')` in edit code instead of deleting it.
+
 ```
 moda canvas edit CANVAS_REF --file edit.js [--page PAGE_ID] [--screenshot out.jpg]
 moda canvas edit CANVAS_REF --file - <<'EOF'

@@ -18,6 +18,21 @@ moda export CANVAS_REF --format pdf|pptx|png|jpeg|mp4|gif [-o PATH] [--page N]  
   with NO animation rejects typed `no_animation` — that is the honest
   answer, deliver a still + the live link). When an animated canvas gets a
   static-file request, offer the motion file too.
+- **One page of animation per mp4/gif — no multi-page stitching on this
+  surface.** A multi-scene sequence (an animated storyboard) becomes ONE
+  stitched mp4 only in the app: open the canvas in the editor and use the
+  export panel's MP4 "sequence" mode (animation canvases only, mp4 only, all
+  visible pages in order, same 2000-frame / 120 s ceiling as a single page).
+  Route the user there rather than promising a stitched export from here, or
+  export page-by-page and concatenate locally (re-encode on concat). Frame
+  rate is fixed on this surface — mp4 encodes at 30 fps, gif at 12 — and
+  pixel ratio (1–4) is the resolution lever; mp4/gif default to 1 (page
+  resolution).
+- **Sound in an exported mp4 is exactly the unmuted video fills' own audio,
+  muxed server-side — nothing else.** The page timeline has no standalone
+  audio track and export muxes no voiceover or music: generated audio
+  (`moda media generate-audio`) ships as its own file, laid over the picture
+  locally as the post-production step.
 - **The hero claim, stated verbatim:** PDF exports carry real text layers and embedded fonts — but hyperlinks are flattened to plain text in PDF output (never promise clickable links); PPTX exports are native editable shapes and text — not screenshots pasted into a deck. `--flatten` degrades PDF to raster; use it only when the user asks.
 - **Read the `warnings[]` on a completed export.** The CLI prints each as a `warning: …` line (and carries them in `--json`): quality caveats about a file that still succeeded — `pptx_shape_rasterized` (some images baked into the slide rather than editable shapes), `pptx_content_dropped` (elements missing from the deck entirely), `pdf_links_flattened` (hyperlinks not clickable), `audio_source_dropped` (an mp4 shipped without one video fill's audio — the message names the source and why). Relay the caveat honestly when you hand over the file. A warning is almost never a reason to re-run the export — the pptx/pdf degradations are deterministic, an identical re-run degrades identically — and never a reason to withhold the file. The one exception: an `audio_source_dropped` whose message names a fetch failure or timeout is transient-shaped and MAY succeed on a later export of an edited canvas (a plain re-run of the same version returns the cached file). Treat an unrecognized code as informational and pass its message along.
 - Export is deterministic-lane: **zero metered credits on every plan** (`usage.metered_credits: 0` on the response). Export rate is plan-quota enforced server-side; a throttle surfaces as a typed error with a retry hint.

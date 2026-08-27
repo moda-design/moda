@@ -44,6 +44,10 @@ All `--category prints`; sizes are canvas pixels at the piece's physical intent.
   let backgrounds and colour fields run to the edge.
 - A poster or flyer FOR a platform (an Instagram poster) is not this skill — the
   platform child owns the size and safe areas.
+- Pixel-only and RGB-only: no CMYK or PDF/X export, no DPI metadata — the print
+  shop's preflight converts; say so rather than promising press-ready CMYK. A
+  vendor's dieline can't import as locked guides — rebuild it, then delete it
+  before export (references/print.md).
 
 ## Recipe — one printed piece
 

@@ -82,6 +82,14 @@ fonts are fallbacks only. Avoid the overused defaults (Inter, Roboto, Open
 Sans, Lato, Montserrat, Poppins, Raleway, Oswald, Nunito, Playfair Display)
 unless the brand kit names them.
 
+Team-uploaded custom fonts (OTF/TTF) DO render on the published site: the
+publish step matches every `font-family` the pages reference against the
+team's font catalog and self-hosts each match behind a same-origin
+`@font-face` it injects into `<head>`. Reference the catalog's exact family
+name and do not hand-write `@font-face` for those families — the injected
+block loads last and overrides it. A family in neither the catalog nor
+Google Fonts silently falls back to a system font.
+
 ## Client-side libraries (self-hosted; third-party CDNs are blocked)
 
 Published sites block third-party CDNs (cdnjs, jsdelivr, unpkg, …) — a script

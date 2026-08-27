@@ -59,6 +59,11 @@ Pick the lane before anything else — they are the two cost lanes:
   motion-preserving exports are `moda export --format mp4|gif --page N` — ONE
   page per file; a page with no animation is refused typed `no_animation`,
   which is the honest answer (deliver a still + the live link).
+- **Stitching scenes into one film happens in the app, not here.** On an
+  animation canvas the editor's export panel renders all visible pages as ONE
+  mp4 (its "sequence" mode) — for a multi-scene storyboard, send the user
+  there; on this surface export one page at a time. Frame rate is fixed
+  (mp4 30 fps, gif 12); pixel ratio 1–4 scales resolution.
 - Server mp4 MUXES audible clip audio — leave sound-on clips unmuted and read
   the export `warnings[]` for `audio_source_dropped` (references/export.md).
 - There is no free-form video-to-video edit: a source clip is a generation

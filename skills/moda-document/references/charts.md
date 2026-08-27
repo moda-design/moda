@@ -25,7 +25,7 @@ A chart is a single generated node: its bars/series/labels are rendered natively
 <series name="Projected" stroke="#94a3b8" stroke-width="2" stroke-style="dashed" opacity="0.7" show-points="false" />
 ```
 
-Shared chrome attributes: `title-size`, `title-weight`, `font-family`, `background`, `corner-radius`, `padding`, `show-legend`, `legend-position`, `show-grid`, `grid-style`, `grid-color`, `show-y-axis`, `x-label`, `y-label`, `x-min`/`x-max`/`y-min`/`y-max`.
+Shared chrome attributes: `title-size`, `title-weight`, `font-family`, `font-size`, `label-color`, `background`, `corner-radius`, `padding`, `show-legend`, `legend-position`, `show-grid`, `grid-style`, `grid-color`, `grid-width`, `show-x-axis`, `show-y-axis`, `axis-color`, `axis-width`, `show-x-labels`, `show-y-labels`, `x-tick-count`/`y-tick-count`, `x-format`/`y-format`, `x-scale` (`linear`/`log`/`time`, with `x-time-format`), `y-scale` (`linear`/`log`), `x-label`, `y-label`, `x-min`/`x-max`/`y-min`/`y-max`. That list is the real axis-display surface — attributes like `y-label-size` do not exist: axis tick labels take the chart-wide `font-size` and `label-color`, value labels take `value-label-size`/`value-label-color`.
 
 **Chart type does not scale with the canvas.** It defaults to 12px whatever the size — legible in a 794px-wide document, sub-legible on a 1920×1080 slide or a poster. Set `font-size` explicitly (plus `title-size` and `value-label-size`) on any canvas wider than a page, then screenshot and read the axis labels before you call it done.
 
