@@ -39,16 +39,17 @@ install -m 0755 /tmp/moda-dl/moda-* "$HOME/.local/bin/moda"
 moda doctor
 ```
 
-Quick path without checksum verification — the same command `moda doctor`
-and `moda update` print on this channel (they print your platform's artifact
-name already resolved, e.g. `-p moda-linux-x64`):
+Quick path without checksum verification:
 
 ```sh
 gh release download --repo moda-design/moda -p moda-$(uname -s | tr '[:upper:]' '[:lower:]')-$(uname -m | sed 's/x86_64/x64/; s/aarch64/arm64/') -O ~/.local/bin/moda && chmod +x ~/.local/bin/moda
 ```
 
-(`~/.local/bin` must be on PATH. Upgrades: same command — `moda update`
-prints it too rather than self-updating on this channel.)
+(`~/.local/bin` must be on PATH. Upgrades: `moda update` self-updates on
+this channel — it downloads your platform's artifact, verifies it against
+`SHA256SUMS`, and atomically replaces the running binary; if it can't
+(e.g. the install dir is not writable by your user), it prints the
+complete manual curl + verify + `mv` sequence instead.)
 
 ### Windows (x64)
 
