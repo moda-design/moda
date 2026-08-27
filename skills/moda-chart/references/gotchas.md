@@ -67,14 +67,16 @@ new revision), THEN edit.
 **4. `fill` sizing on a root container**
 
 ```xml
-<!-- WRONG — "uses fill but has no parent container" error -->
+<!-- WRONG — "not supported in baked mode" (or "uses fill but has no parent container") -->
 <content><column width="fill">…</column></content>
 ```
 
 ```xml
-<!-- CORRECT — hug or explicit dimensions at the root -->
+<!-- CORRECT — hug or explicit dimensions at the root; nested fill children are fine -->
 <content><column width="hug">…</column></content>
 ```
+
+If the error hints at a layout-mode switch, ignore it — no such switch exists on this surface; fix the root's dimensions instead.
 
 **5. Trusting exit 0 without reading the report**
 

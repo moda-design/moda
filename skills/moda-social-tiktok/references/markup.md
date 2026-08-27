@@ -108,7 +108,7 @@ The parser dispatches all 24 elements below — including `<chart>`, `<path>`, `
 ## Top 10 authoring rules / gotchas
 
 1. **Wrap everything in `<content>`.** The parser is partial-success — failed elements are skipped and reported, the rest render.
-2. **`width="fill"` on a ROOT container is an error** ("uses fill but has no parent container") — use `hug` or explicit dimensions.
+2. **`width="fill"` on a ROOT container is an error** — the rejection reads "not supported in baked mode" (or "uses fill but has no parent container"); there is nothing for a root to fill against. If it hints at a layout-mode switch, ignore that — no such switch exists on this surface. Use `hug` or explicit dimensions on the root; nested `fill` children inside a sized container are fine.
 3. **`<line>` outside a flex container** (directly under content / in a group / in layers) MUST have complete endpoints, or it's skipped (`line_missing_endpoints`). Inside a row/column a bare `<line/>` is the divider shortcut.
 4. **Bullets = `<text format="markdown">- item</text>`.** Never build bullets from ellipse dots in a row, and never split same-styled paragraphs across adjacent `<text>` nodes — use markdown (uniform) or html (mixed styles) inside ONE node.
 5. **Row/column are layout-only by default** — the container itself gets NO node id (the auto background rect maps to the container name if styled). Need a referenceable id (e.g. a connector target)? Use `group="true"` or an explicit `<group>`.
