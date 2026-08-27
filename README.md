@@ -118,8 +118,8 @@ Update Moda to the latest version for me.
 `moda update` covers both halves: the CLI (a plain `npm i -g` reinstall —
 printed rather than run on Windows, where the running binary is locked) and
 the installed skills (re-resolving the hash pins in `skills-lock.json`).
-Nothing updates silently: the once-daily stderr notice and `moda doctor`
-only ever *suggest* the verb.
+Nothing updates silently: the at-most-hourly update-available line and
+`moda doctor` only ever *suggest* the verb.
 
 ## Security
 

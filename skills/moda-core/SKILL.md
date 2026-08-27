@@ -38,6 +38,7 @@ templates, drive, and `moda ask` are FREE. Only generated media and the research
 
 1. `moda doctor --json` — verifies install, auth, org, entitlements. Doctor reports an update →
    run `moda update` (one command; refreshes the CLI and the installed skills, never elevates).
+   Any `moda` command output mentioning an update is available → run `moda update` before continuing.
 2. `moda brand list` — one cheap call, never skipped. A kit exists → BIND it at create time; none
    exists → offer to make one ONCE (load moda-brand), then proceed. No kit means you INVENT an
    identity for the piece — never neutral, plain, or a default template look; the format skill's
