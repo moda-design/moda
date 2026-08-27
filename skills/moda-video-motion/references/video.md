@@ -89,6 +89,12 @@ Strengths of the current roster, one line each, to route the choice (defer
 to the registry when it disagrees):
 
 - **MiniMax Hailuo H3** — up to 4K, intrinsic audio, end-frame control, and image/video/audio references.
+- **MiniMax Hailuo H3 Max** — H3's fast lane: SILENT clips at 480p/768p with a
+  seed and an optional end frame, from text or a start frame (no reference
+  mode); 480p is the cheap tier. Community practice favors it for
+  motion-graphics-style work — kinetic type, logo motion, animated shapes —
+  where its speed and rates suit broad iteration; finish on H3 or another tier
+  when sound or a taller frame matters.
 - **MiniMax Hailuo 2.3 / MiniMax Hailuo 2.3 Pro / MiniMax Hailuo 2.3 Fast /
   MiniMax Hailuo 2.3 Fast Pro** — the cheap SILENT preview lane, priced per
   render from $0.19. No audio, seed, end frame, resolution or aspect control
