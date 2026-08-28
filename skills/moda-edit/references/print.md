@@ -123,10 +123,8 @@ And a printer's dieline file cannot be imported as a locked vector guide
 layer — rebuild trim/fold geometry as your own shapes and delete them before
 the final export.
 
-Read `warnings[]` and relay: `pdf_links_flattened` (hyperlinks become plain text
-— expected and harmless in print, but never promise clickable links) and
-`font_substituted` (a face did not embed; the printed piece will not match the
-screen — fix the font or disclose it).
+Read `warnings[]` and relay `font_substituted` (a face did not embed; the
+printed piece will not match the screen — fix the font or disclose it).
 
 ## Boundary
 

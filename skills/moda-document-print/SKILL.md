@@ -58,7 +58,7 @@ All `--category prints`; sizes are canvas pixels at the piece's physical intent.
 4. Author one apply per page/side: `moda canvas markup [CANVAS_REF] --file - --page [PAGE_ID]` (references/markup.md), with the kit's tokens.
 5. `moda canvas screenshot [CANVAS_REF]` — check edge clearance, fold panels, type floor, and that nothing critical sits in a trim zone; fix and re-screenshot.
 6. `moda export [CANVAS_REF] --format pdf -o [piece].pdf` — the default PDF is vector with selectable text and embedded fonts, crisp at any print scale. Do NOT pass `--flatten` unless the user asks for raster.
-7. Read `warnings[]` and relay honestly: `pdf_links_flattened` (links are plain text in print — expected here), `font_substituted` (a face did not embed).
+7. Read `warnings[]` and relay honestly: `font_substituted` (a face did not embed) is the one that matters for print.
 
 ## Recipe — trifold brochure
 

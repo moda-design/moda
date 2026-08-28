@@ -96,11 +96,14 @@ appeared. Re-capture shortly instead.
 ## Export warnings — read them, relay them, still deliver
 
 An export can succeed with caveats. `pptx_shape_rasterized` (an image baked in rather than shipped
-as an editable shape), `pptx_content_dropped` (elements missing from the deck), `pdf_links_flattened`
-(hyperlinks not clickable), `font_substituted` (a requested family was unavailable),
+as an editable shape), `pptx_content_dropped` (elements missing from the deck),
+`pdf_pages_dropped` (pages missing from the document), `pdf_page_rasterized` (a page shipped as
+pixels — it looks right, but its text is not selectable and its links are not clickable),
+`pdf_page_reduced_quality` (an oversized page rendered below the DPI you asked for),
+`font_substituted` (a requested family was unavailable),
 `audio_source_dropped` (an mp4 shipped without one clip's audio).
 
-These are deterministic: an identical re-run degrades identically, so a warning is almost never a
+Most are deterministic: an identical re-run degrades identically, so a warning is almost never a
 reason to re-export and never a reason to withhold the file. Hand it over and name the caveat. The
 one exception is an `audio_source_dropped` whose message names a fetch failure or timeout — that
 shape is transient and may resolve on a later export.

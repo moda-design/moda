@@ -28,8 +28,9 @@ Consequences for the design:
 - Bottom-centre ~60px of each page is overlapped by LinkedIn's page counter —
   keep it clear.
 - 6–10 pages is the working range. Past 12, completion collapses.
-- Hyperlinks in the PDF flatten to plain text (`pdf_links_flattened`). Put the
-  URL in the caption, never as a clickable page element.
+- The exported PDF carries real clickable links, but LinkedIn renders document
+  pages as flat images in the feed, so nothing on a page is tappable there. Put
+  the URL in the caption, never as a clickable page element.
 
 ## Feed images
 
