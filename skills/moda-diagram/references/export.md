@@ -2,7 +2,7 @@
 
 ```
 moda export CANVAS_REF --format pdf|pptx|png|jpeg|mp4|gif [-o PATH] [--page N]   # mp4/gif REQUIRE --page
-            [--pixel-ratio 1..4] [--flatten] [--no-wait]
+            [--scope page|sequence] [--pixel-ratio 1..4] [--flatten] [--no-wait] # …unless --scope sequence
 ```
 
 - **Export is ASK-FIRST.** The live link (share/editor URL) is the handoff,
@@ -14,20 +14,24 @@ moda export CANVAS_REF --format pdf|pptx|png|jpeg|mp4|gif [-o PATH] [--page N]  
   succeeding.
 - **Shader fills and animations freeze in static exports** (png/jpeg/pdf/
   pptx) — they render live in-app. The motion-preserving exports are
-  `--format mp4` and `--format gif` (one page's animation per file; a page
+  `--format mp4` and `--format gif` (one page's animation per file, or one
+  stitched film of every page with `--scope sequence` — next bullet; a page
   with NO animation rejects typed `no_animation` — that is the honest
   answer, deliver a still + the live link). When an animated canvas gets a
   static-file request, offer the motion file too.
-- **One page of animation per mp4/gif — no multi-page stitching on this
-  surface.** A multi-scene sequence (an animated storyboard) becomes ONE
-  stitched mp4 only in the app: open the canvas in the editor and use the
-  export panel's MP4 "sequence" mode (animation canvases only, mp4 only, all
-  visible pages in order, same 2000-frame / 120 s ceiling as a single page).
-  Route the user there rather than promising a stitched export from here, or
-  export page-by-page and concatenate locally (re-encode on concat). Frame
-  rate is fixed on this surface — mp4 encodes at 30 fps, gif at 12 — and
-  pixel ratio (1–4) is the resolution lever; mp4/gif default to 1 (page
-  resolution).
+- **A multi-scene sequence (an animated storyboard) becomes ONE stitched mp4
+  with `--scope sequence`** — mp4 only, multi-page animation canvases only:
+  every visible page in canvas order, page transitions included, one video,
+  no `--page`. The whole stitched film shares the single-page ceiling (2000
+  frames / 120 s TOTAL, ~66 s at mp4's 30 fps), so a long storyboard rejects
+  typed `animation_budget_exceeded` — shorten pages or split the export.
+  A canvas with no animation timelines rejects `no_animation`; gif has no
+  stitched form (export gifs page-by-page). The editor's export panel has the
+  same MP4 "sequence" mode when the user wants to drive it interactively.
+  Without `--scope sequence` it is one page of animation per mp4/gif
+  (`--page N`). Frame rate is fixed on this surface — mp4 encodes at 30 fps,
+  gif at 12 — and pixel ratio (1–4) is the resolution lever; mp4/gif default
+  to 1 (page resolution).
 - **Sound in an exported mp4 is exactly the unmuted video fills' own audio,
   muxed server-side — nothing else.** The page timeline has no standalone
   audio track and export muxes no voiceover or music: generated audio

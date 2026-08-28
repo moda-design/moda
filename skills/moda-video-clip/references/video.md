@@ -762,10 +762,13 @@ Constraints that force the local half — plan for them from the start:
    cut per page, exported page-by-page with `--page N`, then concatenated
    locally (re-encode on concat, never stream-copy across chunks; the
    local half's shell caveat above applies). `frame_dump_scratch_pressure`
-   is capacity and retryable. The app itself CAN stitch: on an animation
-   canvas the editor's export panel renders all visible pages as one mp4
-   (its "sequence" mode, same 2000-frame / 120 s ceiling) — when the user
-   can open the editor, that beats a local concat.
+   is capacity and retryable. When the whole cut FITS the ceiling, skip
+   the concat entirely: `moda export … --format mp4 --scope sequence`
+   stitches all visible pages of a multi-page animation canvas into one
+   video right here (the editor's export panel has the same "sequence"
+   mode as the interactive alternative). The chunk-and-concat recipe is
+   only for compositions the 2000-frame / 120 s per-artifact ceiling
+   refuses in one piece.
 3. Externally UPLOADED video files can fail to place on a canvas;
    platform-generated `file_` refs place fine. Route generated media by
    `file_` ref and treat upload-then-place as unreliable.
