@@ -556,7 +556,7 @@ from a URL, reuse its real copy/colors/fonts but re-host its images in Moda.
 DRAFT (saved) content — up to 3 pages per call, desktop/tablet/mobile, files
 downloaded locally for your own vision. Check hierarchy, spacing, contrast,
 and responsive behavior at desktop AND mobile before publishing; a
-`js_disabled` capture is degraded (JS-off fallback) and a `truncated` one
-was cut at the pixel budget — re-capture before judging either. 503 `render_capacity` is transient
+`truncated` capture was cut at the pixel budget — re-capture before judging
+it. 503 `render_capacity` is transient
 (retry after a moment); 422 `website_render_too_heavy` is deterministic —
 lighten the page. Fix, `set-content`, screenshot again, republish.
