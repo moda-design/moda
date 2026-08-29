@@ -60,19 +60,24 @@ never guess.
    `moda export CANVAS_REF --format png --pixel-ratio 2` (pdf when it is
    headed into a document).
 
-## Legibility — the one honest gap
+## Legibility — auto-scaled, with one resize gotcha
 
-`<chart>` typography defaults to **12px regardless of chart or canvas size**,
-and that default is baked in at authoring time, so a chart created large is
-still labelled at 12px. On anything bigger than a small figure it is
-sub-legible, and it is the reason charts get abandoned for hand-drawn
-rectangles.
+`<chart>` typography auto-scales with the chart's own size: omit the
+typography attributes and the base `font-size` derives from
+`min(width, height)` — 12px at 400×300, ~18px at 800×450, capped at 30px on
+a full deck slide — with `title-size`, `subtitle-size`, `value-label-size`,
+and legend sizing scaling alongside. A deck-scale chart is legible out of the
+box; set `font-size` (or any sibling) explicitly only when you want a
+specific size — an explicit value wins for that field while the others keep
+scaling.
 
-The knob exists: set `font-size` on `<chart>` (axis and legend text), plus
-`title-size`, `subtitle-size`, and `value-label-size`. Scale them with the
-canvas the same way the type ladder does — a 1600×1000 chart wants axis text
-in the 20–28px range, a 1920×1080 slide-scale chart more. Say nothing about
-"auto-sizing": it does not happen yet. Set the numbers, screenshot, adjust.
+The gotcha: the derived sizes are **baked in at creation**, so resizing an
+existing chart does not rescale its text — a chart authored large then
+squeezed down keeps oversized, crowding labels (and vice versa). After a
+dramatic resize, patch the typography (`fontSize` is the load-bearing field;
+the 400×300 base values are `fontSize: 12, titleSize: 16, subtitleSize: 12,
+valueLabelSize: 11, legendMarkerSize: 12, legendGap: 8`). Then screenshot
+and read the labels.
 
 ## The bar
 

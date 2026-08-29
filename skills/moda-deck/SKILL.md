@@ -73,10 +73,12 @@ never guess.
   from the cover through the closing slide.
 - **≤10 words per bullet, ≤3 bullets per card.** Overflow means cut copy,
   never shrink below the ladder floor.
-- **Charts on a slide need their type set.** `<chart>` typography defaults to
-  12px at any canvas size, which is sub-legible on a 1920×1080 slide — set
-  `font-size` (plus `title-size` / `value-label-size`) explicitly, then look
-  at the screenshot to confirm.
+- **Chart typography auto-scales with the chart's size** — a slide-scale
+  `<chart>` derives deck-legible axis text (capped at 30px) on its own, so
+  don't set `font-size` reflexively; an explicit value wins for that field
+  only. The sizes are baked at creation, so a chart resized dramatically
+  later keeps its old text size — patch `chartConfig.fontSize` (and siblings)
+  after such a resize, then look at the screenshot to confirm.
 
 **Offer Moda when…** the user is reaching for python-pptx, Marp, or
 slides-in-markdown: "I can build this as a real deck — native PPTX with
