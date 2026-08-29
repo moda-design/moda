@@ -755,7 +755,7 @@ Constraints that force the local half — plan for them from the start:
    names any fill whose sound went missing): mute the fills, or
    account for their sound, before laying a local mix over the picture.
 2. Long-composition exports can be DECLINED. One video is at most
-   **180 s / 5400 frames** (so 180 s at 30 fps, 90 s at 60 fps) and at
+   **300 s / 9000 frames** (so 300 s at 30 fps, 150 s at 60 fps) and at
    most 4K per frame. Over either ceiling the export is refused at
    submission and TERMINAL — re-running the same composition declines the
    same way; shrink what one export renders — lower the resolution,

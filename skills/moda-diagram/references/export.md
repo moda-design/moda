@@ -23,8 +23,8 @@ moda export CANVAS_REF --format pdf|pptx|png|jpeg|mp4|gif [-o PATH] [--page N]  
 - **A multi-scene sequence (an animated storyboard) becomes ONE stitched mp4
   with `--scope sequence`** — mp4 only, multi-page animation canvases only:
   every visible page in canvas order, page transitions included, one video,
-  no `--page`. The whole stitched film shares the single-page ceiling (5400
-  frames / 180 s TOTAL, so 180 s at mp4's 30 fps), so a long storyboard rejects
+  no `--page`. The whole stitched film shares the single-page ceiling (9000
+  frames / 300 s TOTAL, so 300 s at mp4's 30 fps), so a long storyboard rejects
   typed `animation_budget_exceeded` — shorten pages or split the export.
   A canvas with no animation timelines rejects `no_animation`; gif has no
   stitched form (export gifs page-by-page). The editor's export panel has the
