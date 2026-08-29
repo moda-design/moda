@@ -3,6 +3,7 @@
 ```
 moda export CANVAS_REF --format pdf|pptx|png|jpeg|mp4|gif [-o PATH] [--page N]   # mp4/gif REQUIRE --page
             [--scope page|sequence] [--pixel-ratio 1..4] [--flatten] [--no-wait] # …unless --scope sequence
+            [--video-quality standard|high|max] [--video-codec h264|h265]        # mp4 only
 ```
 
 - **Export is ASK-FIRST.** The live link (share/editor URL) is the handoff,
@@ -32,6 +33,18 @@ moda export CANVAS_REF --format pdf|pptx|png|jpeg|mp4|gif [-o PATH] [--page N]  
   (`--page N`). Frame rate is fixed on this surface — mp4 encodes at 30 fps,
   gif at 12 — and pixel ratio (1–4) is the resolution lever; mp4/gif default
   to 1 (page resolution).
+- **mp4 has two encode knobs, both optional and both mp4-only.**
+  `--video-quality standard|high|max` (default `standard`) buys sharpness with
+  encode time and file size; nothing about the render changes, so a re-export
+  at a higher tier costs only the encode. `--video-codec h264|h265` (default
+  `h264`) picks the codec inside the same `.mp4` container: `h265` (HEVC) is
+  much smaller on detailed footage but needs a modern player — hand it to
+  someone only when they asked for a smaller file or named HEVC. Either flag
+  on a non-mp4 format is rejected, never ignored.
+- **A page bigger than 4K still exports.** MP4 is capped at 3840px on the
+  longest side (and a 4K pixel budget); an oversized page is scaled down to
+  fit and the result carries an `mp4_downscaled_to_fit` warning naming the
+  delivered dimensions. Relay it — the file is smaller than the page.
 - **Sound in an exported mp4 is exactly the unmuted video fills' own audio,
   muxed server-side — nothing else.** The page timeline has no standalone
   audio track and export muxes no voiceover or music: generated audio
