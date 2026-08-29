@@ -754,21 +754,22 @@ Constraints that force the local half — plan for them from the start:
    audio IS muxed into mp4 exports (an `audio_source_dropped` warning
    names any fill whose sound went missing): mute the fills, or
    account for their sound, before laying a local mix over the picture.
-2. Long-composition exports can be DECLINED. `frame_dump_budget` is
-   content-shaped and TERMINAL — re-running the same composition declines
-   the same way; shrink what one export renders — lower the resolution,
+2. Long-composition exports can be DECLINED. One video is at most
+   **180 s / 5400 frames** (so 180 s at 30 fps, 90 s at 60 fps) and at
+   most 4K per frame. Over either ceiling the export is refused at
+   submission and TERMINAL — re-running the same composition declines the
+   same way; shrink what one export renders — lower the resolution,
    shorten the composition, or split it across PAGES: `moda export` has no
    time-range selector, so the supported chunk recipe is one chunk of the
    cut per page, exported page-by-page with `--page N`, then concatenated
    locally (re-encode on concat, never stream-copy across chunks; the
-   local half's shell caveat above applies). `frame_dump_scratch_pressure`
-   is capacity and retryable. When the whole cut FITS the ceiling, skip
+   local half's shell caveat above applies). When the whole cut FITS
+   the ceiling, skip
    the concat entirely: `moda export … --format mp4 --scope sequence`
    stitches all visible pages of a multi-page animation canvas into one
    video right here (the editor's export panel has the same "sequence"
    mode as the interactive alternative). The chunk-and-concat recipe is
-   only for compositions the 2000-frame / 120 s per-artifact ceiling
-   refuses in one piece.
+   only for compositions that ceiling refuses in one piece.
 3. Externally UPLOADED video files can fail to place on a canvas;
    platform-generated `file_` refs place fine. Route generated media by
    `file_` ref and treat upload-then-place as unreliable.
