@@ -64,8 +64,8 @@ Pick the lane before anything else — they are the two cost lanes:
   here — `moda export CANVAS_REF --format mp4 --scope sequence`.** Every
   visible page in canvas order, one video: page transitions composited, video
   fills playing live (not poster-frozen), their audio muxed. No `--page`; mp4
-  only — gif has no stitched form, export those page by page. The 2000-frame /
-  120 s ceiling covers the WHOLE film (~66 s at 30 fps), so a long storyboard
+  only — gif has no stitched form, export those page by page. The 9000-frame /
+  300 s ceiling covers the WHOLE film (300 s at 30 fps), so a long storyboard
   rejects typed `animation_budget_exceeded` — shorten pages or split the
   export. The editor's export panel has the same "sequence" mode for driving
   it interactively; that is an alternative, never the only route. Frame rate
