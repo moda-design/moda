@@ -57,13 +57,20 @@ Pick the lane before anything else — they are the two cost lanes:
   means Moda could not decode the file, not that the clip is bad.
 - **Static exports of an animated or video-filled page are blank/frozen.** The
   motion-preserving exports are `moda export --format mp4|gif --page N` — ONE
-  page per file; a page with no animation is refused typed `no_animation`,
-  which is the honest answer (deliver a still + the live link).
-- **Stitching scenes into one film happens in the app, not here.** On an
-  animation canvas the editor's export panel renders all visible pages as ONE
-  mp4 (its "sequence" mode) — for a multi-scene storyboard, send the user
-  there; on this surface export one page at a time. Frame rate is fixed
-  (mp4 30 fps, gif 12); pixel ratio 1–4 scales resolution.
+  page per file, or every page stitched into one film (next bullet); a page
+  with no animation is refused typed `no_animation`, which is the honest
+  answer (deliver a still + the live link).
+- **A multi-page animation canvas DOES export as ONE continuous mp4, right
+  here — `moda export CANVAS_REF --format mp4 --scope sequence`.** Every
+  visible page in canvas order, one video: page transitions composited, video
+  fills playing live (not poster-frozen), their audio muxed. No `--page`; mp4
+  only — gif has no stitched form, export those page by page. The 2000-frame /
+  120 s ceiling covers the WHOLE film (~66 s at 30 fps), so a long storyboard
+  rejects typed `animation_budget_exceeded` — shorten pages or split the
+  export. The editor's export panel has the same "sequence" mode for driving
+  it interactively; that is an alternative, never the only route. Frame rate
+  is fixed (mp4 30 fps, gif 12); pixel ratio 1–4 scales resolution. Full
+  rules: references/export.md.
 - Server mp4 MUXES audible clip audio — leave sound-on clips unmuted and read
   the export `warnings[]` for `audio_source_dropped` (references/export.md).
 - There is no free-form video-to-video edit: a source clip is a generation
