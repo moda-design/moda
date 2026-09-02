@@ -53,8 +53,12 @@ moda file search "[subject]"                 # the team's own assets (default)
 moda file search "[subject]" --source stock  # stock photo library
 moda file search "[subject]" --kind icon     # the shared icon packs
 moda file list --folder [fld_…|root]         # browse; newest first
-moda file show [file_ref]                    # name, folder, visibility, type, size
+moda file show [file_ref]              # name, folder, visibility, type, size, app_url
 ```
+
+- **`app_url` is the Moda app page** — the link to hand a person, not `url`
+  (the raw bytes); `file show` prints it, and `file list --json` carries it.
+  Folders have one too, which `moda drive open [fld_…]` uses.
 
 - Stock hits are `stock_unsplash_…` ids, placeable straight into markup — and
   their attribution must appear wherever the photo does.
