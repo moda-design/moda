@@ -16,7 +16,16 @@ hand work over.
 
 ## Revisions — how a write is accepted
 
-- Every read refreshes the revision token for that canvas, and every write is checked against it.
+- Every read refreshes the revision token for that canvas. Writes that PIN one are checked against
+  it, and use your last read's automatically: `canvas edit`, `canvas delete-items`,
+  `canvas markup --mode replace`, `edit apply`.
+- Additive writes are NOT revision-checked: append-mode `canvas markup` (the default) and
+  `canvas add-pages`. They cannot lose content to a concurrent write, which is why the API leaves
+  the token optional there and the CLI sends none unless you pass `--revision`. So they never fail
+  `stale_revision`, and there is nothing to re-read before one.
+- One exception worth knowing: to apply the SAME markup to the SAME page twice on purpose, re-read
+  (or pass `--revision`) between the two calls. Identical arguments with no read in between derive
+  the same idempotency key, so the second is replayed as a no-op — loudly, as `⚠ REPLAYED`.
 - A write pinned to a stale revision **commits nothing** and fails typed with `stale_revision`.
   The recovery is always the same: re-read, then re-apply. Once. It heals.
 - Another writer advancing the canvas — the user in an open editor tab, a collaborator, a running
@@ -29,8 +38,9 @@ hand work over.
 
 ## Serial writes, small batches
 
-- Mutations on the SAME canvas stay serial — including per-page markup of one canvas. A parallel
-  batch shares one revision pin, and all but one of its members lose outright.
+- Mutations on the SAME canvas stay serial — including per-page markup of one canvas. The server
+  serializes them for you anyway, so a parallel batch buys nothing: it either queues behind the
+  canvas lock, or comes back `canvas_busy` when a running task or another process holds it.
 - Independent reads and screenshots fan out freely.
 - Work in small batches: one section or one slide per markup apply. A big apply that fails is a
   big apply you have to diagnose; a small one is a small fix.

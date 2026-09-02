@@ -23,9 +23,14 @@ Your write was pinned to a revision that has moved. Nothing committed.
 (the user in an open tab, a collaborator, a running task) is normal, not a fault.
 
 Still stale after that one retry? A human is editing live. Stop writing, say so, and offer to pick
-it up when they are done — do not fight them for the canvas. Two more causes worth knowing: a
-parallel batch of writes to ONE canvas (they share a revision pin; keep same-canvas writes serial),
-and a long gap between your read and your write (re-read at the start of every new request).
+it up when they are done — do not fight them for the canvas. One more cause worth knowing: a long
+gap between your read and your write (re-read at the start of every new request).
+
+Note which writes can even produce this. Only the ones that PIN a revision — `canvas edit`,
+`canvas delete-items`, `canvas markup --mode replace`, `edit apply`. Append-mode `canvas markup`
+and `canvas add-pages` send no revision unless you passed `--revision`, so a stale pin is usually
+not what went wrong there; a parallel batch of those contends on the canvas LOCK instead, and
+surfaces as `canvas_busy` when it surfaces at all.
 
 ### `invalid_markup` / `invalid_edit_program`
 
@@ -83,6 +88,19 @@ WHOLE — nothing applies. Split the work across several calls, keep the code sy
 single-pass, and return ids or counts rather than whole snapshots (an oversized return changes
 shape instead of being clipped, so your own fields disappear).
 
+### `canvas_busy`
+
+The canvas is locked by another write and yours was refused. Nothing committed. Retryable, unlike
+most conflicts.
+
+**Recipe:** if you fanned out writes to one canvas, that is the cause — serialize them and re-run
+the losers. Same-canvas writes must go one at a time whatever their revision, including per-page
+markup of a single canvas.
+
+If you were already writing serially, someone else holds the lock — usually a running agent task
+on that canvas. Wait for it and retry with backoff rather than hammering; if it never clears, say
+so rather than looping.
+
 ### `canvas_crdt_state_corrupt`
 
 The canvas itself needs recovery; retrying cannot succeed. Stop and tell the user.
@@ -120,7 +138,7 @@ or jpeg arrives as ONE zip, which is the deliverable, not a file to rename.
 | 2 | Invalid input — markup, edit program, or flags | no | fix the input; retry is safe |
 | 3 | Auth or missing scope | no | `moda auth login`; the hint names the scope |
 | 4 | Not found | no | check the ref, and the org you are in |
-| 5 | Conflict — stale revision, busy canvas, corrupt state | no | stale: re-read and re-apply; busy: wait for the owning task; corrupt: stop |
+| 5 | Conflict — stale revision, busy canvas, corrupt state | no | stale: re-read and re-apply; busy: serialize your own writes, else wait for the owning task; corrupt: stop |
 | 6 | Payment, quota, or rate | no | surface the hint (top up or wait); do not retry |
 | 7 | Server or transport | safe to retry | idempotency keys make a re-run safe |
 

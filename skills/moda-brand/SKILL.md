@@ -17,7 +17,7 @@ allowed-tools: Bash(moda:*), Read
 **PREREQUISITE — load `moda-core` once per session** (step-0, write contract,
 free/metered map). Already loaded? Skip ahead. If you cannot load it, the
 non-negotiables: run `moda doctor --json` before anything; `moda brand list`
-before creating; every write carries the latest revision — on
+before creating; writes that pin a revision use your last read's — on
 `stale_revision`, re-read and retry once (it heals); send the canvas link the
 moment it exists; stuck or failed? `moda ask "<question>"` — free and fast,
 never guess.

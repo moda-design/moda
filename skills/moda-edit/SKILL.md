@@ -18,7 +18,7 @@ allowed-tools: Bash(moda:*), Read
 **PREREQUISITE — load `moda-core` once per session** (step-0, write contract,
 free/metered map). Already loaded? Skip ahead. If you cannot load it, the
 non-negotiables: run `moda doctor --json` before anything; `moda brand list`
-before creating; every write carries the latest revision — on
+before creating; writes that pin a revision use your last read's — on
 `stale_revision`, re-read and retry once (it heals); send the canvas link the
 moment it exists; stuck or failed? `moda ask "<question>"` — free and fast,
 never guess.
@@ -41,7 +41,7 @@ nothing (follow the typed hint); never re-run a command that exited 0.
 ## The loop
 
 1. `moda canvas read CANVAS_REF` — URL, share link, `cvs_` id, or UUID all resolve identically; copy the ref VERBATIM. This yields the
-   DSL, the short ids, and the revision every write is checked against. Echo the canvas link back so the user can watch the edits land,
+   DSL, the short ids, and the revision token that pinning writes are checked against (append-mode markup and `canvas add-pages` do not pin — see the write contract). Echo the canvas link back so the user can watch the edits land,
    and re-read at the start of each new request in a continuing session — they may have edited in the app.
 2. **Resolve the referent first.** In the Moda app the agent sees the user's live selection; you see nothing. When the request says
    "this", "that slide", or "the title", find the candidate in the DSL, `moda canvas screenshot` the page when text alone is ambiguous,

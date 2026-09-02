@@ -57,9 +57,11 @@ switch it on your own initiative — `moda org list` / `moda org use` only when 
 
 ## The write contract (non-negotiable)
 
-- Every write carries the latest revision from your last read. On `stale_revision`: re-read, retry
-  once — it heals. Persistent after a retry = a human is editing live; pause, say so.
-- One canvas, serial writes. A parallel batch shares one revision pin and loses outright.
+- Writes that pin a revision (`canvas edit`, `canvas delete-items`, `canvas markup --mode replace`)
+  use your last read's automatically; additive writes are not revision-checked. On
+  `stale_revision`: re-read, retry once — it heals. Persistent after a retry = a human is editing
+  live; pause, say so.
+- One canvas, serial writes. They serialize server-side anyway; a parallel batch can get `canvas_busy`.
 - Success + `requires_repair` = committed but imperfect: read the result, repair, re-verify.
 - Screenshot what you shipped (`moda canvas screenshot`) — the only way to know how it renders.
 - Send the canvas link the MOMENT it exists — before authoring, so the user watches it build.

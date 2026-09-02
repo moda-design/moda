@@ -8,7 +8,7 @@ Two verbs give you eyes on the canvas: **`moda canvas read`** (the DSL — struc
 moda canvas read CANVAS_REF [--page PAGE_ID] [--json]
 ```
 
-Returns the compact authoring DSL — the exact state the canvas contains — plus the **revision token** every later write is checked against.
+Returns the compact authoring DSL — the exact state the canvas contains — plus the **revision token** that pinning writes are checked against (append-mode markup and `canvas add-pages` do not pin — see the write contract).
 
 - `--page` returns just that one page's DSL (a byte-identical slice of the full serialization). Omit for the whole canvas. There is no `--format` flag — the read IS the DSL (`--json` wraps the same envelope; `--output FILE` spills it).
 - **`--summary` is the right FIRST look at a big or unknown canvas**: `moda canvas read CANVAS_REF --summary` returns structure only — canvas name, `pages: [{id, name, node_count}]`, `page_count`, `node_total`, `current_page_id`, `editor_url`, and the **revision** (it refreshes the pinnable revision exactly like a full read). Summarize first, then pull only the pages you need. On a server that predates the endpoint it fails typed with a steer to `canvas show`.

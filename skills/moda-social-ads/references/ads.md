@@ -124,8 +124,8 @@ to fit live in the display-banner loop recipe in the motion-recipes reference.
 
 One canvas, one page per size, exported together: a multi-page png export arrives
 as a **zip**, which is exactly what the trafficker wants. Applies to one canvas
-stay serial — a parallel batch across many pages shares one revision pin and
-loses to `stale_revision`.
+stay serial — they serialize on the server anyway, so a parallel batch across many
+pages buys nothing and can come back `canvas_busy`.
 
 ## Not this lane
 
