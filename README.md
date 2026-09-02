@@ -28,36 +28,22 @@ you ──► your agent ──► moda CLI ──► Moda canvas ──► deck
 
 ## Install
 
-> **Available now.** Public Moda-for-Agents API access rolled out to 100% of
-> users, unfiltered, on 2026-08-17.
-
-Paste this to your agent — it runs everything:
+**Point your agent at <https://docs.moda.app/agents/setup.md> and it does the rest** —
+installs the CLI, signs you in, installs the skills, and verifies the result. That page is
+the single authority for setup; this README used to restate it, and the copy is gone rather
+than kept in step.
 
 ```
-Set up Moda for me so I can create designs, videos, decks, and documents from here.
-
-1. Install the CLI: npm i -g @moda-design/moda
-2. Authenticate: run `moda auth login` and wait for me to complete sign in.
-3. Install the companion skills: run `npx skills add moda-design/moda`.
-4. Verify: run `moda doctor` and tell me when everything is ready.
+Set up Moda by following the guide at https://moda.app/install.md
 ```
 
-Per harness:
+No shell? The same page's step 5 covers the MCP connector for chat-only hosts.
 
-- **Claude Code** — the paste block works as-is. Alternative:
-  `/plugin marketplace add moda-design/moda` then `/plugin install moda@moda`
-  gives plugin-managed skills that update through the marketplace, where
-  `npx skills add` pins a local copy (steps 1–2 still apply for the CLI).
-- **Codex** — the paste block as-is.
-- **Cursor** — `npx skills add moda-design/moda`, or clone and run `./setup`.
-- **Anything with a shell** — clone and run `./setup`; it copies the skills
-  and *prints* the CLI install command, never runs it.
-- **claude.ai** — the skills also ship in a connector-flavored form for
-  claude.ai Agent Skills; see [INSTALL-CLAUDE-AI.md](INSTALL-CLAUDE-AI.md).
-
-Full detail, including checksum-verified installs:
-[INSTALL.md](INSTALL.md). Agent-facing instructions to hand an agent
-directly: [INSTALL_FOR_AGENTS.md](INSTALL_FOR_AGENTS.md).
+Two things that page deliberately leaves out, because they are human reference rather than
+agent procedure: [INSTALL.md](INSTALL.md) has the no-npm, checksum-verified release path
+and the Windows specifics, and Claude Code users may prefer plugin-managed skills —
+`/plugin marketplace add moda-design/moda` then `/plugin install moda@moda` — which update
+through the marketplace where `npx skills add` pins a local copy.
 
 ## The skills
 
