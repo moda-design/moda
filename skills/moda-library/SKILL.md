@@ -45,6 +45,9 @@ moda file upload --from-url [URL]
 - The result is a durable `file_…` ref — use it DIRECTLY as a markup image
   fill or a media input. Never re-upload the same bytes per canvas.
 - The response says where the file actually landed; unfiled → `moda drive move`.
+- **HTML has two destinations; uploading picks the drive one.** A `.html` file
+  becomes a drive file, not a website — to host it, `moda site create --file
+  [PATH]` then `moda site publish [SITE_ID]`. Ask which they meant (moda-website).
 
 ## Find an asset before generating one
 
@@ -117,4 +120,5 @@ large to read is refused outright, never truncated — ask for the part you need
 The same files every week → moda-automate. One folder and kit for this repo →
 moda-context. A layout worth reusing → moda-templates.
 
-See also: moda-core — the contract, recovery, everything Moda can do.
+See also: moda-core — the contract, recovery, everything Moda can do;
+moda-website — hosting an HTML file as a live site instead of storing it.

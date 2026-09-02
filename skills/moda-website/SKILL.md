@@ -57,8 +57,10 @@ re-publishable, not a canvas and not a file. Site verbs are free; only
    document (inline styles, mobile-first), reviewed against
    references/website.md as you write it.
 5. **Create + build out**: `moda site create --file home.html --title "…"`
-   for the homepage, then `moda site add-page SITE_ID --path /route --file …`
-   per additional page. Nothing is public yet — say so if you share progress.
+   (`--file -` reads stdin) — start HERE if you already hold the HTML; uploading
+   it only stores it (moda-library). Then `moda site add-page SITE_ID --path
+   /route --file …` per additional page. Nothing is public yet — say so if you
+   share progress.
 6. **Verify with your own vision**: `moda site screenshot SITE_ID --path
    /route --viewport desktop` AND `--viewport mobile` (draft renders, up to 3
    pages per call). Fix with `moda site set-content --path`, re-capture.
