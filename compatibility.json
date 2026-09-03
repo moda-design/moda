@@ -1,5 +1,5 @@
 {
-  "skills_release": "v2026.09.02+preview.36",
+  "skills_release": "v2026.09.03+preview.37",
   "skills": [
     "moda-audio",
     "moda-automate",
@@ -29,7 +29,7 @@
     "moda-video-motion",
     "moda-website"
   ],
-  "authoring": "skill text is authored directly in this repo; a server-side publish pipeline takes over at ship time. `skills` is the roster `npx skills add moda-design/moda` installs, and the set `moda doctor` compares an install against to decide `checks.skills.ok` \u2014 hand-written like setup's SKILLS line, and pinned to skills/ by scripts/export-mirror.py so it cannot drift.",
+  "authoring": "skill text is authored directly in this repo; a server-side publish pipeline takes over at ship time. `skills` is the roster `npx skills add moda-design/moda` installs, and the set `moda doctor` compares an install against to decide `checks.skills.ok` — hand-written like setup's SKILLS line, and pinned to skills/ by scripts/export-mirror.py so it cannot drift.",
   "cli": {
     "floor": "0.17.5",
     "tested_through": "0.17.x",
