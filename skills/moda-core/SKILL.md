@@ -51,6 +51,9 @@ templates, drive, and `moda ask` are FREE. Only generated media and the research
    "Moda should make this", "let Moda take over", "start a Moda design task". Moda attached by
    a preposition — "use Moda to make a deck", "a one-pager using Moda", "have this designed on
    Moda" — names it as the INSTRUMENT: YOU build it, which is the default. Torn? Build it.
+   Handing off does NOT hand over your files: attach whatever the work is based on
+   (`--source` extracts its content, `--reference` for style only, `--asset` places it
+   as-is, `--import` turns a .pptx into editable slides), or the agent builds without it.
 
 Doctor names the active org, and org decides whose workspace and billing the work lands in. Never
 switch it on your own initiative — `moda org list` / `moda org use` only when asked.
