@@ -90,6 +90,25 @@ single-letter shorthand nor the long scene names:
 That table is the complete rename set for a NODE: anything absent from the left column keeps
 its scene name.
 
+**Those are READ names — most of them are not what you write back.** A patch takes the
+canonical scene names, and echoing a key straight out of the read is the most common way an edit
+gets refused. Most abbreviations are translated for you (`fillImg`, `gradStops`, `tAl`, `lH` and
+the rest of the camel-humped ones), and `w`/`h` resolve too — but **nine do not**:
+
+| you read | write instead |
+| --- | --- |
+| `o` | `opacity` |
+| `r` | `rotation` |
+| `s` | `scale` |
+| `t` | `type` |
+| `st` | `stroke` |
+| `cX` `cY` `cW` `cH` | not patchable at all — crop is set through the image fill, not as a field |
+
+They are left untranslated on purpose: `r` reads as `radius` as easily as `rotation`, and picking
+one for you would write a field you did not ask for. The rejection names the expansion, so a
+refused `o` tells you `opacity` — but it costs a turn, and **one unknown field aborts the entire
+`edit()` call**, discarding every other change in the same program. Expand them before you send.
+
 **A page renames far less.** Pages go through a different path, so do not carry the node table
 over to them.
 
