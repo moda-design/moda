@@ -9,12 +9,30 @@ cd "$(dirname "$0")"
 SKILLS="moda-core moda-deck moda-deck-theme moda-deck-pptx moda-document moda-document-print moda-social moda-social-instagram moda-social-linkedin moda-social-tiktok moda-social-youtube moda-social-ads moda-diagram moda-chart moda-mockup moda-website moda-video moda-video-clip moda-video-demo moda-video-motion moda-image moda-audio moda-brand moda-edit moda-library moda-templates moda-context moda-automate"
 installed=""
 
+# Runtime state that must never be installed. Mirrors
+# skills_taxonomy.NEVER_SHIPPED, which the mirror export applies for the same
+# reason — skills/ now contains a RUNNABLE tool
+# (moda-video-demo/demo-capture), so a working checkout carries node_modules,
+# an out/ of recorded takes that has reached 205MB, and auth.json, which on a
+# developer machine is a symlink to a live prod session. `cp -R` would copy all
+# three into every harness directory below.
+#
+# Kept in step by check_setup_excludes_runtime_state in scripts/validate.py.
+NEVER_INSTALL="node_modules out auth.json .studio .moda-review"
+
 copy_into() {
   dest="$1"
   mkdir -p "$dest"
   for s in $SKILLS; do
     rm -rf "$dest/$s"
     cp -R "skills/$s" "$dest/$s"
+    for junk in $NEVER_INSTALL; do
+      # Unbounded depth, because the sets this mirrors are: ignore_patterns
+      # matches at every level of the copytree and tax.is_vendored tests every
+      # path part. A depth bound would let a tool nested one level deeper be
+      # export-blocked and still installed, with CI green.
+      find "$dest/$s" -name "$junk" -prune -exec rm -rf {} + 2>/dev/null || true
+    done
   done
   installed="$installed $dest"
 }

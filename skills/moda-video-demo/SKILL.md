@@ -96,6 +96,7 @@ done
 if [ -z "$DC" ]; then
   echo "demo-capture not found — it installs beside this SKILL.md; reinstall the skill"
 else
+  echo "DC=$DC"
   node "$DC/doctor.mjs"
 fi
 ```
@@ -107,10 +108,12 @@ or unknown. Fix what it names; do not start a capture around a gap.
 ## 3 · Run it
 
 ```bash
-: "${DC:?run step 2 first — it resolves demo-capture and sets DC}"
-node "$DC/run.mjs" "<what to demonstrate>" <url> --name <slug> [--no-auth] \
+node <DC>/run.mjs "<what to demonstrate>" <url> --name <slug> [--no-auth] \
   [--attempts 2] [--publish "<Title>"]
 ```
+
+**`<DC>` is the literal path step 2 printed** — paste it in. Each Bash call is a
+fresh shell, so `$DC` from step 2 does not survive into this one.
 
 `--attempts 2` lets it re-discover when the first flow is not worth filming.
 Without `--publish` it stops after the critique and prints the command to
@@ -148,9 +151,12 @@ outscore a rough video of a good one, so trust the flow findings over the number
 - **Punch-ins near a frame edge do not centre** — the camera stops flush rather
   than exposing the page behind the recording. Reported as `zoom_framing_clamped`.
 - **No brand kit is applied yet.**
-- **The compile step wants a studio checkout** for the loop's camera lane only.
-  Publishing does not. Without one, `iterate` says the zoom checks are
-  "not measured" rather than passing them.
+- **The loop cannot tune the camera without a studio checkout.** Publishing does
+  not need one, and the camera still ships. But the camera is emitted AT publish
+  and the critique loop runs before it, so `iterate` reports the zoom checks as
+  "not measured" rather than passing them — it tunes pacing and flow only.
+  The framing verdict arrives afterwards, in the publish report's `camera:`
+  lines. Read them: they are the only camera grading that run produced.
 
 
 ## Not this skill

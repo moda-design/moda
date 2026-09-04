@@ -314,3 +314,100 @@ test('the binary resolver never claims a tool it cannot point at', () => {
   assert.strictEqual(typeof bin.ffmpeg, 'string');
   assert.strictEqual(typeof bin.ffprobe, 'string');
 });
+
+// ── The camera the SERVER emits must grade identically to a local compile ────
+//
+// Without a studio checkout `<id>.motion.js` is never written, so zoomSync,
+// zoomFraming, zoomRelease and noCamera all reported "not measured" — the
+// critique loop was blind to framing for every external user (ENG-6059).
+// `publish` now returns the program it applied and the client writes it here.
+//
+// The risk that buys is drift: if the returned program grades differently from
+// the local one, external users get numbers nobody has ever seen. So this pins
+// the two against each other on ONE real take.
+
+//: Produced by `compile.py motion` on take e2e-palette-2026-09-04T18-30-16-193Z,
+//: with the iterate loop's placeholder ids.
+const LOCAL_PROGRAM = `motion.page("p_iter", (t) => {
+  t.clearTarget("n_iter");
+  t.keyframes("n_iter", "scale", [{"tMs":900,"value":1.0,"easing":"easeOutBack"},{"tMs":1953,"value":1.3,"easing":"linear"},{"tMs":2553,"value":1.3,"easing":"easeInOutCubic"},{"tMs":3223,"value":1.0,"easing":"easeInOut"}]);
+  t.motionPath("n_iter", [{"tMs":900,"value":{"x":0.0,"y":0.0},"easing":"easeOutBack"},{"tMs":1953,"value":{"x":11.7,"y":120.0},"easing":"linear"},{"tMs":2553,"value":{"x":11.7,"y":120.0},"easing":"easeInOutCubic"},{"tMs":3223,"value":{"x":0.0,"y":0.0},"easing":"easeInOut"}]);
+});`;
+
+//: The SAME take as PUBLISHED, transcribed from the animation track of canvas
+//: d4c3da5d-5ee9-4578-b3e7-e668488924e1 (`moda canvas read`), which carries the
+//: real page and node ids the server assigned.
+//:
+//: Written out literally rather than derived from LOCAL_PROGRAM by replacing the
+//: ids: a derived string can only ever disagree if the id regex breaks, so it
+//: could not detect the drift this test exists to catch. These digits came off
+//: the published canvas independently of the local compile.
+const SERVER_PROGRAM = `motion.page("p_a", (t) => {
+  t.clearTarget("n1");
+  t.keyframes("n1", "scale", [{"tMs":900,"value":1.0,"easing":"easeOutBack"},{"tMs":1953,"value":1.3,"easing":"linear"},{"tMs":2553,"value":1.3,"easing":"easeInOutCubic"},{"tMs":3223,"value":1.0,"easing":"easeInOut"}]);
+  t.motionPath("n1", [{"tMs":900,"value":{"x":0.0,"y":0.0},"easing":"easeOutBack"},{"tMs":1953,"value":{"x":11.7,"y":120.0},"easing":"linear"},{"tMs":2553,"value":{"x":11.7,"y":120.0},"easing":"easeInOutCubic"},{"tMs":3223,"value":{"x":0.0,"y":0.0},"easing":"easeInOut"}]);
+});`;
+
+test('readCamera reads a server-assigned-id program the same way as a local one', () => {
+  const { readCamera } = require('../src/shot-check.js');
+  const dir = mkdtempSync(`${tmpdir()}/cam-`);
+
+  writeFileSync(`${dir}/local.motion.js`, LOCAL_PROGRAM);
+  writeFileSync(`${dir}/server.motion.js`, SERVER_PROGRAM);
+
+  const local = readCamera(`${dir}/local.motion.js`);
+  const server = readCamera(`${dir}/server.motion.js`);
+
+  // The precondition: both actually parsed. `readCamera` returns null on a miss,
+  // and two nulls would compare equal and prove nothing.
+  assert.ok(local, 'the local program did not parse');
+  assert.ok(server, 'the server program did not parse — real node ids broke the reader');
+
+  // WHAT THIS DOES AND DOES NOT PIN. Both constants are frozen literals, so this
+  // cannot notice the server's emit drifting from the local compile in future —
+  // they already take different inputs (publish passes accepted_zoom_actions,
+  // compile.py constructs the emitter with none). It pins the one thing a frozen
+  // pair can: that the reader treats a program carrying the server's real page
+  // and node ids exactly as it treats the placeholder-id one, on values taken off
+  // a real published canvas. Live divergence is knowingly unpinned here.
+  assert.deepStrictEqual(server, local,
+    'readCamera read the server-id program differently from the placeholder-id ' +
+    'one, so the ids are leaking into what gets graded');
+
+  // And it is a real program, not an empty pair that trivially matches.
+  assert.strictEqual(local.scale.length, 4);
+  assert.strictEqual(local.path.length, 4);
+  assert.strictEqual(Math.max(...local.scale.map((k) => k.value)), 1.3);
+});
+
+// ── "Was this published?" must be told, not guessed from disk ───────────────
+//
+// It used to be `existsSync(<id>.markup.xml)`. Nothing has written that file
+// since publishing became one server-side verb, so the predicate was permanently
+// false and the FLAT-TAKE finding below — a published demo the compiler planned
+// no punch-ins for, which is a finding and not a gap — had never once fired.
+
+test('a published take with no camera is a finding, not an unmeasured check', () => {
+  const { checkShots } = require('../src/shot-check.js');
+  const dir = mkdtempSync(`${tmpdir()}/flat-`);
+  const id = 'take';
+  const doc = {
+    durationSec: 6.0,
+    viewport: { width: 1280, height: 800 },
+    actions: [{ index: 0, type: 'click', label: 'Go', startSec: 0.5, endSec: 2.0, clickSec: 1.0, clickX: 100, clickY: 100 }],
+  };
+  writeFileSync(`${dir}/${id}.moda.json`, JSON.stringify(doc));
+  const base = { doc, outDir: dir, id, motionPath: `${dir}/absent.motion.js` };
+
+  // Published, and no camera came back: the video is one flat wide shot.
+  const flat = checkShots({ ...base, cameraWasAttempted: true }).noCamera;
+  assert.strictEqual(flat.measured, true, 'a published take with no punch-ins is measured, not unknown');
+  assert.strictEqual(flat.bad, true, 'a flat camera is a finding');
+  assert.match(flat.reason, /planned NO punch-ins/);
+
+  // Not published yet: genuinely unknown, and must not read as a finding.
+  const early = checkShots({ ...base, cameraWasAttempted: false }).noCamera;
+  assert.strictEqual(early.measured, false);
+  assert.strictEqual(early.bad, undefined, 'an unmeasured check must not read as bad either');
+  assert.match(early.reason, /emitted at publish/);
+});

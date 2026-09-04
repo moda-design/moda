@@ -189,7 +189,7 @@ function shots(camera, w, h) {
  * `measured: false` with a reason rather than an empty list when it could not
  * run — an unmeasured check must never read as a clean one.
  */
-function checkShots({ doc, outDir, id }) {
+function checkShots({ doc, outDir, id, motionPath = null, cameraWasAttempted = false }) {
   const w = doc.viewport?.width || 1280;
   const h = doc.viewport?.height || 800;
   const actions = doc.actions || [];
@@ -230,7 +230,12 @@ function checkShots({ doc, outDir, id }) {
         };
 
   // ── zoom sync and framing ────────────────────────────────────────────────
-  const camera = readCamera(`${outDir}/${id}.motion.js`);
+  // `motionPath` is how a caller grades a camera it did not compile locally: the
+  // publish response carries the program for users with no studio checkout, and
+  // it is written under a DIFFERENT name so `iterate`'s
+  // `if (!existsSync(<id>.motion.js)) emitMotion()` still re-emits a fresh local
+  // camera after a re-cut instead of grading a stale published one.
+  const camera = readCamera(motionPath ?? `${outDir}/${id}.motion.js`);
   if (!camera) {
     // TWO different reasons, and saying the wrong one sends the reader looking
     // in the wrong place. The markup is written at publish; if it exists and the
@@ -239,7 +244,18 @@ function checkShots({ doc, outDir, id }) {
     // the minimum worthwhile scale. Seen on a real take: four actions stayed
     // wide, no camera program, and all three zoom checks reported "emitted at
     // publish" on a take that had just been published.
-    const published = existsSync(`${outDir}/${id}.markup.xml`);
+    // Told by the caller, never inferred. This read `existsSync(<id>.markup.xml)`
+    // and nothing has written that file since publishing became one server-side
+    // verb — `compile.py markup` is its only writer and no .mjs invokes it — so
+    // the predicate was permanently false and the flat-take finding below had
+    // never once fired.
+    //
+    // "Attempted", not "published", so BOTH callers can answer truthfully: the
+    // publish report knows a publish just ran, and the critique loop knows
+    // whether `compile.py motion` ran and what it said. Naming it for publish
+    // left the loop defaulting to false, which moved the deadness rather than
+    // removing it.
+    const published = cameraWasAttempted;
     const why = published
       ? 'the compiler planned NO punch-ins for this take — every action changed too much of the page to frame'
       : 'no camera program yet — these are emitted at publish';
@@ -310,6 +326,11 @@ function checkShots({ doc, outDir, id }) {
   return {
     deadTime,
     cursorOcclusion,
+    // Reaching here means a camera program parsed, so this IS measured and is
+    // fine. Omitting the key made a caller that reports every check print "the
+    // check did not run" next to a camera it had just graded — an unmeasured
+    // reading on the one path where the answer is known.
+    noCamera: { measured: true, bad: false, peaks: peaks.length },
     zoomSync: { measured: true, peaks: peaks.length, offenders: syncOff, bad: syncOff.length > 0 },
     zoomFraming: { measured: true, peaks: peaks.length, offenders: framing, bad: framing.length > 0 },
     captionSubject: captionSubjectVisible(camera, actions, w, h),
@@ -319,4 +340,4 @@ function checkShots({ doc, outDir, id }) {
   };
 }
 
-module.exports = { checkShots, SYNC_TOLERANCE_SEC, FRAMING_MARGIN, DEAD_TIME_SHARE, RELEASE_SLACK_SEC, CAPTION_SUBJECT_COVERAGE };
+module.exports = { checkShots, readCamera, SYNC_TOLERANCE_SEC, FRAMING_MARGIN, DEAD_TIME_SHARE, RELEASE_SLACK_SEC, CAPTION_SUBJECT_COVERAGE };

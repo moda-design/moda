@@ -87,11 +87,20 @@ function emitMotion() {
   if (!PY) return false;
   try {
     sh(PY, ['compile.py', 'motion', docPath, PLACEHOLDER_REF, 'p_iter', 'n_iter', `${outDir}/${id}.motion.js`]);
+    // TRUE means the compile RAN, not that it wrote a camera — which is exactly
+    // what the flat-take finding needs: a compiler that looked and planned no
+    // punch-ins is a finding, one that never ran is unmeasured. `wrote_camera`
+    // in the JSON says which of those happened for the FILE, and the caller
+    // learns the same thing from whether the file now exists, so it is not read
+    // here.
     return true;
   } catch {
     return false;
   }
 }
+
+/** Did a camera compile actually run this round? Drives the flat-take finding. */
+let cameraAttempted = false;
 
 /** Which stage owns a model finding, by its own suggested fix and its type. */
 function ownerOf(issue) {
@@ -151,9 +160,10 @@ const restore = (snap) => {
 };
 
 for (let round = 1; round <= MAX_ROUNDS; round++) {
-  if (!existsSync(`${outDir}/${id}.motion.js`)) emitMotion();
+  if (!existsSync(`${outDir}/${id}.motion.js`)) cameraAttempted = emitMotion();
+  else cameraAttempted = true;
   console.log(`\n── round ${round} ─────────────────────────────────────────────`);
-  sh('node', ['critique-take.mjs', outDir, id]);
+  sh('node', ['critique-take.mjs', outDir, id, ...(cameraAttempted ? ['--camera-attempted'] : [])]);
 
   const critique = JSON.parse(readFileSync(`${outDir}/critique.json`, 'utf8'));
   const all = [...(critique.shots ?? []), ...(critique.issues ?? []).filter((i) => i.severity !== 'low')];

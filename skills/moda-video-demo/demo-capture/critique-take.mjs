@@ -132,7 +132,11 @@ if (!ink.ok) {
 
 // The four a person kept catching and the model kept scoring around — all
 // countable from the timeline and the emitted camera program. See src/shot-check.js.
-const shots = checkShots({ doc, outDir, id });
+// Told by iterate: a local camera compile ran this round. Without it the
+// flat-take branch below defaults to unreachable, which is where the deadness
+// went when the disk predicate was removed.
+const cameraWasAttempted = process.argv.includes('--camera-attempted');
+const shots = checkShots({ doc, outDir, id, cameraWasAttempted });
 const waiting = shots.deadTime.measured
   ? ` — ${(shots.deadTime.share * 100).toFixed(0)}% of the runtime is the product thinking`
   : ` (waits not measured: ${shots.deadTime.reason})`;

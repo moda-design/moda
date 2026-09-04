@@ -2,7 +2,7 @@
 // split out so a Claude-driven capture can publish without the authoring loop
 // without re-running the autonomous authoring loop.
 import { execFileSync } from 'node:child_process';
-import { existsSync, readFileSync, writeFileSync, copyFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync, copyFileSync, rmSync } from 'node:fs';
 import { createRequire } from 'node:module';
 
 const require = createRequire(import.meta.url);
@@ -129,9 +129,96 @@ if (!noZoom && located.length) args.push('--accept-zoom', located.join(','));
 
 const published = moda(args);
 
+// KEEP THE CAMERA THE SERVER JUST EMITTED, so the shot checks can grade it.
+//
+// `src/shot-check.js` reads the camera out of `<id>.motion.js`, and only the
+// local studio compiler writes that file. Without a checkout the camera still
+// shipped — it is emitted server-side — but zoomSync, zoomFraming, zoomRelease
+// and noCamera all reported "not measured", so the critique loop was blind to
+// framing for every external user, which is the defect class most visible in
+// the output (ENG-6059).
+//
+// This is the program APPLIED to the canvas, returned verbatim, so the checks
+// grade what the renderer will do rather than a re-derivation.
+//
+// The verdict lands with the PUBLISH REPORT, not inside the critique loop: the
+// camera does not exist until publish, and the loop runs before it. So this
+// tells the user how the shot they just published is framed; it does not let the
+// loop tune it. Closing that needs a compile-without-publish route.
+const cameraProgram = published.camera_program ?? [];
+//: NOT `<id>.motion.js`. That name is `iterate`'s, and it re-emits into it only
+//: when it is absent — writing the published camera there would make the next
+//: re-cut grade a stale program.
+const publishedMotion = `${outDir}/${id}.published.motion.js`;
+// Authoritative BOTH ways. Writing only on success leaves a file that outlives
+// the camera it describes: publish once with a camera, let iterate suppress every
+// punch-in, publish again — no write happens and the grading below reads the
+// earlier publish's program, reporting punch-ins this canvas does not contain.
+if (cameraProgram.length) writeFileSync(publishedMotion, cameraProgram.join('\n') + '\n');
+else rmSync(publishedMotion, { force: true });
+
 const desktop = `${homedir()}/Desktop/moda-demo${noZoom ? '-nozoom' : ''}.mp4`;
 copyFileSync(finalMp4, desktop);
 
 const url = published.editor_url ?? published.canvas?.editor_url ?? `(canvas ${published.canvas_id ?? published.canvas?.id})`;
 console.log(`\ncanvas  ${url}\nvideo   ${desktop}`);
 for (const w of published.warnings ?? []) console.log(`  · ${String(w).slice(0, 170)}`);
+
+// GRADE THE CAMERA THAT WAS JUST PUBLISHED.
+//
+// Unconditional, and it always prints. Reporting only failures made silence mean
+// three different things — the camera is fine, there is no camera at all, or
+// nothing ran — and `noCamera` is one of the four checks this exists to unblind:
+// a published take with no punch-ins is a FLAT one, which shot-check classifies
+// as a finding, not a gap. Matches critique-take's shape: every check gets a
+// line, and an unmeasured check never reads as a clean one.
+try {
+  const { checkShots } = require('./src/shot-check.js');
+  // `publishedMotion` UNCONDITIONALLY. Falling back to checkShots' default on an
+  // empty program would grade `<id>.motion.js` — the iterate loop's file, which
+  // outlives the camera it describes: once suppressions strip every punch-in,
+  // `emitMotion` writes nothing and the previous program stays on disk. The
+  // report would then print framing and sync verdicts for punch-ins the
+  // published canvas does not contain. A path that does not exist makes
+  // `readCamera` return null, which is the honest answer.
+  // WHY there is no camera decides whether this is a defect, and the server
+  // already distinguishes the causes — hardcoding "attempted" turned every one of
+  // them into "the compiler planned NO punch-ins".
+  //
+  // `--no-zoom`, and punch-ins held awaiting confirmation, both yield an empty
+  // program on purpose. Reporting those as a flat-take finding tells an agent
+  // that just applied `disable_zoom` the take it deliberately shipped flat is
+  // unframeable, and contradicts the remedy the server prescribed in the same
+  // report. An older server that says nothing at all must stay UNMEASURED rather
+  // than become a confirmed defect.
+  const toldUs = published.camera_program !== undefined;
+  const held = (published.warnings ?? []).some((w) => String(w).startsWith('zoom_awaiting_confirmation'));
+  const onPurpose = noZoom || held;
+  const shots = checkShots({
+    doc, outDir, id,
+    motionPath: publishedMotion,
+    cameraWasAttempted: toldUs && !onPurpose,
+  });
+  const say = (label, r, describe) => {
+    if (!r) return console.log(`    ${label}: not measured (the check did not run)`);
+    if (!r.measured) return console.log(`    ${label}: not measured (${r.reason})`);
+    if (!r.bad) return console.log(`    ${label}: ok`);
+    for (const line of describe(r)) console.log(`    ⚠ ${label}: ${line}`);
+  };
+  console.log('\n  camera:');
+  if (!cameraProgram.length && onPurpose) {
+    console.log(`    no camera: none written on purpose — ${noZoom ? '--no-zoom' : 'punch-ins are awaiting confirmation (see the warning above)'}`);
+  } else {
+    say('no camera', shots.noCamera, (r) => [r.reason]);
+  }
+  say('zoom sync', shots.zoomSync, (r) => r.offenders.map((o) => `action ${o.action} peaks ${o.offSec}s off the click`));
+  say('framing', shots.zoomFraming, (r) => r.offenders.map((o) => o.outOfFrame
+    ? `action ${o.action}: THE CLICK IS OUTSIDE THE SHOT (looking at ${o.lookingAt.join(',')}, clicked ${o.clickAt.join(',')})`
+    : `action ${o.action}: the click sits ${(o.slack * 100).toFixed(1)}% from the frame edge — barely in shot`));
+  say('release', shots.zoomRelease, (r) => r.offenders.map((o) => `action ${o.action}: the camera left ${o.earlyBySec}s before the typing finished`));
+} catch (err) {
+  // Never fail a publish that already succeeded over grading it — but say so,
+  // because a silent catch here is exactly how a check stops running.
+  console.log(`  · could not grade the published camera: ${err.message}`);
+}
+
