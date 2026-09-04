@@ -100,12 +100,12 @@ and the millisecond rounding are all real logic that lives in the backend packag
 `app/services/demo_video/`, and each one has a silent failure mode. Improvising it
 produces a canvas that reports success and plays nothing.
 
-The runnable wrapper is ``moda-cli/demo-capture/compile.py``. It reads `.studio` beside
+The runnable wrapper is ``moda-cli/skills/moda-video-demo/demo-capture/compile.py``. It reads `.studio` beside
 itself for a studio checkout and runs on that checkout's backend venv:
 
 ```bash
 PY="$(git rev-parse --show-toplevel)/backend/.venv/bin/python"
-cd <studio>/moda-cli/demo-capture
+cd <studio>/moda-cli/skills/moda-video-demo/demo-capture
 
 # 1. markup — before the canvas exists
 "$PY" compile.py markup <timeline.json> <video-url> <out-markup.xml>
@@ -128,7 +128,7 @@ do `motion` and `captions` run. Concatenate the motion and caption programs into
 `run.mjs` is the whole pipeline. A goal and a URL is the entire input:
 
 ```bash
-cd <studio>/moda-cli/demo-capture
+cd <studio>/moda-cli/skills/moda-video-demo/demo-capture
 node run.mjs "<goal>" <url> --name <slug> [--no-auth] [--publish "<Title>"]
 ```
 

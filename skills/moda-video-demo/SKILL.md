@@ -58,25 +58,6 @@ Delete is a legitimate demo.
 A capture creates, renames, shares and deletes real things. Approval comes before
 execution, not after.
 
-## 1 · Read the repo — do not ask the human yet
-
-Work out how to reach the app from the repo itself, in this order. Stop at the
-first rung that works:
-
-1. **Already running?** Probe the usual ports (`curl -s -o /dev/null -w '%{http_code}'`).
-2. **A start command?** `package.json` scripts, Makefile targets, Procfile, README quickstart.
-3. **How do its own tests sign in?** Look for `*.setup.ts`, `playwright.config.*`,
-   an `e2e/` directory. A programmatic sign-in the test suite already uses is
-   reproducible and safe.
-4. **Only now**, surface what you could not establish and ask.
-
-**Prefer the app's own test auth over the developer's live browser session.** It is
-more reproducible, dramatically safer, and the same pass that finds the login
-usually finds the seed command — which is where determinism comes from.
-
-Report what you found before proceeding: the target, the auth strategy, and
-anything the repo did **not** establish. Do not paper over a gap.
-
 ## 1 · Find the app — do not ask the human yet
 
 Work out how to reach it from the repo itself, stopping at the first rung that
@@ -97,13 +78,26 @@ Report the target, the auth strategy, and anything the repo did NOT establish.
 
 ## 2 · Find the tool, then check the machine
 
-It ships with this plugin, beside the skills. Locate it once and keep the path:
+It installs with this skill, as `demo-capture/` beside this file. Locate it once
+and keep the path:
 
 ```bash
-DC=$(ls -d "$CLAUDE_PLUGIN_ROOT/demo-capture" ~/.claude/plugins/*/moda*/demo-capture \
-        ./moda-cli/demo-capture 2>/dev/null | head -1)
-[ -n "$DC" ] || echo "demo-capture not found — this plugin ships it; reinstall or point at a checkout"
-node "$DC/doctor.mjs"
+DC=
+for c in "$CLAUDE_PLUGIN_ROOT/skills/moda-video-demo/demo-capture" \
+         ~/.claude/skills/moda-video-demo/demo-capture \
+         ~/.agents/skills/moda-video-demo/demo-capture \
+         ~/.cursor/skills/moda-video-demo/demo-capture \
+         .claude/skills/moda-video-demo/demo-capture \
+         ~/.claude/plugins/*/moda*/skills/moda-video-demo/demo-capture \
+         ~/.claude/plugins/*/*/moda*/*/skills/moda-video-demo/demo-capture \
+         ./moda-cli/skills/moda-video-demo/demo-capture; do
+  [ -d "$c" ] && DC=$c && break
+done
+if [ -z "$DC" ]; then
+  echo "demo-capture not found — it installs beside this SKILL.md; reinstall the skill"
+else
+  node "$DC/doctor.mjs"
+fi
 ```
 
 Names what is missing — node, ffmpeg, the browser, both CLIs, whether `moda` is
@@ -113,7 +107,8 @@ or unknown. Fix what it names; do not start a capture around a gap.
 ## 3 · Run it
 
 ```bash
-demo-capture "<what to demonstrate>" <url> --name <slug> [--no-auth] \
+: "${DC:?run step 2 first — it resolves demo-capture and sets DC}"
+node "$DC/run.mjs" "<what to demonstrate>" <url> --name <slug> [--no-auth] \
   [--attempts 2] [--publish "<Title>"]
 ```
 

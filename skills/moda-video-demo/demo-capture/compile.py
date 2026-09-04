@@ -13,7 +13,7 @@ def _studio_backend() -> Path:
     """Find the studio checkout whose compiler this pipeline drives.
 
     Walking UP first, because once this lives inside studio there is nothing to
-    configure — `moda-cli/demo-capture/` finds the repo root above it and the
+    configure — `moda-cli/skills/moda-video-demo/demo-capture/` finds the repo root above it and the
     setup step disappears. The `.studio` file is the escape hatch for running
     from outside a checkout, which is how this was developed.
 
