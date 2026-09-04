@@ -1,0 +1,12 @@
+# Every run writes a directory of mp4s, webms, mp3s and contact sheets.
+out/
+node_modules/
+
+# LIVE SESSION COOKIES for a signed-in production account. Never commit.
+auth.json
+*.auth.json
+.auth/
+
+# Only needed when running from OUTSIDE a studio checkout; inside one the
+# compiler is found by walking up.
+.studio

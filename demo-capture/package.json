@@ -1,0 +1,43 @@
+{
+  "name": "demo-capture",
+  "private": true,
+  "description": "Drives a running app, records it, and returns an editable Moda canvas plus an mp4.",
+  "type": "commonjs",
+  "engines": {
+    "node": ">=20"
+  },
+  "bin": {
+    "demo-capture": "./run.mjs",
+    "demo-capture-doctor": "./doctor.mjs"
+  },
+  "files": [
+    "run.mjs",
+    "doctor.mjs",
+    "take.mjs",
+    "finish.mjs",
+    "critique-take.mjs",
+    "iterate.mjs",
+    "publish-take.mjs",
+    "capture.mjs",
+    "discover-flow.mjs",
+    "auth.mjs",
+    "probe.mjs",
+    "to-moda-timeline.js",
+    "compile.py",
+    "src/"
+  ],
+  "scripts": {
+    "test": "node --test test/*.test.js",
+    "doctor": "node doctor.mjs",
+    "postinstall": "node -e \"try{require('playwright')}catch{process.exit(0)}\" && npx --yes playwright install chromium || true"
+  },
+  "dependencies": {
+    "playwright": "^1.62.1"
+  },
+  "optionalDependencies": {
+    "ffmpeg-static": "^5.3.0",
+    "ffprobe-static": "^3.1.0",
+    "@anthropic-ai/sdk": "^0.123.0",
+    "@google/genai": "^2.20.0"
+  }
+}
