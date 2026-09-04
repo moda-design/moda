@@ -27,6 +27,14 @@ const CAPTION_SUBJECT_COVERAGE = 0.5;
 //: below it, which is what "the zoom is not aligned with where the click is
 //: happening" describes. A first pass expressed this as a fraction of the
 //: half-extent and read 0.163 for that same shot, which sounded fine.
+//:
+//: MIRRORED IN PYTHON. The planner aims for this same number:
+//: backend/app/services/demo_video/zoom.py's ANCHOR_MARGIN, and the `slack`
+//: computation below is mirrored there as `_anchor_slack`. Change either and the
+//: pipeline argues with itself — every shot the planner considers well framed
+//: gets reported as badly framed, or the reverse. The constant (not the formula)
+//: is pinned by test_anchor_margin_matches_shot_check in
+//: backend/tests/services/demo_video/test_zoom_emitter.py, which reads THIS file.
 const FRAMING_MARGIN = 0.15;
 //: Above this share of the runtime spent waiting, the demo is a loading screen.
 const DEAD_TIME_SHARE = 0.25;
@@ -295,6 +303,9 @@ function checkShots({ doc, outDir, id, motionPath = null, cameraWasAttempted = f
     // Distance from the nearest frame edge, as a fraction of the whole frame.
     const edgeX = (1 - Math.abs(best.c.clickX - p.x) / halfW) / 2;
     const edgeY = (1 - Math.abs(best.c.clickY - p.y) / halfH) / 2;
+    // Mirrored as `_anchor_slack` in backend/app/services/demo_video/zoom.py, where
+    // the clamp is written out explicitly: here the focus read back off the
+    // emitted transform is already clamped, there it is not yet.
     const slack = Math.min(edgeX, edgeY);
     // AN ACTION THAT IS STILL HAPPENING when the camera leaves. Typing is the
     // case that matters: the click only puts the caret in the field, and the
