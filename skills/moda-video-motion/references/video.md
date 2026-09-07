@@ -107,6 +107,18 @@ Overshooting Back curves decline instead of being clamped.
 existing overlap and accepts optional `in_offset`. Explicit hold/loop tails
 can supply outgoing handles; incoming pre-roll must exist. Insufficient handles
 reject atomically. Removal restores a supported edge's saved cut.
+
+When to transition at all: the hard cut is the default — most cuts in a
+finished piece stay cuts, and a piece that transitions on every edge reads
+as a slideshow. Reach for a short `dissolve` (0.3–0.7 s) to mark a real
+shift of time or place, or to soften the closing beat; `dipToBlack` for a
+chapter break; `push`/`slideOver` only when the motion itself tells the
+story (UI walkthroughs, spatially adjacent scenes). Pick one style per
+piece and keep durations consistent; when in doubt, cut. Any transition
+also switches the whole export to composited work-unit pricing (the export
+constraints section below), so a long timeline may buy its dissolve with a
+shorter ceiling.
+
 Trim/move refuses implicit transition growth: resize with `set_transition`
 first. Inspect `changed_transition_ids` and `removed_transition_ids` in each
 operation confirmation for incident edges shrunk/removed by a clip edit.
@@ -119,7 +131,9 @@ on a new audio `insert_clip` (exact `duration`, optional `curve`: linear,
 equal-power, ease-in, ease-out). `set_clip_audio` only changes mute/gain;
 it cannot add fades to an existing clip. Respect the surface's advertised
 operations and the live validator's audio/resource limits. Slow/fast motion works on media clips (forward-only;
-0.25x–4x when source audio is audible). OTIO preserves supported transition
+0.25x–4x when source audio is audible). Rate-changed audible audio plays
+pitch-coupled; `preserve_pitch` at a non-1x rate declines by name — never
+promise pitch-preserved slow motion. OTIO preserves supported transition
 handles and visual tracks; unknown Custom effects remain fidelity-report items.
 Never replace the Edit document as raw JSON: shared operations preserve fields a
 newer producer may have written. Inspect an exported midpoint as well as preview.

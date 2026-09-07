@@ -129,6 +129,18 @@ item: `{disposition, code, message, otio_ref}` with disposition `dropped`
 loss), or `rejected` (why a strict conversion refused). A rejected import
 fails typed `otio_import_rejected` with the items in the error details.
 
+A Moda-exported transition round-trips exactly: the `SMPTE_Dissolve` (or
+`Custom`) offsets come back rationally equal, empty report both ways. If
+another tool changed a transition's offsets but left Moda's saved metadata
+behind, import reports `transition_metadata_conflict` instead of silently
+restoring the stale exact values. To keep the external edit, remove only
+`duration` and `in_offset` from that transition's `moda` metadata and keep
+`type`, `direction` and `easing` — stripping the whole `moda` namespace
+destroys a Custom transition's type and it rejects `transition_unsupported`.
+To keep Moda's cut, restore the original offsets. Under the default
+`--on-unsupported reject` a conflict refuses the whole import; `skip` drops
+that transition by name and lands the two clips as a hard cut.
+
 Reading it is not optional, and neither is relaying it: after an import,
 surface every `dropped` and `approximated` item to the user in plain words
 ("the unsupported custom effect between clips 2 and 3 was dropped") instead

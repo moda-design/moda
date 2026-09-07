@@ -53,7 +53,7 @@ with a screenshot. Missing glyphs fall back to a Noto family, and an export warn
 | Data charts | bar, line, area, scatter, combo, pie from a CSV, a table, or pasted numbers | moda-chart |
 | UI mockups | app and site screens at real viewport sizes — pictures of interfaces, not hosted pages | moda-mockup |
 | Websites | multi-page hosted sites at a public `*.moda.page` URL, editable and re-publishable | moda-website |
-| Motion and video | keyframes, easing, staggers, timeline cuts; one animated page exports mp4 or gif, FREE | moda-video-motion |
+| Motion and video | keyframes, easing, staggers, timeline cuts and transitions; one animated page exports mp4 or gif, FREE | moda-video-motion |
 | Films from real footage | a folder of local clips indexed and searched on the user's machine, only the selects uploaded; an editable Main Edit timeline + mp4 out, FREE | moda-video-footage |
 
 ## Generated media — METERED unless marked

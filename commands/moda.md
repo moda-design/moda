@@ -24,8 +24,8 @@ request names its subject.
   a logo/image/design → the **moda-video** skill (it owns anything delivered as
   mp4/gif; still formats stay with moda-social). Generated clips —
   prompt-to-video, image-to-video, extend, upscale, reframe →
-  **moda-video-clip**; motion authored on a canvas, stingers, timeline cuts,
-  photo slideshows, mp4/gif export → **moda-video-motion**; a folder of real
+  **moda-video-clip**; motion authored on a canvas, stingers, timeline cuts
+  and transitions, photo slideshows, mp4/gif export → **moda-video-motion**; a folder of real
   footage on disk, cut into a film/reel/highlight → **moda-video-footage**.
 - A diagram, flowchart, org/architecture chart, decision tree, swimlane, 2x2
   matrix or market map → the **moda-diagram** skill.
