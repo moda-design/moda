@@ -87,8 +87,9 @@ generated score is moda-audio's lane.
   account; Moda's cloud renders and exports and never reads local disk. You
   are the bridge, and selected media is the only cargo.
 - The user chose uploads of SELECTED media — never bulk-upload the folder.
-- Transitions and extra visual tracks import faithfully but decline at
-  render, by name, in `validation.diagnostics` — relay that state honestly.
+- Supported transitions and visual tracks import and render. Unknown effects,
+  unpaired overlaps and resource limits decline by name in `validation.diagnostics`;
+  relay them honestly. Never claim an unsupported edit exported without loss.
 - An audio-only timeline does not export as mp4 — keep a visual clip on the
   cut.
 - Full inference is Linux x86_64 and Apple Silicon; elsewhere use the

@@ -44,8 +44,8 @@ Use the Edit service for deterministic cut-list changes to the Main Edit:
   string `value` numerator and a positive integer `timescale` denominator; for
   example, value `3000` at timescale `1000` is exactly three seconds.
 - Put an array of `insert_clip`, `move_clip`, `trim_clip`, `remove_clip`,
-  `reorder_clip`, `split_clip`, `set_clip_audio`, `create_track`, and
-  `remove_track` operations in a JSON file. Run `moda edit validate CANVAS_REF
+  `reorder_clip`, `split_clip`, `set_clip_audio`, `create_track`,
+  `remove_track`, `set_transition`, and `remove_transition` operations in a JSON file. Run `moda edit validate CANVAS_REF
   --file operations.json` before a mutation when planning or debugging.
 - Operation shapes are exact:
 
@@ -89,15 +89,40 @@ edit ops — is the otio reference carried by moda-video and
 moda-video-footage; a folder of real local footage is moda-video-footage's
 whole workflow.
 
-The runtime still declines what it cannot render, by name (for example
-`edit.transition`, `edit.visual.overlap`, `edit.visual.multitrack`, audio
-pitch preservation at non-1x rates, and out-of-range audio values — supported
-fades, pan and channel maps render). One visual track; no visual overlaps;
-non-`hold` visual end behavior is refused typed. Slow/fast motion via `rate`
-works on media clips (forward-only; 0.25x-4x when source audio is audible).
-Never replace the
-Edit document as raw JSON; these operations preserve fields a newer producer may
-have written even when this client does not understand them.
+Visual tracks composite bottom to top. A supported transition covers an exact
+two-clip overlap on one track; unpaired/three-way overlaps and unknown policies
+still decline by name. Types: `dissolve`, `dipToBlack`, `push`, `slideOver`;
+the last two require `direction: left|right|up|down`. Named easing accepts
+`linear`, `easeIn`, `easeOut`, `easeInOut`, `easeInCubic`, `easeOutCubic`,
+`easeInOutCubic`, `easeOutQuint`, `easeInOutQuint`, `easeOutBounce`.
+Overshooting Back curves decline instead of being clamped.
+
+```json
+{"op":"set_transition","transition":{"id":"edge-new","type":"dissolve","from_clip_id":"clip-a","to_clip_id":"clip-b","easing":"linear"},"placement":{"kind":"at_cut","in_offset":{"value":"0","timescale":1},"out_offset":{"value":"1","timescale":2}}}
+{"op":"remove_transition","transition_id":"edge-from-read"}
+{"op":"create_track","track":{"id":"visual-new","kind":"visual"}}
+```
+
+`at_cut` borrows exact source handles without ripple; `overlap` binds an
+existing overlap and accepts optional `in_offset`. Explicit hold/loop tails
+can supply outgoing handles; incoming pre-roll must exist. Insufficient handles
+reject atomically. Removal restores a supported edge's saved cut.
+Trim/move refuses implicit transition growth: resize with `set_transition`
+first. Inspect `changed_transition_ids` and `removed_transition_ids` in each
+operation confirmation for incident edges shrunk/removed by a clip edit.
+`remove_transition`, like trim/remove operations, requires CLI `--yes`.
+
+Create an overlay lane using `create_track` with `track.id` and `track.kind: visual`,
+then insert/move into it with `ripple:false`. The last visual track cannot be removed.
+Visual transitions do not add audio fades. REST/CLI can set `fade_in`/`fade_out`
+on a new audio `insert_clip` (exact `duration`, optional `curve`: linear,
+equal-power, ease-in, ease-out). `set_clip_audio` only changes mute/gain;
+it cannot add fades to an existing clip. Respect the surface's advertised
+operations and the live validator's audio/resource limits. Slow/fast motion works on media clips (forward-only;
+0.25x–4x when source audio is audible). OTIO preserves supported transition
+handles and visual tracks; unknown Custom effects remain fidelity-report items.
+Never replace the Edit document as raw JSON: shared operations preserve fields a
+newer producer may have written. Inspect an exported midpoint as well as preview.
 
 ## Model choice — registry-driven
 
@@ -791,7 +816,17 @@ Constraints that force the local half — plan for them from the start:
    account for their sound, before laying a local mix over the picture.
 2. Long-composition exports can be DECLINED. One mp4 is at most
    **600 s / 18000 frames** (so 600 s at 30 fps, 300 s at 60 fps; a gif
-   is 300 s / 9000 frames) and at most 4K per frame. Over either ceiling the export is refused at
+   is 300 s / 9000 frames) and at most 4K per frame. These are outer limits,
+   not a promise that every Main Edit fits them. Adding any transition or
+   second visual track switches the entire edit to compositing: each frame
+   costs `1 + visible layers + transition pairs` against **18000 work units**
+   for mp4 (9000 for gif). At 30 fps, a mostly single-track edit with one
+   dissolve fits just under 300 s; two continuously visible tracks fit 200 s.
+   Single-track hard cuts retain the 600 s tier. `frame_cap_exceeded` is
+   terminal: shorten the edit, lower fps where selectable, or reduce
+   overlapping layers/transitions. Lower resolution helps memory limits,
+   not this work budget. The editor warns before starting an over-budget cut.
+   Over a duration, frame or work ceiling the export is refused at
    submission and TERMINAL — re-running the same composition declines the
    same way; shrink what one export renders — lower the resolution,
    shorten the composition, or split it across PAGES: `moda export` has no

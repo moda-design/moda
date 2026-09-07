@@ -55,8 +55,11 @@ Export prints a fidelity line: `everything mapped natively`, or the items
 whose payload OTIO's native vocabulary cannot carry — those survive verbatim
 under the `moda` metadata namespace (`preserved_in_metadata`), and a foreign
 NLE will not honor them. On re-import the restorable carriers (sources, exact
-times, the clip envelope) come back; carriers this surface cannot re-create —
-preserved overlap clips, transitions, clip links, a non-default mix — are
+times, the clip envelope, supported transition overlaps and visual tracks) come
+back. Linear dissolves map natively; dip-to-black, directional push/slide-over,
+and eased dissolves use Custom plus exact Moda metadata. Foreign NLEs may not
+render Custom effects. Carriers this surface cannot re-create — unsupported
+overlap/transition policy, clip links, a non-default mix — are
 RE-REPORTED by name instead (rejected under strict, dropped under skip),
 never silently restored and never silently lost. Read the items and tell the
 user what a foreign tool, or a round trip, will and won't carry.
@@ -128,14 +131,14 @@ fails typed `otio_import_rejected` with the items in the error details.
 
 Reading it is not optional, and neither is relaying it: after an import,
 surface every `dropped` and `approximated` item to the user in plain words
-("the crossfade between clips 2 and 3 imported but won't render yet") instead
+("the unsupported custom effect between clips 2 and 3 was dropped") instead
 of declaring a clean import. An empty report is the only clean import.
 
-Declines you will actually meet, by name: transitions (`edit.transition`) and
-extra visual tracks (`edit.visual.multitrack`) are stored faithfully but
-declined at render — the film exports without them, and the read's
-`validation.diagnostics` names them on every read. That is the honest state
-to report, not a failure to hide.
+Supported transitions and ordered visual tracks render in preview and export.
+Unknown transition policy, unpaired/three-way overlaps, and resource-limit
+violations decline by name in `validation.diagnostics`; export refuses the
+unsupported edit rather than silently omitting it. Inspect every fidelity item
+and diagnostic; the video reference carries supported types and authoring examples.
 
 ## Exact time — carry rationals, never invent floats
 
