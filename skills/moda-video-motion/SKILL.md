@@ -42,12 +42,12 @@ Five facts that decide most of the work:
 - One stitched film from many scenes: `moda export CANVAS_REF --format mp4
   --scope sequence` renders all visible pages of a multi-page animation canvas
   as ONE video, in order, transitions included — no `--page`, mp4 only, and
-  the 9000-frame / 300 s ceiling covers the WHOLE film (300 s at 30 fps).
+  the 18000-frame / 600 s mp4 ceiling covers the WHOLE film (600 s at 30 fps).
   The editor's export panel has the same "sequence" mode as the interactive
   alternative. A canvas with a persisted Main Edit timeline exports it with
   `--scope main_edit` (mp4 only, page-less like sequence). `--fps` picks the
   rate (mp4 24|30|60 default 30, gif 10|12|15|24 default 12); 60 fps halves
-  the longest exportable film (150 s).
+  the longest exportable mp4 film (300 s; a gif is capped at 9000 frames / 300 s).
 - Everything in this recipe is unmetered: iteration costs nothing.
 
 ## Recipe — motion on a canvas
