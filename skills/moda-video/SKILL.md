@@ -6,7 +6,8 @@ description: >-
   version", animated ad/post/banner, motion graphic, animate a
   logo/image/design. Generated clips (prompt-to-video, image-to-video,
   extend, upscale, reframe) → moda-video-clip; canvas motion, timeline cuts,
-  photo slideshows, gif/mp4 export → moda-video-motion.
+  photo slideshows, gif/mp4 export → moda-video-motion; a real-footage
+  folder → moda-video-footage.
 argument-hint: "[what the video shows + what it starts from (brand/canvas/photo)] [--brand <kit>]"
 allowed-tools: Bash(moda:*), Read
 ---
@@ -30,14 +31,19 @@ never guess.
 |---|---|
 | `moda-video-clip` | Generate video clips: prompt-to-video, image-to-video, reference-guided, extend, upscale, reframe; text CONTENT → -motion. Draft cheap, then hero render. Metered. |
 | `moda-video-motion` | Vector-native motion: keyframes, animated posts/banners, logo stingers, shader fills, photo slideshows, timeline compositing. Free authoring; exports mp4/gif. |
+| `moda-video-footage` | Real footage into a film: index and search local clips, upload only the selects — an editable Moda timeline + mp4 out. Highlight reel, rough cut. Local lane. |
 <!-- /moda:recipes -->
 
-Pick the lane before anything else — they are the two cost lanes:
+Pick the lane before anything else — only one of them spends credits:
 
 - Footage that does not exist yet ("a 10-second product shot", "make this
   photo move") → moda-video-clip. It is the only lane that spends credits.
 - Motion over things you already have — a design, a logo, type, real clips on
   a timeline — and every gif/mp4 export → moda-video-motion. Free.
+- Real clips sitting on the user's DISK — a shoot, a trip folder, screen
+  recordings — cut into a film, reel, or highlight → moda-video-footage:
+  footage is indexed and searched locally, only the selects upload, and the
+  deliverable is an editable timeline plus the mp4. Free.
 - "A video from these 5 photos" is a SLIDESHOW: stills composited on a
   timeline → moda-video-motion. -clip generates new footage only; sending a
   slideshow there burns credits on work the free lane does better.
@@ -80,8 +86,10 @@ Pick the lane before anything else — they are the two cost lanes:
   reference, an extend base, or upscale/reframe's subject.
 - Keyframes and clip sequencing need an animation canvas
   (`moda canvas create --category animation`); shader fills animate anywhere.
-- Generated audio has no canvas slot — a score ships as its own file
-  (moda-audio) or rides a generation as its driving track.
+- Generated audio has no PAGE slot — a score ships as its own file
+  (moda-audio), rides a generation as its driving track, or lands on a Main
+  Edit cut's audio tracks (upload the file → a `media-stream` clip, muxed
+  into the Main Edit export).
 
 ## Money
 
@@ -116,6 +124,7 @@ See also: moda-core — contract, routing ladder, everything Moda can do.
 | Doc | Load when |
 |---|---|
 | references/export.md | mp4/gif rules, per-page exports, warnings |
+| references/otio.md | the Main Edit as OpenTimelineIO — export/import, versioned cuts, media maps, fidelity |
 | references/gotchas.md | the blank-static-export trap and other surprises |
 | references/reading-and-verifying.md | screenshot loop, degraded verify without vision |
 | references/markup.md, references/edit-code.md | placing a clip and authoring motion on a canvas |

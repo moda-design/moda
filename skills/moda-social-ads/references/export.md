@@ -51,11 +51,14 @@ moda export CANVAS_REF --format pdf|pptx|png|jpeg|mp4|gif [-o PATH] [--page N]  
   longest side (and a 4K pixel budget); an oversized page is scaled down to
   fit and the result carries an `mp4_downscaled_to_fit` warning naming the
   delivered dimensions. Relay it — the file is smaller than the page.
-- **Sound in an exported mp4 is exactly the unmuted video fills' own audio,
-  muxed server-side — nothing else.** The page timeline has no standalone
-  audio track and export muxes no voiceover or music: generated audio
-  (`moda media generate-audio`) ships as its own file, laid over the picture
-  locally as the post-production step.
+- **Sound in a page or sequence mp4 is exactly the unmuted video fills' own
+  audio, muxed server-side — nothing else.** The PAGE timeline has no
+  standalone audio track, so on those scopes voiceover or music is a local
+  post step: generated audio (`moda media generate-audio`) ships as its own
+  file, laid over the picture locally. `--scope main_edit` is the exception —
+  the Main Edit's audio tracks (music beds and VO placed as `media-stream`
+  clips, with their gain, pan and fades) mux into the file alongside unmuted
+  visual-clip audio.
 - **The hero claim, stated verbatim:** PDF exports carry real text layers, embedded fonts and clickable hyperlinks — a link on the page is a live link in the file; PPTX exports are native editable shapes and text — not screenshots pasted into a deck. `--flatten` degrades PDF to raster; use it only when the user asks.
 - **Read the `warnings[]` on a completed export.** The CLI prints each as a `warning: …` line (and carries them in `--json`): quality caveats about a file that still succeeded — `pptx_shape_rasterized` (some images baked into the slide rather than editable shapes), `pptx_content_dropped` (elements missing from the deck entirely), `pdf_pages_dropped` (pages missing from the document), `pdf_page_rasterized` (a page shipped as pixels — it looks right, but its text is not selectable and its links are not clickable), `pdf_page_reduced_quality` (an oversized page rendered below the DPI you asked for), `audio_source_dropped` (an mp4 shipped without one video fill's audio — the message names the source and why). Relay the caveat honestly when you hand over the file. A warning is usually not a reason to re-run the export — the pptx and pdf rendering degradations are deterministic, an identical re-run degrades identically — and never a reason to withhold the file. Two exceptions are worth a re-run: `pdf_pages_dropped` means pages are genuinely ABSENT from the document, so say so plainly and try again rather than handing over an incomplete file; and an `audio_source_dropped` whose message names a fetch failure or timeout is transient-shaped and MAY succeed on a later export of an edited canvas (a plain re-run of the same version returns the cached file). Treat an unrecognized code as informational and pass its message along.
 - Export is deterministic-lane: **zero metered credits on every plan** (`usage.metered_credits: 0` on the response). Export rate is plan-quota enforced server-side; a throttle surfaces as a typed error with a retry hint.

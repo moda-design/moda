@@ -2,9 +2,9 @@
 name: moda-audio
 description: >-
   Generate audio on Moda: voiceover/TTS, narration, music, jingles, sound
-  effects — up to 10 minutes per render, delivered as a file (audio can't be
-  placed on a canvas). Use for: voiceover, narration, "read this aloud",
-  jingle, background music, SFX. Pairs with moda-video-clip for scored
+  effects — up to 10 minutes per render, delivered as a file (no canvas
+  slot). Use for: voiceover, narration, "read this aloud", jingle,
+  background music, SFX. Pairs with moda-video-clip for scored
   video. Metered.
 argument-hint: "[what to say or play + voice/style] [--duration S]"
 allowed-tools: Bash(moda:*), Read
@@ -25,10 +25,12 @@ never guess.
 ## Set the expectation first
 
 Audio is a FILE, never a layer. A design has no audio slot: you cannot place a
-track on a canvas, and a canvas exported to mp4 carries only the audio baked
+track on a canvas page, and a page exported to mp4 carries only the audio baked
 into its video fills. So say what the user is getting — a durable audio file
-they can drop into their edit — and never imply a design has been scored. The
-one verb that consumes a generated track is
+they can drop into their edit — and never imply a design has been scored. Two
+places DO consume a track: a video CUT's Main Edit timeline takes uploaded
+audio as real audio-track clips, muxed into the cut's export — the moda-video
+family owns that placement — and
 `moda media generate-video --reference-audio` on the models whose card declares
 it (there the clip is TIMED to the track: the track's length is the clip's).
 

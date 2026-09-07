@@ -54,6 +54,7 @@ with a screenshot. Missing glyphs fall back to a Noto family, and an export warn
 | UI mockups | app and site screens at real viewport sizes — pictures of interfaces, not hosted pages | moda-mockup |
 | Websites | multi-page hosted sites at a public `*.moda.page` URL, editable and re-publishable | moda-website |
 | Motion and video | keyframes, easing, staggers, timeline cuts; one animated page exports mp4 or gif, FREE | moda-video-motion |
+| Films from real footage | a folder of local clips indexed and searched on the user's machine, only the selects uploaded; an editable Main Edit timeline + mp4 out, FREE | moda-video-footage |
 
 ## Generated media — METERED unless marked
 
@@ -124,7 +125,9 @@ ground-truth schema), `moda docs`, `moda last-error`, `moda account status` / `m
 repo-pinned defaults via `moda context show`, and `moda ask` — the live product expert, free.
 
 CLI-only lanes: metered web research (`moda web search`, `moda web read`) for harnesses with no
-browsing of their own, and PowerPoint import (`moda canvas import-pptx`).
+browsing of their own, PowerPoint import (`moda canvas import-pptx`), local footage analysis
+(`moda rushes …` — the optional Rushes toolkit; moda-video-footage carries the workflow), and
+OpenTimelineIO timeline interchange (`moda edit export` / `moda edit import`).
 
 ## Not available here — say so plainly, and route to the Moda app
 

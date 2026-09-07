@@ -3,7 +3,7 @@ name: moda-templates
 description: >-
   Start from a team template: list templates, look at them, then
   instantiate. Use for: "start from our QBR template", "use our usual
-  layout", flagging a canvas as a team template.
+  layout", flag a canvas as a team template.
 argument-hint: "[what to build from a template, or the canvas to flag]"
 allowed-tools: Bash(moda:*), Read
 ---

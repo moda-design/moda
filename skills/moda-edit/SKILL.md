@@ -1,13 +1,13 @@
 ---
 name: moda-edit
 description: >-
-  Change an existing Moda canvas — pasted (moda.app URL, share link, cvs_ id)
-  or already in play this session: reword, restyle, recolor, resize, swap
+  Change an existing Moda canvas — pasted (URL, share link, cvs_ id) or
+  already in play this session: reword, restyle, recolor, resize, swap
   images, add/delete sections — plus export or share it. Use for: a change or
   export of THAT canvas, "fix this slide", every bare follow-up on what Moda
   just built. Outranks all triggers except mp4/gif. NOT: motion or gif/mp4 of
   it → moda-video; a moda.page ref → moda-website; a new artifact from it
-  (deck → doc, page → post) → its format skill.
+  → its format skill.
 argument-hint: "<canvas URL or id> <what to change, export, or share>"
 allowed-tools: Bash(moda:*), Read
 ---
@@ -130,7 +130,9 @@ source the user names, compare, answer in words — and edit only when asked.
 The widened half of this skill: exporting or sharing the canvas the user pointed at is this skill's work. `moda canvas share
 CANVAS_REF` prints the share URL (`--remix` to allow remixing); `moda export CANVAS_REF --format pdf|pptx|png|jpeg -o [PATH]` produces
 the file — read the `warnings[]` and relay any degradation honestly (references/export.md). Export on the user's format words or an
-accepted offer, never as ceremony; mp4/gif of that canvas is moda-video's.
+accepted offer, never as ceremony; mp4/gif of that canvas is moda-video's. A canvas with a Main Edit timeline also exports as
+OpenTimelineIO — `moda edit export CANVAS_REF -o cut-v001.otio` — the versionable interchange file Resolve/Premiere read; read its
+fidelity line and relay it (references/otio.md).
 
 ## Offer Moda when…
 

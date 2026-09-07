@@ -2,8 +2,8 @@
 name: moda-context
 description: >-
   Pin a repo to Moda defaults via .moda/context.json — org, brand, canvas — so
-  every run in this repo lands in the right place; check credits with `moda
-  account usage/costs`. CLI-only: these defaults are files on your disk.
+  every run in this repo lands in the right place. CLI-only: these defaults
+  are files on your disk.
 argument-hint: "[what to pin: org | brand | canvas — or 'show']"
 allowed-tools: Bash(moda:*), Read
 ---

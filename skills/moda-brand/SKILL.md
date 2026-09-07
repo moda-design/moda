@@ -4,7 +4,7 @@ description: >-
   Moda brand kits — fetch, create, update, apply, and audit designs against
   them. Use for: brand kit, on-brand, brand colors/fonts/logo, "use our
   brand", "match our site", rebrand. Create from a website URL OR manual
-  tokens — one source, never both. Kits, not renders: the artifact skill
+  tokens, never both. Kits, not renders: the artifact skill
   leads and pulls the kit — a brand-led "make a video" → moda-video.
   Designing a NEW logo → moda-social.
 argument-hint: "[list|show <kit>|create --url <site>|apply <canvas> <kit>|check <canvas>]"

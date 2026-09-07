@@ -77,12 +77,25 @@ Use the Edit service for deterministic cut-list changes to the Main Edit:
   --revision REV`. The whole batch commits or none of it does; re-read
   after `stale_revision` and retry with the new revision.
 
+Operations are the NUDGE lane — trims, moves, one swapped source. Building or
+restructuring a whole timeline, or interchanging with Resolve/Premiere, rides
+OpenTimelineIO instead: `moda edit export` writes the Main Edit as a
+versionable `.otio` file and `moda edit import` applies one back
+(all-or-nothing up to 100 operations; a bigger import lands per batch with
+typed progress accounting), with
+a fidelity report naming anything dropped or approximated. The full lane
+contract — media maps for uploaded footage, exact-time discipline, OTIO vs
+edit ops — is the otio reference carried by moda-video and
+moda-video-footage; a folder of real local footage is moda-video-footage's
+whole workflow.
+
 The runtime still declines what it cannot render, by name (for example
-`edit.transition`, `edit.visual.overlap`, `edit.visual.multitrack`, and the
-`edit.audio.*` limits: fades, pan, non-stereo channel maps, pitch preservation
-at non-1x rates). One visual track; no visual overlaps; non-`hold` visual end
-behavior is refused typed. Slow/fast motion via `rate` works on media clips
-(forward-only; 0.25x-4x when source audio is audible). Never replace the
+`edit.transition`, `edit.visual.overlap`, `edit.visual.multitrack`, audio
+pitch preservation at non-1x rates, and out-of-range audio values — supported
+fades, pan and channel maps render). One visual track; no visual overlaps;
+non-`hold` visual end behavior is refused typed. Slow/fast motion via `rate`
+works on media clips (forward-only; 0.25x-4x when source audio is audible).
+Never replace the
 Edit document as raw JSON; these operations preserve fields a newer producer may
 have written even when this client does not understand them.
 
@@ -751,20 +764,28 @@ timeline for local tools because one step must be local:
   canvas-native motion, and reframing for aspect variants. Prefer it even
   when local tools feel faster: the canvas artifact is editable,
   collaborative, and re-exportable; a local concat is a dead end.
-- Local post is legitimate ONLY for the audio mix (music bed, VO,
-  loudness) — the timeline has no standalone audio tracks or mixing
-  today — and for concatenating chunked exports.
-- The hybrid recipe: assemble picture + text on canvas → export video →
-  mux audio locally → deliver. Never assemble picture locally just
-  because audio must be local. The local half needs a general shell
-  (ffmpeg or similar) — in a moda-only harness, hand over the exported
-  picture and the audio files with the mux step stated plainly, and do
-  not claim final delivery.
+- Local post is legitimate for loudness mastering and for concatenating
+  chunked exports. A music bed or VO no longer forces it: the Main Edit
+  timeline carries real audio tracks (`media-stream` clips with gain, pan
+  and fades) that mux into `--scope main_edit` exports — it is the PAGE
+  timeline that has no audio tracks, so page/sequence exports still take
+  their mix locally.
+- The hybrid recipe — for PAGE/SEQUENCE exports: assemble picture + text on
+  canvas → export video → mux audio locally → deliver. Never assemble
+  picture locally just because audio must be local. The local half needs a
+  general shell (ffmpeg or similar) — in a moda-only harness, hand over the
+  exported picture and the audio files with the mux step stated plainly,
+  and do not claim final delivery. A Main Edit cut skips the local mux
+  entirely: put the bed/VO on the edit's audio tracks and export with
+  `--scope main_edit` — muxing locally OVER that export doubles the audio
+  the render already carries.
 
 Constraints that force the local half — plan for them from the start:
 
-1. The timeline carries no standalone audio tracks or mixing — plan the
-   local mix up front, don't discover it at delivery. Video FILLS' own
+1. The PAGE timeline carries no standalone audio tracks or mixing — on
+   page/sequence exports plan the local mix up front, don't discover it at
+   delivery (a Main Edit cut carries its own audio tracks instead — the
+   Main Edit service section above). Video FILLS' own
    audio IS muxed into mp4 exports (an `audio_source_dropped` warning
    names any fill whose sound went missing): mute the fills, or
    account for their sound, before laying a local mix over the picture.

@@ -2,7 +2,7 @@
 name: moda-core
 description: >-
   Moda meta, setup, and routing — the contract every moda skill assumes. Use for: install or
-  update (`moda update` refreshes CLI + skills in one command), auth and org/team switching,
+  update, auth and org/team switching,
   "what can Moda do?", which moda skill handles X, troubleshooting a failed Moda call, and any
   Moda ask no other moda skill clearly owns. Never for creating or editing an artifact — a
   matching format skill always wins.

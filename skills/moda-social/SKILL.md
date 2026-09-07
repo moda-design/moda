@@ -4,7 +4,7 @@ description: >-
   Social creative and one-off graphics on Moda: social post, carousel,
   story, quote card, profile header, logo/icon design, "a simple graphic
   of/for X"; platform-sized pages on a live canvas (carousel → zip).
-  Platform named? Use the child: moda-social-instagram, -linkedin, -tiktok,
+  Platform named? Its child: moda-social-instagram, -linkedin, -tiktok,
   -youtube; ads and banner sets, platform-native included (an Instagram ad)
   → moda-social-ads. X/Facebook and platformless one-offs stay here. NOT:
   animated or gif/mp4 → moda-video; print → moda-document-print.
