@@ -35,7 +35,7 @@ media upscale-video` (bigger) and `moda media reframe-video` (a new shape — th
 shot is kept and the newly exposed edges are painted in, so the 16:9 becomes the
 9:16 story cut without regenerating it).
 
-## Main Edit service — composition-only P1
+## Main Edit service
 
 Use the Edit service for deterministic cut-list changes to the Main Edit:
 
@@ -43,8 +43,9 @@ Use the Edit service for deterministic cut-list changes to the Main Edit:
   ids, links, transitions, and exact rational times. Each time carries an integer
   string `value` numerator and a positive integer `timescale` denominator; for
   example, value `3000` at timescale `1000` is exactly three seconds.
-- Put an array of `insert_clip`, `move_clip`, `trim_clip`, `remove_clip`, and
-  `reorder_clip` operations in a JSON file. Run `moda edit validate CANVAS_REF
+- Put an array of `insert_clip`, `move_clip`, `trim_clip`, `remove_clip`,
+  `reorder_clip`, `split_clip`, `set_clip_audio`, `create_track`, and
+  `remove_track` operations in a JSON file. Run `moda edit validate CANVAS_REF
   --file operations.json` before a mutation when planning or debugging.
 - Operation shapes are exact:
 
@@ -54,7 +55,20 @@ Use the Edit service for deterministic cut-list changes to the Main Edit:
   {"op":"remove_clip","clip_id":"clip-a"}
   {"op":"reorder_clip","track_id":"track-v1","clip_id":"clip-a","before_clip_id":"clip-b"}
   {"op":"insert_clip","track_id":"track-v1","clip":{"id":"clip-new","source":{"kind":"composition","composition_id":"composition-page-id"},"start":{"value":"0","timescale":1},"duration":{"value":"5","timescale":1}}}
+  {"op":"insert_clip","track_id":"track-v1","ripple":false,"clip":{"id":"clip-vid","source":{"kind":"media","asset_id":"file_..."},"start":{"value":"5","timescale":1},"duration":{"value":"2","timescale":1},"source_start":{"value":"0","timescale":1},"rate":{"numerator":1,"denominator":2},"audio":{"mode":"follow-source","gain_db":-3}}}
+  {"op":"create_track","track":{"id":"track-music","kind":"audio","role":"music"}}
+  {"op":"insert_clip","track_id":"track-music","clip":{"id":"clip-bed","source":{"kind":"media-stream","asset_id":"file_...","stream":{"kind":"audio","index":0}},"start":{"value":"0","timescale":1},"duration":{"value":"8","timescale":1},"source_start":{"value":"0","timescale":1},"gain_db":-12}}
+  {"op":"split_clip","clip_id":"clip-vid","at":{"value":"6","timescale":1},"new_clip_id":"clip-vid-b"}
+  {"op":"set_clip_audio","clip_id":"clip-vid","muted":true}
   ```
+
+  Media sources take the `file_...` id (or bare UUID) of an uploaded file
+  (`moda file upload`); the file must be a video (`media`) or audio
+  (`media-stream`, stream index 0) with measured duration — a fresh upload can
+  reject with "no usable duration metadata" for a few seconds while the probe
+  runs, so retry briefly. Visual operations ripple later clips by default;
+  pass `"ripple": false` for exact-time placement (audio clips always place at
+  absolute time and must omit `ripple`).
 
   The inserted clip `id` is a new caller-chosen unique id; every track, canvas,
   source composition, existing clip, and relationship id must come from
@@ -63,12 +77,12 @@ Use the Edit service for deterministic cut-list changes to the Main Edit:
   --revision REV`. The whole batch commits or none of it does; re-read
   after `stale_revision` and retry with the new revision.
 
-P1 accepts composition clips only and keeps the visual track ripple-contiguous.
-Raw media sources, source-audio policy, non-`hold` visual end behavior, audio
-tracks or mixing, and transition authoring are deliberately unsupported.
-Rejections name the runtime capability
-(for example `edit.visual.media-source`, `edit.audio.track`, or
-`edit.transition`) instead of silently dropping authored state. Never replace the
+The runtime still declines what it cannot render, by name (for example
+`edit.transition`, `edit.visual.overlap`, `edit.visual.multitrack`, and the
+`edit.audio.*` limits: fades, pan, non-stereo channel maps, pitch preservation
+at non-1x rates). One visual track; no visual overlaps; non-`hold` visual end
+behavior is refused typed. Slow/fast motion via `rate` works on media clips
+(forward-only; 0.25x-4x when source audio is audible). Never replace the
 Edit document as raw JSON; these operations preserve fields a newer producer may
 have written even when this client does not understand them.
 
