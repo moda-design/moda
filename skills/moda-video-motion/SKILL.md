@@ -44,7 +44,10 @@ Five facts that decide most of the work:
   as ONE video, in order, transitions included — no `--page`, mp4 only, and
   the 9000-frame / 300 s ceiling covers the WHOLE film (300 s at 30 fps).
   The editor's export panel has the same "sequence" mode as the interactive
-  alternative. Frame rate is fixed (mp4 30 fps, gif 12).
+  alternative. A canvas with a persisted Main Edit timeline exports it with
+  `--scope main_edit` (mp4 only, page-less like sequence). `--fps` picks the
+  rate (mp4 24|30|60 default 30, gif 10|12|15|24 default 12); 60 fps halves
+  the longest exportable film (150 s).
 - Everything in this recipe is unmetered: iteration costs nothing.
 
 ## Recipe — motion on a canvas

@@ -68,9 +68,12 @@ Pick the lane before anything else — they are the two cost lanes:
   300 s ceiling covers the WHOLE film (300 s at 30 fps), so a long storyboard
   rejects typed `animation_budget_exceeded` — shorten pages or split the
   export. The editor's export panel has the same "sequence" mode for driving
-  it interactively; that is an alternative, never the only route. Frame rate
-  is fixed (mp4 30 fps, gif 12); pixel ratio 1–4 scales resolution. Full
-  rules: references/export.md.
+  it interactively; that is an alternative, never the only route. A canvas
+  with a persisted Main Edit timeline exports it with `--scope main_edit`
+  (mp4 only, page-less like sequence). `--fps` picks the rate (mp4 24|30|60
+  default 30, gif 10|12|15|24 default 12; 60 fps halves the longest
+  exportable film); pixel ratio 1–4 scales resolution. Full rules:
+  references/export.md.
 - Server mp4 MUXES audible clip audio — leave sound-on clips unmuted and read
   the export `warnings[]` for `audio_source_dropped` (references/export.md).
 - There is no free-form video-to-video edit: a source clip is a generation

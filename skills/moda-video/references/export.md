@@ -2,8 +2,9 @@
 
 ```
 moda export CANVAS_REF --format pdf|pptx|png|jpeg|mp4|gif [-o PATH] [--page N]   # mp4/gif REQUIRE --page
-            [--scope page|sequence] [--pixel-ratio 1..4] [--flatten] [--no-wait] # …unless --scope sequence
+            [--scope page|sequence|main_edit] [--pixel-ratio 1..4] [--flatten]   # …unless a stitched --scope
             [--video-quality standard|high|max] [--video-codec h264|h265]        # mp4 only
+            [--fps N] [--no-wait]                                                # mp4 24|30|60, gif 10|12|15|24
 ```
 
 - **Export is ASK-FIRST.** The live link (share/editor URL) is the handoff,
@@ -29,10 +30,14 @@ moda export CANVAS_REF --format pdf|pptx|png|jpeg|mp4|gif [-o PATH] [--page N]  
   A canvas with no animation timelines rejects `no_animation`; gif has no
   stitched form (export gifs page-by-page). The editor's export panel has the
   same MP4 "sequence" mode when the user wants to drive it interactively.
-  Without `--scope sequence` it is one page of animation per mp4/gif
-  (`--page N`). Frame rate is fixed on this surface — mp4 encodes at 30 fps,
-  gif at 12 — and pixel ratio (1–4) is the resolution lever; mp4/gif default
-  to 1 (page resolution).
+  A canvas with a persisted Main Edit timeline (the NLE-style edit) renders
+  it with `--scope main_edit` — mp4 only, page-less like sequence, fine on a
+  single-page canvas; no persisted edit rejects typed `no_animation`.
+  Without a stitched `--scope` it is one page of animation per mp4/gif
+  (`--page N`). `--fps` picks the capture rate (mp4 24|30|60, default 30;
+  gif 10|12|15|24, default 12) — the 9000-frame ceiling is rate-independent,
+  so 60 fps halves the longest exportable timeline (150 s); pixel ratio (1–4)
+  is the resolution lever; mp4/gif default to 1 (page resolution).
 - **mp4 has two encode knobs, both optional and both mp4-only.**
   `--video-quality standard|high|max` (default `standard`) buys sharpness with
   encode time and file size; nothing about the render changes, so a re-export
