@@ -19,6 +19,7 @@
 const { execFileSync } = require('node:child_process');
 const { snapshotInteractables, resolveDurableSelector, formatSnapshot } = require('./snapshot.js');
 const { checkBotChallenge } = require('./page-health.js');
+const { inputEvidence, evidenceFor } = require('./input-check.js');
 const { productLaunchOptions } = require('./browser.js');
 
 const MAX_STEPS = 25;
@@ -65,6 +66,13 @@ const SYSTEM = [
   'no detours, no settings you do not need, no opening something just to close it again. If the app',
   'asks you questions before it can continue, answer them the way a real user would — briefly and',
   'plausibly — rather than skipping, because the answers are part of what the demo shows.',
+  '',
+  'ENTERING THE INPUT IS PART OF THE DEMO, and this outranks the direct path above. Where what the',
+  'user TYPES determines what the product produces — a query, a prompt, a search, a name — type it',
+  'yourself and make it specific and realistic. Do this even when a value or a greyed-out placeholder',
+  'is already in the field, and even when you could reach the same result by clicking straight',
+  'through: a viewer who sees only a result appear has not been shown what was asked for, which is',
+  'the half of the demo that explains the other half. Fill the field first, then run it.',
   '',
   'When the goal is visibly accomplished, return the "done" action.',
   '',
@@ -146,6 +154,34 @@ async function discover({ goal, startUrl, storageState, chromium, guidance }) {
   const steps = [];
   let stopped = 'max_steps';
   const began = Date.now();
+  // DID THE PRODUCT OFFER A TEXT FIELD WHERE THE DEMO WAS ACTUALLY WORKING?
+  //
+  // Recorded here because the snapshot is the only place it is known — by the
+  // time the flow is walked the page has moved on. It separates "this demo has
+  // no typing because the product takes none" from "this demo skipped the half
+  // that says what was asked for" (ENG-6124); only the second is worth refusing
+  // a take over.
+  //
+  // Read off `typeable`, which the snapshot computes from the DOM, NOT off the
+  // role: a contenteditable editor's role is its tag, and a range or file input's
+  // role is "textbox". Both directions are wrong, and the first is exactly the
+  // placeholder-editor shape this exists for.
+  //
+  // Scoped to the snapshot the demo ACTED on, not to every page discovery
+  // wandered through. Sticky-across-the-whole-walk would fire on a header search
+  // box, a sign-in field or a support composer — which most apps have somewhere —
+  // and refusing a legitimately click-only demo costs a whole extra discovery and
+  // can steer the next one into typing in the wrong box.
+  // EXISTENCE AND NAMING ARE SEPARATE QUESTIONS. Conflating them re-introduced
+  // the round-1 blindness by another route: an `<input>` labelled by a sibling
+  // `<label for>` or by `aria-labelledby` has no placeholder and no accessible
+  // name in this snapshot, so filtering on "has a name we can print" dropped one
+  // of the commonest field shapes on the web and reported no field offered.
+  // Naming is presentation; it must never be load-bearing for detection.
+  // The interactable list from the page the flow LAST acted on. `inputEvidence`
+  // turns it into both answers; see its docstring for the three bugs that lived
+  // in doing it inline.
+  let listAtLastKeptStep = null;
 
   try {
     await page.goto(startUrl, { waitUntil: 'domcontentloaded' });
@@ -241,7 +277,12 @@ async function discover({ goal, startUrl, storageState, chromium, guidance }) {
           await execute(page, action, { waitMs });
           await page.waitForLoadState('networkidle', { timeout: 8000 }).catch(() => {});
           const flowStep = asFlowStep(action, durable);
-          if (flowStep) steps.push(flowStep);
+          if (flowStep) {
+            steps.push(flowStep);
+            // The page of the last CLICK or FILL — see `evidenceFor`. A wait
+            // would otherwise replace it with whatever the click produced.
+            listAtLastKeptStep = evidenceFor(action.type, list, listAtLastKeptStep);
+          }
           console.log(
             `  step ${step}: ${action.type}` +
               `${durable ? ` via ${durable.type} ${durable.selector}` : needsRef ? ' (NO durable selector — dropped)' : ''}` +
@@ -284,7 +325,7 @@ async function discover({ goal, startUrl, storageState, chromium, guidance }) {
   } finally {
     await browser.close();
   }
-  return { goal, startUrl, steps, stopped };
+  return { goal, startUrl, steps, stopped, ...inputEvidence(listAtLastKeptStep) };
 }
 
 module.exports = { discover, MAX_STEPS };

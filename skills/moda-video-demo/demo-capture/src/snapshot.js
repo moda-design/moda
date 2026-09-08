@@ -41,6 +41,34 @@ function pageSnapshot(maxText) {
     return name.replace(/\s+/g, ' ');
   };
 
+  // IS THIS CONTROL ACTUALLY TYPEABLE? (ENG-6124)
+  //
+  // `roleOf` above answers a different question and answers it wrongly for this
+  // one in both directions: a contenteditable editor keeps its TAG as its role
+  // (so a prompt/code editor reads as "div"), while `input[type=range]` and
+  // `input[type=file]` fall through its map and read as "textbox". Deciding
+  // typeability from the role therefore misses exactly the placeholder-editor
+  // case this was written for, and refuses click-only demos that have a slider.
+  //
+  // Same rule as `steps.js`'s TYPEABLE + controlKind — the module that actually
+  // does the typing — because that file's own header records what happened last
+  // time there were two: validation used `fill()` and the recorder used
+  // keystrokes, and the published demo showed a cursor entering values into a
+  // control that ignores typing. Duplicated here only because this function is
+  // serialized into the page and cannot require anything;
+  // `test/checks.test.js` fails if the two lists disagree.
+  const TYPEABLE_KINDS = ['text', 'search', 'url', 'tel', 'email', 'password', 'number', 'textarea', 'contenteditable'];
+  const kindOf = (el) => {
+    const tag = el.tagName.toLowerCase();
+    if (tag === 'textarea') return 'textarea';
+    if (el.isContentEditable) return 'contenteditable';
+    if (tag === 'input') return (el.getAttribute('type') || 'text').toLowerCase();
+    return tag;
+  };
+  // `readOnly` matters: a field you cannot type into is not an input the demo
+  // skipped, it is a display.
+  const typeableOf = (el) => TYPEABLE_KINDS.includes(kindOf(el)) && !el.readOnly;
+
   const out = [];
   const seen = new Set();
   let n = 0;
@@ -67,6 +95,7 @@ function pageSnapshot(maxText) {
       tag: el.tagName.toLowerCase(),
       testid: el.getAttribute('data-testid') || undefined,
       placeholder: el.getAttribute('placeholder') || undefined,
+      typeable: typeableOf(el) || undefined,
     });
   }
   return out;

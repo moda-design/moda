@@ -43,6 +43,7 @@ const { validateFlow } = require('./src/validate.js');
 const { keptReport, nextStep, canSelect } = require('./src/kept-report.js');
 const { proposeDrops, without, ensureTrailingHold } = require('./src/curate.js');
 const { checkFlowShape } = require('./src/flow-shape.js');
+const { checkInputShown } = require('./src/input-check.js');
 
 const args = process.argv.slice(2);
 //: Flags that consume the next argument, so it is not mistaken for a positional.
@@ -242,6 +243,21 @@ async function attemptOnce(n, guidancePath) {
   if (shape.measured && shape.bad) {
     preRecord.push({ type: 'one_control', description:
       `${shape.band.count} of ${shape.clicks} clicks land on a single row of controls. Demonstrate what the product DOES, not every option in one widget.` });
+  }
+  // ENG-6124. Judged on the CURATED flow, because a fill dropped between
+  // discovery and here would be exactly as invisible to the viewer.
+  const input = checkInputShown(curated);
+  if (input.measured && input.bad) {
+    // Name the field. If the gate has latched onto something unrelated, that is
+    // visible here rather than sending the next discovery to type in the wrong
+    // box on the strength of an anonymous instruction.
+    const named = (curated.typeableFields ?? []).slice(0, 3).map((f) => JSON.stringify(f)).join(', ');
+    preRecord.push({ type: 'no_input', description:
+      `the page this demo works on offers a text field${named ? ` (${named})` : ''} and the flow never ` +
+      'typed into one, so it shows a result appearing without showing what was asked for. Type the ' +
+      'query/prompt/search yourself — specific and realistic — even if a value or placeholder is already ' +
+      'there, then run it. If that field is not part of what this demo is about, ignore this and keep ' +
+      'the flow as it is.' });
   }
   if (preRecord.length && n < attempts) {
     console.log(`\n  not recording this flow — ${preRecord.map((f) => f.type).join(', ')}.`);

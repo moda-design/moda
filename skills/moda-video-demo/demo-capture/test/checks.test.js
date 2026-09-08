@@ -20,6 +20,7 @@ const { projectActions } = require('../src/ledger.js');
 const { checkCaptions } = require('../src/caption-check.js');
 const { isInert } = require('../src/validate.js');
 const { checkFlowShape } = require('../src/flow-shape.js');
+const { checkInputShown, inputEvidence, evidenceFor } = require('../src/input-check.js');
 const { checkLegibility } = require('../src/legibility-check.js');
 const { recordIsMeasured } = require('../src/measured.js');
 
@@ -786,5 +787,201 @@ test('run.mjs has exactly ONE best-selection assignment', () => {
     `expected one \`best = r\` assignment, found ${assignments.length}:\n${assignments.join('\n')}`);
   assert.match(assignments[0], /canSelect\(/,
     'the selection assignment must go through canSelect, not an inline predicate');
+});
+
+
+
+// ENG-6124: every take was clicks only. The pipeline can type — discovery has a
+// `type` action, curate never drops a fill, and capture types it visibly at
+// 45ms/char with the cursor faded out — but discovery never proposed one,
+// because its prompt optimises for the most direct path and clicking Run IS the
+// most direct path when the editor already shows a placeholder.
+test('a flow that skipped the input the product offered is refused', () => {
+  const offered = (steps) => ({ sawTextField: true, steps });
+  assert.strictEqual(checkInputShown(offered([{ action: 'click' }, { action: 'wait' }])).bad, true);
+  // One fill is enough — this asks whether the demo SHOWS the asking, not how much.
+  assert.strictEqual(checkInputShown(offered([{ action: 'fill', text: 'select 1' }, { action: 'click' }])).bad, false);
+});
+
+test('a product that offers no text field is not refused for having no typing', () => {
+  // The failure that would be worse than the bug: refusing every click-only demo
+  // of a product that legitimately takes no input.
+  const r = checkInputShown({ sawTextField: false, steps: [{ action: 'click' }] });
+  assert.strictEqual(r.measured, false);
+  assert.strictEqual(r.bad, undefined);
+  assert.match(r.reason, /finished on offered no typeable field/);
+});
+
+test('a flow with no text-field record says so rather than guessing', () => {
+  const r = checkInputShown({ steps: [{ action: 'click' }] });
+  assert.strictEqual(r.measured, false);
+  assert.strictEqual(r.bad, undefined);
+  assert.match(r.reason, /predates the text-field record/);
+});
+
+test('discover-flow persists sawTextField, or the check goes silently blind', () => {
+  // The one link in this chain that fails QUIETLY: if the writer drops the field,
+  // checkInputShown reports "unknown" forever and the gate never fires again —
+  // a check that measures nothing while every test above still passes.
+  const src = readFileSync(path.join(HERE, 'discover-flow.mjs'), 'utf8');
+  const write = /writeFileSync\(\s*out,\s*JSON\.stringify\(\s*\{([\s\S]*?)\}/.exec(src);
+  assert.ok(write, 'could not find the flow write in discover-flow.mjs');
+  assert.match(write[1], /typeableFields/,
+    'discover-flow.mjs must persist typeableFields — the guidance names the field it saw');
+  assert.match(write[1], /sawTextField/,
+    'discover-flow.mjs must persist sawTextField — without it the pre-record input check can never fire');
+
+  // And end to end through the curation transforms the flow actually passes through.
+  const { without, ensureTrailingHold } = require('../src/curate.js');
+  const flow = JSON.parse(JSON.stringify({ goal: 'g', steps: [{ action: 'click' }], sawTextField: true }));
+  const curated = without(ensureTrailingHold(flow).flow, []);
+  assert.strictEqual(checkInputShown(curated).measured, true,
+    'curation dropped sawTextField, so the check would report "unknown" on every real run');
+  assert.strictEqual(checkInputShown(curated).bad, true);
+});
+
+// ENG-6124 round 1: the first cut read typeability off the snapshot ROLE, which
+// is wrong in both directions — and wrong in the direction that matters most for
+// exactly the case that filed the ticket.
+//
+// This EXECUTES the rule that ships. The first version of this test asserted
+// `list.some((e) => e.typeable)` over hand-written literals that already carried
+// the value being asserted, so reverting typeableOf to role-based inference left
+// it green — a test whose name promised the coverage its body did not have,
+// which is the class this file's own header was written about. The rule lives
+// inside `pageSnapshot` because that function is serialized into the browser and
+// cannot reference anything outside itself, so it is lifted out of the source
+// text and run against element stubs rather than re-typed here.
+test('typeability is decided from the DOM, not from the snapshot role', () => {
+  const src = readFileSync(path.join(HERE, 'src', 'snapshot.js'), 'utf8');
+  const block = /const TYPEABLE_KINDS = \[[\s\S]*?const typeableOf = [^;]+;/.exec(src);
+  assert.ok(block, 'could not lift the typeability rule out of snapshot.js — it was renamed or removed');
+  const typeableOf = new Function(`${block[0]}; return typeableOf;`)();
+
+  const el = ({ tag = 'input', type, contentEditable = false, readOnly = false }) => ({
+    tagName: tag.toUpperCase(),
+    isContentEditable: contentEditable,
+    readOnly,
+    getAttribute: (a) => (a === 'type' ? type ?? null : null),
+  });
+
+  // The shape the ticket describes: a rich-text/prompt/code editor. Its snapshot
+  // ROLE is its tag ("div"), so role-based inference misses it entirely.
+  assert.strictEqual(typeableOf(el({ tag: 'div', contentEditable: true })), true);
+  assert.strictEqual(typeableOf(el({ tag: 'textarea' })), true);
+  assert.strictEqual(typeableOf(el({ type: 'text' })), true);
+  assert.strictEqual(typeableOf(el({ type: 'search' })), true);
+  // An <input> with no type attribute defaults to text.
+  assert.strictEqual(typeableOf(el({})), true);
+
+  // ...and the other direction: roleOf reports BOTH of these as "textbox", so
+  // role-based inference would refuse a click-only demo that merely has a slider.
+  assert.strictEqual(typeableOf(el({ type: 'range' })), false);
+  assert.strictEqual(typeableOf(el({ type: 'file' })), false);
+  assert.strictEqual(typeableOf(el({ type: 'color' })), false);
+  assert.strictEqual(typeableOf(el({ tag: 'button' })), false);
+  // A field you cannot type into is a display, not an input the demo skipped.
+  assert.strictEqual(typeableOf(el({ type: 'text', readOnly: true })), false);
+});
+
+test("the snapshot's typeable rule matches the module that does the typing", () => {
+  // snapshot.js runs inside the page and cannot require steps.js, so the kind
+  // list is duplicated. steps.js's own header records what happened last time
+  // two of these disagreed: the recorder typed into a control that ignores
+  // typing and the demo showed a cursor entering values that never took.
+  const snap = readFileSync(path.join(HERE, 'src', 'snapshot.js'), 'utf8');
+  const steps = readFileSync(path.join(HERE, 'src', 'steps.js'), 'utf8');
+  const kinds = (src, decl) => {
+    const m = new RegExp(decl + '[^\\[]*\\[([^\\]]*)\\]').exec(src);
+    assert.ok(m, `could not find ${decl} in the source`);
+    return new Set([...m[1].matchAll(/'([^']+)'/g)].map((x) => x[1]));
+  };
+  const fromSnapshot = kinds(snap, 'TYPEABLE_KINDS');
+  const fromSteps = kinds(steps, 'const TYPEABLE = new Set\\(');
+  assert.deepStrictEqual([...fromSnapshot].sort(), [...fromSteps].sort(),
+    'snapshot.js TYPEABLE_KINDS and steps.js TYPEABLE disagree — one of them is now lying about what can be typed into');
+});
+
+test('a fill with no text is not showing the input', () => {
+  // `asFlowStep` builds fills as `text: action.text ?? ''`, so a `type` action
+  // returned without text yields an empty fill and `enterText` clears the field
+  // and types nothing. Counting it would report clean on the defect itself.
+  const offered = (steps) => ({ sawTextField: true, steps });
+  assert.strictEqual(checkInputShown(offered([{ action: 'fill', text: '' }])).bad, true);
+  assert.strictEqual(checkInputShown(offered([{ action: 'fill', text: '   ' }])).bad, true);
+  assert.strictEqual(checkInputShown(offered([{ action: 'fill' }])).bad, true);
+  assert.strictEqual(checkInputShown(offered([{ action: 'fill', text: 'select 1' }])).bad, false);
+});
+
+// ENG-6124 round 2: three separate bugs lived in this derivation, each invisible
+// until a reviewer read it. All three are shapes a real page produces.
+test('a typeable field with no name is still a field', () => {
+  // The commonest labelling on the web — <label for> or aria-labelledby — leaves
+  // the snapshot's name AND placeholder empty. Filtering on "has a name we can
+  // print" reported no field at all, so the gate never fired for it. Naming is
+  // presentation; it must not gate detection.
+  const r = inputEvidence([{ typeable: true, role: 'textbox', name: '', placeholder: undefined }]);
+  assert.strictEqual(r.sawTextField, true, 'an unnamed input is still an input the demo skipped');
+  assert.deepStrictEqual(r.typeableFields, [], 'and there is simply nothing to quote back');
+});
+
+test('the page the flow ENDS on decides, so a landing-page search box does not stick', () => {
+  // Clicking through a landing page with a search box into a click-only tool.
+  // Only overwriting on a non-empty snapshot carried that box to the end and
+  // refused the flow, costing another full discovery.
+  const landing = [{ typeable: true, name: 'Search', placeholder: 'Search docs' }, { typeable: false, name: 'Tools' }];
+  const tool = [{ typeable: false, name: 'Run' }, { typeable: false, name: 'Reset' }];
+  assert.strictEqual(inputEvidence(landing).sawTextField, true);
+  assert.strictEqual(inputEvidence(tool).sawTextField, false,
+    'a field-less final page must read as no-input-offered, not inherit the landing page');
+  assert.deepStrictEqual(inputEvidence(landing).typeableFields, ['Search docs']);
+});
+
+test('no snapshot at all is not a claim that input was offered', () => {
+  assert.deepStrictEqual(inputEvidence(null), { sawTextField: false, typeableFields: [] });
+  assert.deepStrictEqual(inputEvidence([]), { sawTextField: false, typeableFields: [] });
+});
+
+// ENG-6124 round 3: this line has been wrong twice — first sticky (only
+// overwriting on a non-empty snapshot), then wait-clobbered. `list` at the top
+// of a discovery turn is the page AFTER the previous action, and every demo ends
+// on a hold, so counting waits replaced the composer page with whatever the
+// click produced. On the ticket's own shape — "click Run, hold" — that silences
+// the gate on precisely the demo it exists to refuse.
+test('a trailing wait does not move the evidence off the page that was clicked', () => {
+  const composer = [{ typeable: true, placeholder: 'Ask anything' }];
+  const spinner = [{ typeable: false, name: 'Cancel' }];
+
+  // click Run on the composer page, then hold while it runs.
+  let evidence = null;
+  evidence = evidenceFor('click', composer, evidence);
+  evidence = evidenceFor('wait', spinner, evidence);
+  assert.deepStrictEqual(evidence, composer,
+    'the hold replaced the composer page with the result page, so the skipped input became invisible');
+  assert.strictEqual(inputEvidence(evidence).sawTextField, true);
+});
+
+test('a later click into a click-only tool still clears the evidence', () => {
+  // The round-2 bug must not come back while fixing the round-3 one: a landing
+  // page's search box must not survive into a tool that offers no input.
+  const landing = [{ typeable: true, placeholder: 'Search' }];
+  const tool = [{ typeable: false, name: 'Run' }];
+  let evidence = null;
+  evidence = evidenceFor('click', landing, evidence);
+  evidence = evidenceFor('click', tool, evidence);
+  assert.deepStrictEqual(evidence, tool, 'a later interaction must overwrite, or the signal is sticky again');
+  assert.strictEqual(inputEvidence(evidence).sawTextField, false);
+});
+
+test('discovery records the evidence in exactly one place, through evidenceFor', () => {
+  // A source guard because the defect is source-shaped and has recurred: an
+  // inline assignment beside the shared one would win or lose by ordering, the
+  // way the duplicated `best = r` did.
+  const src = readFileSync(path.join(HERE, 'src', 'discovery.js'), 'utf8');
+  const writes = src.split('\n').filter((l) => /listAtLastKeptStep\s*=/.test(l) && !l.trim().startsWith('//'));
+  assert.strictEqual(writes.length, 2,
+    `expected the declaration and one assignment, found ${writes.length}:\n${writes.join('\n')}`);
+  assert.match(writes[1], /evidenceFor\(/,
+    'the evidence assignment must go through evidenceFor, not an inline rule');
 });
 
