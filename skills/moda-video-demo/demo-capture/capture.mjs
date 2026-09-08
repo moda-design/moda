@@ -16,6 +16,7 @@ const { enterText } = _req('./src/steps.js');
 const { ffmpeg: FFMPEG, ffprobe: FFPROBE } = _req('./src/bin.js');
 const { isBusy } = _req('./src/busy.js');
 const { projectActions } = _req('./src/ledger.js');
+const { productLaunchOptions } = _req('./src/browser.js');
 import { readFileSync, writeFileSync, mkdirSync, renameSync, readdirSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { resolveStorageState } from './auth.mjs';
@@ -180,7 +181,7 @@ async function glide(page, from, x, y, ms = GLIDE_MS) {
 
 export async function capture({ id, flow, start, outDir, storageState, stepMinDurations }) {
   mkdirSync(outDir, { recursive: true });
-  const browser = await chromium.launch({ headless: true, args: ['--enable-unsafe-webgpu','--ignore-gpu-blocklist','--enable-gpu'] });
+  const browser = await chromium.launch(productLaunchOptions());
   // FRESH context — this is the reset.
   const ctx = await browser.newContext({
     // Resolved by the caller so probe and capture cannot end up on different

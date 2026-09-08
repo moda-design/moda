@@ -49,6 +49,20 @@ const CONCLUSION_GAP_SEC = 0.33;
 //: the result land; a lot is the viewer waiting for a video that has finished.
 const TAIL_SLACK_SEC = 0.8;
 
+/**
+ * How long the narrated mux should come out, given the footage and the tail
+ * adjustment. Exactly one of `tailNeeded` / `tailExcess` is ever non-zero.
+ *
+ * Separate and exported so the ffmpeg bound and the test assert the SAME
+ * arithmetic. A test that recomputes the expected length from its own copy of
+ * this expression cannot catch the two drifting apart.
+ */
+function narratedDurationSec({ clipEnd, tailNeeded, tailExcess }) {
+  if (tailNeeded > 0) return clipEnd + tailNeeded;
+  if (tailExcess > 0) return clipEnd - tailExcess;
+  return clipEnd;
+}
+
 // `deriveLine` LIVED HERE and is deleted (ENG-5919). It was a three-branch
 // template — `Start in X.` / `Then X.` / `And that's X.` — which made every demo
 // read as its own click ledger. It was invented during the port; the reference
@@ -228,19 +242,31 @@ function narrate({ clip, mp4, outDir, id, voice = TTS_VOICE, model = TTS_MODEL, 
     : tailExcess > 0
       ? `[0:v]trim=end=${(clipEnd - tailExcess).toFixed(3)},setpts=PTS-STARTPTS[v]`
       : null;
+  // How long this mux is supposed to be. Both the padding and a hard `-t` are
+  // pinned to it, because `-shortest` ALONE DOES NOT BOUND THIS GRAPH.
+  //
+  // Bare `apad` is an infinite audio stream, and inside a filter_complex the
+  // muxer keeps pulling it after the video has ended. Measured on a 24.8s take
+  // whose source mp4 is 430 KB: ffmpeg sat at 99.7% CPU for over ten minutes and
+  // wrote a 137 MB file before dying on "Error writing trailer: Cannot allocate
+  // memory". Nothing downstream ran, so from outside it read as a slow stage
+  // rather than a hang — there is no timeout on this call.
+  //
+  // `whole_dur` ends the padding; `-t` is the hard stop if it ever does not.
+  const outDurSec = narratedDurationSec({ clipEnd, tailNeeded, tailExcess });
   execFileSync(FFMPEG, ['-v', 'error', '-i', mp4, ...inputs,
     // `duration=longest` then `apad`, NOT `duration=first`. `first` ends the mix
     // when the FIRST delayed line finishes, and with `-shortest` that truncates
     // the VIDEO to it: measured, a 10.07s take came out at 3.22s — a third of the
     // demo, silently, with a perfectly valid audio track. `apad` then keeps the
-    // audio at least as long as the video so `-shortest` is bounded by the video.
+    // audio at least as long as the video, bounded by `whole_dur`.
     '-filter_complex',
-    `${vFilter ? vFilter + ';' : ''}${delays};${mixIn}amix=inputs=${spoken.length}:duration=longest:normalize=0,apad[aout]`,
+    `${vFilter ? vFilter + ';' : ''}${delays};${mixIn}amix=inputs=${spoken.length}:duration=longest:normalize=0,apad=whole_dur=${outDurSec.toFixed(3)}[aout]`,
     '-map', vFilter ? '[v]' : '0:v', '-map', '[aout]',
     // A copy when there is no tail; tpad has to re-encode, so it only pays that
     // cost when the closing line actually needs the room.
     ...(vFilter ? ['-c:v', 'libx264', '-crf', '18', '-pix_fmt', 'yuv420p'] : ['-c:v', 'copy']),
-    '-c:a', 'aac', '-b:a', '128k', '-shortest', out, '-y']);
+    '-c:a', 'aac', '-b:a', '128k', '-t', outDurSec.toFixed(3), '-shortest', out, '-y']);
   if (!existsSync(out)) throw new Error('ffmpeg produced no narrated file');
   // VERIFY the tail landed rather than trusting the flag. An earlier version
   // computed `tailNeeded`, reported it, and fed it to `fit()` — while the ffmpeg
@@ -248,7 +274,12 @@ function narrate({ clip, mp4, outDir, id, voice = TTS_VOICE, model = TTS_MODEL, 
   // exist. The report measured the intention, not the artifact.
   const actualSec = +execFileSync(FFPROBE, ['-v', 'error', '-show_entries', 'format=duration',
     '-of', 'default=nw=1:nk=1', out]).toString().trim();
-  const wantSec = clipEnd + tailNeeded - tailExcess;
+  // The SAME value `-t` and `apad=whole_dur` were given. This used to recompute
+  // the expression inline, which happens to agree today but is the third copy of
+  // arithmetic the helper exists to hold: change the helper and this check would
+  // still expect the old length, failing every narrated cut with a message that
+  // blames ffmpeg.
+  const wantSec = outDurSec;
   if (Math.abs(actualSec - wantSec) > 0.25) {
     throw new Error(`narrated cut is ${actualSec.toFixed(2)}s but should be ${wantSec.toFixed(2)}s ` +
       `(clip ${clipEnd.toFixed(2)} + tail ${tailNeeded.toFixed(2)}) — the mux did not do what the report claims`);
@@ -258,4 +289,4 @@ function narrate({ clip, mp4, outDir, id, voice = TTS_VOICE, model = TTS_MODEL, 
            durationSec: actualSec, report: fit(spoken, actualSec), lines: spoken.map((l) => l.text) };
 }
 
-module.exports = { narrate, planNarration, elementName, speak, TTS_MODEL, TTS_VOICE };
+module.exports = { narrate, planNarration, elementName, speak, narratedDurationSec, TTS_MODEL, TTS_VOICE };

@@ -1,11 +1,13 @@
 // Step 2 probe. A DIFFERENT run from the capture, by construction.
+import { createRequire } from 'node:module';
 import { chromium } from 'playwright';
 import { readFileSync } from 'node:fs';
 import { resolveStorageState } from './auth.mjs';
+const { productLaunchOptions } = createRequire(import.meta.url)('./src/browser.js');
 const flow = JSON.parse(readFileSync(process.argv[2], 'utf8'));
 const start = process.argv[3];
 const auth = resolveStorageState(start);
-const b = await chromium.launch({ headless: true });
+const b = await chromium.launch(productLaunchOptions());
 const ctx = await b.newContext({ storageState: auth.path, viewport: { width: 1280, height: 800 }, userAgent: 'kleodemobot' });
 const page = await ctx.newPage();
 await page.goto(start, { waitUntil: 'domcontentloaded' });

@@ -94,8 +94,10 @@ const work = mkdtempSync(path.join(tmpdir(), 'demo-run-'));
  * nothing had ever called it, because the only thing that wrote guidance was a
  * printed suggestion at the end of a critique.
  *
- * Returns `{ outDir, id, score, flowFindings }`, or null if the flow cannot be
- * made to walk at all.
+ * ALWAYS returns `{ outDir, id, score, flowFindings }`. A failed attempt is one
+ * with `outDir: null` and findings saying why — including a flow that will not
+ * walk, which used to return a bare null and cost the run its best take. The
+ * caller turns those findings into guidance for the next attempt.
  */
 async function attemptOnce(n, guidancePath) {
   const tag = attempts > 1 ? ` (attempt ${n}/${attempts})` : '';
@@ -141,8 +143,15 @@ async function attemptOnce(n, guidancePath) {
     report = await walk(curated);
   }
   if (!report.ok) {
-    console.error(`\n  the flow does not survive a walk: ${report.reason ?? JSON.stringify(report.errors)}`);
-    return null;
+    const why = report.reason ?? JSON.stringify(report.errors);
+    console.error(`\n  the flow does not survive a walk: ${why}`);
+    // The SAME shape every other pre-recording failure returns, so this one gets
+    // the same treatment: its reason becomes guidance and the next discovery
+    // hears about it. Returning a bare `null` instead made this the one failure
+    // the loop could not learn from — the next attempt re-discovered against
+    // stale guidance and found the same unwalkable flow.
+    return { outDir: null, id: null, score: 0, flowFindings: [{ type: 'walk_failed', description:
+      `the flow could not be replayed: ${why}. Find a path whose steps stay reachable when replayed from a clean start.` }] };
   }
 
   // Steps that provably changed nothing are dropped outright — no dialog can be
@@ -285,8 +294,27 @@ async function attemptOnce(n, guidancePath) {
 let best = null;
 let guidancePath = null;
 for (let n = 1; n <= attempts; n++) {
-  const r = await attemptOnce(n, guidancePath);
-  if (!r) { if (n === attempts) process.exit(1); continue; }
+  // `attemptOnce` ALWAYS returns a result now — a failed attempt is one with no
+  // `outDir` and findings explaining why, which the branch below already knows
+  // how to turn into guidance and, on the last attempt, to break on. It used to
+  // return a bare `null` for a walk failure and exit(1) here, which threw away a
+  // finished, scored, iterated cut from an earlier attempt: measured, attempt 1
+  // scored 2/10 and set `best`, attempt 2's flow failed its walk, and the process
+  // exited before stage 7 — a complete take sat unpublished in `out/` and the
+  // user got no link for either attempt.
+  //
+  // A THROWN attempt is the same harm by another route — a recorder or finisher
+  // that dies would take an earlier attempt's finished take down with it — so it
+  // is caught and turned into the same failed-attempt shape. Only stage 7
+  // decides whether the run has nothing to show.
+  let r;
+  try {
+    r = await attemptOnce(n, guidancePath);
+  } catch (e) {
+    console.error(`\n  attempt ${n} failed: ${e?.message ?? e}`);
+    r = { outDir: null, id: null, score: 0, flowFindings: [{ type: 'attempt_threw', description:
+      `the attempt did not complete: ${String(e?.message ?? e).slice(0, 300)}` }] };
+  }
   if (r.outDir && (!best || r.score > best.score)) best = r;
   if (!r.outDir) {
     console.log(`\n  attempt ${n}: nothing recorded.`);

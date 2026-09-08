@@ -20,6 +20,7 @@
 // that turns that into a named failure before a single frame is recorded.
 const { enterText } = require('./steps.js');
 const { checkPageHealth } = require('./page-health.js');
+const { productLaunchOptions } = require('./browser.js');
 
 const VISIBLE_TIMEOUT_MS = 5000;
 const KNOWN = new Set(['click', 'fill', 'press', 'wait', 'scroll']);
@@ -246,7 +247,7 @@ async function validateFlow({ flow, startUrl, storageState, chromium }) {
   const structural = validateStructural(flow);
   if (!structural.ok) return { ok: false, stage: 'structural', errors: structural.errors };
 
-  const browser = await chromium.launch({ headless: true });
+  const browser = await chromium.launch(productLaunchOptions());
   const context = await browser.newContext({ storageState, viewport: VIEWPORT });
   const page = await context.newPage();
   const done = (r) => browser.close().then(() => r);

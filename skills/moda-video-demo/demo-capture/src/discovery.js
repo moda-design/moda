@@ -19,6 +19,7 @@
 const { execFileSync } = require('node:child_process');
 const { snapshotInteractables, resolveDurableSelector, formatSnapshot } = require('./snapshot.js');
 const { checkBotChallenge } = require('./page-health.js');
+const { productLaunchOptions } = require('./browser.js');
 
 const MAX_STEPS = 25;
 //: An agent-driven app legitimately takes minutes to produce its result, and
@@ -139,7 +140,7 @@ async function execute(page, action, { waitMs = WAIT_BASE_MS } = {}) {
  * capture takes a flow file rather than driving the model itself.
  */
 async function discover({ goal, startUrl, storageState, chromium, guidance }) {
-  const browser = await chromium.launch({ headless: true });
+  const browser = await chromium.launch(productLaunchOptions());
   const context = await browser.newContext({ storageState, viewport: { width: 1280, height: 800 } });
   const page = await context.newPage();
   const steps = [];

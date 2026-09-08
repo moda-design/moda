@@ -8,8 +8,11 @@
 // attempt and it silently emitted nothing for every pair — including two frames
 // I could see differed — so it was reporting "no change" for a page that plainly
 // changed. Checked the tool against a known-different pair before believing it.
+import { createRequire } from 'node:module';
 import { chromium } from 'playwright';
 import { readFileSync, mkdirSync } from 'node:fs';
+
+const { productLaunchOptions } = createRequire(import.meta.url)('./src/browser.js');
 
 const [flowPath, startUrl] = process.argv.slice(2);
 const flow = JSON.parse(readFileSync(flowPath, 'utf8'));
@@ -38,7 +41,7 @@ async function changedBox(page, beforeB64, afterB64) {
   }, [beforeB64, afterB64, W, H]);
 }
 
-const b = await chromium.launch({ headless: true });
+const b = await chromium.launch(productLaunchOptions());
 const page = await (await b.newContext({ viewport: { width: W, height: H } })).newPage();
 await page.goto(startUrl, { waitUntil: 'domcontentloaded' });
 await page.waitForTimeout(3000);
