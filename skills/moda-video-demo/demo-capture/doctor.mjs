@@ -88,7 +88,9 @@ try {
   studio = existsSync(py) ? py : null;
 } catch { /* no checkout */ }
 note(studio ? OK : HM, 'studio checkout',
-  studio ? 'present — iterate can re-emit the camera locally' : 'absent — publishing still works; the loop\'s camera lane is off and zoom checks read "not measured"');
+  studio
+    ? 'present — the loop re-emits the camera locally'
+    : 'absent — the loop plans the camera on the server instead (`moda demo camera`), which is the same planner; a checkout only makes that round trip local');
 
 const width = Math.max(...rows.map((r) => r.what.length));
 for (const r of rows) console.log(`[${r.state}] ${r.what.padEnd(width)}  ${r.detail}`);

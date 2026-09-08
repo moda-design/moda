@@ -151,12 +151,10 @@ outscore a rough video of a good one, so trust the flow findings over the number
 - **Punch-ins near a frame edge do not centre** — the camera stops flush rather
   than exposing the page behind the recording. Reported as `zoom_framing_clamped`.
 - **No brand kit is applied yet.**
-- **The loop cannot tune the camera without a studio checkout.** Publishing does
-  not need one, and the camera still ships. But the camera is emitted AT publish
-  and the critique loop runs before it, so `iterate` reports the zoom checks as
-  "not measured" rather than passing them — it tunes pacing and flow only.
-  The framing verdict arrives afterwards, in the publish report's `camera:`
-  lines. Read them: they are the only camera grading that run produced.
+- **A studio checkout only makes the camera round trip local.** Without one the
+  loop plans the camera on the server, through the same planner publish uses —
+  free, and writing nothing — so the zoom checks are measured and the camera is
+  tuned either way. The checkout saves a network call per round, nothing more.
 
 
 ## Not this skill

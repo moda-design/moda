@@ -131,24 +131,22 @@ const published = moda(args);
 
 // KEEP THE CAMERA THE SERVER JUST EMITTED, so the shot checks can grade it.
 //
-// `src/shot-check.js` reads the camera out of `<id>.motion.js`, and only the
-// local studio compiler writes that file. Without a checkout the camera still
-// shipped — it is emitted server-side — but zoomSync, zoomFraming, zoomRelease
-// and noCamera all reported "not measured", so the critique loop was blind to
-// framing for every external user, which is the defect class most visible in
-// the output (ENG-6059).
+// `src/shot-check.js` reads the camera out of a file. The loop writes its own
+// (`<id>.motion.js`, from the local compiler or `moda demo camera`); this is the
+// program the CANVAS received, which is a different thing and gets its own name.
 //
 // This is the program APPLIED to the canvas, returned verbatim, so the checks
 // grade what the renderer will do rather than a re-derivation.
 //
-// The verdict lands with the PUBLISH REPORT, not inside the critique loop: the
-// camera does not exist until publish, and the loop runs before it. So this
-// tells the user how the shot they just published is framed; it does not let the
-// loop tune it. Closing that needs a compile-without-publish route.
+// The loop tunes the camera before it gets here, planning it through the same
+// planner (locally with a checkout, otherwise `moda demo camera`). What this adds
+// is the verdict on the program the canvas ACTUALLY received — the loop grades a
+// plan, this grades the publish.
 const cameraProgram = published.camera_program ?? [];
-//: NOT `<id>.motion.js`. That name is `iterate`'s, and it re-emits into it only
-//: when it is absent — writing the published camera there would make the next
-//: re-cut grade a stale program.
+//: NOT `<id>.motion.js`. That name is `iterate`'s, and its file describes a
+//: different thing: the plan for the cut the loop was last working on, which is
+//: not necessarily the cut that was published. Keeping them apart is what lets
+//: each be graded against its own program.
 const publishedMotion = `${outDir}/${id}.published.motion.js`;
 // Authoritative BOTH ways. Writing only on success leaves a file that outlives
 // the camera it describes: publish once with a camera, let iterate suppress every
@@ -174,13 +172,13 @@ for (const w of published.warnings ?? []) console.log(`  · ${String(w).slice(0,
 // line, and an unmeasured check never reads as a clean one.
 try {
   const { checkShots } = require('./src/shot-check.js');
-  // `publishedMotion` UNCONDITIONALLY. Falling back to checkShots' default on an
-  // empty program would grade `<id>.motion.js` — the iterate loop's file, which
-  // outlives the camera it describes: once suppressions strip every punch-in,
-  // `emitMotion` writes nothing and the previous program stays on disk. The
-  // report would then print framing and sync verdicts for punch-ins the
-  // published canvas does not contain. A path that does not exist makes
-  // `readCamera` return null, which is the honest answer.
+  // `publishedMotion` UNCONDITIONALLY. Falling back to checkShots' default would
+  // grade `<id>.motion.js`, and that file is not stale — `src/camera-emit.js`
+  // keeps it authoritative — it is a DIFFERENT program: the plan for the cut the
+  // loop was last working on, which is not necessarily the cut that went out.
+  // Grading it here would report framing for punch-ins the published canvas does
+  // not contain. A path that does not exist makes `readCamera` return null, which
+  // is the honest answer for "this publish wrote no camera".
   // WHY there is no camera decides whether this is a defect, and the server
   // already distinguishes the causes — hardcoding "attempted" turned every one of
   // them into "the compiler planned NO punch-ins".

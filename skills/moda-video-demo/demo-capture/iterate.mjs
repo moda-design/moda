@@ -29,17 +29,13 @@ const require = createRequire(import.meta.url);
 // so compile.py died on import and the camera checks reported "not measured" —
 // a silent skip dressed as a completed round.
 const { studioPython } = require('./src/studio-path.js');
-// OPTIONAL, and the only thing here that still wants a studio checkout.
+const { emitCameraInto, cameraVerbArgs } = require('./src/camera-emit.js');
+// OPTIONAL — it decides WHERE the camera is planned, not whether it is.
 //
-// `publish-take.mjs` goes through `moda demo publish` now, so publishing needs
-// nothing local. This lane is different: it re-emits the camera program WITHOUT
-// publishing, which is what makes a camera fix cost seconds instead of an
-// upload. That still runs the compiler from source.
-//
-// Without a checkout the loop keeps its pacing lane and says the camera checks
-// are UNMEASURED — not clean. An unavailable check that reads as a pass is the
-// failure this whole pipeline keeps re-learning. (ENG-5982 tracks moving the
-// compile step behind the API so this becomes unconditional.)
+// Re-emitting the camera without publishing is what makes a camera fix cost
+// seconds instead of an upload. With a checkout that runs the compiler from
+// source; without one it goes through the server, which runs the same planner
+// publish does. The loop grades and tunes the camera either way.
 let PY = null;
 try {
   PY = studioPython();
@@ -48,7 +44,7 @@ try {
   PY = null;
 }
 if (!PY) {
-  console.log('  note: no studio checkout — the camera lane is off and the zoom checks will read "not measured".');
+  console.log('  note: no studio checkout — planning the camera on the server instead (same planner as publish).');
 }
 //: The camera maths never touches the video, but the compiler rightly refuses a
 //: ref the canvas could not place, so the placeholder has to be well-formed.
@@ -84,19 +80,19 @@ const readDoc = () => JSON.parse(readFileSync(docPath, 'utf8'));
  * a camera round cost seconds instead of an upload.
  */
 function emitMotion() {
-  if (!PY) return false;
-  try {
-    sh(PY, ['compile.py', 'motion', docPath, PLACEHOLDER_REF, 'p_iter', 'n_iter', `${outDir}/${id}.motion.js`]);
-    // TRUE means the compile RAN, not that it wrote a camera — which is exactly
-    // what the flat-take finding needs: a compiler that looked and planned no
-    // punch-ins is a finding, one that never ran is unmeasured. `wrote_camera`
-    // in the JSON says which of those happened for the FILE, and the caller
-    // learns the same thing from whether the file now exists, so it is not read
-    // here.
-    return true;
-  } catch {
-    return false;
-  }
+  const out = `${outDir}/${id}.motion.js`;
+  return emitCameraInto(out, () => {
+    if (PY) {
+      sh(PY, ['compile.py', 'motion', docPath, PLACEHOLDER_REF, 'p_iter', 'n_iter', out]);
+      return;
+    }
+    // NO STUDIO CHECKOUT — plan it on the server, through the same planner
+    // publish uses. Without this the loop could not see the camera at all: it is
+    // emitted at publish and the loop runs before it, so four of six shot checks
+    // read "not measured" and framing could be reported afterwards but never
+    // tuned.
+    sh('moda', cameraVerbArgs(docPath, out, readDoc()));
+  });
 }
 
 /** Did a camera compile actually run this round? Drives the flat-take finding. */

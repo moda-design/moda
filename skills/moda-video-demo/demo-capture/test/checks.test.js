@@ -10,7 +10,7 @@
 const { test } = require('node:test');
 const assert = require('node:assert');
 const { execFileSync, spawnSync } = require('node:child_process');
-const { mkdtempSync, writeFileSync } = require('node:fs');
+const { existsSync, mkdtempSync, writeFileSync } = require('node:fs');
 const { tmpdir } = require('node:os');
 const path = require('node:path');
 
@@ -410,4 +410,48 @@ test('a published take with no camera is a finding, not an unmeasured check', ()
   assert.strictEqual(early.measured, false);
   assert.strictEqual(early.bad, undefined, 'an unmeasured check must not read as bad either');
   assert.match(early.reason, /emitted at publish/);
+});
+
+// ── The camera file is the signal, so it must be authoritative ──────────────
+//
+// Neither planner writes anything when it plans nothing, so once suppressions
+// have removed every punch-in the previous round's program would survive on
+// disk — and the loop keys the flat-take finding on whether the file exists.
+
+test('a replan that plans nothing leaves no camera behind', () => {
+  const { emitCameraInto } = require('../src/camera-emit.js');
+  const dir = mkdtempSync(`${tmpdir()}/emit-`);
+  const out = `${dir}/take.motion.js`;
+
+  // Round 1: the planner writes a camera.
+  assert.strictEqual(emitCameraInto(out, (o) => writeFileSync(o, 'motion.page("p", () => {});')), true);
+  assert.ok(existsSync(out), 'fixture did not write a camera, so round 2 proves nothing');
+
+  // Round 2: every punch-in suppressed, so the planner writes nothing at all.
+  assert.strictEqual(emitCameraInto(out, () => {}), true, 'the planner still RAN');
+  assert.strictEqual(existsSync(out), false,
+    'last round\'s camera survived — the loop would grade punch-ins this plan does not contain');
+});
+
+test('a planner that throws leaves no camera behind either, and says it did not run', () => {
+  const { emitCameraInto } = require('../src/camera-emit.js');
+  const dir = mkdtempSync(`${tmpdir()}/emit-`);
+  const out = `${dir}/take.motion.js`;
+  writeFileSync(out, 'motion.page("stale", () => {});');
+
+  assert.strictEqual(emitCameraInto(out, () => { throw new Error('no compiler'); }), false);
+  assert.strictEqual(existsSync(out), false, 'a failed plan left a stale camera to be graded');
+});
+
+test('the camera verb accepts the located actions, or every punch-in comes back held', () => {
+  const { cameraVerbArgs } = require('../src/camera-emit.js');
+  const doc = { actions: [{ index: 0, clickX: 10 }, { index: 1 }, { index: 2, clickX: 40 }] };
+  const args = cameraVerbArgs('/tmp/take.moda.json', '/tmp/take.motion.js', doc);
+
+  assert.deepStrictEqual(args.slice(0, 2), ['demo', 'camera']);
+  // Only the actions with a click — index 1 never landed one.
+  assert.strictEqual(args[args.indexOf('--accept-zoom') + 1], '0,2');
+
+  // And no flag at all when nothing is located, rather than an empty argument.
+  assert.ok(!cameraVerbArgs('/tmp/a.json', '/tmp/b.js', { actions: [{ index: 0 }] }).includes('--accept-zoom'));
 });
