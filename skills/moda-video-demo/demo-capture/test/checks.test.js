@@ -10,7 +10,7 @@
 const { test } = require('node:test');
 const assert = require('node:assert');
 const { execFileSync, spawnSync } = require('node:child_process');
-const { existsSync, mkdtempSync, writeFileSync } = require('node:fs');
+const { existsSync, mkdtempSync, readFileSync, writeFileSync } = require('node:fs');
 const { tmpdir } = require('node:os');
 const path = require('node:path');
 
@@ -22,6 +22,8 @@ const { isInert } = require('../src/validate.js');
 const { checkFlowShape } = require('../src/flow-shape.js');
 const { checkLegibility } = require('../src/legibility-check.js');
 const { recordIsMeasured } = require('../src/measured.js');
+
+const { keptReport, nextStep, canSelect } = require('../src/kept-report.js');
 
 const HERE = path.join(__dirname, '..');
 const tmp = () => mkdtempSync(path.join(tmpdir(), 'demo-test-'));
@@ -491,3 +493,298 @@ test('a missing or malformed record is never ready', () => {
   assert.equal(recordIsMeasured(null), false);
   assert.equal(recordIsMeasured({}), false);
 });
+
+// ENG-6104: the loop reverted a REGRESSION but never reconciled the artifact
+// with `best` on the way out, so a round scoring EXACTLY the best left its own
+// cut on disk while iterate.json named the earlier round. The revert is
+// `score < best` and the re-best is `score > best`; a tie does neither.
+//
+// Driven as a real process against stub stages, because the defect is control
+// flow across the whole loop — every pure-function slice of it was already
+// correct on its own, which is exactly why this survived.
+test('the cut left on disk is the round iterate.json says it kept', () => {
+  const dir = tmp();
+  const id = 'take';
+
+  // The stage stubs. `finish.mjs` is the only thing that rewrites the artifact,
+  // so recording the speed it was invoked at IS the on-disk state.
+  writeFileSync(path.join(dir, 'finish.mjs'), [
+    "import { appendFileSync, writeFileSync } from 'node:fs';",
+    "const [outDir, id] = process.argv.slice(2);",
+    "const speed = process.env.DEMO_COMPRESS_SPEED;",
+    // The doc iterate.mjs reads back, regenerated exactly as the real stage does.
+    "writeFileSync(`${outDir}/${id}.moda.json`, JSON.stringify({ actions: [",
+    "  { index: 0, type: 'click', clickX: 100, clickY: 100, clickSec: 1 } ] }));",
+    // Last writer wins, which is the point: this file is what the artifact is.
+    "writeFileSync(`${outDir}/speed.txt`, String(speed));",
+    // finish.mjs is METERED (it regenerates the music bed through a paid
+    // generative render), so how often it runs is itself a thing to assert.
+    "appendFileSync(`${outDir}/finishes.log`, speed + '\\n');",
+  ].join('\n'));
+
+  // Round 1 scores 5. Every later round scores 5 too — the tie. Each round
+  // reports a pacing finding so the loop always has a cheap fix to apply and
+  // keeps going (pacing, not camera, so no planner is needed).
+  writeFileSync(path.join(dir, 'critique-take.mjs'), [
+    "import { writeFileSync } from 'node:fs';",
+    "const [outDir] = process.argv.slice(2);",
+    "writeFileSync(`${outDir}/critique.json`, JSON.stringify({ score: 5, shots: [],",
+    "  issues: [{ stage: 'pacing', severity: 'high', type: 'no_visible_change', fix: 'speed_up' }] }));",
+  ].join('\n'));
+
+  // Keep the camera planner off the network no matter how the host is set up —
+  // BOTH lanes, since which one iterate.mjs picks depends on whether this
+  // checkout has a backend virtualenv.
+  writeFileSync(path.join(dir, 'moda'), '#!/bin/sh\nexit 1\n', { mode: 0o755 });
+  writeFileSync(path.join(dir, 'compile.py'), 'import sys\nsys.exit(1)\n');
+
+  // Seed the artifact at the starting speed, as run.mjs would have left it.
+  writeFileSync(path.join(dir, `${id}.moda.json`), JSON.stringify({ actions: [] }));
+  writeFileSync(path.join(dir, 'speed.txt'), '6');
+
+  const res = spawnSync('node', [path.join(HERE, 'iterate.mjs'), dir, id, '--rounds', '3', '--target', '9'], {
+    cwd: dir,
+    encoding: 'utf8',
+    env: { ...process.env, PATH: `${dir}:${process.env.PATH}`, DEMO_COMPRESS_SPEED: '6' },
+  });
+  assert.strictEqual(res.status, 0, `iterate.mjs failed:\n${res.stdout}\n${res.stderr}`);
+
+  const kept = JSON.parse(readFileSync(path.join(dir, 'iterate.json'), 'utf8'));
+  const onDisk = readFileSync(path.join(dir, 'speed.txt'), 'utf8').trim();
+
+  // The fixture has to have actually reached the tie, or this asserts nothing:
+  // more than one round, and a later round that did NOT become the kept one.
+  assert.ok(kept.rounds.length > 1, `fixture never got past round 1: ${JSON.stringify(kept.rounds)}`);
+  assert.strictEqual(kept.keptRound, 1, 'a tie must not re-best, or the premise has changed');
+
+  // Round 1 ran at 6; every applied pacing fix raises it. So a disk speed above
+  // 6 is a cut the loop did not keep.
+  assert.strictEqual(onDisk, '6',
+    `iterate.json kept round ${kept.keptRound} (cut at 6x) but the artifact on disk is ${onDisk}x`);
+});
+
+// ENG-6104 round 1: the first cut of the fix restored UNCONDITIONALLY, which on
+// the common path (last round is best) re-ran finish.mjs for nothing. That is
+// not free — finish.mjs re-runs narration TTS and regenerates the music bed
+// through `moda media generate-audio`, a metered generative render — so every
+// demo run would have paid for an extra render AND shipped a cut whose audio no
+// critique ever scored, which is the very mismatch this fix exists to remove.
+test('a run whose best round is its last does not re-cut the artifact', () => {
+  const dir = tmp();
+  const id = 'take';
+
+  writeFileSync(path.join(dir, 'finish.mjs'), [
+    "import { appendFileSync, writeFileSync } from 'node:fs';",
+    "const [outDir, id] = process.argv.slice(2);",
+    "writeFileSync(`${outDir}/${id}.moda.json`, JSON.stringify({ actions: [] }));",
+    "appendFileSync(`${outDir}/finishes.log`, (process.env.DEMO_COMPRESS_SPEED ?? '?') + '\\n');",
+  ].join('\n'));
+
+  // Scores the target on round 1, so the loop breaks immediately with best ===
+  // the state already on disk. Nothing needs re-cutting.
+  writeFileSync(path.join(dir, 'critique-take.mjs'), [
+    "import { writeFileSync } from 'node:fs';",
+    "const [outDir] = process.argv.slice(2);",
+    "writeFileSync(`${outDir}/critique.json`, JSON.stringify({ score: 9, shots: [], issues: [] }));",
+  ].join('\n'));
+
+  // The planner is a SERVER round trip, so count it too: since the camera-only
+  // path no longer re-cuts, a needless restore shows up here rather than in
+  // finishes.log, and a test that watched only the re-cut would go blind to it.
+  writeFileSync(path.join(dir, 'moda'), `#!/bin/sh\necho sh >> ${dir}/planner.log\nexit 0\n`, { mode: 0o755 });
+  // BOTH planner lanes. iterate.mjs runs `<studio>/backend/.venv/bin/python
+  // compile.py` when that interpreter exists and falls back to `moda demo
+  // camera` when it does not — so stubbing only one makes the test depend on
+  // whether this checkout happens to have a backend virtualenv. compile.py is
+  // resolved against the CWD, which is this fixture dir.
+  writeFileSync(path.join(dir, 'compile.py'),
+    `import pathlib, sys\npathlib.Path(r'${dir}/planner.log').open('a').write('py\\n')\n`);
+
+  writeFileSync(path.join(dir, `${id}.moda.json`), JSON.stringify({ actions: [] }));
+  // Pre-seeded so the loop-top emit is skipped and any planner call is the
+  // restore's doing.
+  writeFileSync(path.join(dir, `${id}.motion.js`), '// already emitted\n');
+
+  const res = spawnSync('node', [path.join(HERE, 'iterate.mjs'), dir, id, '--rounds', '3', '--target', '8'], {
+    cwd: dir,
+    encoding: 'utf8',
+    env: { ...process.env, PATH: `${dir}:${process.env.PATH}`, DEMO_COMPRESS_SPEED: '6' },
+  });
+  assert.strictEqual(res.status, 0, `iterate.mjs failed:\n${res.stdout}\n${res.stderr}`);
+
+  const kept = JSON.parse(readFileSync(path.join(dir, 'iterate.json'), 'utf8'));
+  assert.strictEqual(kept.keptRound, 1, 'fixture must end on the round it kept, or it tests nothing');
+  assert.strictEqual(kept.reconciled, true);
+
+  // The fixture must not have re-cut at all: the artifact it started with is
+  // already the kept cut.
+  const finishes = existsSync(path.join(dir, 'finishes.log'))
+    ? readFileSync(path.join(dir, 'finishes.log'), 'utf8').trim().split('\n')
+    : [];
+  assert.deepStrictEqual(finishes, [],
+    `finish.mjs ran ${finishes.length} time(s) at speed(s) ${finishes.join(',')} on a run that ` +
+    'changed nothing — each one is a metered music render, and re-cuts audio no critique scored');
+
+  const planned = existsSync(path.join(dir, 'planner.log'))
+    ? readFileSync(path.join(dir, 'planner.log'), 'utf8').trim().split('\n')
+    : [];
+  assert.deepStrictEqual(planned, [],
+    `the camera planner ran ${planned.length} time(s) reconciling a run that changed nothing — ` +
+    'a server round trip for a no-op restore');
+});
+
+// ENG-6104 round 2: putting a SUPPRESSION back is a doc rewrite plus a re-emit.
+// Routing it through finish.mjs would re-run narration TTS and regenerate the
+// music bed through a metered render, replacing audio the critique already
+// scored — the same waste the guard removed from the common path, on the one
+// path that does need reconciling.
+test('restoring a camera-only difference does not re-cut the picture', () => {
+  const dir = tmp();
+  const id = 'take';
+
+  writeFileSync(path.join(dir, 'finish.mjs'), [
+    "import { appendFileSync, writeFileSync } from 'node:fs';",
+    "const [outDir, id] = process.argv.slice(2);",
+    "writeFileSync(`${outDir}/${id}.moda.json`, JSON.stringify({ actions: [",
+    "  { index: 0, type: 'click', clickX: 100, clickY: 100, clickSec: 1 } ] }));",
+    "appendFileSync(`${outDir}/finishes.log`, (process.env.DEMO_COMPRESS_SPEED ?? '?') + '\\n');",
+  ].join('\n'));
+
+  // Every round scores the same and reports a CAMERA finding naming action 0,
+  // so the loop suppresses a punch-in and ties — reconciling on the way out
+  // without any speed ever changing.
+  writeFileSync(path.join(dir, 'critique-take.mjs'), [
+    "import { writeFileSync } from 'node:fs';",
+    "const [outDir] = process.argv.slice(2);",
+    "writeFileSync(`${outDir}/critique.json`, JSON.stringify({ score: 5, shots: [],",
+    "  issues: [{ stage: 'camera', severity: 'high', type: 'result_cropped',",
+    "    fix: 'disable_zoom', detail: '{\"action\":0}' }] }));",
+  ].join('\n'));
+
+  // The planner must SUCCEED here: a camera fix only counts as applied when the
+  // re-emit works, and an unapplied fix stops the loop at round 1 — which would
+  // never reach the tie this test is about.
+  writeFileSync(path.join(dir, 'moda'), '#!/bin/sh\nexit 0\n', { mode: 0o755 });
+  writeFileSync(path.join(dir, 'compile.py'), 'pass\n');
+  writeFileSync(path.join(dir, `${id}.moda.json`), JSON.stringify({ actions: [
+    { index: 0, type: 'click', clickX: 100, clickY: 100, clickSec: 1 }] }));
+
+  const res = spawnSync('node', [path.join(HERE, 'iterate.mjs'), dir, id, '--rounds', '3', '--target', '9'], {
+    cwd: dir, encoding: 'utf8',
+    env: { ...process.env, PATH: `${dir}:${process.env.PATH}`, DEMO_COMPRESS_SPEED: '6' },
+  });
+  assert.strictEqual(res.status, 0, `iterate.mjs failed:\n${res.stdout}\n${res.stderr}`);
+
+  const kept = JSON.parse(readFileSync(path.join(dir, 'iterate.json'), 'utf8'));
+  // The fixture has to have actually suppressed something and tied, or the
+  // restore path under test was never entered.
+  assert.ok(kept.rounds.length > 1, `never got past round 1: ${JSON.stringify(kept.rounds)}`);
+  assert.ok(/dropping the punch-in/.test(res.stdout), 'fixture never suppressed a punch-in');
+  assert.strictEqual(kept.reconciled, true);
+
+  // THE OUTCOME, not just the cost. Round 1 — the kept round — had a punch-in on
+  // action 0; round 2 suppressed it. Restoring has to bring the coordinates back,
+  // and asserting only that finish.mjs stayed unrun cannot see whether it did:
+  // `applySuppressions` used to be subtractive-only, so it left round 2's doc in
+  // place and this test passed green on exactly the bug it was written for.
+  const doc = JSON.parse(readFileSync(path.join(dir, `${id}.moda.json`), 'utf8'));
+  assert.strictEqual(doc.actions[0].clickX, 100,
+    'the kept round had a punch-in on action 0, but the doc on disk still has it suppressed');
+  assert.strictEqual(doc.actions[0].clickY, 100);
+
+  const finishes = existsSync(path.join(dir, 'finishes.log'))
+    ? readFileSync(path.join(dir, 'finishes.log'), 'utf8').trim().split('\n')
+    : [];
+  assert.deepStrictEqual(finishes, [],
+    `finish.mjs ran ${finishes.length} time(s) to put a suppression back — that is a metered ` +
+    'music render and a fresh narration pass for a change that never touched the picture');
+});
+
+// The flag has to MEAN something to the caller: before it existed, a failed
+// final re-cut threw and stopped the pipeline. Recording it and carrying on is
+// strictly worse than that crash if nothing acts on it — run.mjs would rank the
+// attempt by a score belonging to a cut that is not on disk, and with `!best`
+// true on the first attempt it would then PUBLISH it.
+//
+// Tested through the real decision, not a copy of it: an earlier version of this
+// test regex-matched run.mjs's source and re-evaluated a hand-transcribed pair of
+// expressions, which would stay green through any behaviour change that kept the
+// substring.
+test('an unreconciled report is unusable, not merely low-scoring', () => {
+  const critique = { score: 4, issues: [{ severity: 'high', type: 'x', description: 'from the last cut' }] };
+  const kept = { keptRound: 1, score: 9, reconciled: false, issues: [{ severity: 'high', type: 'y' }] };
+
+  const bad = keptReport({ kept, critique });
+  assert.strictEqual(bad.usable, false, 'an unreconciled attempt must not be selectable or publishable');
+  assert.strictEqual(bad.score, 0, 'it must not be able to win on a score it cannot back');
+  assert.deepStrictEqual(bad.issues, [], 'its findings must not steer a re-record');
+
+  // A reconciled report is unaffected: the kept cut's score and ITS findings win
+  // over the last critique's, which after a revert describe a discarded video.
+  const good = keptReport({ kept: { ...kept, reconciled: true }, critique });
+  assert.strictEqual(good.usable, true);
+  assert.strictEqual(good.score, 9);
+  assert.deepStrictEqual(good.issues, [{ severity: 'high', type: 'y' }]);
+
+  // No iterate.json at all (the loop never ran) is unscored but still usable —
+  // only a FAILED reconciliation makes an attempt unusable.
+  const none = keptReport({ kept: null, critique });
+  assert.strictEqual(none.usable, true);
+  assert.strictEqual(none.score, 4);
+  assert.deepStrictEqual(none.issues, critique.issues);
+});
+
+// ENG-6104 round 3: an unusable attempt reports NO findings, because they were
+// dropped with it. If the "no findings left" branch is reached first, that empty
+// list reads as "nothing a different flow would fix" and the loop retires the
+// expensive lever on the strength of a report it just refused — and on the
+// default single-attempt run it also stops before anything can replace it.
+// The order of these checks IS the decision, so it is pinned here.
+test('an unusable attempt is re-recorded, never read as nothing-left-to-fix', () => {
+  const unusable = { usable: false, score: 0, flowFindings: [], target: 8 };
+  assert.strictEqual(nextStep({ ...unusable, n: 1, attempts: 3 }), 're-record',
+    'empty findings from a REFUSED report must not retire the re-record lever');
+
+  // A trusted report with nothing left is the case that genuinely should stop.
+  assert.strictEqual(nextStep({ usable: true, score: 5, flowFindings: [], target: 8, n: 1, attempts: 3 }),
+    'nothing-to-fix');
+
+  // An unusable attempt can never claim the target, however its score reads.
+  assert.strictEqual(nextStep({ usable: false, score: 9, flowFindings: [], target: 8, n: 1, attempts: 3 }),
+    're-record', 'a refused report must not be able to end the run by hitting the target');
+  assert.strictEqual(nextStep({ usable: true, score: 9, flowFindings: [], target: 8, n: 1, attempts: 3 }),
+    'reached-target');
+
+  // Budget still wins over re-recording, or the loop would never end.
+  assert.strictEqual(nextStep({ ...unusable, n: 3, attempts: 3 }), 'out-of-attempts');
+});
+
+// ENG-6104: an unreconciled attempt must not be selectable, and therefore must
+// not be published. Caught in review TWICE on this surface — the second time
+// because a merge left the older unguarded assignment beside the guarded one and
+// the unguarded one ran first — so both the decision and its uniqueness are
+// pinned here rather than left to the next reviewer.
+test('only a recorded, reconciled attempt may be selected as best', () => {
+  assert.strictEqual(canSelect({ outDir: '/tmp/x', usable: true }), true);
+  assert.strictEqual(canSelect({ outDir: '/tmp/x', usable: false }), false, 'unreconciled must never be publishable');
+  // Nothing recorded is not selectable either, but it is not "unusable" — the
+  // caller turns that into guidance instead.
+  assert.strictEqual(canSelect({ outDir: null, usable: true }), false);
+  // A flow that predates the flag is selectable: only an explicit false refuses.
+  assert.strictEqual(canSelect({ outDir: '/tmp/x' }), true);
+  assert.strictEqual(canSelect(undefined), false);
+});
+
+test('run.mjs has exactly ONE best-selection assignment', () => {
+  // A source-level count because the defect is source-level: a merge duplicating
+  // the line is invisible to any behavioural test of the predicate, and the
+  // duplicate wins by running first. This asserts the shape that made the bug
+  // possible cannot come back.
+  const src = readFileSync(path.join(HERE, 'run.mjs'), 'utf8');
+  const assignments = src.split('\n').filter((l) => /\bbest\s*=\s*r\b/.test(l) && !l.trim().startsWith('//'));
+  assert.strictEqual(assignments.length, 1,
+    `expected one \`best = r\` assignment, found ${assignments.length}:\n${assignments.join('\n')}`);
+  assert.match(assignments[0], /canSelect\(/,
+    'the selection assignment must go through canSelect, not an inline predicate');
+});
+

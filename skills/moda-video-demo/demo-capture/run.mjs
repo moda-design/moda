@@ -40,6 +40,7 @@ import { resolveStorageState } from './auth.mjs';
 const require = createRequire(import.meta.url);
 const { chromium } = require('playwright');
 const { validateFlow } = require('./src/validate.js');
+const { keptReport, nextStep, canSelect } = require('./src/kept-report.js');
 const { proposeDrops, without, ensureTrailingHold } = require('./src/curate.js');
 const { checkFlowShape } = require('./src/flow-shape.js');
 
@@ -269,30 +270,39 @@ async function attemptOnce(n, guidancePath) {
 
   let score = 0;
   let flowFindings = [];
+  // Until a report proves otherwise. A run with no critique at all is unscored
+  // but still selectable; only a FAILED reconciliation makes an attempt unusable.
+  let usable = true;
   try {
     const c = JSON.parse(readFileSync(`${outDir}/critique.json`, 'utf8'));
     // The KEPT cut's score when iterate recorded one. `critique.json` is the
     // last critique, which after a revert scored a video that was discarded.
     let kept = null;
     try { kept = JSON.parse(readFileSync(`${outDir}/iterate.json`, 'utf8')); } catch { /* not iterated */ }
-    score = kept?.score ?? c.score ?? 0;
-    // The findings must come from the SAME cut as the score. Taking the score
-    // from the kept cut and the findings from the last critique was half a fix:
-    // after a revert those findings describe the video that was discarded, and
-    // they are what drives a re-discover and a re-record.
-    const issues = kept?.issues ?? c.issues ?? [];
+    const report = keptReport({ kept, critique: c });
+    usable = report.usable;
+    if (!usable) {
+      console.log('  ⚠ this attempt could not be reconciled with the cut it kept — the files on disk are');
+      console.log('    a later cut than the report describes, so it cannot be ranked or published.');
+    }
+    score = report.score;
+    // The findings must come from the SAME cut as the score — see keptReport.
+    const issues = report.issues;
     // Only findings the cheap lane could NOT own. `iterate` has already spent
     // every pacing and camera fix it has, so whatever is left and still not
     // low severity is either about the steps or about nothing actionable.
     flowFindings = issues.filter((i) =>
       i.severity !== 'low' && !['speed_up', 'shorten_narration', 'disable_zoom'].includes(i.fix));
   } catch { /* no critique — treat as unscored */ }
-  return { outDir, id, score, flowFindings };
+  return { outDir, id, score, flowFindings, usable };
 }
 
 // ── the outer loop ────────────────────────────────────────────────────────
 let best = null;
 let guidancePath = null;
+// Whether any attempt recorded but failed reconciliation — it changes what an
+// empty `best` MEANS at the end.
+let unusableSeen = false;
 for (let n = 1; n <= attempts; n++) {
   // `attemptOnce` ALWAYS returns a result now — a failed attempt is one with no
   // `outDir` and findings explaining why, which the branch below already knows
@@ -312,10 +322,16 @@ for (let n = 1; n <= attempts; n++) {
     r = await attemptOnce(n, guidancePath);
   } catch (e) {
     console.error(`\n  attempt ${n} failed: ${e?.message ?? e}`);
-    r = { outDir: null, id: null, score: 0, flowFindings: [{ type: 'attempt_threw', description:
+    r = { outDir: null, id: null, score: 0, usable: true, flowFindings: [{ type: 'attempt_threw', description:
       `the attempt did not complete: ${String(e?.message ?? e).slice(0, 300)}` }] };
   }
-  if (r.outDir && (!best || r.score > best.score)) best = r;
+  // Selection gates on `canSelect`, not on the score: with `!best` true an
+  // unusable first attempt would otherwise become best on a score of 0 and then
+  // be published, which is the outcome the flag exists to prevent. ONE
+  // predicate, named — a merge previously left a second, unguarded copy of this
+  // line above it, and the unguarded one won because it ran first.
+  if (r.outDir && !r.usable) unusableSeen = true;
+  if (canSelect(r) && (!best || r.score > best.score)) best = r;
   if (!r.outDir) {
     console.log(`\n  attempt ${n}: nothing recorded.`);
     if (n === attempts) break;
@@ -324,13 +340,29 @@ for (let n = 1; n <= attempts; n++) {
     console.log('  re-discovering with that as guidance.');
     continue;
   }
-  console.log(`\n  attempt ${n}: ${r.score}/10${best === r ? ' (best so far)' : ` — best is still ${best.score}/10`}`);
-
-  if (r.score >= target) { console.log(`  reached the target (${target}).`); break; }
-  if (n === attempts) break;
-  if (!r.flowFindings.length) {
+  // An unusable attempt has no score to report and may not be compared: `best`
+  // can still be null here precisely because it was refused.
+  if (!r.usable) {
+    console.log(`\n  attempt ${n}: unusable — the report does not describe the cut on disk.`);
+  } else {
+    console.log(`\n  attempt ${n}: ${r.score}/10${best === r ? ' (best so far)' : ` — best is still ${best.score}/10`}`);
+  }
+  const step = nextStep({ ...r, target, n, attempts });
+  if (step === 'reached-target') {
+    console.log(`  reached the target (${target}).`);
+    break;
+  }
+  if (step === 'out-of-attempts') break;
+  if (step === 'nothing-to-fix') {
     console.log('  nothing left that a different flow would fix — another recording would record the same problems.');
     break;
+  }
+  if (!r.usable) {
+    // Its findings were dropped with it, so there is nothing to carry. Guidance
+    // from a report we refused would be worse than none.
+    console.log('  re-recording: no guidance to carry from an attempt whose report was refused.');
+    guidancePath = null;
+    continue;
   }
   guidancePath = path.join(work, `guidance-${n}.txt`);
   writeFileSync(guidancePath, r.flowFindings.map((i) => `- ${i.type}: ${i.description}`).join('\n'));
@@ -339,7 +371,17 @@ for (let n = 1; n <= attempts; n++) {
 
 // ── 7. publish the BEST attempt, not the last ─────────────────────────────
 if (!best) {
-  console.error('\n  no attempt produced a recording.');
+  // Distinguish the two ways this happens: nothing recorded at all, versus a
+  // recording whose report could not be reconciled with the cut on disk. The
+  // second is a real artifact somebody may want to look at, and saying "no
+  // recording" would send them looking for a bug that is not there.
+  console.error(
+    unusableSeen
+      ? '\n  no publishable attempt: the loop recorded, but could not reconcile its report with the\n' +
+        '  cut left on disk, so nothing here can be ranked or published. The files are in the run\n' +
+        '  directory; the warning above names the re-cut that failed.'
+      : '\n  no attempt produced a recording.'
+  );
   process.exit(1);
 }
 if (publishAs) {
