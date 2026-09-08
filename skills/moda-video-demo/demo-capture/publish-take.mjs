@@ -7,6 +7,7 @@ import { createRequire } from 'node:module';
 
 const require = createRequire(import.meta.url);
 const { brandCard, compositeOutro } = require('./src/outro.js');
+const { recordIsMeasured } = require('./src/measured.js');
 import { homedir } from 'node:os';
 
 const outDir = process.argv[2], id = process.argv[3], name = process.argv[4];
@@ -89,18 +90,64 @@ if (brandId) {
 }
 
 const up = moda(['file', 'upload', uploadSource]);
-// BOTH forms. The readiness poll below needs the proxy URL to fetch; the verb
-// takes the `file_` id, and mints its own signed URL server-side.
-const videoUrl = up.uploads[0].url;
+// The `file_` id is the only form needed: the verb takes it and mints its own
+// signed URL server-side, and the readiness poll below reads the RECORD rather
+// than fetching bytes. `up.uploads[0].url` (the byte proxy) is deliberately not
+// bound here — reaching for it is what made the old poll watch the wrong fact.
 const fileId = up.uploads[0].file_id;
-// upload returns BEFORE the ref resolves; markup then drops <video> silently
-const deadline = Date.now() + 45_000;
+// WAIT FOR THE RECORD TO BE MEASURED, NOT FOR THE BYTES TO EXIST (ENG-6103).
+//
+// Placement needs the File record's width/height. Those are probed from the
+// container ASYNCHRONOUSLY, some seconds after the upload returns; until they
+// land, `demo publish` dies with MARKUP_PARSE_ERROR ("no stored dimensions"),
+// which is a browser-side parser error the caller cannot act on.
+//
+// This poll used to `curl -r 0-0` the byte-proxy URL and break on anything but
+// a 404. That is true the INSTANT the canonical copy exists, so it cleared on
+// its first iteration and published ~35s early — the 45s budget it was given
+// was ample, it was just spent watching the wrong thing. Measured on the run
+// that filed ENG-6103: bytes at 17:56:03.6, dimensions at 17:56:41.1.
+//
+// `file show` reports width/height as null until the probe writes them, so the
+// signal is now the same fact placement will demand. Dimensions present also
+// implies the bytes are readable — the probe had to read them — so nothing is
+// lost by dropping the byte check.
+const MEASURE_TIMEOUT_MS = 120_000;
+const deadline = Date.now() + MEASURE_TIMEOUT_MS;
+let lastErr = null;
 for (let n = 1; ; n++) {
-  const code = Number(sh('curl', ['-s','-o','/dev/null','-w','%{http_code}','-r','0-0','--max-time','15', videoUrl]).trim());
-  if (code && code !== 404) break;
-  if (Date.now() > deadline) throw new Error(`recording never resolvable (HTTP ${code})`);
-  if (n === 1) console.log('    waiting for the upload to resolve…');
-  await new Promise((r) => setTimeout(r, 1500));
+  // TOLERANT BY DESIGN. `moda()` throws on any non-zero exit or `ok: false`, and
+  // this loop's whole job is waiting out an eventually-consistent backend — so a
+  // 502, a token refresh or a network blip must cost one iteration, not the whole
+  // take. The poll this replaced got that for free (a failed `curl` exited 0 and
+  // fell through to the sleep); doing it by hand is the price of asking a real
+  // question instead of an easy one. A persistent failure still surfaces: the
+  // last error rides the deadline throw, so a scope or auth problem is not
+  // mistaken for a slow probe.
+  let rec = {};
+  try {
+    rec = moda(['file', 'show', fileId]).file ?? {};
+    lastErr = null;
+  } catch (err) {
+    lastErr = err;
+  }
+  if (recordIsMeasured(rec)) {
+    if (n > 1) console.log(`    measured: ${rec.width}x${rec.height}`);
+    break;
+  }
+  if (Date.now() > deadline) {
+    throw new Error(
+      `recording never measured: ${fileId} still has no width/height after ` +
+      `${Math.round(MEASURE_TIMEOUT_MS / 1000)}s. The container probe runs in the background after ` +
+      'upload, and covers MP4/QuickTime only — a WebM, or a container it cannot parse, never ' +
+      'gets dimensions and cannot be placed. Re-encode to H.264 in an MP4 and retry: the SAME ' +
+      'bytes deduplicate onto this record, and while that does re-dispatch the enrichment, its ' +
+      'gate declines a record that already has a poster, so the outcome is unchanged.' +
+      (lastErr ? `\n  last error from \`file show\`: ${lastErr.message}` : '')
+    );
+  }
+  if (n === 1) console.log('    waiting for the recording to be measured…');
+  await new Promise((r) => setTimeout(r, 2000));
 }
 // ONE VERB. Everything between the upload and the export — compile the markup,
 // create the canvas, apply it, read the clip's node id back, emit the camera

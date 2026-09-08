@@ -21,6 +21,7 @@ const { checkCaptions } = require('../src/caption-check.js');
 const { isInert } = require('../src/validate.js');
 const { checkFlowShape } = require('../src/flow-shape.js');
 const { checkLegibility } = require('../src/legibility-check.js');
+const { recordIsMeasured } = require('../src/measured.js');
 
 const HERE = path.join(__dirname, '..');
 const tmp = () => mkdtempSync(path.join(tmpdir(), 'demo-test-'));
@@ -454,4 +455,39 @@ test('the camera verb accepts the located actions, or every punch-in comes back 
 
   // And no flag at all when nothing is located, rather than an empty argument.
   assert.ok(!cameraVerbArgs('/tmp/a.json', '/tmp/b.js', { actions: [{ index: 0 }] }).includes('--accept-zoom'));
+});
+
+// ENG-6103: the publish gate used to wait on the bytes rather than on the
+// measurement, so it cleared instantly and published ~35s early. These pin the
+// distinction the old gate could not make — a record can be perfectly readable
+// and still be unplaceable.
+test('a record with bytes but no dimensions is NOT ready to place', () => {
+  // Exactly the shape `file show` returns between upload and probe: the file is
+  // there, named, sized in BYTES — and unmeasured. The old byte-proxy poll saw
+  // a healthy object here and let publish run.
+  assert.equal(recordIsMeasured({
+    id: 'file_01HZX', name: 'take.mp4', mime_type: 'video/mp4', size_bytes: 197392,
+    width: null, height: null, duration_ms: null,
+  }), false);
+});
+
+test('a record is ready only once BOTH dimensions are real and non-zero', () => {
+  assert.equal(recordIsMeasured({ width: 1280, height: 800 }), true);
+  // Half-measured: the probe writes the pair or neither, so one alone means
+  // something else wrote it and the other is not about to arrive.
+  assert.equal(recordIsMeasured({ width: 1280, height: null }), false);
+  assert.equal(recordIsMeasured({ width: null, height: 800 }), false);
+  // Zero is not a size. It is also falsy, which is why the predicate must not
+  // be re-inlined as a bare `width && height` truthiness test elsewhere.
+  assert.equal(recordIsMeasured({ width: 0, height: 0 }), false);
+  assert.equal(recordIsMeasured({ width: 1280, height: 0 }), false);
+  // Strings are not measurements — a JSON lane that starts stringifying numbers
+  // must not read as ready.
+  assert.equal(recordIsMeasured({ width: '1280', height: '800' }), false);
+});
+
+test('a missing or malformed record is never ready', () => {
+  assert.equal(recordIsMeasured(undefined), false);
+  assert.equal(recordIsMeasured(null), false);
+  assert.equal(recordIsMeasured({}), false);
 });

@@ -178,7 +178,7 @@ moda export <cvs> --format mp4 --page 1 -o demo.mp4 --json
 | | |
 |---|---|
 | **The `src` is the URL, not the `file_` id** | `file upload` returns both. Markup needs the `/api/v2/images/ref/<uuid>?…` one. |
-| **Upload returns before the ref resolves** | Markup then drops the `<video>` with `ok: true` — captions, no footage. Poll the URL until a GET is not 404. |
+| **Upload returns before the clip is MEASURED** | Placement needs the record's `width` and `height`, which are probed in the background seconds after upload; until they land, publish fails with a markup parse error naming missing dimensions. Poll `file show` until it reports both — do NOT poll the byte URL for a non-404, which is true the instant the object exists and so clears immediately. Upload an **MP4** (or QuickTime): those are the only containers probed, so a WebM never gets dimensions and the poll would never finish. |
 | **`--category animation` is mandatory** | Any other category and the page carries no timeline: the clip never plays and the mp4 exports as a still. |
 | **Target the node ID, never its name** | The motion API resolves ids only. A name resolves to nothing and the track is dropped without error. |
 | **Easings are camelCase** | `easeInOut`, not `ease-in-out`. An unresolvable easing queues NO track. |
