@@ -146,8 +146,12 @@ outscore a rough video of a good one, so trust the flow findings over the number
 
 ## Known limits — say these plainly, do not oversell
 
-- **Mid-clip waits still play at 1×.** The leading load is trimmed at capture, but
-  a spinner *between* two actions needs a rate change the export cannot request yet.
+- **A long wait is compressed because dead air is boring, not to fit a cap.**
+  Idle gaps play at 6×, and each pacing fix adds 3 up to 14×, keeping a beat at
+  each end and never touching the final reveal — measured, a 109s
+  prompt-to-design run became a 39s video. Length is rarely the constraint: mp4
+  exports at 18000 frames / 600 s, i.e. ten minutes at 30fps, and **rejects
+  rather than truncating** past it.
 - **Punch-ins near a frame edge do not centre** — the camera stops flush rather
   than exposing the page behind the recording. Reported as `zoom_framing_clamped`.
 - **No brand kit is applied yet.**
