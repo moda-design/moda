@@ -12,7 +12,7 @@ import { execFileSync } from 'node:child_process';
 
 const require = createRequire(import.meta.url);
 const { ffmpeg: FFMPEG, ffprobe: FFPROBE } = require('./src/bin.js');
-const { planNarration, narrate } = require('./src/narrate.js');
+const { planNarration, narrate, keepLines, narrationRecord } = require('./src/narrate.js');
 const { compressIdleGaps, planCompression, compressionFacts, SPEED: COMPRESS_SPEED } = require('./src/compress.js');
 const { generateBed, addMusicBed } = require('./src/music.js');
 const { narrationPath, compressionPath } = require('./src/dead-time-phrase.js');
@@ -115,13 +115,29 @@ if (pacing) {
 } else if (STYLE !== 'marketing') {
   console.log('  script: NO pacing.json — this take was recorded without a script, so lines may overrun');
 }
+// LINES THE ITERATION LOOP ASKED TO DROP (ENG-6137).
+//
+// The compressor keeps every narration span at 1x, so a line spoken across a
+// long wait pins that wait at full length and no speed bump can touch it. The
+// remedy is to stop speaking over it — and dropping a PRE-VOICED line is the
+// only form of that which costs nothing: the remaining lines keep the audio the
+// take was paced to, so `planNarration`'s re-synthesis path (a second TTS bill,
+// and sentences the recording was never paced to) is never entered.
+//
+// By ACTION INDEX, which is what `pacing.spoken` is keyed by and what the
+// finding names — a positional index would silently drift the moment the loop
+// drops one line and then asks to drop another.
+const { kept: keptLines, dropped } = keepLines(pacing?.spoken, process.env.DEMO_DROP_LINES);
+if (dropped.length) {
+  console.log(`  script: dropping ${dropped.length} line(s) at action ${dropped.join(', ')} to unprotect their wait`);
+}
 const planned = STYLE === 'marketing'
   ? []
   : planNarration({
       clip,
       outDir,
       lines,
-      preVoiced: lines ? null : pacing?.spoken,
+      preVoiced: lines ? null : keptLines,
       preVoicedConclusion: lines ? null : pacing?.conclusion,
     });
 // Name the reason, not just the choice. A genre picked wrongly is the single
@@ -207,7 +223,10 @@ writeFileSync(clipPath, JSON.stringify(clip, null, 2));
 // wait time as recoverable. Rebased above, so these are in FINAL time like the
 // clip itself.
 writeFileSync(narrationPath(outDir, id),
-  JSON.stringify(planned.map((l) => ({ startSec: l.startSec, durationSec: l.durationSec })), null, 2));
+  // WITH THE ACTION INDEX (ENG-6137). A remedy that says "shorten the
+  // narration" and cannot say WHICH line is not a remedy — and the index is
+  // what `pacing.spoken` is keyed by, so it is what the drop must name.
+  JSON.stringify(narrationRecord(planned, keptLines), null, 2));
 // The normalized document the compiler reads, rebuilt from the rebased clip.
 // No `--raw-labels`: the bridge runs `scriptCaptions`, which writes the ON-SCREEN
 // text from the resolved element. That is a different job from the voiceover

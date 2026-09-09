@@ -56,6 +56,12 @@ const FRAMING_MARGIN = 0.15;
 //: time no lever could touch, the loop applied its one pacing fix, nothing
 //: moved, and it repeated until the plateau detector stopped it.
 const DEAD_TIME_SHARE = 0.25;
+//: How much wait ONE spoken line must pin before dropping it is worth a round.
+//: In SECONDS, not a share: the remedy removes a specific line and returns a
+//: specific number of seconds, so the gate is on the thing the fix delivers.
+//: Set above the length of an ordinary line so a normal voiceover over a normal
+//: pause never trips it — this is for the line spoken ACROSS a generation.
+const NARRATION_HELD_SEC = 4.0;
 //: How much of an ongoing action may finish outside the shot framed to show it.
 //: A punch-in that leaves while text is still appearing takes the viewer away
 //: from the one thing the demo is doing.
@@ -368,12 +374,14 @@ function checkShots({ doc, outDir, id, motionPath = null, cameraWasAttempted = f
   // "the deliberate reveal beat" will not think to shorten the line that is
   // actually holding the clip at 1x.
   //
-  // Naming it is ALL this does. No lever shortens narration today —
-  // `shorten_narration` is routed to the pacing stage, whose only action is a
-  // compress-speed bump, and a protected span is unmoved at any speed. Raising
-  // a finding for it would keep the loop alive paying a metered re-cut per
-  // round for nothing, which is why ENG-6130 dropped that and ENG-6137 owns
-  // building the lever first.
+  // AND NOW SOMETHING ACTS ON IT (ENG-6137). `shorten_narration` routes to the
+  // narration stage, which drops the named pre-voiced line and re-cuts; the
+  // span stops being protected and the ordinary gap logic speeds it. Until that
+  // stage existed the fix was routed to pacing, whose only action is a
+  // compress-speed bump that a 1x span ignores at any speed — so the finding was
+  // raised, moved nothing, counted itself as work, and paid a metered re-cut per
+  // round until the plateau detector stopped it. That is why ENG-6130 dropped
+  // the finding and made building the lever a precondition of raising it again.
   //
   // ASKED AS A DIFFERENCE, not measured off the raw spans. Overlapping the waits
   // with the spans directly credits narration for time the compressor protects
@@ -394,8 +402,7 @@ function checkShots({ doc, outDir, id, motionPath = null, cameraWasAttempted = f
   // saying something false about a take that never spoke.
   //: Left on the finished-cut basis deliberately: it answers a DIFFERENT
   //: question from `recoverable` — what shortening the lines would give back,
-  //: not what a speed bump would — and no lever pulls it yet, so ENG-6137 owns
-  //: moving it.
+  //: not what a speed bump would.
   //:
   //: CLAMPED to the protected total it is printed as a part of. The two are
   //: measured differently — this is a finished-cut plan difference, that is a
@@ -403,6 +410,32 @@ function checkShots({ doc, outDir, id, motionPath = null, cameraWasAttempted = f
   //: protected (1.2s of that held by narration)", which is self-contradictory
   //: on its face.
   const narrationHeld = Math.min(protectedWait, Math.max(0, recoverableWithout - residual));
+  //: WHICH LINE, and what dropping it would return (ENG-6137).
+  //:
+  //: `narrationHeld` is an aggregate, and the remedy acts on ONE line — so the
+  //: finding has to name it or it is unactionable in the same way the old
+  //: `shorten_narration` was. Asked the same way the aggregate is: plan the
+  //: clip without that single span and diff, which is exactly what dropping it
+  //: does. A span with no `actionIndex` predates the field and cannot be named,
+  //: so it yields no candidate rather than a finding nothing can act on.
+  //:
+  //: On `residual`, for the same reason the aggregate above is: this is a plan
+  //: difference over the FINISHED cut, and subtracting the source-timeline
+  //: delta would make each candidate's figure a measure of the basis gap rather
+  //: than of the line.
+  const narrationCandidates = (narrationSpans ?? [])
+    .filter((n) => n && Number.isInteger(n.actionIndex) && n.durationSec > 0)
+    .map((n) => {
+      const without = planCompression({
+        clip: doc,
+        narrationSpans: (narrationSpans ?? []).filter((o) => o !== n),
+      });
+      const heldSec = Math.max(0,
+        waitOverlap((without?.segments ?? []).filter((seg) => seg.speed !== 1)) - residual);
+      return { actionIndex: n.actionIndex, heldSec };
+    })
+    .sort((a, b) => b.heldSec - a.heldSec);
+  const narrationWorst = narrationCandidates[0] ?? null;
   //: Whether we were TOLD what the compressor protected. `null` means no record
   //: — not "no narration", which is a value `finish.mjs` writes explicitly as
   //: `[]`. Without it `recoverable` is measured as though nothing was spoken and
@@ -421,7 +454,7 @@ function checkShots({ doc, outDir, id, motionPath = null, cameraWasAttempted = f
       ? { measured: false, reason: `the action times (${waited.toFixed(1)}s of waits) do not belong to this ${duration.toFixed(1)}s cut` }
       // Both numbers, so nothing is hidden: `seconds` is what the viewer waits
       // through, `recoverable`/`share` is what a pacing fix could still remove.
-      : { measured: true, seconds: waited, protectedWait, narrationHeld, narrationKnown, compressionKnown, recoverable, share, bad: share > DEAD_TIME_SHARE };
+      : { measured: true, seconds: waited, protectedWait, narrationHeld, narrationWorst, narrationKnown, compressionKnown, recoverable, share, bad: share > DEAD_TIME_SHARE };
 
   // ── cursor occlusion ─────────────────────────────────────────────────────
   // A fill clicks into the middle of its field and types from the left, so the
@@ -553,4 +586,4 @@ function checkShots({ doc, outDir, id, motionPath = null, cameraWasAttempted = f
   };
 }
 
-module.exports = { checkShots, emptyCameraReason, readCamera, SYNC_TOLERANCE_SEC, FRAMING_MARGIN, DEAD_TIME_SHARE, RELEASE_SLACK_SEC, CAPTION_SUBJECT_COVERAGE };
+module.exports = { checkShots, emptyCameraReason, readCamera, SYNC_TOLERANCE_SEC, FRAMING_MARGIN, DEAD_TIME_SHARE, NARRATION_HELD_SEC, RELEASE_SLACK_SEC, CAPTION_SUBJECT_COVERAGE };

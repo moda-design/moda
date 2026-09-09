@@ -20,7 +20,7 @@ const FIXES = [
   'speed_up',            // raise SPEED / lower MIN_GAP_SEC in compress.js
   'slow_down',           // lower SPEED, or raise BREATHING_SEC
   'disable_zoom',        // publish with --no-zoom
-  'shorten_narration',   // rewrite the line; `fit` already reports overruns
+  'shorten_narration',   // DROP the line holding a wait at 1x; `fit` reports overruns
   'fix_caption_overlap', // caption placement flips top/bottom per click half
   're_record',           // a step is wrong or blank — manual
   'none',

@@ -27,8 +27,12 @@ const { ffmpeg: FFMPEG, ffprobe: FFPROBE } = require('./src/bin.js');
 const { critiqueVideo, critiqueFrames } = require('./src/critique.js');
 const { checkMotion, JUMP_PX } = require('./src/motion-check.js');
 const { checkInk } = require('./src/ink-check.js');
+<<<<<<< HEAD
 const { checkShots, DEAD_TIME_SHARE } = require('./src/shot-check.js');
 const { MAX_SPEED } = require('./src/compress.js');
+=======
+const { checkShots, DEAD_TIME_SHARE, NARRATION_HELD_SEC } = require('./src/shot-check.js');
+>>>>>>> 21d36bd082 (Give narration its own stage, and a lever that actually shortens it (ENG-6137))
 const { cameraPlanPath } = require('./src/camera-emit.js');
 const { deadTimePhrase, deadTimeDetail, pct, narrationPath, compressionPath } = require('./src/dead-time-phrase.js');
 const { checkLegibility } = require('./src/legibility-check.js');
@@ -206,6 +210,28 @@ if (stats.stillFraction > STILL_CEILING) {
     detail: deadTimeDetail(shots.deadTime, MAX_SPEED) });
 } else {
   console.log(`  stillness: ${stillPct}% of the video is a still image${waiting}`);
+}
+
+// SPEECH IS HOLDING THE CLIP OPEN, and now something can act on it (ENG-6137).
+//
+// The compressor keeps every narration span at 1x, so a line spoken across a
+// long wait pins that wait at full length — no speed bump reaches it at any
+// speed. This finding was written once before and DROPPED, because the only
+// remedy `shorten_narration` had was a route to the pacing stage, whose single
+// action is that same speed bump: the loop stayed alive re-cutting for nothing
+// and paid a metered render per round. It is raised again only now that the
+// narration stage exists and can drop the line this names.
+//
+// `stage` is set explicitly so `ownerOf` returns it rather than inferring from
+// the fix — inference is what sent it to pacing the first time.
+const worst = shots.deadTime.measured ? shots.deadTime.narrationWorst : null;
+if (worst && worst.heldSec > NARRATION_HELD_SEC) {
+  console.log(`  ⚠ NARRATION HOLD — line at action ${worst.actionIndex} pins ` +
+    `${worst.heldSec.toFixed(1)}s of wait at 1x; dropping it returns that time`);
+  issues.push({ stage: 'narration', type: 'narration_held', fix: 'shorten_narration',
+    actionIndex: worst.actionIndex,
+    detail: `the line at action ${worst.actionIndex} is spoken across ${worst.heldSec.toFixed(1)}s of wait, ` +
+      'which the compressor must keep at 1x — no compress speed can reach it while the line is there' });
 }
 
 // Presence is not legibility — see src/legibility-check.js.

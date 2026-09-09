@@ -10,7 +10,7 @@
 const { test } = require('node:test');
 const assert = require('node:assert');
 const { execFileSync, spawnSync } = require('node:child_process');
-const { existsSync, mkdtempSync, readFileSync, writeFileSync } = require('node:fs');
+const { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } = require('node:fs');
 const { tmpdir } = require('node:os');
 const path = require('node:path');
 
@@ -1559,30 +1559,79 @@ test('overlapping narration spans cannot inflate the held figure', () => {
 // true. Neither says anything about code that shortens a line, and it passed
 // vacuously against exactly this defect. This test pins the honest state
 // instead, and fails when a lever is added so the finding can come back with it.
-test('nothing acts on narrationHeld yet, and no finding pretends otherwise', () => {
-  const critique = readFileSync(path.join(HERE, 'critique-take.mjs'), 'utf8');
-  assert.doesNotMatch(critique, /narration_held/,
-    'a finding must not be raised until a lever exists — see ENG-6137');
+test('the narration fix is routed to a stage that can act on it', () => {
+  // DRIVES the router. The guard this replaces read `iterate.mjs` as text and
+  // asserted `'shorten_narration'` appeared in a condition — true throughout the
+  // entire period the fix was handed to the pacing stage, whose one action is a
+  // compress-speed bump that a 1x-protected span ignores at every speed.
+  const { ownerOf } = require('../src/stages.js');
+  assert.strictEqual(ownerOf({ fix: 'shorten_narration' }), 'narration',
+    'the speed bump cannot move a protected span — this must not go to pacing');
+  assert.strictEqual(ownerOf({ fix: 'speed_up' }), 'pacing');
+  assert.strictEqual(ownerOf({ stage: 'flow', fix: 'shorten_narration' }), 'flow',
+    'a declared stage still wins over inference');
+});
 
-  // The pacing stage is the only place `shorten_narration` is routed to, and it
-  // does one thing. When that stops being true, this test should fail and the
-  // finding can be restored.
-  const iterate = readFileSync(path.join(HERE, 'iterate.mjs'), 'utf8');
-  const pacing = /if \(byStage\.pacing\?\.length\) \{([\s\S]*?)\n  \}/.exec(iterate);
-  assert.ok(pacing, 'could not find the pacing branch');
-  assert.match(pacing[1], /compressSpeed = Math\.min/, 'the pacing lever is a compress-speed bump');
-  assert.doesNotMatch(pacing[1], /narrat/i,
-    'a narration lever now exists — restore the narration_held finding (ENG-6137) and retire this test');
+test('dropping a line keeps every other pre-voiced line', () => {
+  // DRIVES the drop. Re-synthesis is the thing to avoid: the take was paced to
+  // this audio, and passing `lines` instead would bill TTS again and pace the
+  // recording to sentences nobody hears.
+  const { keepLines } = require('../src/narrate.js');
+  const spoken = [{ index: 0, text: 'a' }, { index: 3, text: 'b' }, { index: 7, text: 'c' }];
+  const { kept, dropped } = keepLines(spoken, '3');
+  assert.deepStrictEqual(kept.map((l) => l.index), [0, 7], 'the others keep their recorded audio');
+  assert.deepStrictEqual(dropped, [3]);
+});
 
-  // The figure itself is still measured and still reaches the report as prose.
-  const shot = readFileSync(path.join(HERE, 'src', 'shot-check.js'), 'utf8');
-  assert.match(shot, /narrationHeld/, 'the measurement stays — it is the finding that was dropped');
-  // Rendered, not grepped: the sentence lives in src/dead-time-phrase.js now,
-  // and a guard that greps the wrong file reports the operator has lost sight
-  // of a number they can still see.
-  const { deadTimePhrase } = require('../src/dead-time-phrase.js');
-  assert.match(deadTimePhrase({ seconds: 16, protectedWait: 16, narrationHeld: 13.9, share: 0 }, 20),
-    /held at 1x by narration/, 'and the operator still sees it');
+test('an empty drop spec drops nothing, not action zero', () => {
+  // `Number('') === 0`, so the obvious parse turns "drop nothing" into "drop the
+  // first line" — and iterate sends an empty spec on EVERY ordinary re-cut, so
+  // this would delete the opening line of every take on the first pacing bump.
+  const { keepLines } = require('../src/narrate.js');
+  const spoken = [{ index: 0, text: 'a' }, { index: 3, text: 'b' }];
+  for (const spec of ['', undefined, null, 'x,,']) {
+    assert.deepStrictEqual(keepLines(spoken, spec).dropped, [],
+      `spec ${JSON.stringify(spec)} must drop nothing`);
+    assert.strictEqual(keepLines(spoken, spec).kept.length, 2);
+  }
+});
+
+test('the finding names the line that holds the most wait', () => {
+  // A remedy that cannot say WHICH line is unactionable in exactly the way the
+  // old `shorten_narration` was.
+  const { checkShots } = require('../src/shot-check.js');
+  const doc = {
+    durationSec: 30,
+    viewport: { width: 1280, height: 800 },
+    actions: [{ type: 'wait', index: 0, startSec: 2, endSec: 28 }],
+  };
+  // Two lines: a short one, and one spoken across most of the wait.
+  const spans = [
+    { startSec: 2, durationSec: 1.0, actionIndex: 0 },
+    { startSec: 4, durationSec: 18.0, actionIndex: 4 },
+  ];
+  const dead = checkShots({ doc, outDir: '/tmp', id: 'x', narrationSpans: spans }).deadTime;
+  assert.ok(dead.narrationWorst, 'a take with speech over a long wait must name a line');
+  assert.strictEqual(dead.narrationWorst.actionIndex, 4, 'the long line is the one holding the wait');
+  assert.ok(dead.narrationWorst.heldSec > 4,
+    `and it must be worth a round, got ${dead.narrationWorst.heldSec}`);
+});
+
+test('a span that predates the action index yields no finding', () => {
+  // Unnameable is not actionable. Emitting here would recreate the loop that
+  // re-cuts for a remedy nothing can apply.
+  const { checkShots } = require('../src/shot-check.js');
+  const doc = {
+    durationSec: 30,
+    viewport: { width: 1280, height: 800 },
+    actions: [{ type: 'wait', index: 0, startSec: 2, endSec: 28 }],
+  };
+  const dead = checkShots({
+    doc, outDir: '/tmp', id: 'x',
+    narrationSpans: [{ startSec: 4, durationSec: 18.0 }],
+  }).deadTime;
+  assert.strictEqual(dead.narrationWorst, null,
+    'no index means no line can be named, so no finding may be raised');
 });
 
 // ENG-6130: `bad` compares DEAD_TIME_SHARE against the RECOVERABLE share, and
@@ -1863,4 +1912,208 @@ test('a take with no lines never reports time held by narration', () => {
   // And the sentence must not grow the clause either.
   const { deadTimePhrase } = require('../src/dead-time-phrase.js');
   assert.doesNotMatch(deadTimePhrase(dead, 14.417), /held by narration/);
+});
+
+test('a narration drop that wins is kept on disk', () => {
+  // DRIVES THE REAL LOOP. The drop must survive to the end when the round that
+  // dropped is the round that wins — otherwise the loop reports a cut it threw
+  // away.
+  const dir = tmp();
+  const id = 'take';
+  writeFileSync(path.join(dir, 'finish.mjs'), [
+    "import { appendFileSync, writeFileSync } from 'node:fs';",
+    "const [outDir, id] = process.argv.slice(2);",
+    "writeFileSync(`${outDir}/${id}.moda.json`, JSON.stringify({ actions: [",
+    "  { index: 0, type: 'click', clickX: 100, clickY: 100, clickSec: 1 } ] }));",
+    "appendFileSync(`${outDir}/drops.log`, (process.env.DEMO_DROP_LINES ?? '') + '|' + process.env.DEMO_COMPRESS_SPEED + '\\n');",
+  ].join('\n'));
+  // Round 1 scores 5 with a narration finding; every later round scores 8 and is
+  // clean, so the dropped cut wins outright.
+  writeFileSync(path.join(dir, 'critique-take.mjs'), [
+    "import { existsSync, readFileSync, writeFileSync } from 'node:fs';",
+    "const [outDir] = process.argv.slice(2);",
+    "const n = existsSync(`${outDir}/n.txt`) ? Number(readFileSync(`${outDir}/n.txt`,'utf8')) : 0;",
+    "writeFileSync(`${outDir}/n.txt`, String(n + 1));",
+    "const first = { score: 5, shots: [], issues: [{ stage: 'narration', severity: 'high',",
+    "  type: 'narration_held', fix: 'shorten_narration', actionIndex: 4 }] };",
+    "writeFileSync(`${outDir}/critique.json`, JSON.stringify(n === 0 ? first : { score: 8, shots: [], issues: [] }));",
+  ].join('\n'));
+  writeFileSync(path.join(dir, 'moda'), '#!/bin/sh\nexit 1\n', { mode: 0o755 });
+  writeFileSync(path.join(dir, 'compile.py'), 'import sys\nsys.exit(1)\n');
+  writeFileSync(path.join(dir, `${id}.moda.json`), JSON.stringify({ actions: [] }));
+
+  const res = spawnSync('node', [path.join(HERE, 'iterate.mjs'), dir, id, '--rounds', '3', '--target', '9'], {
+    cwd: dir, encoding: 'utf8',
+  });
+  assert.strictEqual(res.status, 0, res.stderr);
+  const drops = readFileSync(path.join(dir, 'drops.log'), 'utf8').trim().split('\n');
+  assert.ok(drops[0].startsWith('4|'), `the re-cut must carry the named drop, got ${JSON.stringify(drops[0])}`);
+  // NOT a speed bump: narration is not pacing.
+  assert.ok(drops.every((d) => d.endsWith('|6')),
+    `the compress speed must not move, got ${JSON.stringify(drops)}`);
+  // The winning round HAD the drop, so the last word on disk must still have it.
+  assert.ok(drops[drops.length - 1].split('|')[0].split(',').includes('4'),
+    `the kept cut must retain the drop, got ${JSON.stringify(drops)}`);
+  const kept = JSON.parse(readFileSync(path.join(dir, 'iterate.json'), 'utf8'));
+  assert.strictEqual(kept.reconciled, true);
+});
+
+test('a narration drop that does not win is reverted on disk', () => {
+  // THE ENG-6104 INVARIANT, over the new state. `droppedLines` changes the audio
+  // on disk, so a snapshot that omits it lets the loop write
+  // `keptRound: 1, reconciled: true` over a cut carrying a drop round 1 never
+  // had — and because `refinish` re-sends the current set, even a speed-driven
+  // restore could not have reconstructed it.
+  const dir = tmp();
+  const id = 'take';
+  writeFileSync(path.join(dir, 'finish.mjs'), [
+    "import { appendFileSync, writeFileSync } from 'node:fs';",
+    "const [outDir, id] = process.argv.slice(2);",
+    "writeFileSync(`${outDir}/${id}.moda.json`, JSON.stringify({ actions: [",
+    "  { index: 0, type: 'click', clickX: 100, clickY: 100, clickSec: 1 } ] }));",
+    // BRACKETED so an empty drop set is still a visible line — `.trim()` on the
+    // log would otherwise swallow the reverted cut's entry entirely and the
+    // revert would look like it never happened.
+    "appendFileSync(`${outDir}/drops.log`, '[' + (process.env.DEMO_DROP_LINES ?? '') + ']' + '\\n');",
+  ].join('\n'));
+  // Round 1 scores 6 and is best. The drop makes round 2 score 4.
+  writeFileSync(path.join(dir, 'critique-take.mjs'), [
+    "import { existsSync, readFileSync, writeFileSync } from 'node:fs';",
+    "const [outDir] = process.argv.slice(2);",
+    "const n = existsSync(`${outDir}/n.txt`) ? Number(readFileSync(`${outDir}/n.txt`,'utf8')) : 0;",
+    "writeFileSync(`${outDir}/n.txt`, String(n + 1));",
+    "writeFileSync(`${outDir}/critique.json`, JSON.stringify({ score: n === 0 ? 6 : 4, shots: [],",
+    "  issues: [{ stage: 'narration', severity: 'high', type: 'narration_held',",
+    "             fix: 'shorten_narration', actionIndex: 4 }] }));",
+  ].join('\n'));
+  writeFileSync(path.join(dir, 'moda'), '#!/bin/sh\nexit 1\n', { mode: 0o755 });
+  writeFileSync(path.join(dir, 'compile.py'), 'import sys\nsys.exit(1)\n');
+  writeFileSync(path.join(dir, `${id}.moda.json`), JSON.stringify({ actions: [] }));
+
+  const res = spawnSync('node', [path.join(HERE, 'iterate.mjs'), dir, id, '--rounds', '3', '--target', '9'], {
+    cwd: dir, encoding: 'utf8',
+  });
+  assert.strictEqual(res.status, 0, res.stderr);
+  const kept = JSON.parse(readFileSync(path.join(dir, 'iterate.json'), 'utf8'));
+  assert.strictEqual(kept.keptRound, 1, 'round 1 scored highest');
+  assert.strictEqual(kept.reconciled, true);
+  const drops = readFileSync(path.join(dir, 'drops.log'), 'utf8').trim().split('\n');
+  assert.ok(drops.some((d) => d === '[4]'), 'the drop must actually have been applied first');
+  assert.strictEqual(drops[drops.length - 1], '[]',
+    `the reverted cut must carry no drops, got ${JSON.stringify(drops)}`);
+});
+
+test('dropping every line returns silence, and keeps the audio on disk', () => {
+  // THE LAST DROP. `preVoiced?.length` treated "the narration stage dropped them
+  // all" the same as "this take has no pre-voiced record", so the final drop
+  // fell through to the synthesis path: fresh speak() calls for every action (a
+  // second, metered TTS bill), sentences the recording was never paced to, and
+  // an rmSync that deletes the cached mp3s the take WAS paced to. The requested
+  // removal undid itself and destroyed the originals doing it.
+  const { planNarration } = require('../src/narrate.js');
+  const dir = tmp();
+  // The cache the capture recorded, which must survive.
+  mkdirSync(path.join(dir, 'vo'), { recursive: true });
+  writeFileSync(path.join(dir, 'vo', '0.mp3'), 'recorded during capture');
+
+  const clip = { durationSec: 10, actions: [{ type: 'click', startSec: 1, clickSec: 1, endSec: 2 }] };
+  const planned = planNarration({ clip, outDir: dir, preVoiced: [], preVoicedConclusion: null });
+
+  assert.ok(Array.isArray(planned), 'finish.mjs uses this as planned.length / planned.map');
+  assert.strictEqual(planned.length, 0, 'every line was dropped, so nothing is spoken');
+  assert.ok(existsSync(path.join(dir, 'vo', '0.mp3')),
+    'the cached audio the take was paced to must not be deleted');
+});
+
+test('declining to compress leaves the source footage in the output', () => {
+  // THROUGH THE REAL COMPRESSION PATH, with real files. `compressIdleGaps`
+  // returns null when there is nothing worth speeding — correct on a first run,
+  // where the output IS the recording. On a re-run the output still holds the
+  // PREVIOUS cut, so every stage below would mux this run's timings onto footage
+  // cut for a different plan. Reverting a narration drop reaches exactly that:
+  // putting the line back protects more, so the re-cut declines, and the
+  // rollback shipped a cut whose audio and video disagreed.
+  const { ffmpeg: FFMPEG, ffprobe: FFPROBE } = require('../src/bin.js');
+  const { compressIdleGaps } = require('../src/compress.js');
+  const dir = tmp();
+  const mp4 = path.join(dir, 'take.mp4');
+  const source = path.join(dir, 'take.source.mp4');
+  const mk = (out, secs) => execFileSync(FFMPEG, ['-v', 'error', '-y',
+    '-f', 'lavfi', '-i', `testsrc=duration=${secs}:size=160x120:rate=10`,
+    '-c:v', 'libx264', '-pix_fmt', 'yuv420p', out]);
+  mk(source, 12);
+  mk(mp4, 4);            // the previous run's shorter cut
+  const dur = (f) => Number(execFileSync(FFPROBE, ['-v', 'error', '-show_entries',
+    'format=duration', '-of', 'default=nw=1:nk=1', f]).toString().trim());
+  assert.ok(Math.abs(dur(mp4) - 4) < 0.5, 'the fixture must start with the shorter cut in place');
+
+  // A clip whose whole span is protected by narration: nothing to speed.
+  const clip = { durationSec: 12, actions: [{ type: 'wait', index: 0, startSec: 0, endSec: 12 }] };
+  const out = compressIdleGaps({
+    mp4Path: mp4, sourcePath: source, clip,
+    narrationSpans: [{ startSec: 0, durationSec: 12 }], speed: 6,
+  });
+  assert.strictEqual(out, null, 'the fixture must actually decline to compress');
+  assert.ok(Math.abs(dur(mp4) - 12) < 0.5,
+    `the output must hold the 12s source, not the 4s previous cut — got ${dur(mp4)}s`);
+});
+
+test('a scriptless take names no line, because the drop cannot reach it', () => {
+  // The synthesis branch stamps an `actionIndex` too, but `DEMO_DROP_LINES`
+  // filters `pacing.spoken` — which this take does not have — so the drop is
+  // inert and the whole script is re-synthesized regardless. Naming a line
+  // anyway buys a metered re-cut for a remedy that cannot move.
+  const { narrationRecord } = require('../src/narrate.js');
+  const planned = [{ startSec: 1, durationSec: 2, actionIndex: 0 },
+                   { startSec: 4, durationSec: 3, actionIndex: 1 }];
+
+  const scriptless = narrationRecord(planned, null);
+  assert.deepStrictEqual(scriptless.map((l) => l.actionIndex), [null, null],
+    'no pre-voiced record means no nameable line');
+  // The spans themselves must still be recorded — the compressor was told about
+  // them, and dropping that would overclaim the recoverable wait.
+  assert.deepStrictEqual(scriptless.map((l) => l.durationSec), [2, 3]);
+
+  const preVoiced = narrationRecord(planned, [{ index: 0 }, { index: 1 }]);
+  assert.deepStrictEqual(preVoiced.map((l) => l.actionIndex), [0, 1],
+    'a pre-voiced take is where the lever works, so there the line is named');
+});
+
+test('per-line narration attribution is unmoved by the compression basis', () => {
+  // THE SEAM BETWEEN THE TWO TICKETS. ENG-6149 made `recoverable` a
+  // source-timeline delta while `narrationHeld` stayed a finished-cut plan
+  // difference; subtracting one from the other made the remainder measure the
+  // basis gap instead of the narration, and reported seconds "held by
+  // narration" on a take with no lines. The per-line figures are the same
+  // subtraction done once per span, so they inherit the bug unless they are
+  // also on `residual` — and neither ticket's own tests exercise the two
+  // together.
+  const { checkShots } = require('../src/shot-check.js');
+  const { planCompression, compressionFacts } = require('../src/compress.js');
+  const src = {
+    durationSec: 60, viewport: { width: 1280, height: 800 },
+    actions: [{ type: 'wait', index: 0, startSec: 2, endSec: 55 }],
+  };
+  const spans = [
+    { startSec: 4, durationSec: 1.0, actionIndex: 0 },
+    { startSec: 8, durationSec: 20.0, actionIndex: 4 },
+  ];
+  const plan = planCompression({ clip: src, narrationSpans: spans, speed: 6 });
+  const rec = compressionFacts({ plan, compressed: { newDuration: plan.newDuration }, speed: 6, clip: src });
+  const doc = {
+    durationSec: 30, viewport: { width: 1280, height: 800 },
+    actions: [{ type: 'wait', index: 0, startSec: 2, endSec: 28 }],
+  };
+
+  const without = checkShots({ doc, outDir: '/tmp', id: 'x', narrationSpans: spans }).deadTime;
+  const with_ = checkShots({ doc, outDir: '/tmp', id: 'x', narrationSpans: spans, compression: rec }).deadTime;
+  // The record must actually be in play, or this compares two identical runs.
+  assert.strictEqual(without.compressionKnown, false);
+  assert.strictEqual(with_.compressionKnown, true);
+  assert.ok(with_.recoverable !== without.recoverable, 'the basis must really have changed');
+
+  assert.strictEqual(with_.narrationWorst.actionIndex, without.narrationWorst.actionIndex,
+    'which line holds the wait is a property of the cut, not of the compression record');
+  assert.ok(Math.abs(with_.narrationWorst.heldSec - without.narrationWorst.heldSec) < 0.01,
+    `and so is how much it holds — got ${with_.narrationWorst.heldSec} vs ${without.narrationWorst.heldSec}`);
 });

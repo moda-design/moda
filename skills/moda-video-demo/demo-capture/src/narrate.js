@@ -133,6 +133,25 @@ function planNarration({ clip, outDir, voice = TTS_VOICE, model = TTS_MODEL, lin
   // pass returns different sentences — the recording would then be paced to
   // lines nobody hears. Also note the `rmSync` below: without this branch,
   // finish would delete the very mp3s the capture was timed against.
+  //
+  // AN EMPTY ARRAY IS AN ANSWER, not a missing one. `?.length` treated "the
+  // narration stage dropped every line" identically to "this take has no
+  // pre-voiced record", so the last drop fell through to the synthesis path
+  // below: fresh `speak()` calls for every action — a second, metered TTS bill
+  // — sentences the recording was never paced to, and an `rmSync` that deletes
+  // the cached audio the take WAS paced to. The requested removal then undid
+  // itself, loudly and expensively (ENG-6137).
+  //: THE CONCLUSION GOES WITH THEM, deliberately. The closing line is not
+  //: droppable — the loop only names step lines by `actionIndex`, and the
+  //: conclusion's is null — but the pre-voiced branch below already ties it to a
+  //: non-empty step set (`preVoicedConclusion?.wav && spoken.length`), so a take
+  //: with no step lines has never carried one. Reaching this at all needs every
+  //: step line dropped, which needs a short take and several narration rounds.
+  //:
+  //: An ARRAY, matching what both branches below return — `finish.mjs` uses the
+  //: result as `planned.length` / `planned.map`, so an object here would throw
+  //: on the one path this guard exists to make safe.
+  if (Array.isArray(preVoiced) && preVoiced.length === 0) return [];
   if (preVoiced?.length) {
     const spoken = preVoiced
       .map((l) => {
@@ -289,4 +308,56 @@ function narrate({ clip, mp4, outDir, id, voice = TTS_VOICE, model = TTS_MODEL, 
            durationSec: actualSec, report: fit(spoken, actualSec), lines: spoken.map((l) => l.text) };
 }
 
-module.exports = { narrate, planNarration, elementName, speak, narratedDurationSec, TTS_MODEL, TTS_VOICE };
+/**
+ * The pre-voiced lines that survive a drop, by ACTION INDEX.
+ *
+ * A FUNCTION, not a filter inlined in `finish.mjs`, so a test can drive the
+ * drop instead of grepping for it — the guard this replaces asserted a string
+ * appeared in a condition, and stayed green through the entire period the fix
+ * it named could not act (ENG-6137).
+ *
+ * Keyed by `index`, which is what `pacing.spoken` carries and what the finding
+ * names. A positional filter would drift the moment one line is already gone.
+ * `spec` is the raw `DEMO_DROP_LINES` value: absent, empty and malformed all
+ * mean "drop nothing", because a re-cut that silently dropped a line nobody
+ * asked for is worse than one that drops none.
+ */
+function keepLines(spoken, spec) {
+  // EMPTY SEGMENTS FIRST. `Number('') === 0`, so splitting an empty spec yields
+  // `['']` -> `[0]` and the "drop nothing" case silently drops action 0 — and
+  // `iterate.mjs` sends an empty spec on every ordinary re-cut, so that is the
+  // first narration line of every take, deleted by a pacing bump.
+  const dropped = new Set(
+    String(spec ?? '').split(',')
+      .map((n) => n.trim())
+      .filter((n) => n !== '')
+      .map(Number)
+      .filter(Number.isInteger)
+  );
+  if (!Array.isArray(spoken)) return { kept: null, dropped: [] };
+  return {
+    kept: spoken.filter((l) => !dropped.has(l.index)),
+    dropped: spoken.filter((l) => dropped.has(l.index)).map((l) => l.index),
+  };
+}
+
+/**
+ * The narration record written beside a take, as the critique reads it back.
+ *
+ * `keptLines` is the pre-voiced set the drop actually filters — `null` when the
+ * take had no `pacing.json`. The SYNTHESIS branch also stamps an `actionIndex`,
+ * but `DEMO_DROP_LINES` filters `pacing.spoken`, which a scriptless take does
+ * not have, so a drop there is inert and the whole script is re-synthesized
+ * anyway. Writing the index regardless raised a finding whose remedy could not
+ * move it: one metered re-cut, counted as work, keeping the round alive — the
+ * shape ENG-6130 and ENG-6137 exist to remove. Unnameable is not actionable.
+ */
+function narrationRecord(planned, keptLines) {
+  return (planned ?? []).map((l) => ({
+    startSec: l.startSec,
+    durationSec: l.durationSec,
+    actionIndex: keptLines ? (l.actionIndex ?? null) : null,
+  }));
+}
+
+module.exports = { narrate, planNarration, keepLines, narrationRecord, elementName, speak, narratedDurationSec, TTS_MODEL, TTS_VOICE };

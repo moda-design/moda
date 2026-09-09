@@ -32,6 +32,7 @@ const { studioPython } = require('./src/studio-path.js');
 // ONE definition of the ceiling, shared with the checker that measures what a
 // bump toward it would return (ENG-6149).
 const { MAX_SPEED } = require('./src/compress.js');
+const { ownerOf } = require('./src/stages.js');
 const { emitCameraInto, cameraVerbArgs, cameraPlanPath } = require('./src/camera-emit.js');
 // OPTIONAL — it decides WHERE the camera is planned, not whether it is.
 //
@@ -114,14 +115,6 @@ function emitMotion() {
 /** Did a camera compile actually run this round? Drives the flat-take finding. */
 let cameraAttempted = false;
 
-/** Which stage owns a model finding, by its own suggested fix and its type. */
-function ownerOf(issue) {
-  if (issue.stage) return issue.stage;                       // countable ones say so
-  if (issue.fix === 'speed_up' || issue.fix === 'shorten_narration') return 'pacing';
-  if (issue.fix === 'disable_zoom' || issue.type === 'result_cropped') return 'camera';
-  if (issue.type === 'no_visible_change' || issue.type === 'blank_screen') return 'pacing';
-  return 'flow';
-}
 
 const history = [];
 let compressSpeed = Number(process.env.DEMO_COMPRESS_SPEED) || 6;
@@ -169,9 +162,18 @@ function applySuppressions() {
   return emitMotion();
 }
 
+//: Lines the narration stage has dropped, by ACTION INDEX. Cumulative across
+//: rounds and passed on EVERY re-cut, not just the round that decided it —
+//: `finish.mjs` rebuilds from the immutable source each time, so a drop that is
+//: not re-sent is silently undone by the next pacing bump.
+const droppedLines = new Set();
+
 /** Re-cut from the immutable source, then put the suppressions back. */
 function refinish(speed) {
-  sh('node', ['finish.mjs', outDir, id], { DEMO_COMPRESS_SPEED: String(speed) });
+  sh('node', ['finish.mjs', outDir, id], {
+    DEMO_COMPRESS_SPEED: String(speed),
+    DEMO_DROP_LINES: [...droppedLines].join(','),
+  });
   // `finish.mjs` regenerates the doc from the timeline, so what it just wrote is
   // the new pristine base — re-cache it BEFORE re-applying, or the next rebuild
   // would restore a doc cut at the old speed.
@@ -179,15 +181,30 @@ function refinish(speed) {
   applySuppressions();
 }
 
-const snapshot = () => ({ speed: compressSpeed, suppressed: new Set(suppressed) });
+// THE DROP SET IS PART OF THE CUT (ENG-6137 + ENG-6104). It changes the audio
+// on disk, so a snapshot without it names a state that cannot be reproduced —
+// and the exit block would report `reconciled: true` over a cut carrying drops
+// the winning round never had, which is the exact invariant ENG-6104 closed.
+const snapshot = () => ({
+  speed: compressSpeed, suppressed: new Set(suppressed), dropped: new Set(droppedLines),
+});
+//: Two sets, compared by content. Used by both `restore` and the exit check, so
+//: they cannot disagree about whether the disk already matches.
+const sameSet = (a, b) => a.size === b.size && [...a].every((i) => b.has(i));
 const restore = (snap) => {
   // A SPEED change is the only thing that needs the picture re-cut. Suppressions
   // live in the doc and the motion program, so putting them back is a doc
   // rewrite plus a re-emit — and going through `finish.mjs` for them would
   // re-run narration TTS and regenerate the music bed (a metered render),
   // replacing audio the critique already scored for no reason at all.
-  const recut = compressSpeed !== snap.speed;
+  // A DROP CHANGE ALSO NEEDS THE RE-CUT, and the set must be put back BEFORE
+  // it: `refinish` re-sends the current `droppedLines`, so reverting the speed
+  // while leaving the drops in place would re-apply them and the revert would
+  // not revert.
+  const recut = compressSpeed !== snap.speed || !sameSet(droppedLines, snap.dropped);
   compressSpeed = snap.speed;
+  droppedLines.clear();
+  for (const i of snap.dropped) droppedLines.add(i);
   suppressed.clear();
   for (const i of snap.suppressed) suppressed.add(i);
   if (recut) refinish(snap.speed);
@@ -238,12 +255,46 @@ for (let round = 1; round <= MAX_ROUNDS; round++) {
   // untouched for three rounds while the score sat still — and the plateau
   // detector then stopped a loop that had never tried its other lever.
   const acted = [];
+  // ONE RE-CUT PER ROUND, decided by both branches before either pays for it.
+  // Pacing and narration each go through `finish.mjs`, which calls `generateBed`
+  // -> `moda media generate-audio`, a METERED generative render — so a round
+  // with both findings used to buy that render twice and throw the first away.
+  let needsRecut = false;
   if (byStage.pacing?.length) {
     compressSpeed = Math.min(MAX_SPEED, compressSpeed + 3);
     console.log(`  → pacing: re-cutting idle gaps at ${compressSpeed}x (no re-record)`);
-    refinish(compressSpeed);
+    needsRecut = true;
     acted.push('pacing');
   }
+  if (byStage.narration?.length) {
+    // DROP THE LINE, do not re-time anything. The compressor keeps a narration
+    // span at 1x, so the wait under it is unreachable while the line is spoken;
+    // removing the line hands that span back to the ordinary gap logic and the
+    // NEXT re-cut speeds it like any other idle stretch.
+    //
+    // Dropping a PRE-VOICED line costs nothing: every remaining line keeps the
+    // audio the take was paced to, so `planNarration` never enters its
+    // re-synthesis path (a second TTS bill, and sentences the recording was
+    // never paced to — see the warning at the top of planNarration).
+    const named = byStage.narration
+      .map((i) => i.actionIndex)
+      .filter((n) => Number.isInteger(n) && !droppedLines.has(n));
+    if (named.length) {
+      for (const n of named) droppedLines.add(n);
+      console.log(`  → narration: dropping the line(s) at action ${named.join(', ')} and re-cutting`);
+      needsRecut = true;
+      acted.push('narration');
+    } else {
+      // A finding that names nothing actionable must NOT count as work: an
+      // empty `acted` is what lets the loop stop instead of spinning on a
+      // remedy it has already applied.
+      console.log('  → narration: nothing new to drop (already applied, or the finding named no line)');
+    }
+  }
+  // THE ONE RE-CUT, after both branches that need it have decided. Before the
+  // camera branch, which deliberately does NOT go through `finish.mjs` — it
+  // rewrites the doc and re-emits, precisely to avoid the metered render.
+  if (needsRecut) refinish(compressSpeed);
   if (byStage.camera?.length) {
     // Suppress the punch-in on the offending actions by removing their click
     // location: `has_location` is what gates a zoom plan in the compiler, so a
@@ -302,8 +353,8 @@ if (best) {
   // of mismatch this block exists to remove.
   const dirty =
     compressSpeed !== best.snap.speed ||
-    suppressed.size !== best.snap.suppressed.size ||
-    [...suppressed].some((i) => !best.snap.suppressed.has(i));
+    !sameSet(droppedLines, best.snap.dropped) ||
+    !sameSet(suppressed, best.snap.suppressed);
 
   // Whether the artifact on disk is provably the cut named below. Recorded
   // rather than assumed: `restore` shells out to `finish.mjs` through

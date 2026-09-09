@@ -15,7 +15,7 @@
 // does not rebase silently slides every caption off the thing it describes.
 const { execFileSync } = require('node:child_process');
 const { ffmpeg: FFMPEG, ffprobe: FFPROBE } = require('./bin.js');
-const { renameSync } = require('node:fs');
+const { renameSync, copyFileSync, existsSync } = require('node:fs');
 const path = require('node:path');
 
 //: How much faster an idle gap plays. A knob because it is the cheapest
@@ -207,7 +207,17 @@ function compressIdleGaps({ mp4Path, sourcePath = mp4Path, clip, narrationSpans 
   const plan = planCompression({ clip, narrationSpans, speed });
   if (!plan) return null;
   const { D, segments, newDuration } = plan;
-  if (!segments.some((s) => s.speed !== 1) || D - newDuration < MIN_SAVING_SEC) return null;
+  if (!segments.some((s) => s.speed !== 1) || D - newDuration < MIN_SAVING_SEC) {
+    // LEAVE `mp4Path` HOLDING THE SOURCE. Declining to compress still has to
+    // leave the output correct: on a re-run `mp4Path` holds the PREVIOUS run's
+    // compressed video, and every stage downstream would mux this run's timings
+    // onto footage cut for a different plan. Reachable the moment a re-cut
+    // protects more than the last one did — reverting a narration drop is
+    // exactly that, and the rollback produced a cut whose audio and video
+    // disagreed. A no-op on a first run, where the two are already identical.
+    if (sourcePath !== mp4Path && existsSync(sourcePath)) copyFileSync(sourcePath, mp4Path);
+    return null;
+  }
 
   const graph =
     segments.map((s, i) =>
