@@ -15,6 +15,7 @@ const { ffmpeg: FFMPEG, ffprobe: FFPROBE } = require('./src/bin.js');
 const { planNarration, narrate } = require('./src/narrate.js');
 const { compressIdleGaps } = require('./src/compress.js');
 const { generateBed, addMusicBed } = require('./src/music.js');
+const { narrationPath } = require('./src/dead-time-phrase.js');
 const { chooseStyle } = require('./src/style.js');
 
 const [outDir, id, linesJson] = process.argv.slice(2);
@@ -177,6 +178,17 @@ if (process.env.DEMO_NO_MUSIC !== '1') {
 }
 
 writeFileSync(clipPath, JSON.stringify(clip, null, 2));
+// THE SPANS THE COMPRESSOR WAS TOLD TO PROTECT (ENG-6130).
+//
+// `compressIdleGaps` pushes each narration span into its `active` set and keeps
+// it at 1x — a line spoken over a sped-up gap would be talking about something
+// the viewer has already flashed past. The critique runs in another process and
+// cannot see `planned`, so without this it asks the compressor a differently
+// parameterised question than the one that ran, and counts speech-protected
+// wait time as recoverable. Rebased above, so these are in FINAL time like the
+// clip itself.
+writeFileSync(narrationPath(outDir, id),
+  JSON.stringify(planned.map((l) => ({ startSec: l.startSec, durationSec: l.durationSec })), null, 2));
 // The normalized document the compiler reads, rebuilt from the rebased clip.
 // No `--raw-labels`: the bridge runs `scriptCaptions`, which writes the ON-SCREEN
 // text from the resolved element. That is a different job from the voiceover

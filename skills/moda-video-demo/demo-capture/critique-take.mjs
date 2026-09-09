@@ -29,6 +29,7 @@ const { checkMotion, JUMP_PX } = require('./src/motion-check.js');
 const { checkInk } = require('./src/ink-check.js');
 const { checkShots, DEAD_TIME_SHARE } = require('./src/shot-check.js');
 const { cameraPlanPath } = require('./src/camera-emit.js');
+const { deadTimePhrase, pct, narrationPath } = require('./src/dead-time-phrase.js');
 const { checkLegibility } = require('./src/legibility-check.js');
 const { checkCaptions } = require('./src/caption-check.js');
 
@@ -146,17 +147,44 @@ let cameraPlan = null;
 try {
   cameraPlan = JSON.parse(readFileSync(cameraPlanPath(outDir, id), 'utf8'));
 } catch { /* no plan record; the checker says so */ }
-const shots = checkShots({ doc, outDir, id, cameraWasAttempted, cameraPlan });
+// The spans finish.mjs told the compressor to protect.
+//
+// ABSENT IS NOT EMPTY. `finish.mjs` writes this on every run — including `[]`
+// for the marketing genre, which has no lines — so a missing file never means
+// "unnarrated", it means nobody recorded what the compressor was given. That
+// happens when `critique-take.mjs` is run standalone, which references/capture.md
+// documents. Treating it as `[]` makes the checker measure as though no speech
+// protects anything and overclaim the wait a pacing fix could remove, which is
+// the defect this whole ticket exists to remove.
+let narrationSpans = null;
+try {
+  narrationSpans = JSON.parse(readFileSync(narrationPath(outDir, id), 'utf8'));
+} catch {
+  console.log('  note: no narration record for this take — dead time is measured as if nothing was');
+  console.log('        spoken, so the recoverable share may read high. Re-run finish.mjs to record it.');
+}
+const shots = checkShots({ doc, outDir, id, cameraWasAttempted, cameraPlan, narrationSpans });
+// TWO NUMBERS, BOTH SAID OUT LOUD (ENG-6130). `share` is now the RECOVERABLE
+// share, so printing it under the old label would have claimed "0% of the
+// runtime is the product thinking" about a video that is genuinely a third
+// waiting — a false statement in the operator's report, and exactly the kind
+// this file keeps having to remove.
+const deadPhrase = () => deadTimePhrase(shots.deadTime, doc.durationSec);
 const waiting = shots.deadTime.measured
-  ? ` — ${(shots.deadTime.share * 100).toFixed(0)}% of the runtime is the product thinking`
+  ? ` — ${deadPhrase()}`
   : ` (waits not measured: ${shots.deadTime.reason})`;
 if (stats.stillFraction > STILL_CEILING) {
   console.log(`  ⚠ FROZEN — ${stillPct}% of the finished video is a still image${waiting}`);
   issues.push({ stage: 'pacing', type: 'frozen', detail: `${stillPct}% of the cut is static` });
 } else if (shots.deadTime.measured && shots.deadTime.bad) {
   // Not frozen, but a lot of the runtime is a wait — the spinner is animating.
-  console.log(`  ⚠ DEAD TIME — ${(shots.deadTime.share * 100).toFixed(0)}% of the runtime is the product thinking, over the ${(DEAD_TIME_SHARE * 100).toFixed(0)}% ceiling`);
-  issues.push({ stage: 'pacing', type: 'dead_time', detail: `${(shots.deadTime.share * 100).toFixed(0)}% of the runtime is a wait` });
+  console.log(`  ⚠ DEAD TIME — ${deadPhrase()}, over the ${pct(DEAD_TIME_SHARE)} ceiling`);
+  // The finding names the RECOVERABLE share, because that is the part the
+  // pacing fix can act on — a finding measured against something its remedy
+  // cannot reach is what sent this loop round three flat rounds.
+  issues.push({ stage: 'pacing', type: 'dead_time',
+    detail: `${pct(shots.deadTime.share)} of the runtime is a wait the compressor does not structurally ` +
+      'protect — a higher compress speed returns part of it (capped at 14x; see ENG-6149)' });
 } else {
   console.log(`  stillness: ${stillPct}% of the video is a still image${waiting}`);
 }

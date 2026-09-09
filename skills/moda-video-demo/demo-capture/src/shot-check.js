@@ -11,6 +11,10 @@
 // timeline and the emitted camera program — so none of them needs a model, and
 // none of them can be scored around.
 const { existsSync, readFileSync } = require('node:fs');
+// What the compressor would actually speed up — see ENG-6130. The planner
+// itself, not one of its constants: it keeps six kinds of span at 1x, and a caller that
+// subtracts one of them is describing a different function from the one that runs.
+const { planCompression } = require('./compress.js');
 
 //: A zoom whose peak misses its click by more than this reads as unsynced.
 //: 0.12s is under half a sampled frame at 4fps and about four frames at 30.
@@ -36,7 +40,21 @@ const CAPTION_SUBJECT_COVERAGE = 0.5;
 //: is pinned by test_anchor_margin_matches_shot_check in
 //: backend/tests/services/demo_video/test_zoom_emitter.py, which reads THIS file.
 const FRAMING_MARGIN = 0.15;
-//: Above this share of the runtime spent waiting, the demo is a loading screen.
+//: Above this share of the runtime spent waiting IN TIME THE COMPRESSOR DOES
+//: NOT STRUCTURALLY PROTECT, the demo is a loading screen.
+//:
+//: Not the same as "time a pacing fix will return": the share is measured on
+//: the already-compressed cut, so a speed bump gives back only part of it
+//: (ENG-6149). It is the right quantity to gate on — the wrong one, total wait,
+//: is what caused the unactionable loop — but the label stops short of a
+//: promise the lever cannot keep.
+//:
+//: The qualifier is the whole of ENG-6130. This used to be compared against the
+//: total wait, which counted the reveal beat, each wait's result hold, the
+//: opening, the breathing lead-in, post-click keeps and narration — every one of
+//: them a span the compressor keeps at 1x. A short take then tripped the gate on
+//: time no lever could touch, the loop applied its one pacing fix, nothing
+//: moved, and it repeated until the plateau detector stopped it.
 const DEAD_TIME_SHARE = 0.25;
 //: How much of an ongoing action may finish outside the shot framed to show it.
 //: A punch-in that leaves while text is still appearing takes the viewer away
@@ -241,7 +259,7 @@ function emptyCameraReason(plan) {
   );
 }
 
-function checkShots({ doc, outDir, id, motionPath = null, cameraWasAttempted = false, cameraPlan = null }) {
+function checkShots({ doc, outDir, id, motionPath = null, cameraWasAttempted = false, cameraPlan = null, narrationSpans = null }) {
   const w = doc.viewport?.width || 1280;
   const h = doc.viewport?.height || 800;
   const actions = doc.actions || [];
@@ -251,7 +269,70 @@ function checkShots({ doc, outDir, id, motionPath = null, cameraWasAttempted = f
   const waited = actions
     .filter((a) => a.type === 'wait')
     .reduce((n, a) => n + Math.max(0, (a.endSec ?? 0) - (a.startSec ?? 0)), 0);
-  const share = duration > 0 ? waited / duration : 0;
+  // WHAT A PACING FIX COULD ACTUALLY REMOVE (ENG-6130).
+  //
+  // The loop's only pacing lever is a higher compress speed and a re-cut, so a
+  // finding measured against time the compressor never touches is one its
+  // remedy cannot reach. On a short take that meant: raise the finding, apply
+  // the fix, nothing moves, repeat until the plateau detector stops it. Both
+  // measured runs were flat for three rounds exactly this way.
+  //
+  // Asked of the compressor rather than derived from its constants — there are
+  // SIX of them and an earlier cut of this undercounted: the opening
+  // `HEAD_KEEP`, the closing `TAIL_KEEP`, every wait's `WAIT_RESULT_KEEP`, the
+  // `BREATHING_SEC` lead-in on every gap, `POST_CLICK_KEEP` after every click,
+  // and any residual gap under `MIN_GAP_SEC` — plus each action's own span and
+  // any narration. An earlier
+  // cut of this imported `TAIL_KEEP` alone and still overclaimed: for a 4.5s
+  // wait on a 10s clip it called all 4.5s recoverable when the compressor speeds
+  // 1.55s of it.
+  // WITH THE NARRATION, because the compressor that actually ran had it:
+  // `finish.mjs` passes `narrationSpans: planned`, and each span is kept at 1x.
+  // Asking the planner the same question with a different argument would still
+  // be describing a function other than the one that ran.
+  const plan = planCompression({ clip: doc, narrationSpans: narrationSpans ?? [] });
+  const overlap = (aStart, aEnd, bStart, bEnd) => Math.max(0, Math.min(aEnd, bEnd) - Math.max(aStart, bStart));
+  //: How much of the WAITS a given set of sped spans covers. Shared so the
+  //: with-narration and without-narration plans are measured identically.
+  const waitOverlap = (spans) => actions
+    .filter((a) => a.type === 'wait')
+    .reduce((n, a) => n + spans.reduce(
+      (m, seg) => m + overlap(a.startSec ?? 0, a.endSec ?? 0, seg.oldStart, seg.oldEnd), 0), 0);
+  const recoverable = waitOverlap((plan?.segments ?? []).filter((seg) => seg.speed !== 1));
+  // Kept for the report: what the viewer waits through, minus what a fix could
+  // take out. NOT a claim about any single protected region — it absorbs the
+  // reveal beat, each wait's result hold, the opening, the breathing lead-in,
+  // post-click keeps, sub-MIN_GAP residue and narration alike.
+  const protectedWait = Math.max(0, waited - recoverable);
+  // ...except narration, which IS worth naming: an operator told a 16s hold is
+  // "the deliberate reveal beat" will not think to shorten the line that is
+  // actually holding the clip at 1x.
+  //
+  // Naming it is ALL this does. No lever shortens narration today —
+  // `shorten_narration` is routed to the pacing stage, whose only action is a
+  // compress-speed bump, and a protected span is unmoved at any speed. Raising
+  // a finding for it would keep the loop alive paying a metered re-cut per
+  // round for nothing, which is why ENG-6130 dropped that and ENG-6137 owns
+  // building the lever first.
+  //
+  // ASKED AS A DIFFERENCE, not measured off the raw spans. Overlapping the waits
+  // with the spans directly credits narration for time the compressor protects
+  // anyway — a wait's own result hold, the reveal beat — and double-counts two
+  // spans over the same second, which can print a narration figure larger than
+  // the protected total it is a subset of. Planning the same clip WITHOUT the
+  // spans and diffing answers the only question that matters: how much would
+  // shortening the lines give back? It is a subset by construction, because
+  // removing a protection can only ever grow the sped set.
+  const bare = planCompression({ clip: doc, narrationSpans: [] });
+  const recoverableWithout = waitOverlap((bare?.segments ?? []).filter((seg) => seg.speed !== 1));
+  const narrationHeld = Math.max(0, recoverableWithout - recoverable);
+  //: Whether we were TOLD what the compressor protected. `null` means no record
+  //: — not "no narration", which is a value `finish.mjs` writes explicitly as
+  //: `[]`. Without it `recoverable` is measured as though nothing was spoken and
+  //: reads high, so the report must be able to say so rather than assert a
+  //: number it cannot back.
+  const narrationKnown = Array.isArray(narrationSpans);
+  const share = duration > 0 ? recoverable / duration : 0;
   const deadTime = duration <= 0
     ? { measured: false, reason: 'the clip has no duration' }
     // Waits cannot outlast the clip that contains them. When they do, the
@@ -261,7 +342,9 @@ function checkShots({ doc, outDir, id, motionPath = null, cameraWasAttempted = f
     // the difference between catching that and quietly reporting 153%.
     : waited > duration * 1.02
       ? { measured: false, reason: `the action times (${waited.toFixed(1)}s of waits) do not belong to this ${duration.toFixed(1)}s cut` }
-      : { measured: true, seconds: waited, share, bad: share > DEAD_TIME_SHARE };
+      // Both numbers, so nothing is hidden: `seconds` is what the viewer waits
+      // through, `recoverable`/`share` is what a pacing fix could still remove.
+      : { measured: true, seconds: waited, protectedWait, narrationHeld, narrationKnown, recoverable, share, bad: share > DEAD_TIME_SHARE };
 
   // ── cursor occlusion ─────────────────────────────────────────────────────
   // A fill clicks into the middle of its field and types from the left, so the

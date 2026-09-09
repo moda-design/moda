@@ -1199,3 +1199,447 @@ test('an unrecognised ending gets the conservative advice', () => {
   assert.match(r.advice, /Find a path that reaches the goal/);
 });
 
+
+// ENG-6130: "long static tails" sat on the quality deck until the arithmetic
+// closed — 2.023s of "dead time" in a 6.034s clip is 33.5%, and TAIL_KEEP is
+// 2.0. The whole finding WAS the deliberate reveal beat, which compressIdleGaps
+// protects and no pacing fix can touch. The loop raised it, applied its only
+// lever, saw no change, and repeated until the plateau detector stopped it.
+test('the protected reveal beat is not counted as dead time', () => {
+  const { checkShots } = require('../src/shot-check.js');
+  // The real take, to the millisecond.
+  const doc = {
+    durationSec: 6.034,
+    viewport: { width: 1280, height: 800 },
+    actions: [
+      { index: 0, type: 'click', startSec: 0.5, endSec: 2.0, clickSec: 1.0, clickX: 100, clickY: 100 },
+      { index: 1, type: 'wait', startSec: 4.011, endSec: 6.034 },
+    ],
+  };
+  const dead = checkShots({ doc, outDir: '/tmp', id: 'x' }).deadTime;
+  assert.strictEqual(dead.measured, true);
+  // Nothing hidden: the viewer really does wait through all of it.
+  assert.ok(Math.abs(dead.seconds - 2.023) < 0.001, `seconds should still report the full wait, got ${dead.seconds}`);
+  assert.ok(Math.abs(dead.protectedWait - 2.0) < 0.05, `the wait IS the protected beat, got ${dead.protectedWait}`);
+  assert.ok(dead.recoverable < 0.05, `only the sliver past the beat is recoverable, got ${dead.recoverable}`);
+  assert.strictEqual(dead.bad, false,
+    'a 6s take whose only wait IS the reveal must not be flagged — no fix could act on it');
+});
+
+test('a wait that genuinely outlasts the reveal is still flagged', () => {
+  // The guard must not swallow real dead time: this is the case the check exists
+  // for, and it has to survive the fix.
+  const { checkShots } = require('../src/shot-check.js');
+  const doc = {
+    durationSec: 30,
+    viewport: { width: 1280, height: 800 },
+    actions: [
+      { index: 0, type: 'click', startSec: 0.5, endSec: 1.0, clickSec: 0.8, clickX: 10, clickY: 10 },
+      { index: 1, type: 'wait', startSec: 2, endSec: 20 },   // 18s of the product thinking
+      { index: 2, type: 'wait', startSec: 28, endSec: 30 },  // the reveal
+    ],
+  };
+  const dead = checkShots({ doc, outDir: '/tmp', id: 'x' }).deadTime;
+  assert.strictEqual(dead.bad, true, '18s of waiting is dead time a pacing fix CAN remove');
+  assert.ok(dead.recoverable > 17, `expected ~18s recoverable, got ${dead.recoverable}`);
+});
+
+test('a clip no longer than the reveal beat cannot go negative', () => {
+  const { checkShots } = require('../src/shot-check.js');
+  const doc = {
+    durationSec: 1.5,
+    viewport: { width: 1280, height: 800 },
+    actions: [{ index: 0, type: 'wait', startSec: 0, endSec: 1.5 }],
+  };
+  const dead = checkShots({ doc, outDir: '/tmp', id: 'x' }).deadTime;
+  assert.strictEqual(dead.recoverable, 0, 'nothing in a 1.5s clip is compressible, so nothing is recoverable');
+  assert.ok(dead.recoverable >= 0, 'recoverable must never be negative');
+});
+
+
+// ENG-6130 round 1: the first cut subtracted the beat's LENGTH from the total
+// wait, wherever the waits sat. The compressor protects a POSITION —
+// `[D - TAIL_KEEP, D]` — so that excused 2s of fully compressible wait anywhere
+// in the take, turning a false positive into a false negative, which is worse.
+// The earlier "still flagged" test missed it because its wait was 18s.
+test('a wait that misses the protected tail is not excused by it', () => {
+  const { checkShots } = require('../src/shot-check.js');
+  // 10s clip, one 4.5s wait at the START, tail fully active. Every second of
+  // that wait is compressible.
+  const doc = {
+    durationSec: 10,
+    viewport: { width: 1280, height: 800 },
+    actions: [
+      { index: 0, type: 'wait', startSec: 0, endSec: 4.5 },
+      { index: 1, type: 'click', startSec: 5, endSec: 10, clickSec: 6, clickX: 10, clickY: 10 },
+    ],
+  };
+  const dead = checkShots({ doc, outDir: '/tmp', id: 'x' }).deadTime;
+  // NOT 4.5s. An earlier cut of this test asserted the whole wait was
+  // recoverable, which encoded the very overclaim the check exists to stop:
+  // HEAD_KEEP protects [0, 1.0], BREATHING_SEC keeps [1.0, 1.35] at 1x, and
+  // WAIT_RESULT_KEEP protects [2.9, 4.5]. The compressor speeds [1.35, 2.9].
+  assert.ok(Math.abs(dead.recoverable - 1.55) < 0.01,
+    `the compressor speeds 1.55s of this wait, not the whole of it — got ${dead.recoverable}`);
+  assert.ok(Math.abs(dead.protectedWait - 2.95) < 0.01, `the rest is protected, got ${dead.protectedWait}`);
+});
+
+test('a wait straddling the tail is excused only for the part inside it', () => {
+  const { checkShots } = require('../src/shot-check.js');
+  // 10s clip, wait 6→10: 2s of it (8→10) is the protected beat, 2s is not.
+  const doc = {
+    durationSec: 10,
+    viewport: { width: 1280, height: 800 },
+    actions: [
+      { index: 0, type: 'click', startSec: 0, endSec: 1, clickSec: 0.5, clickX: 10, clickY: 10 },
+      { index: 1, type: 'wait', startSec: 6, endSec: 10 },
+    ],
+  };
+  const dead = checkShots({ doc, outDir: '/tmp', id: 'x' }).deadTime;
+  assert.ok(Math.abs(dead.protectedWait - 2.0) < 0.01, `the tail half is protected, got ${dead.protectedWait}`);
+  assert.ok(Math.abs(dead.recoverable - 2.0) < 0.01, `the half before the beat is recoverable, got ${dead.recoverable}`);
+});
+
+test('the dead-time report renders the protected duration, not a dangling field', () => {
+  // CALLS the real formatter. Three earlier guards for this sentence could all
+  // pass while the report said something false: one grepped for a literal, one
+  // pinned a regex to syntax that had since been deleted, and one hand-built its
+  // own copy of the phrase and asserted against the copy — that last one even
+  // emitted the exact wording a sibling test asserts must NOT appear.
+  const { deadTimePhrase } = require('../src/dead-time-phrase.js');
+
+  // A renamed-away field is what broke this before: `reveal` became
+  // `protectedWait` and the clause silently stopped rendering.
+  const rendered = deadTimePhrase(
+    { seconds: 4.0, protectedWait: 2.5, narrationHeld: 0, share: 0.15 }, 10);
+  assert.match(rendered, /40% of the runtime/, 'the total the viewer waits through');
+  assert.match(rendered, /15% not structurally protected/, 'and what is not structurally protected');
+  assert.match(rendered, /2\.5s of it protected/, 'and the part no fix can reach');
+
+  // Narration is named when it is material, and never as the reveal beat.
+  const narrated = deadTimePhrase(
+    { seconds: 16, protectedWait: 16, narrationHeld: 13.9, share: 0 }, 20);
+  assert.match(narrated, /13\.9s of that held by narration/);
+  assert.doesNotMatch(narrated, /reveal beat/);
+
+  // Nothing protected: no dangling clause, no stray parenthetical.
+  const clean = deadTimePhrase({ seconds: 1, protectedWait: 0, narrationHeld: 0, share: 0.1 }, 10);
+  // The LABEL contains the word "protected" now, so assert the absent thing is
+  // the clause — "Ns of it protected" — not any occurrence of the word.
+  assert.doesNotMatch(clean, /s of it protected/);
+});
+
+test('the total and the recoverable share are never swapped', () => {
+  // The previous guard was a regex pinned to the exact syntax this PR deleted,
+  // so a recurrence spelled through the `pct()` helper could not match it — and
+  // swapping the two numbers inside the formatter would have passed. Drive the
+  // function with values that make a swap unmistakable instead.
+  const { deadTimePhrase } = require('../src/dead-time-phrase.js');
+  const rendered = deadTimePhrase(
+    { seconds: 9, protectedWait: 8, narrationHeld: 0, share: 0.1 }, 10);
+  // 90% waited, 10% recoverable — a swap would read "10% of the runtime is the
+  // product thinking (90% recoverable)".
+  assert.match(rendered, /90% of the runtime is the product thinking/);
+  assert.match(rendered, /10% not structurally protected/);
+  assert.doesNotMatch(rendered, /10% of the runtime is the product thinking/);
+});
+
+// ENG-6130 round 2: the first two cuts of this check subtracted a CONSTANT
+// (TAIL_KEEP) when the compressor keeps SIX kinds of span at 1x — the opening
+// HEAD_KEEP, the closing TAIL_KEEP, the final WAIT_RESULT_KEEP of every wait,
+// the BREATHING_SEC lead-in on every gap, POST_CLICK_KEEP after every click,
+// and any residual gap under MIN_GAP_SEC that buildSegments leaves alone.
+// (BREATHING_SEC and POST_CLICK_KEEP are exactly the two an earlier count
+// omitted, which is why the guard below reads the list off compress.js.) A
+// take made of short waits is therefore entirely incompressible, and calling
+// that time "recoverable by pacing" is the same unactionable finding the whole
+// ticket exists to close.
+test('waits the compressor speeds none of are not called recoverable', () => {
+  const { checkShots } = require('../src/shot-check.js');
+  // 12s, four 1.5s waits between clicks, none touching the final 2s. Each wait
+  // is shorter than WAIT_RESULT_KEEP + MIN_GAP_SEC, so there is nothing to speed
+  // at any compress speed.
+  const doc = {
+    durationSec: 12,
+    viewport: { width: 1280, height: 800 },
+    actions: [
+      { index: 0, type: 'click', startSec: 0, endSec: 1, clickSec: 0.5, clickX: 10, clickY: 10 },
+      { index: 1, type: 'wait', startSec: 1, endSec: 2.5 },
+      { index: 2, type: 'click', startSec: 2.5, endSec: 3, clickSec: 2.7, clickX: 10, clickY: 10 },
+      { index: 3, type: 'wait', startSec: 3, endSec: 4.5 },
+      { index: 4, type: 'click', startSec: 4.5, endSec: 5, clickSec: 4.7, clickX: 10, clickY: 10 },
+      { index: 5, type: 'wait', startSec: 5, endSec: 6.5 },
+      { index: 6, type: 'click', startSec: 6.5, endSec: 7, clickSec: 6.7, clickX: 10, clickY: 10 },
+      { index: 7, type: 'wait', startSec: 7, endSec: 8.5 },
+    ],
+  };
+  const dead = checkShots({ doc, outDir: '/tmp', id: 'x' }).deadTime;
+  assert.ok(Math.abs(dead.seconds - 6) < 0.01, 'the viewer really does wait 6s — that is still reported');
+  assert.strictEqual(dead.recoverable, 0, 'the compressor speeds none of it, so none of it is recoverable');
+  assert.strictEqual(dead.bad, false,
+    'raising a pacing finding here sends the loop at a lever that cannot move anything');
+});
+
+test('the recoverable measure comes from the compressor, not from its constants', () => {
+  // Importing one constant and subtracting it described a different function
+  // from the one that runs — twice. shot-check must ask the planner.
+  const src = readFileSync(path.join(HERE, 'src', 'shot-check.js'), 'utf8');
+  assert.match(src, /planCompression\(/, 'shot-check must ask the compressor what it would speed up');
+  // DERIVED, not hand-listed. The first version of this guard named four
+  // constants when the compressor tunes six — BREATHING_SEC keeps 0.35s at the
+  // start of every gap and POST_CLICK_KEEP extends every action's span — so an
+  // edit subtracting either would have shipped green under a message saying it
+  // could not. A list that has to be kept in step with another file is the
+  // thing this whole ticket is about, so read the names off compress.js.
+  const compressSrc = readFileSync(path.join(HERE, 'src', 'compress.js'), 'utf8');
+  const tunables = [...compressSrc.matchAll(/^const ([A-Z][A-Z_]*) = [0-9]/gm)].map((m) => m[1]);
+  assert.ok(tunables.length >= 6, `expected compress.js's tuning constants, found ${tunables.join(', ')}`);
+
+  // CODE only. The comment above the call names the protected regions on
+  // purpose — that is the explanation, not a re-derivation.
+  const code = src.split('\n').filter((l) => !l.trim().startsWith('//') && !l.trim().startsWith('*'));
+  const usesConstants = code.filter((l) => tunables.some((c) => new RegExp(`\\b${c}\\b`).test(l)));
+  assert.deepStrictEqual(usesConstants, [],
+    `shot-check must not re-derive any of compress.js's tuning constants (${tunables.join(', ')}):\n${usesConstants.join('\n')}`);
+});
+
+test('planCompression is the same planning the compressor itself uses', () => {
+  // One seam: if compressIdleGaps stopped routing through it, the two could
+  // disagree and this check would grade a plan nothing executes.
+  const src = readFileSync(path.join(HERE, 'src', 'compress.js'), 'utf8');
+  assert.match(src, /function compressIdleGaps[\s\S]{0,400}planCompression\(/,
+    'compressIdleGaps must build its segments through planCompression');
+});
+
+// ENG-6130 round 3: the compressor that actually runs is called WITH narration
+// spans, and keeps each at 1x — a line spoken over a sped-up gap would be
+// talking about something the viewer has already flashed past. The checker was
+// calling the same planner without them, so speech-protected wait time still
+// counted as recoverable: the same unactionable plateau, arriving through the
+// one protected region round 2 did not account for.
+test('narration-protected waiting is not called recoverable', () => {
+  const { checkShots } = require('../src/shot-check.js');
+  const doc = {
+    durationSec: 20,
+    viewport: { width: 1280, height: 800 },
+    actions: [
+      { index: 0, type: 'click', startSec: 0, endSec: 1, clickSec: 0.5, clickX: 10, clickY: 10 },
+      { index: 1, type: 'wait', startSec: 1, endSec: 17 },
+    ],
+  };
+  const bare = checkShots({ doc, outDir: '/tmp', id: 'x' }).deadTime;
+  assert.strictEqual(bare.bad, true, 'unnarrated, 16s of waiting really is compressible');
+
+  // The same take with a line spoken across the whole wait: the compressor
+  // protects it, so no pacing fix can shorten it.
+  const narrated = checkShots({
+    doc, outDir: '/tmp', id: 'x',
+    narrationSpans: [{ startSec: 0.5, durationSec: 17 }],
+  }).deadTime;
+  assert.strictEqual(narrated.recoverable, 0,
+    'the compressor speeds none of a narrated span, so none of it is recoverable');
+  assert.strictEqual(narrated.bad, false,
+    'raising a pacing finding over speech sends the loop at a lever that cannot move it');
+});
+
+test('finish.mjs persists the narration spans the compressor was given', () => {
+  // The critique runs in another process and cannot see `planned`. Without the
+  // record it asks the planner a differently-parameterised question than the
+  // one that ran — and nothing fails loudly when that happens.
+  const src = readFileSync(path.join(HERE, 'finish.mjs'), 'utf8');
+  const critique = readFileSync(path.join(HERE, 'critique-take.mjs'), 'utf8');
+  assert.match(src, /narrationPath\(/, 'finish.mjs must persist the spans it passed to the compressor');
+  assert.match(critique, /narrationPath\(/, 'and critique-take.mjs must read them back');
+  assert.match(critique, /narrationSpans/, 'and thread them into checkShots');
+  // ONE definition of the filename. Two literals is the shape ENG-6128 was
+  // fixed for on the sibling artifact, and this file had it too until review.
+  for (const [name, text] of [['finish.mjs', src], ['critique-take.mjs', critique]]) {
+    assert.doesNotMatch(text, /narration\.json/,
+      `${name} spells the narration filename itself instead of using narrationPath`);
+  }
+});
+
+// ENG-6130 round 4: the report named a closed list of three causes — the reveal
+// beat, each wait's result hold, the opening — while `protectedWait` is
+// everything the compressor keeps at 1x, narration included. On the narrated
+// case above that printed "16.0s of it protected (the reveal beat, …)",
+// attributing 16s to a 2.0s beat plus a 1.6s hold plus a 1.0s opening. False in
+// the operator's report, and it points away from the one lever that works:
+// `shorten_narration`, which iterate.mjs already routes to the pacing stage.
+test('a narration-held wait is reported as narration, not as the reveal beat', () => {
+  const { checkShots } = require('../src/shot-check.js');
+  const doc = {
+    durationSec: 20,
+    viewport: { width: 1280, height: 800 },
+    actions: [
+      { index: 0, type: 'click', startSec: 0, endSec: 1, clickSec: 0.5, clickX: 10, clickY: 10 },
+      { index: 1, type: 'wait', startSec: 1, endSec: 17 },
+    ],
+  };
+  const d = checkShots({ doc, outDir: '/tmp', id: 'x', narrationSpans: [{ startSec: 0.5, durationSec: 17 }] }).deadTime;
+  // 13.9, NOT the full 16: about 2.1s of that wait is protected anyway by the
+  // result hold and the breathing lead-in, and crediting narration for it would
+  // promise back time that shortening the line cannot return. The figure is the
+  // difference between planning the clip with the spans and without them.
+  const unnarrated = checkShots({ doc, outDir: '/tmp', id: 'x' }).deadTime;
+  assert.ok(Math.abs(d.narrationHeld - 13.9) < 0.05, `expected ~13.9s held by the line, got ${d.narrationHeld}`);
+  assert.ok(Math.abs(d.narrationHeld - unnarrated.recoverable) < 0.01,
+    'what narration holds must equal what the same clip recovers without it');
+  assert.ok(d.narrationHeld <= d.protectedWait + 1e-9, 'it is a subset of the protected total');
+
+  // Rendered by the REAL formatter. A hand-built copy here would assert against
+  // itself, which is the pattern src/dead-time-phrase.js exists to end.
+  const { deadTimePhrase } = require('../src/dead-time-phrase.js');
+  const held = deadTimePhrase(d, doc.durationSec);
+  assert.match(held, /13\.9s of that held by narration/);
+  assert.doesNotMatch(held, /reveal beat/,
+    'attributing a narration hold to the reveal beat sends the operator at the wrong lever');
+
+  // And with no narration, it must not claim any single cause either.
+  const bare = checkShots({ doc, outDir: '/tmp', id: 'x' }).deadTime;
+  assert.strictEqual(bare.narrationHeld, 0);
+});
+
+test('the report never names a closed list of protected causes', () => {
+  // `protectedWait` absorbs the beat, the result holds, the opening, the
+  // breathing lead-in, post-click keeps, sub-MIN_GAP residue and narration. Any
+  // enumeration of it will be wrong for some take.
+  //
+  // RUNS the sentence. This grepped critique-take.mjs, and the sentence has
+  // since moved into the formatter — so the enumeration could be reintroduced
+  // where it now lives and this would still pass. A guard pointed at the wrong
+  // file is the failure this module was created to stop.
+  const { deadTimePhrase } = require('../src/dead-time-phrase.js');
+  for (const d of [
+    { seconds: 16, protectedWait: 16, narrationHeld: 13.9, share: 0 },
+    { seconds: 4, protectedWait: 2.5, narrationHeld: 0, share: 0.15 },
+  ]) {
+    const rendered = deadTimePhrase(d, 20);
+    assert.doesNotMatch(rendered, /reveal beat|result hold|the opening/,
+      `the report must describe what the number IS, not list causes it does not match: ${rendered}`);
+  }
+});
+
+// ENG-6130 round 5: narrationHeld was a raw overlap of the waits with the
+// spans, so two spans over the same second counted twice and the figure could
+// exceed the protected total it is a subset of. Derived as a plan difference it
+// cannot: removing a protection only ever grows the sped set.
+test('overlapping narration spans cannot inflate the held figure', () => {
+  const { checkShots } = require('../src/shot-check.js');
+  const doc = {
+    durationSec: 20,
+    viewport: { width: 1280, height: 800 },
+    actions: [
+      { index: 0, type: 'click', startSec: 0, endSec: 1, clickSec: 0.5, clickX: 10, clickY: 10 },
+      { index: 1, type: 'wait', startSec: 1, endSec: 17 },
+    ],
+  };
+  const one = checkShots({ doc, outDir: '/tmp', id: 'x', narrationSpans: [{ startSec: 0.5, durationSec: 17 }] }).deadTime;
+  const two = checkShots({
+    doc, outDir: '/tmp', id: 'x',
+    narrationSpans: [{ startSec: 0.5, durationSec: 17 }, { startSec: 1, durationSec: 16 }],
+  }).deadTime;
+  assert.ok(Math.abs(one.narrationHeld - two.narrationHeld) < 0.01,
+    'a second span over the same seconds holds no additional time');
+  assert.ok(two.narrationHeld <= two.protectedWait + 1e-9,
+    'the held figure must never exceed the protected total it is part of');
+});
+
+// ENG-6130 / ENG-6137: `narrationHeld` is REPORTED and nothing acts on it.
+//
+// A `narration_held` finding was added and then removed: `ownerOf` routes
+// `fix: 'shorten_narration'` to the pacing stage, whose only action is a
+// compress-speed bump, and a narration span is protected at any speed. The
+// finding therefore moved nothing while `acted.push('pacing')` kept the loop
+// alive, paying a full finish.mjs re-cut per round — narration TTS plus a
+// metered music render — until the plateau detector stopped it.
+//
+// The guard shipped alongside it asserted that the string 'shorten_narration'
+// appeared in ownerOf's condition and in run.mjs's exclusion array. Both were
+// true. Neither says anything about code that shortens a line, and it passed
+// vacuously against exactly this defect. This test pins the honest state
+// instead, and fails when a lever is added so the finding can come back with it.
+test('nothing acts on narrationHeld yet, and no finding pretends otherwise', () => {
+  const critique = readFileSync(path.join(HERE, 'critique-take.mjs'), 'utf8');
+  assert.doesNotMatch(critique, /narration_held/,
+    'a finding must not be raised until a lever exists — see ENG-6137');
+
+  // The pacing stage is the only place `shorten_narration` is routed to, and it
+  // does one thing. When that stops being true, this test should fail and the
+  // finding can be restored.
+  const iterate = readFileSync(path.join(HERE, 'iterate.mjs'), 'utf8');
+  const pacing = /if \(byStage\.pacing\?\.length\) \{([\s\S]*?)\n  \}/.exec(iterate);
+  assert.ok(pacing, 'could not find the pacing branch');
+  assert.match(pacing[1], /compressSpeed = Math\.min/, 'the pacing lever is a compress-speed bump');
+  assert.doesNotMatch(pacing[1], /narrat/i,
+    'a narration lever now exists — restore the narration_held finding (ENG-6137) and retire this test');
+
+  // The figure itself is still measured and still reaches the report as prose.
+  const shot = readFileSync(path.join(HERE, 'src', 'shot-check.js'), 'utf8');
+  assert.match(shot, /narrationHeld/, 'the measurement stays — it is the finding that was dropped');
+  // Rendered, not grepped: the sentence lives in src/dead-time-phrase.js now,
+  // and a guard that greps the wrong file reports the operator has lost sight
+  // of a number they can still see.
+  const { deadTimePhrase } = require('../src/dead-time-phrase.js');
+  assert.match(deadTimePhrase({ seconds: 16, protectedWait: 16, narrationHeld: 13.9, share: 0 }, 20),
+    /held by narration/, 'and the operator still sees it');
+});
+
+// ENG-6130: `bad` compares DEAD_TIME_SHARE against the RECOVERABLE share, and
+// the constant's own declaration used to describe the quantity the gate read
+// BEFORE this ticket — "the share of the runtime spent waiting". A threshold
+// whose stated meaning is not the one it gates is how the next reader retunes
+// it against the wrong number.
+test('the dead-time threshold describes the quantity it actually gates', () => {
+  const src = readFileSync(path.join(HERE, 'src', 'shot-check.js'), 'utf8');
+  const decl = /((?:\/\/:[^\n]*\n)+)const DEAD_TIME_SHARE = /.exec(src);
+  assert.ok(decl, 'could not find the DEAD_TIME_SHARE declaration comment');
+  assert.match(decl[1], /NOT STRUCTURALLY PROTECT/i,
+    'the comment must say the threshold gates unprotected wait, not total wait');
+  // ...and must say the lever does not return all of it: the share is measured
+  // on the already-compressed cut, so a speed bump gives back part (ENG-6149).
+  assert.match(decl[1], /Not the same as .*pacing fix will return/i,
+    'the comment must disclaim the stronger reading, not leave it open');
+  assert.match(decl[1], /ENG-6149/, 'and point at the ticket that closes the gap');
+
+  // And the gate really does compare the recoverable share, so the two agree.
+  const gate = /bad: share > DEAD_TIME_SHARE/.exec(src);
+  assert.ok(gate, 'the gate must key on `share`');
+  assert.match(src, /const share = duration > 0 \? recoverable \/ duration : 0;/,
+    '`share` must be the recoverable share for that comment to be true');
+});
+
+// ENG-6130: a missing narration record is NOT "no narration". finish.mjs writes
+// the file on every run — including `[]` for the marketing genre — so absence
+// means nobody recorded what the compressor was given, which happens when
+// critique-take.mjs is run standalone (references/capture.md documents that).
+// Measured as `[]`, the checker acts as though no speech protects anything and
+// overclaims the recoverable share: the exact defect this ticket removes,
+// returning as a silent default.
+test('a missing narration record is unknown, not "nothing was spoken"', () => {
+  const { checkShots } = require('../src/shot-check.js');
+  const { deadTimePhrase } = require('../src/dead-time-phrase.js');
+  const doc = {
+    durationSec: 20,
+    viewport: { width: 1280, height: 800 },
+    actions: [
+      { index: 0, type: 'click', startSec: 0, endSec: 1, clickSec: 0.5, clickX: 10, clickY: 10 },
+      { index: 1, type: 'wait', startSec: 1, endSec: 17 },
+    ],
+  };
+  const told = checkShots({ doc, outDir: '/tmp', id: 'x', narrationSpans: [] }).deadTime;
+  const notTold = checkShots({ doc, outDir: '/tmp', id: 'x', narrationSpans: null }).deadTime;
+
+  assert.strictEqual(told.narrationKnown, true, 'an explicit empty list IS a record: this take has no lines');
+  assert.strictEqual(notTold.narrationKnown, false, 'no record is a third state, not an empty one');
+
+  // The numbers are necessarily the same — that is precisely why the state has
+  // to be carried rather than inferred from them.
+  assert.strictEqual(told.recoverable, notTold.recoverable);
+
+  // ...and the report must not present the figure as if it were backed.
+  assert.doesNotMatch(deadTimePhrase(told, 20), /no narration record/);
+  assert.match(deadTimePhrase(notTold, 20), /no narration record/,
+    'a share measured without the record must say so, or it is an overclaim by default');
+});
+

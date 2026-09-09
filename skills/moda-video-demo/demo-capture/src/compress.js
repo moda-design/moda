@@ -111,8 +111,22 @@ function rebaseClip(clip, remap, newDuration) {
  * talking about something the viewer has already flashed past. Returns null when
  * there is nothing worth compressing, so the caller keeps its original file.
  */
-function compressIdleGaps({ mp4Path, sourcePath = mp4Path, clip, narrationSpans = [], speed = SPEED }) {
-  const D = clip.durationSec;
+/**
+ * WHAT THE COMPRESSOR WOULD SPEED UP, without touching a frame.
+ *
+ * Extracted so nothing has to re-derive it. `compressIdleGaps` keeps SIX kinds
+ * of span at 1x — the opening `HEAD_KEEP`, the closing `TAIL_KEEP`, the final
+ * `WAIT_RESULT_KEEP` of every wait, the `BREATHING_SEC` lead-in at the start of
+ * every gap, `POST_CLICK_KEEP` after every click, and any residual gap under
+ * `MIN_GAP_SEC` that `buildSegments` leaves alone — plus every action's own span
+ * and any narration. A caller that imports one of those constants and subtracts it is
+ * describing a different function from the one that runs (ENG-6130).
+ *
+ * Returns the segments in ORIGINAL time. Those with `speed !== 1` are exactly
+ * the spans that get faster; everything else the compressor keeps.
+ */
+function planCompression({ clip, narrationSpans = [], speed = SPEED }) {
+  const D = clip?.durationSec;
   if (!D || D <= 0) return null;
 
   // CONSECUTIVE WAITS ARE ONE WAIT. Three adjacent `wait` actions each kept
@@ -160,6 +174,13 @@ function compressIdleGaps({ mp4Path, sourcePath = mp4Path, clip, narrationSpans 
 
   const kept = mergeIntervals(active).map(([s, e]) => [s, Math.min(e, D)]);
   const { segments, newDuration } = buildSegments(D, kept, Math.max(1.5, speed));
+  return { D, kept, segments, newDuration };
+}
+
+function compressIdleGaps({ mp4Path, sourcePath = mp4Path, clip, narrationSpans = [], speed = SPEED }) {
+  const plan = planCompression({ clip, narrationSpans, speed });
+  if (!plan) return null;
+  const { D, segments, newDuration } = plan;
   if (!segments.some((s) => s.speed !== 1) || D - newDuration < MIN_SAVING_SEC) return null;
 
   const graph =
@@ -194,4 +215,4 @@ function compressIdleGaps({ mp4Path, sourcePath = mp4Path, clip, narrationSpans 
            spedSegments: segments.filter((s) => s.speed !== 1).length };
 }
 
-module.exports = { compressIdleGaps };
+module.exports = { compressIdleGaps, planCompression };
