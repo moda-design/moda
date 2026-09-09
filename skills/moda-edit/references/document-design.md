@@ -28,7 +28,8 @@ Default page size is US Letter: `moda canvas create --name … --size 816x1056` 
 
 ## Making it good
 
-- **Pack the page.** A PDF is read up close, not across a room — it should be information-dense, and text-only is boring. Icons, dividers, stat rows, and cards break up prose and carry structure.
+- **Pack the page** — when the content is yours to compose. A PDF is read up close, not across a room, so it should be information-dense, and text-only is boring. Icons, dividers, stat rows, and cards break up prose and carry structure.
+- **Restyling an attached document is the exception.** When the content came from a file the user asked you to beautify, that document IS the deliverable: keep its prose in whole paragraphs, keep its headings, lists and tables as headings, lists and tables, and keep their order. Do not split sentences across separate elements to build a denser grid, and do not add decorative shapes to fill space. Reach for the document's own images before you generate or draw anything. Density here comes from typography and spacing, not from cutting the text up.
 - **Keep backgrounds print-friendly.** Simple fills and rules; do NOT generate images for PDF backgrounds.
 - **Never encode a comparison in semantic red/green** ("problem vs solution", "before vs after"). Differentiate with layout, weight, or tonal variations of the brand palette.
 

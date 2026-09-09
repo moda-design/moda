@@ -74,8 +74,16 @@ One page or fifty — the page count changes the plan, not the skill.
 
 ## The bar
 
-- **Pack the page.** A PDF is read up close, not across a room: icons,
-  dividers, stat rows, and cards carry structure that prose cannot.
+- **Pack the page** when the content is yours to compose. A PDF is read up
+  close, not across a room: icons, dividers, stat rows, and cards carry
+  structure that prose cannot.
+- **Restyling an attached document is the exception.** That document is the
+  deliverable: keep prose in whole paragraphs, keep headings, lists and tables
+  as themselves and in order, no sentence-splitting for a denser grid, no
+  decorative shapes to fill space, and use the document's own images first.
+- **A table nested inside another table's cell has no canvas equivalent.**
+  Flatten it into its parent, or place it as its own table directly after —
+  either way keep every row.
 - **Balance the vertical composition.** Content top-packed above a dead band
   reads unfinished; distribute the slack as deliberate spacing, or anchor a
   closing block near the bottom margin.
