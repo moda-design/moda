@@ -28,6 +28,7 @@ const { critiqueVideo, critiqueFrames } = require('./src/critique.js');
 const { checkMotion, JUMP_PX } = require('./src/motion-check.js');
 const { checkInk } = require('./src/ink-check.js');
 const { checkShots, DEAD_TIME_SHARE } = require('./src/shot-check.js');
+const { cameraPlanPath } = require('./src/camera-emit.js');
 const { checkLegibility } = require('./src/legibility-check.js');
 const { checkCaptions } = require('./src/caption-check.js');
 
@@ -136,7 +137,16 @@ if (!ink.ok) {
 // flat-take branch below defaults to unreachable, which is where the deadness
 // went when the disk predicate was removed.
 const cameraWasAttempted = process.argv.includes('--camera-attempted');
-const shots = checkShots({ doc, outDir, id, cameraWasAttempted });
+// WHAT THE PLANNER SAID, if it said anything. `iterate.mjs` writes this beside
+// the take because that call happens in another process, and an empty camera
+// program has three different causes with three different remedies (ENG-6128).
+// Absent — a hand-run critique, or a take from before this existed — reads as
+// "not told", which the checker reports rather than papering over.
+let cameraPlan = null;
+try {
+  cameraPlan = JSON.parse(readFileSync(cameraPlanPath(outDir, id), 'utf8'));
+} catch { /* no plan record; the checker says so */ }
+const shots = checkShots({ doc, outDir, id, cameraWasAttempted, cameraPlan });
 const waiting = shots.deadTime.measured
   ? ` — ${(shots.deadTime.share * 100).toFixed(0)}% of the runtime is the product thinking`
   : ` (waits not measured: ${shots.deadTime.reason})`;

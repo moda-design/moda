@@ -29,7 +29,7 @@ const require = createRequire(import.meta.url);
 // so compile.py died on import and the camera checks reported "not measured" —
 // a silent skip dressed as a completed round.
 const { studioPython } = require('./src/studio-path.js');
-const { emitCameraInto, cameraVerbArgs } = require('./src/camera-emit.js');
+const { emitCameraInto, cameraVerbArgs, cameraPlanPath } = require('./src/camera-emit.js');
 // OPTIONAL — it decides WHERE the camera is planned, not whether it is.
 //
 // Re-emitting the camera without publishing is what makes a camera fix cost
@@ -70,6 +70,9 @@ const sh = (c, a, env = {}) =>
   execFileSync(c, a, { encoding: 'utf8', maxBuffer: 64 << 20, env: { ...process.env, ...env }, stdio: ['ignore', 'pipe', 'inherit'] });
 
 const docPath = `${outDir}/${id}.moda.json`;
+//: What the camera planner reported, for the checker in the next process.
+//: One definition, shared with the reader — see `cameraPlanPath`.
+const planPath = cameraPlanPath(outDir, id);
 const readDoc = () => JSON.parse(readFileSync(docPath, 'utf8'));
 
 /**
@@ -81,9 +84,11 @@ const readDoc = () => JSON.parse(readFileSync(docPath, 'utf8'));
  */
 function emitMotion() {
   const out = `${outDir}/${id}.motion.js`;
-  return emitCameraInto(out, () => {
+  const { ran, report } = emitCameraInto(out, () => {
     if (PY) {
       sh(PY, ['compile.py', 'motion', docPath, PLACEHOLDER_REF, 'p_iter', 'n_iter', out]);
+      // No JSON on this lane — the report stays null and the checker says it was
+      // not told, rather than inventing a reason (ENG-6128).
       return;
     }
     // NO STUDIO CHECKOUT — plan it on the server, through the same planner
@@ -91,8 +96,16 @@ function emitMotion() {
     // emitted at publish and the loop runs before it, so four of six shot checks
     // read "not measured" and framing could be reported afterwards but never
     // tuned.
-    sh('moda', cameraVerbArgs(docPath, out, readDoc()));
+    return sh('moda', cameraVerbArgs(docPath, out, readDoc()));
   });
+  // WRITE DOWN WHAT THE PLANNER SAID. `critique-take.mjs` is a separate process,
+  // so a boolean flag is all that used to cross the boundary — and an empty
+  // camera program has more than one cause. Persisted beside the take so the
+  // checker can report the reason it was GIVEN.
+  writeFileSync(planPath, JSON.stringify(report ?? null, null, 2));
+  // `.ran`, never the object: it is always truthy, and both call sites below
+  // branch on this.
+  return ran;
 }
 
 /** Did a camera compile actually run this round? Drives the flat-take finding. */

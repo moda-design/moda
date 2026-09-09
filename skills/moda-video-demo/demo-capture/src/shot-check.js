@@ -197,7 +197,51 @@ function shots(camera, w, h) {
  * `measured: false` with a reason rather than an empty list when it could not
  * run — an unmeasured check must never read as a clean one.
  */
-function checkShots({ doc, outDir, id, motionPath = null, cameraWasAttempted = false }) {
+/**
+ * Why the camera program is empty, from what the planner actually said.
+ *
+ * Three states, because an empty program has three causes and the remedy
+ * differs (ENG-6128). This used to assert one of them unconditionally — "every
+ * action changed too much of the page to frame" — which the checker cannot
+ * know: all it observes is that a camera was attempted and no file appeared.
+ *
+ * The server publishes `planned` (what the compiler WANTED) alongside the
+ * program precisely so these can be told apart; its own comment says a caller
+ * "must not report them alike".
+ */
+function emptyCameraReason(plan) {
+  if (!plan || typeof plan.planned !== 'number') {
+    // The compile.py lane writes a file and returns no JSON. Say so, rather than
+    // filling the gap with a guess about the page.
+    return 'the camera program is empty and the planner did not report why — no plan record for this take';
+  }
+  if (plan.planned === 0) {
+    return 'the compiler planned NO punch-ins for this take — no action offered a region worth framing';
+  }
+  // A program WAS written and yet nothing could be read out of it. Its own
+  // state, not a held take: nothing was withheld, and pointing the reader at
+  // `--accept-zoom` would be the same unknowable assertion this function exists
+  // to remove.
+  if (plan.programs > 0) {
+    return (
+      `the planner wrote a camera program for ${plan.planned} punch-in(s) but none could be read back ` +
+      '— the program exists and is unreadable here, so this is not a flat take and not a held one'
+    );
+  }
+  // TOLD, not deduced. The emitter states the held count AND the action indices
+  // in `zoom_awaiting_confirmation`; subtracting `planned - programs` mixed two
+  // different units (punch-ins and edit-code programs) to reach a number the
+  // report already carries correctly.
+  const held = (plan.warnings ?? []).find((w) => String(w).startsWith('zoom_awaiting_confirmation'));
+  if (held) {
+    return `the compiler planned ${plan.planned} punch-in(s) and wrote none — ${held}`;
+  }
+  return (
+    `the compiler planned ${plan.planned} punch-in(s) and wrote none, and did not say which were held`
+  );
+}
+
+function checkShots({ doc, outDir, id, motionPath = null, cameraWasAttempted = false, cameraPlan = null }) {
   const w = doc.viewport?.width || 1280;
   const h = doc.viewport?.height || 800;
   const actions = doc.actions || [];
@@ -264,9 +308,7 @@ function checkShots({ doc, outDir, id, motionPath = null, cameraWasAttempted = f
     // left the loop defaulting to false, which moved the deadness rather than
     // removing it.
     const published = cameraWasAttempted;
-    const why = published
-      ? 'the compiler planned NO punch-ins for this take — every action changed too much of the page to frame'
-      : 'no camera program yet — these are emitted at publish';
+    const why = published ? emptyCameraReason(cameraPlan) : 'no camera program yet — these are emitted at publish';
     return {
       deadTime, cursorOcclusion,
       // A published take with no punch-ins is not an unmeasured camera, it is a
@@ -351,4 +393,4 @@ function checkShots({ doc, outDir, id, motionPath = null, cameraWasAttempted = f
   };
 }
 
-module.exports = { checkShots, readCamera, SYNC_TOLERANCE_SEC, FRAMING_MARGIN, DEAD_TIME_SHARE, RELEASE_SLACK_SEC, CAPTION_SUBJECT_COVERAGE };
+module.exports = { checkShots, emptyCameraReason, readCamera, SYNC_TOLERANCE_SEC, FRAMING_MARGIN, DEAD_TIME_SHARE, RELEASE_SLACK_SEC, CAPTION_SUBJECT_COVERAGE };

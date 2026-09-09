@@ -20,6 +20,8 @@ const { projectActions } = require('../src/ledger.js');
 const { checkCaptions } = require('../src/caption-check.js');
 const { isInert } = require('../src/validate.js');
 const { checkFlowShape } = require('../src/flow-shape.js');
+const { emptyCameraReason } = require('../src/shot-check.js');
+const { parseCameraReport, cameraPlanPath } = require('../src/camera-emit.js');
 const { checkInputShown, inputEvidence, evidenceFor } = require('../src/input-check.js');
 const { checkLegibility } = require('../src/legibility-check.js');
 const { recordIsMeasured } = require('../src/measured.js');
@@ -407,7 +409,16 @@ test('a published take with no camera is a finding, not an unmeasured check', ()
   const flat = checkShots({ ...base, cameraWasAttempted: true }).noCamera;
   assert.strictEqual(flat.measured, true, 'a published take with no punch-ins is measured, not unknown');
   assert.strictEqual(flat.bad, true, 'a flat camera is a finding');
-  assert.match(flat.reason, /planned NO punch-ins/);
+  // No plan record was passed, so the checker must say it was not told rather
+  // than assert a cause (ENG-6128).
+  assert.match(flat.reason, /did not report why/);
+
+  // Given the planner's report, it names the real cause — and distinguishes a
+  // flat take from a held one, which have different remedies.
+  const told = checkShots({ ...base, cameraWasAttempted: true, cameraPlan: { planned: 0, programs: 0 } }).noCamera;
+  assert.match(told.reason, /planned NO punch-ins/);
+  const heldTake = checkShots({ ...base, cameraWasAttempted: true, cameraPlan: { planned: 2, programs: 0, warnings: ['zoom_awaiting_confirmation: 2 punch-in(s) … actions [0, 1]'] } }).noCamera;
+  assert.match(heldTake.reason, /wrote none — zoom_awaiting_confirmation/);
 
   // Not published yet: genuinely unknown, and must not read as a finding.
   const early = checkShots({ ...base, cameraWasAttempted: false }).noCamera;
@@ -428,11 +439,11 @@ test('a replan that plans nothing leaves no camera behind', () => {
   const out = `${dir}/take.motion.js`;
 
   // Round 1: the planner writes a camera.
-  assert.strictEqual(emitCameraInto(out, (o) => writeFileSync(o, 'motion.page("p", () => {});')), true);
+  assert.strictEqual(emitCameraInto(out, (o) => writeFileSync(o, 'motion.page("p", () => {});')).ran, true);
   assert.ok(existsSync(out), 'fixture did not write a camera, so round 2 proves nothing');
 
   // Round 2: every punch-in suppressed, so the planner writes nothing at all.
-  assert.strictEqual(emitCameraInto(out, () => {}), true, 'the planner still RAN');
+  assert.strictEqual(emitCameraInto(out, () => {}).ran, true, 'the planner still RAN');
   assert.strictEqual(existsSync(out), false,
     'last round\'s camera survived — the loop would grade punch-ins this plan does not contain');
 });
@@ -443,7 +454,9 @@ test('a planner that throws leaves no camera behind either, and says it did not 
   const out = `${dir}/take.motion.js`;
   writeFileSync(out, 'motion.page("stale", () => {});');
 
-  assert.strictEqual(emitCameraInto(out, () => { throw new Error('no compiler'); }), false);
+  const threw = emitCameraInto(out, () => { throw new Error('no compiler'); });
+  assert.strictEqual(threw.ran, false);
+  assert.strictEqual(threw.report, null, 'a planner that never ran reported nothing to parse');
   assert.strictEqual(existsSync(out), false, 'a failed plan left a stale camera to be graded');
 });
 
@@ -983,5 +996,107 @@ test('discovery records the evidence in exactly one place, through evidenceFor',
     `expected the declaration and one assignment, found ${writes.length}:\n${writes.join('\n')}`);
   assert.match(writes[1], /evidenceFor\(/,
     'the evidence assignment must go through evidenceFor, not an inline rule');
+});
+
+// ENG-6128: an empty camera program had ONE reported cause — "every action
+// changed too much of the page to frame" — which the checker cannot know. All
+// it observes is that a camera was attempted and no file appeared. The server
+// publishes `planned` alongside the program precisely so a FLAT take can be told
+// from a HELD one, and its own comment says a caller must not report them alike.
+test('an empty camera program reports the cause it was given, not an assumed one', () => {
+  // Planned nothing: genuinely flat.
+  assert.match(emptyCameraReason({ planned: 0, emitted: 0 }), /planned NO punch-ins/);
+
+  // Planned some, emitted none: HELD. A different finding with a different
+  // remedy — the zooms exist and were withheld, so "reframe the page" is wrong.
+  // TOLD, not deduced: the emitter states the held count and the action indices
+  // in this warning, so the reason quotes it rather than subtracting a program
+  // count from a punch-in count to reach a number it already has.
+  const warning = 'zoom_awaiting_confirmation: 3 punch-in(s) were planned from inferred clicks and NOT written — actions [0, 1, 2].';
+  const held = emptyCameraReason({ planned: 3, programs: 0, warnings: [warning] });
+  assert.match(held, /planned 3 punch-in\(s\) and wrote none/);
+  assert.match(held, /actions \[0, 1, 2\]/, 'the reason must carry the indices the planner named');
+  assert.doesNotMatch(held, /planned NO punch-ins/, 'a held take must not be reported as a flat one');
+
+  // Planned some, wrote none, and said nothing about why: that is its own answer.
+  const silent = emptyCameraReason({ planned: 3, programs: 0, warnings: [] });
+  assert.match(silent, /did not say which were held/);
+  assert.doesNotMatch(silent, /awaiting confirmation/, 'never claim held without being told');
+
+  // A program WAS written and could not be read back — not flat, not held.
+  const unread = emptyCameraReason({ planned: 3, programs: 1, warnings: [] });
+  assert.match(unread, /none could be read back/);
+  assert.doesNotMatch(unread, /awaiting confirmation|were withheld/,
+    'nothing was withheld, so it must not be reported as a held take');
+});
+
+test('no plan record says so, rather than inventing a reason', () => {
+  // The compile.py lane writes a file and returns no JSON, and a hand-run
+  // critique has no record at all. "I was not told" is a third state.
+  for (const absent of [null, undefined, {}, { planned: 'three' }]) {
+    assert.match(emptyCameraReason(absent), /did not report why/);
+    assert.doesNotMatch(emptyCameraReason(absent), /changed too much|no action offered/,
+      'the checker must not assert a cause it was never given');
+  }
+});
+
+test('the planner report is parsed only when it is actually a report', () => {
+  assert.deepStrictEqual(
+    parseCameraReport('{"planned":2,"camera_program":["a"],"warnings":["w"]}'),
+    // `programs`, not `emitted`: the emitter writes ONE string carrying the whole
+    // merged path, so this counts programs and must never be subtracted from
+    // `planned`, which counts punch-ins.
+    { planned: 2, programs: 1, warnings: ['w'] });
+  // The verb prints progress before its JSON; the last object line is the body.
+  assert.deepStrictEqual(
+    parseCameraReport('planning…\n{"planned":0,"camera_program":[],"warnings":[]}'),
+    { planned: 0, programs: 0, warnings: [] });
+  // Nothing to parse must be null, NOT a zero-valued report — a fabricated
+  // `planned: 0` would report a flat take on the lane that simply does not say.
+  for (const nothing of ['', '   ', undefined, null, 'not json', '{"camera_program":[]}']) {
+    assert.strictEqual(parseCameraReport(nothing), null, `expected null for ${JSON.stringify(nothing)}`);
+  }
+});
+
+test('iterate reads `.ran`, never the emitCameraInto object itself', () => {
+  // emitCameraInto now returns an OBJECT, and an object is always truthy — so a
+  // call site left branching on the raw return would silently read every failed
+  // emit as success. Source-level because that is the shape of the mistake.
+  const src = readFileSync(path.join(HERE, 'iterate.mjs'), 'utf8');
+  const raw = src.split('\n').filter((l) => /emitCameraInto\(/.test(l) && !l.trim().startsWith('//'));
+  assert.strictEqual(raw.length, 1, `expected one emitCameraInto call, found ${raw.length}`);
+  assert.match(raw[0], /\{\s*ran\s*,\s*report\s*\}/,
+    'the emitCameraInto result must be destructured, not used as a boolean');
+});
+
+// ENG-6128 round 1: the whole handoff hinges on one filename, written by
+// iterate.mjs and read by critique-take.mjs in a different process. Two
+// independent literals would drift, the reader's catch would swallow the miss,
+// and the checker would revert to "the planner did not report why" on every
+// take — a silent fail-open. Nothing exercised the write→read path.
+test('the plan record written by one process is the one the other reads', () => {
+  const dir = tmp();
+  const id = 'take';
+  const report = { planned: 2, programs: 0, warnings: ['zoom_awaiting_confirmation: 2 punch-in(s) … actions [0, 1]'] };
+
+  // WRITE the way iterate.mjs does, READ the way critique-take.mjs does — both
+  // through the shared path, which is the point.
+  writeFileSync(cameraPlanPath(dir, id), JSON.stringify(report, null, 2));
+  const readBack = JSON.parse(readFileSync(cameraPlanPath(dir, id), 'utf8'));
+  assert.deepStrictEqual(readBack, report);
+  assert.match(emptyCameraReason(readBack), /actions \[0, 1\]/,
+    'the reason must survive the round trip between the two processes');
+});
+
+test('both processes derive the plan path from one definition', () => {
+  // A source guard because the failure is silent: if either side goes back to
+  // its own literal the read misses and the checker quietly says it was never
+  // told, which is indistinguishable from the lane that genuinely is not.
+  for (const f of ['iterate.mjs', 'critique-take.mjs']) {
+    const src = readFileSync(path.join(HERE, f), 'utf8');
+    assert.doesNotMatch(src, /camera-plan\.json/,
+      `${f} spells the plan filename itself instead of using cameraPlanPath`);
+    assert.match(src, /cameraPlanPath\(/, `${f} must derive the plan path from camera-emit.js`);
+  }
 });
 
