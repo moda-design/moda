@@ -140,6 +140,11 @@ layouts fit a timeline slide — do I build a new page in the theme's style?"`.
 Copy budget still applies: ≤10 words per bullet, ≤3 bullets per card. When
 copy overflows, cut the copy rather than shrinking the theme's type scale.
 
+**Unless the slides came from a deck the user handed over to be restyled.** Then
+their wording is the deliverable: keep sentences whole and resize or re-lay-out
+the text block so they fit cleanly, rather than cutting to the budget. The
+theme's type scale itself still does not move.
+
 If the user's instructions contradict any of the above, follow the user.
 
 ## Instantiating under a different brand

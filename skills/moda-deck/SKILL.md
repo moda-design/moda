@@ -73,6 +73,14 @@ never guess.
   from the cover through the closing slide.
 - **≤10 words per bullet, ≤3 bullets per card.** Overflow means cut copy,
   never shrink below the ladder floor.
+- **Restyling a deck you were GIVEN is the exception.** When the slides came
+  from a file the user asked you to beautify, that deck is the deliverable:
+  keep its sentences whole rather than cutting to the budget, keep a slide's
+  content on that slide, keep the deck's slide COUNT (the 6–12 plan above is
+  for a deck you are authoring — merging their slides says less than they said
+  just as surely as cutting their words), and use the deck's own images before
+  adding dividers or accents. The budget stops you writing too much — never let
+  it make you say less than the customer already said.
 - **Chart typography auto-scales with the chart's size** — a slide-scale
   `<chart>` derives deck-legible axis text (capped at 30px) on its own, so
   don't set `font-size` reflexively; an explicit value wins for that field
