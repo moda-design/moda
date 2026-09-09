@@ -33,7 +33,18 @@ const result = await discover({ goal, startUrl, storageState: auth.path, chromiu
 // "this product takes no input" from "this demo skipped the input". Dropping it
 // here does not fail loudly — the check just goes quiet — so it has a test.
 writeFileSync(out, JSON.stringify(
-  { goal, steps: result.steps, sawTextField: result.sawTextField, typeableFields: result.typeableFields },
+  {
+    goal,
+    steps: result.steps,
+    // WHY THE WALK ENDED (ENG-6133). Only `done` means the agent judged the goal
+    // accomplished; the other seven — max_steps, timeout, bot_challenge,
+    // model_error, unparsable, waited_out, repeated_action — mean it gave up.
+    // This used to be printed here and then dropped, so run.mjs filmed an
+    // abandoned walk exactly like a finished one.
+    stopped: result.stopped,
+    sawTextField: result.sawTextField,
+    typeableFields: result.typeableFields,
+  },
   null, 2));
 console.log(`\nstopped: ${result.stopped} — ${result.steps.length} replayable step(s) -> ${out}`);
 for (const s of result.steps) console.log(`  ${s.action.padEnd(5)} ${s.locator || ''}  (${s.why})`);

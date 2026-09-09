@@ -44,6 +44,7 @@ const { keptReport, nextStep, canSelect } = require('./src/kept-report.js');
 const { proposeDrops, without, ensureTrailingHold } = require('./src/curate.js');
 const { checkFlowShape } = require('./src/flow-shape.js');
 const { checkInputShown } = require('./src/input-check.js');
+const { checkWalkFinished } = require('./src/walk-outcome.js');
 
 const args = process.argv.slice(2);
 //: Flags that consume the next argument, so it is not mistaken for a positional.
@@ -116,6 +117,29 @@ async function attemptOnce(n, guidancePath) {
     console.log(`\n[1] using the flow at ${flowPath}`);
   }
   let flow = JSON.parse(readFileSync(flowPath, 'utf8'));
+
+  // DID THE AGENT EVEN FINISH THE WALK? (ENG-6133)
+  //
+  // Read HERE, the moment the flow is parsed, because nothing about it depends
+  // on curation or the validation walk — and those cost a headless browser plus
+  // up to four restore-and-rewalk passes. An abandoned walk should not spend
+  // any of that.
+  //
+  // A HARD refusal, the same shape as `empty_flow` and `walk_failed` below, not
+  // a soft pre-record finding: the soft lane only refuses while attempts remain,
+  // so on the default `--attempts 1` it logs "recording anyway" and films the
+  // thing anyway — which is exactly the harm this exists to stop. Its reason
+  // still becomes guidance, so a retry hears why.
+  const walkOutcome = checkWalkFinished(flow);
+  if (walkOutcome.measured && !walkOutcome.finished) {
+    console.log(`\n  discovery did not finish this walk (${walkOutcome.stopped}) — refusing to record it.`);
+    console.log(`    ${walkOutcome.reason}`);
+    // The advice depends on WHAT broke: a bot wall or a model error is not a
+    // reason to go looking for a different path. This text becomes guidance in
+    // the next discovery's prompt.
+    return { outDir: null, id: null, score: 0, flowFindings: [{ type: 'walk_unfinished', description:
+      `discovery did not complete this walk — ${walkOutcome.reason}. ${walkOutcome.advice}` }] };
+  }
 
   // ── 2. curate ───────────────────────────────────────────────────────────
   console.log('\n[2] curating');

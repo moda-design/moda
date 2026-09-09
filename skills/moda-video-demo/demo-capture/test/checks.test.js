@@ -23,6 +23,7 @@ const { checkFlowShape } = require('../src/flow-shape.js');
 const { emptyCameraReason } = require('../src/shot-check.js');
 const { parseCameraReport, cameraPlanPath } = require('../src/camera-emit.js');
 const { checkInputShown, inputEvidence, evidenceFor } = require('../src/input-check.js');
+const { checkWalkFinished, GAVE_UP } = require('../src/walk-outcome.js');
 const { checkLegibility } = require('../src/legibility-check.js');
 const { recordIsMeasured } = require('../src/measured.js');
 
@@ -1098,5 +1099,103 @@ test('both processes derive the plan path from one definition', () => {
       `${f} spells the plan filename itself instead of using cameraPlanPath`);
     assert.match(src, /cameraPlanPath\(/, `${f} must derive the plan path from camera-emit.js`);
   }
+});
+
+// ENG-6133: discovery ends on one of eight reasons and only `done` is success.
+// The other seven were printed to the console and dropped from the flow file,
+// so an abandoned walk was curated, recorded, scored and published exactly like
+// a finished one. The take that filed this scored 2/10 with three of its five
+// actions being the agent narrating an absence before it gave up.
+test('a walk the agent abandoned is not treated as a finished one', () => {
+  assert.strictEqual(checkWalkFinished({ stopped: 'done' }).finished, true);
+  // Every non-done ending is an abandonment, and each says something a
+  // re-discovery could act on.
+  for (const stopped of Object.keys(GAVE_UP)) {
+    const r = checkWalkFinished({ stopped });
+    assert.strictEqual(r.measured, true, `${stopped} must be measured`);
+    assert.strictEqual(r.finished, false, `${stopped} is not a completed walk`);
+    assert.ok(r.reason && r.reason.length > 20, `${stopped} must explain itself, got ${r.reason}`);
+    assert.ok(r.advice && r.advice.length > 20, `${stopped} must tell the next attempt what to do`);
+  }
+});
+
+test('an ending this list has not learned is still not a success', () => {
+  // A new `stopped` value added to discovery must fail closed: not done is not
+  // done, even when there is no sentence for it yet.
+  const r = checkWalkFinished({ stopped: 'some_future_reason' });
+  assert.strictEqual(r.finished, false);
+  assert.match(r.reason, /some_future_reason/, 'name the value rather than inventing an explanation');
+});
+
+test('a flow with no discovery outcome is unknown, not failed', () => {
+  // A hand-supplied `--flow` never ran discovery, and a file written before this
+  // existed has no field. Refusing those would be worse than the bug.
+  for (const flow of [{}, null, undefined, { stopped: '' }, { stopped: 7 }]) {
+    const r = checkWalkFinished(flow);
+    assert.strictEqual(r.measured, false, `${JSON.stringify(flow)} must read as unknown`);
+    assert.strictEqual(r.finished, undefined, 'unknown must not read as finished OR failed');
+  }
+});
+
+test('discover-flow persists the stop reason, or the gate can never fire', () => {
+  // The same silent-drop this ticket is about: the writer printed it and left it
+  // out of the file. Nothing downstream fails loudly when that happens — the
+  // gate just goes quiet — so it is pinned here.
+  const src = readFileSync(path.join(HERE, 'discover-flow.mjs'), 'utf8');
+  const write = /writeFileSync\(\s*out,\s*JSON\.stringify\(\s*\{([\s\S]*?)\},/.exec(src);
+  assert.ok(write, 'could not find the flow write in discover-flow.mjs');
+  assert.match(write[1], /stopped:\s*result\.stopped/,
+    'discover-flow.mjs must persist `stopped` — without it run.mjs cannot tell an abandoned walk from a finished one');
+});
+
+test('run.mjs HARD-refuses an unfinished walk, on any number of attempts', () => {
+  const src = readFileSync(path.join(HERE, 'run.mjs'), 'utf8');
+  assert.match(src, /checkWalkFinished\(/, 'run.mjs must consult the walk outcome');
+
+  // A SOFT pre-record finding would not do: that lane only refuses while
+  // attempts remain (`preRecord.length && n < attempts`), so on the default
+  // --attempts 1 it logs "recording anyway (no attempts left)" and films the
+  // abandoned walk — the exact harm this exists to stop. It must return the
+  // same no-recording shape as `empty_flow` and `walk_failed`.
+  const gate = src.slice(src.indexOf('const walkOutcome'), src.indexOf('const walkOutcome') + 900);
+  assert.match(gate, /return \{ outDir: null, id: null, score: 0, flowFindings:/,
+    'the walk gate must hard-refuse, not push a soft pre-record finding');
+  assert.match(gate, /walk_unfinished/);
+
+  // ...and BEFORE curation and the validation walk, which cost a headless
+  // browser and up to four restore-and-rewalk passes. Nothing about this check
+  // depends on either.
+  assert.ok(src.indexOf('walk_unfinished') < src.indexOf('[2] curating'),
+    'the walk check must run before curation, or an abandoned walk still pays for validation');
+});
+
+// ENG-6133 round 2: the finding becomes GUIDANCE in the next discovery's system
+// prompt, so the advice has to match what actually broke. Three of the seven
+// endings are harness failures, not path failures — telling a run that hit a
+// Cloudflare wall to "find a different path" steers it off a route that may
+// have been fine.
+test('a harness failure is not blamed on the path', () => {
+  const { checkWalkFinished } = require('../src/walk-outcome.js');
+  for (const stopped of ['bot_challenge', 'model_error', 'unparsable']) {
+    const r = checkWalkFinished({ stopped });
+    assert.strictEqual(r.kind, 'harness', `${stopped} broke on the tooling or the site`);
+    assert.match(r.advice, /walk it again/, `${stopped} should be retried, not re-planned`);
+    assert.doesNotMatch(r.advice, /different goal.*from here|Find a path that reaches/,
+      `${stopped} must not send the next attempt looking for another path`);
+  }
+  for (const stopped of ['max_steps', 'timeout', 'waited_out', 'repeated_action']) {
+    const r = checkWalkFinished({ stopped });
+    assert.strictEqual(r.kind, 'path', `${stopped} is the route failing`);
+    assert.match(r.advice, /Find a path that reaches the goal/);
+  }
+});
+
+test('an unrecognised ending gets the conservative advice', () => {
+  // Claiming the tooling broke would be an assertion about something we were
+  // never told; asking for a different route is the safe half.
+  const { checkWalkFinished } = require('../src/walk-outcome.js');
+  const r = checkWalkFinished({ stopped: 'some_future_reason' });
+  assert.strictEqual(r.kind, 'path');
+  assert.match(r.advice, /Find a path that reaches the goal/);
 });
 
