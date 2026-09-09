@@ -13,9 +13,9 @@ import { execFileSync } from 'node:child_process';
 const require = createRequire(import.meta.url);
 const { ffmpeg: FFMPEG, ffprobe: FFPROBE } = require('./src/bin.js');
 const { planNarration, narrate } = require('./src/narrate.js');
-const { compressIdleGaps } = require('./src/compress.js');
+const { compressIdleGaps, planCompression, compressionFacts, SPEED: COMPRESS_SPEED } = require('./src/compress.js');
 const { generateBed, addMusicBed } = require('./src/music.js');
-const { narrationPath } = require('./src/dead-time-phrase.js');
+const { narrationPath, compressionPath } = require('./src/dead-time-phrase.js');
 const { chooseStyle } = require('./src/style.js');
 
 const [outDir, id, linesJson] = process.argv.slice(2);
@@ -133,6 +133,11 @@ console.log(
     : `  style:  tutorial — ${planned.length} caption(s) and line(s) (${why})`
 );
 
+// Planned on the SOURCE clip, before the rebase below replaces it. `kept` is
+// the speed-independent protection set, which is all the checker needs to ask
+// what another speed would give back.
+const sourceClip = clip;   // BEFORE the rebase below replaces it
+const sourcePlan = planCompression({ clip, narrationSpans: planned });
 const compressed = compressIdleGaps({ mp4Path: mp4, sourcePath: sourceMp4, clip, narrationSpans: planned });
 if (compressed) {
   clip = compressed.clip;
@@ -145,6 +150,20 @@ if (compressed) {
 } else {
   console.log('  paced:  nothing idle enough to compress');
 }
+// WHAT THE COMPRESSOR ACTUALLY DID, for the checker in the other process.
+//
+// `recoverable` used to be re-planned over the finished document, which is the
+// cut AFTER this rebase — so it measured the gap that survived compression and
+// called all of it reachable. The lever is a re-cut from source at a higher
+// speed, and that returns only the difference between the two speeds, so the
+// question can only be answered against the SOURCE timeline and the speed this
+// round actually used. Neither is recoverable downstream: the document is
+// rebased and nothing passes `DEMO_COMPRESS_SPEED` on to the critique (ENG-6149).
+//
+// `ran: false` is a real answer, not a missing one — the document is then the
+// source timeline, and a first compression is still available as a remedy.
+writeFileSync(compressionPath(outDir, id),
+  JSON.stringify(compressionFacts({ plan: sourcePlan, compressed, speed: COMPRESS_SPEED, clip: sourceClip }), null, 2));
 
 if (planned.length) {
   const r = narrate({ clip, mp4, outDir, id, planned });

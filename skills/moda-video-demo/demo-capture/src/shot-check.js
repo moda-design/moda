@@ -14,7 +14,7 @@ const { existsSync, readFileSync } = require('node:fs');
 // What the compressor would actually speed up — see ENG-6130. The planner
 // itself, not one of its constants: it keeps six kinds of span at 1x, and a caller that
 // subtracts one of them is describing a different function from the one that runs.
-const { planCompression } = require('./compress.js');
+const { planCompression, planFromKept } = require('./compress.js');
 
 //: A zoom whose peak misses its click by more than this reads as unsynced.
 //: 0.12s is under half a sampled frame at 4fps and about four frames at 30.
@@ -259,7 +259,7 @@ function emptyCameraReason(plan) {
   );
 }
 
-function checkShots({ doc, outDir, id, motionPath = null, cameraWasAttempted = false, cameraPlan = null, narrationSpans = null }) {
+function checkShots({ doc, outDir, id, motionPath = null, cameraWasAttempted = false, cameraPlan = null, narrationSpans = null, compression = null }) {
   const w = doc.viewport?.width || 1280;
   const h = doc.viewport?.height || 800;
   const actions = doc.actions || [];
@@ -298,7 +298,67 @@ function checkShots({ doc, outDir, id, motionPath = null, cameraWasAttempted = f
     .filter((a) => a.type === 'wait')
     .reduce((n, a) => n + spans.reduce(
       (m, seg) => m + overlap(a.startSec ?? 0, a.endSec ?? 0, seg.oldStart, seg.oldEnd), 0), 0);
-  const recoverable = waitOverlap((plan?.segments ?? []).filter((seg) => seg.speed !== 1));
+  const residual = waitOverlap((plan?.segments ?? []).filter((seg) => seg.speed !== 1));
+  //: WHAT A SPEED BUMP WOULD ACTUALLY RETURN (ENG-6149).
+  //:
+  //: `residual` above is the wait that survived THIS round's compression. It is
+  //: not what the remedy returns: the lever re-cuts from source at a higher
+  //: speed, so it gives back the difference between the two speeds, not the
+  //: whole surviving gap. A 60s source gap at 6x is 10s in this cut and the
+  //: report used to call all 10s recoverable; the bump to 9x returns 3.3s, and
+  //: even the 14x cap returns only 5.7s.
+  //:
+  //: Answered off the SOURCE timeline, because that is what a re-cut replans.
+  //: `kept` is speed-independent — the waits, clicks, narration, head and tail
+  //: do not move when the gaps play faster — so the round's own plan can be
+  //: rebuilt here and its sped segments priced at the cap. `atCap` is not
+  //: subtracted; it exists to prove the cap is usable before anything is
+  //: measured against it.
+  //: READ, never defaulted. The ceiling comes from the record `finish.mjs`
+  //: wrote, so the delta is measured against the cap that run actually had —
+  //: a `?? MAX_SPEED` here would quietly assert a ceiling this cut may not have
+  //: used, and would re-derive a compressor constant the guard below forbids.
+  const cap = compression?.maxSpeed;
+  const atSpeed = cap && compression?.kept
+    ? planFromKept({ D: compression.sourceDurationSec, kept: compression.kept, speed: compression.speed })
+    : null;
+  const atCap = cap && compression?.kept
+    ? planFromKept({ D: compression.sourceDurationSec, kept: compression.kept, speed: cap })
+    : null;
+  //: Whether we were TOLD what the compressor did, on the `narrationKnown`
+  //: pattern: `null` means no record, which is not the same as "nothing to
+  //: recover". Without it the figure falls back to `residual` and reads high,
+  //: so the report has to be able to say so rather than assert a number it
+  //: cannot back.
+  //: The record must also say WHERE the waits were, in source time. Without
+  //: them the delta is measured over every idle gap — the head load gap, the
+  //: space between clicks — and reports time a wait never occupied.
+  //: ELEMENTS validated, not just the array. `overlap` on a non-numeric pair
+  //: yields NaN, `Math.max(0, NaN)` is NaN, and the record still reads as known
+  //: — the report then prints "NaN%" and `bad` silently evaluates false. That is
+  //: the same failure the `Number.isFinite(speed)` guard closes, one field over.
+  const sourceWaits = Array.isArray(compression?.waits)
+    && compression.waits.every((w) => Array.isArray(w) && w.length === 2 && w.every(Number.isFinite))
+    ? compression.waits
+    : null;
+  const compressionKnown = Boolean(atSpeed && atCap && sourceWaits);
+  //: Summed over the sped segments' overlap WITH THE WAITS, in source seconds,
+  //: each converted to the output seconds a bump would return: a source stretch
+  //: of length L playing at `s` occupies L/s, and at the cap L/cap, so the
+  //: remedy returns L*(1/s - 1/cap).
+  //:
+  //: Both sides are output seconds, so this is directly comparable to `waited`
+  //: and is a subset of it by construction — L*(1/s - 1/cap) < L/s, which is
+  //: the time that stretch already occupies in the cut. No clamp is needed, and
+  //: the clamp that was here hid the very error it was compensating for.
+  const savingOver = (spans) => spans.reduce((n, seg) => {
+    const inWaits = (sourceWaits ?? []).reduce(
+      (m, [ws, we]) => m + overlap(seg.oldStart, seg.oldEnd, ws, we), 0);
+    return n + inWaits * (1 / seg.speed - 1 / cap);
+  }, 0);
+  const recoverable = compressionKnown
+    ? Math.max(0, savingOver(atSpeed.segments.filter((seg) => seg.speed !== 1)))
+    : residual;
   // Kept for the report: what the viewer waits through, minus what a fix could
   // take out. NOT a claim about any single protected region — it absorbs the
   // reveal beat, each wait's result hold, the opening, the breathing lead-in,
@@ -325,7 +385,24 @@ function checkShots({ doc, outDir, id, motionPath = null, cameraWasAttempted = f
   // removing a protection can only ever grow the sped set.
   const bare = planCompression({ clip: doc, narrationSpans: [] });
   const recoverableWithout = waitOverlap((bare?.segments ?? []).filter((seg) => seg.speed !== 1));
-  const narrationHeld = Math.max(0, recoverableWithout - recoverable);
+  // BOTH TERMS ON ONE BASIS. This is a plan difference — the same clip planned
+  // with and without the spans — so it must subtract the with-spans figure on
+  // the SAME footing, `residual`, not the source-timeline delta `recoverable`
+  // became. Subtracting across the two bases made the remainder a measure of
+  // the basis change instead of the narration: on a marketing take with no
+  // lines at all it reported 4.5s "held by narration", which is the report
+  // saying something false about a take that never spoke.
+  //: Left on the finished-cut basis deliberately: it answers a DIFFERENT
+  //: question from `recoverable` — what shortening the lines would give back,
+  //: not what a speed bump would — and no lever pulls it yet, so ENG-6137 owns
+  //: moving it.
+  //:
+  //: CLAMPED to the protected total it is printed as a part of. The two are
+  //: measured differently — this is a finished-cut plan difference, that is a
+  //: source-timeline delta — so without this the sentence can read "0.0s of it
+  //: protected (1.2s of that held by narration)", which is self-contradictory
+  //: on its face.
+  const narrationHeld = Math.min(protectedWait, Math.max(0, recoverableWithout - residual));
   //: Whether we were TOLD what the compressor protected. `null` means no record
   //: — not "no narration", which is a value `finish.mjs` writes explicitly as
   //: `[]`. Without it `recoverable` is measured as though nothing was spoken and
@@ -344,7 +421,7 @@ function checkShots({ doc, outDir, id, motionPath = null, cameraWasAttempted = f
       ? { measured: false, reason: `the action times (${waited.toFixed(1)}s of waits) do not belong to this ${duration.toFixed(1)}s cut` }
       // Both numbers, so nothing is hidden: `seconds` is what the viewer waits
       // through, `recoverable`/`share` is what a pacing fix could still remove.
-      : { measured: true, seconds: waited, protectedWait, narrationHeld, narrationKnown, recoverable, share, bad: share > DEAD_TIME_SHARE };
+      : { measured: true, seconds: waited, protectedWait, narrationHeld, narrationKnown, compressionKnown, recoverable, share, bad: share > DEAD_TIME_SHARE };
 
   // ── cursor occlusion ─────────────────────────────────────────────────────
   // A fill clicks into the middle of its field and types from the left, so the

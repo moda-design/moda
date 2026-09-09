@@ -153,6 +153,12 @@ The individual stages still run standalone — `take.mjs`, `finish.mjs`,
 `critique-take.mjs`, `publish-take.mjs` — and that is the right thing when you
 are iterating on one of them.
 
+`critique-take.mjs` reads two records `finish.mjs` writes: the narration spans
+the compressor was told to protect, and the compression it actually performed
+(its speed and the source timeline). Run standalone against a take that predates
+either, it says so and falls back — the dead-time figures then read high rather
+than silently pretending to be measured. Re-run `finish.mjs` to record them.
+
 A flow is `{goal, steps:[{action:'click'|'fill'|'press', locator, why, text?, key?}]}`.
 `why` becomes the caption, so write it as the action, not as your reasoning.
 

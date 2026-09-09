@@ -29,6 +29,9 @@ const require = createRequire(import.meta.url);
 // so compile.py died on import and the camera checks reported "not measured" —
 // a silent skip dressed as a completed round.
 const { studioPython } = require('./src/studio-path.js');
+// ONE definition of the ceiling, shared with the checker that measures what a
+// bump toward it would return (ENG-6149).
+const { MAX_SPEED } = require('./src/compress.js');
 const { emitCameraInto, cameraVerbArgs, cameraPlanPath } = require('./src/camera-emit.js');
 // OPTIONAL — it decides WHERE the camera is planned, not whether it is.
 //
@@ -236,7 +239,7 @@ for (let round = 1; round <= MAX_ROUNDS; round++) {
   // detector then stopped a loop that had never tried its other lever.
   const acted = [];
   if (byStage.pacing?.length) {
-    compressSpeed = Math.min(14, compressSpeed + 3);
+    compressSpeed = Math.min(MAX_SPEED, compressSpeed + 3);
     console.log(`  → pacing: re-cutting idle gaps at ${compressSpeed}x (no re-record)`);
     refinish(compressSpeed);
     acted.push('pacing');

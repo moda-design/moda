@@ -28,8 +28,9 @@ const { critiqueVideo, critiqueFrames } = require('./src/critique.js');
 const { checkMotion, JUMP_PX } = require('./src/motion-check.js');
 const { checkInk } = require('./src/ink-check.js');
 const { checkShots, DEAD_TIME_SHARE } = require('./src/shot-check.js');
+const { MAX_SPEED } = require('./src/compress.js');
 const { cameraPlanPath } = require('./src/camera-emit.js');
-const { deadTimePhrase, pct, narrationPath } = require('./src/dead-time-phrase.js');
+const { deadTimePhrase, deadTimeDetail, pct, narrationPath, compressionPath } = require('./src/dead-time-phrase.js');
 const { checkLegibility } = require('./src/legibility-check.js');
 const { checkCaptions } = require('./src/caption-check.js');
 
@@ -163,7 +164,21 @@ try {
   console.log('  note: no narration record for this take — dead time is measured as if nothing was');
   console.log('        spoken, so the recoverable share may read high. Re-run finish.mjs to record it.');
 }
-const shots = checkShots({ doc, outDir, id, cameraWasAttempted, cameraPlan, narrationSpans });
+// What the compressor actually did, and at what speed (ENG-6149).
+//
+// ABSENT IS NOT ZERO, for the same reason as the narration record above. Without
+// it the checker cannot know the round's speed or the source timeline, so it
+// falls back to re-planning the finished cut — which measures the gap that
+// SURVIVED compression and calls all of it reachable, when a bump to the cap
+// returns only the difference between the two speeds.
+let compression = null;
+try {
+  compression = JSON.parse(readFileSync(compressionPath(outDir, id), 'utf8'));
+} catch {
+  console.log('  note: no compression record for this take — the recoverable figure falls back to');
+  console.log('        re-planning the finished cut, which overstates it. Re-run finish.mjs to record it.');
+}
+const shots = checkShots({ doc, outDir, id, cameraWasAttempted, cameraPlan, narrationSpans, compression });
 // TWO NUMBERS, BOTH SAID OUT LOUD (ENG-6130). `share` is now the RECOVERABLE
 // share, so printing it under the old label would have claimed "0% of the
 // runtime is the product thinking" about a video that is genuinely a third
@@ -182,9 +197,13 @@ if (stats.stillFraction > STILL_CEILING) {
   // The finding names the RECOVERABLE share, because that is the part the
   // pacing fix can act on — a finding measured against something its remedy
   // cannot reach is what sent this loop round three flat rounds.
+  // THE SHARP WORDING ONLY WHERE IT IS TRUE. Without a compression record the
+  // share is still the surviving-gap figure, and the full amount is NOT what a
+  // bump returns — this string is what iterate.mjs and the operator read out of
+  // the critique JSON, and unlike the console line it carries no caveat of its
+  // own.
   issues.push({ stage: 'pacing', type: 'dead_time',
-    detail: `${pct(shots.deadTime.share)} of the runtime is a wait the compressor does not structurally ` +
-      'protect — a higher compress speed returns part of it (capped at 14x; see ENG-6149)' });
+    detail: deadTimeDetail(shots.deadTime, MAX_SPEED) });
 } else {
   console.log(`  stillness: ${stillPct}% of the video is a still image${waiting}`);
 }

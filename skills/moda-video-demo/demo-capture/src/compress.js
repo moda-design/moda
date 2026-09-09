@@ -21,6 +21,12 @@ const path = require('node:path');
 //: How much faster an idle gap plays. A knob because it is the cheapest
 //: lever the iteration loop has: re-pacing needs no re-record and no upload.
 const SPEED = Number(process.env.DEMO_COMPRESS_SPEED) || 6;
+//: The ceiling the iteration loop bumps toward, and the reason a `dead_time`
+//: finding can run out of remedy. Exported because the checker has to answer
+//: "how much would another bump return?" and a second literal here would let
+//: the two drift — the loop chasing a gap the report says is reachable at a
+//: speed the loop will never use.
+const MAX_SPEED = 14;
 const BREATHING_SEC = 0.35;   // kept at 1x at the START of each gap, so it does not jerk
 const MIN_GAP_SEC = 0.7;      // shorter gaps are left alone; speeding them just stutters
 const POST_CLICK_KEEP = 0.6;  // after a click, for the result to register
@@ -177,6 +183,26 @@ function planCompression({ clip, narrationSpans = [], speed = SPEED }) {
   return { D, kept, segments, newDuration };
 }
 
+/**
+ * Re-plan an ALREADY-DECIDED protection set at a different speed.
+ *
+ * `kept` is speed-independent — it is where the waits, clicks, narration, head
+ * and tail are, and none of that moves when the gaps play faster. Only
+ * `buildSegments` reads the speed. So the question "how much shorter would this
+ * cut be at the cap?" is answerable from `{ D, kept }` alone, with no source
+ * actions and no source-time narration spans — which matters because the spans
+ * on disk are rebased into FINAL time and could not be replanned against the
+ * source anyway (ENG-6149).
+ */
+function planFromKept({ D, kept, speed }) {
+  // `speed` GUARDED too: `Math.max(1.5, undefined)` is NaN, which propagates
+  // through every segment into `newDuration` and reads as a measured answer —
+  // the silent-fallback shape this seam is built to refuse.
+  if (!D || D <= 0 || !Array.isArray(kept) || !Number.isFinite(speed)) return null;
+  const { segments, newDuration } = buildSegments(D, kept, Math.max(1.5, speed));
+  return { D, kept, segments, newDuration };
+}
+
 function compressIdleGaps({ mp4Path, sourcePath = mp4Path, clip, narrationSpans = [], speed = SPEED }) {
   const plan = planCompression({ clip, narrationSpans, speed });
   if (!plan) return null;
@@ -215,4 +241,37 @@ function compressIdleGaps({ mp4Path, sourcePath = mp4Path, clip, narrationSpans 
            spedSegments: segments.filter((s) => s.speed !== 1).length };
 }
 
-module.exports = { compressIdleGaps, planCompression };
+/**
+ * The compression facts a take is graded against, as one object.
+ *
+ * A FUNCTION, not an object literal inside `finish.mjs`, for the reason
+ * `deadTimePhrase` is one: the writer and the reader live in different
+ * processes, and every guard this seam has had for a cross-process record was
+ * some description of the shape rather than a round trip through it. A test can
+ * call this and hand the result straight to `checkShots`, so a renamed field
+ * fails where it happens instead of silently reading as "no record".
+ */
+function compressionFacts({ plan, compressed, speed, clip }) {
+  return {
+    ran: Boolean(compressed),
+    speed,
+    maxSpeed: MAX_SPEED,
+    sourceDurationSec: plan?.D ?? null,
+    newDurationSec: compressed ? compressed.newDuration : (plan?.D ?? null),
+    kept: plan?.kept ?? null,
+    // THE WAITS, IN SOURCE TIME. A speed bump shortens every idle gap, but only
+    // the part inside a wait is the dead time the finding is about — the head
+    // load gap and the space between clicks are not. Without these the delta
+    // counted all of it: a 60s source whose only wait is fully narration-
+    // protected reported 4.7s "recoverable" from gaps the wait never touched.
+    // They must be SOURCE intervals; the document's are rebased.
+    waits: (clip?.actions ?? [])
+      .filter((a) => a.type === 'wait')
+      .map((a) => [a.startSec ?? 0, a.endSec ?? a.startSec ?? 0]),
+  };
+}
+
+// SPEED is exported as the RESOLVED default, not re-derived by each caller:
+// `finish.mjs` has to record the speed the cut actually got, and a second
+// `Number(process.env...) || 6` there could disagree with the one that ran.
+module.exports = { compressIdleGaps, planCompression, planFromKept, compressionFacts, MAX_SPEED, SPEED };

@@ -1313,13 +1313,13 @@ test('the dead-time report renders the protected duration, not a dangling field'
   const rendered = deadTimePhrase(
     { seconds: 4.0, protectedWait: 2.5, narrationHeld: 0, share: 0.15 }, 10);
   assert.match(rendered, /40% of the runtime/, 'the total the viewer waits through');
-  assert.match(rendered, /15% not structurally protected/, 'and what is not structurally protected');
-  assert.match(rendered, /2\.5s of it protected/, 'and the part no fix can reach');
+  assert.match(rendered, /15% a speed bump could still remove/, 'and what the remedy would actually return');
+  assert.match(rendered, /2\.5s of it beyond any speed fix/, 'and the part no fix can reach');
 
   // Narration is named when it is material, and never as the reveal beat.
   const narrated = deadTimePhrase(
     { seconds: 16, protectedWait: 16, narrationHeld: 13.9, share: 0 }, 20);
-  assert.match(narrated, /13\.9s of that held by narration/);
+  assert.match(narrated, /13\.9s of that held at 1x by narration/);
   assert.doesNotMatch(narrated, /reveal beat/);
 
   // Nothing protected: no dangling clause, no stray parenthetical.
@@ -1340,7 +1340,7 @@ test('the total and the recoverable share are never swapped', () => {
   // 90% waited, 10% recoverable — a swap would read "10% of the runtime is the
   // product thinking (90% recoverable)".
   assert.match(rendered, /90% of the runtime is the product thinking/);
-  assert.match(rendered, /10% not structurally protected/);
+  assert.match(rendered, /10% a speed bump could still remove/);
   assert.doesNotMatch(rendered, /10% of the runtime is the product thinking/);
 });
 
@@ -1491,7 +1491,7 @@ test('a narration-held wait is reported as narration, not as the reveal beat', (
   // itself, which is the pattern src/dead-time-phrase.js exists to end.
   const { deadTimePhrase } = require('../src/dead-time-phrase.js');
   const held = deadTimePhrase(d, doc.durationSec);
-  assert.match(held, /13\.9s of that held by narration/);
+  assert.match(held, /13\.9s of that held at 1x by narration/);
   assert.doesNotMatch(held, /reveal beat/,
     'attributing a narration hold to the reveal beat sends the operator at the wrong lever');
 
@@ -1582,7 +1582,7 @@ test('nothing acts on narrationHeld yet, and no finding pretends otherwise', () 
   // of a number they can still see.
   const { deadTimePhrase } = require('../src/dead-time-phrase.js');
   assert.match(deadTimePhrase({ seconds: 16, protectedWait: 16, narrationHeld: 13.9, share: 0 }, 20),
-    /held by narration/, 'and the operator still sees it');
+    /held at 1x by narration/, 'and the operator still sees it');
 });
 
 // ENG-6130: `bad` compares DEAD_TIME_SHARE against the RECOVERABLE share, and
@@ -1643,3 +1643,224 @@ test('a missing narration record is unknown, not "nothing was spoken"', () => {
     'a share measured without the record must say so, or it is an overclaim by default');
 });
 
+
+// ── ENG-6149: the recoverable figure is the achievable delta ────────────────
+// `recoverable` was re-planned over the FINISHED cut, so it was the gap that
+// survived this round's compression and every second of it was reported as
+// reachable. The remedy is a re-cut from source at a higher speed, which
+// returns only the difference between the two speeds. Measured on the fixture
+// below: the surviving gap is 9.1s and the whole bump to the cap returns 5.2s.
+
+//: The source timeline these tests compress, and the record finish.mjs writes.
+function sourceFixture() {
+  return {
+    durationSec: 60,
+    viewport: { width: 1280, height: 800 },
+    actions: [{ type: 'wait', index: 0, startSec: 5, endSec: 50 }],
+  };
+}
+//: Built by the SAME function finish.mjs writes with, so a renamed field fails
+//: these tests instead of silently reading as "no record" in production.
+function compressionRecord(speed) {
+  const { planCompression, compressionFacts } = require('../src/compress.js');
+  const plan = planCompression({ clip: sourceFixture(), narrationSpans: [], speed });
+  return compressionFacts({ plan, compressed: { newDuration: plan.newDuration }, speed, clip: sourceFixture() });
+}
+//: The compressed cut the checker grades, with its wait rebased into final time.
+function compressedDoc() {
+  return {
+    durationSec: 14.417,
+    viewport: { width: 1280, height: 800 },
+    actions: [{ type: 'wait', index: 0, startSec: 1.96, endSec: 10.79 }],
+  };
+}
+
+test('recoverable is what a speed bump returns, not the gap that survived the cut', () => {
+  const { checkShots } = require('../src/shot-check.js');
+  const { planCompression, planFromKept } = require('../src/compress.js');
+
+  // THE FIXTURE IS THE WORST CASE, asserted before it is measured. If the
+  // surviving gap and the achievable delta were close, this test would pass
+  // just as well against the bug it exists to catch.
+  const at6 = planCompression({ clip: sourceFixture(), narrationSpans: [], speed: 6 });
+  const at14 = planFromKept({ D: at6.D, kept: at6.kept, speed: 14 });
+  const survived = at6.segments.filter((s) => s.speed !== 1).reduce((n, s) => n + s.newDur, 0);
+  // Over the WAITS only, which is what the finding is about — the head gap and
+  // the space between clicks are idle but are not the product thinking.
+  const waits = sourceFixture().actions.filter((a) => a.type === 'wait').map((a) => [a.startSec, a.endSec]);
+  const lap = (aS, aE, bS, bE) => Math.max(0, Math.min(aE, bE) - Math.max(aS, bS));
+  const achievable = at6.segments.filter((x) => x.speed !== 1).reduce((n, seg) =>
+    n + waits.reduce((m, [ws, we]) => m + lap(seg.oldStart, seg.oldEnd, ws, we), 0) * (1 / seg.speed - 1 / 14), 0);
+  assert.ok(at14.newDuration < at6.newDuration, 'the cap must actually shorten this fixture');
+  assert.ok(survived > achievable * 1.5,
+    `fixture must make the two answers far apart, got survived=${survived} achievable=${achievable}`);
+
+  const dead = checkShots({ doc: compressedDoc(), outDir: '/tmp', id: 'x', compression: compressionRecord(6) }).deadTime;
+  assert.strictEqual(dead.compressionKnown, true);
+  assert.ok(Math.abs(dead.recoverable - achievable) < 0.05,
+    `recoverable must be the ${achievable.toFixed(2)}s a bump to the cap returns, got ${dead.recoverable}`);
+  assert.ok(dead.recoverable < survived - 1,
+    `and must NOT be the ${survived.toFixed(2)}s that merely survived this cut, got ${dead.recoverable}`);
+});
+
+test('at the speed cap nothing is recoverable, so dead time cannot fire', () => {
+  const { checkShots } = require('../src/shot-check.js');
+  // The loop has already bumped to 14x. There is no lever left, and a finding
+  // whose remedy cannot move is the flat loop ENG-6130 closed — arriving here
+  // through a figure measured against a speed the loop can no longer reach.
+  const dead = checkShots({ doc: compressedDoc(), outDir: '/tmp', id: 'x', compression: compressionRecord(14) }).deadTime;
+  assert.strictEqual(dead.compressionKnown, true);
+  assert.ok(dead.recoverable < 0.01, `nothing is left at the cap, got ${dead.recoverable}`);
+  assert.strictEqual(dead.bad, false, 'a finding with no reachable remedy must not fire');
+});
+
+test('a compression record without a cap is unknown, not a guessed ceiling', () => {
+  const { checkShots } = require('../src/shot-check.js');
+  // A `?? MAX_SPEED` default here would assert a ceiling this cut may never
+  // have had, and would read as a measured answer.
+  const record = compressionRecord(6);
+  delete record.maxSpeed;
+  const dead = checkShots({ doc: compressedDoc(), outDir: '/tmp', id: 'x', compression: record }).deadTime;
+  assert.strictEqual(dead.compressionKnown, false,
+    'without the cap the delta is unanswerable, and saying so beats defaulting');
+});
+
+test('a record with a malformed speed is unknown, not NaN', () => {
+  // `Math.max(1.5, undefined)` is NaN, and NaN propagates through every segment
+  // into `newDuration`, then into `recoverable` and `share`. The object is still
+  // truthy, so `compressionKnown` read true, `bad` silently evaluated false, and
+  // the report printed "NaN%" — a measured-looking answer to a question the
+  // record could not support.
+  const { checkShots } = require('../src/shot-check.js');
+  for (const bad of [undefined, null, 'six', NaN]) {
+    const record = { ...compressionRecord(6), speed: bad };
+    const dead = checkShots({ doc: compressedDoc(), outDir: '/tmp', id: 'x', compression: record }).deadTime;
+    assert.strictEqual(dead.compressionKnown, false, `speed ${String(bad)} must read as unknown`);
+    assert.ok(Number.isFinite(dead.recoverable), `and never NaN, got ${dead.recoverable}`);
+    assert.ok(Number.isFinite(dead.share), `nor a NaN share, got ${dead.share}`);
+  }
+});
+
+test('a record with malformed waits is unknown, not NaN', () => {
+  // `overlap` on a non-numeric pair yields NaN, which propagates into
+  // `recoverable` and `share` while `compressionKnown` still reads true — the
+  // report prints "NaN%" and `bad` silently evaluates false. Same failure the
+  // speed guard closes, one field over.
+  const { checkShots } = require('../src/shot-check.js');
+  for (const waits of [[[0, 'x']], [[1]], [{ start: 0, end: 5 }], [null], [[0, NaN]]]) {
+    const record = { ...compressionRecord(6), waits };
+    const dead = checkShots({ doc: compressedDoc(), outDir: '/tmp', id: 'x', compression: record }).deadTime;
+    assert.strictEqual(dead.compressionKnown, false, `waits ${JSON.stringify(waits)} must read as unknown`);
+    assert.ok(Number.isFinite(dead.recoverable), `and never NaN, got ${dead.recoverable}`);
+    assert.ok(Number.isFinite(dead.share), `nor a NaN share, got ${dead.share}`);
+  }
+});
+
+test('the dead_time detail does not claim a full return on the fallback path', () => {
+  // CALLS the builder. The first cut of this test grepped critique-take.mjs for
+  // the condition — the vacuous shape this whole seam keeps being bitten by, and
+  // one that would pass with the two branches' wording swapped.
+  const { deadTimeDetail } = require('../src/dead-time-phrase.js');
+  const known = deadTimeDetail({ share: 0.2, compressionKnown: true }, 14);
+  assert.match(known, /the whole of it, up to the 14x cap/);
+  assert.doesNotMatch(known, /survived this cut/);
+
+  const unknown = deadTimeDetail({ share: 0.2, compressionKnown: false }, 14);
+  assert.match(unknown, /survived this cut/,
+    'without a record this is the surviving gap, not what a bump returns');
+  assert.doesNotMatch(unknown, /the whole of it/,
+    'and it must not claim the full amount is recoverable');
+});
+
+test('a record without the source waits is unknown, not measured over every gap', () => {
+  // The delta over ALL idle gaps counts the head load gap and the space between
+  // clicks — time no wait ever occupied. A 60s source whose only wait is fully
+  // narration-protected reported 4.7s "recoverable" from gaps the wait never
+  // touched, which is a dead_time finding about nothing.
+  const { checkShots } = require('../src/shot-check.js');
+  const record = compressionRecord(6);
+  delete record.waits;
+  const dead = checkShots({ doc: compressedDoc(), outDir: '/tmp', id: 'x', compression: record }).deadTime;
+  assert.strictEqual(dead.compressionKnown, false);
+});
+
+test('a wait held entirely at 1x is not called recoverable', () => {
+  // The case codex built: speeding returns none of this wait, because narration
+  // protects all of it — but idle gaps elsewhere in the source made the
+  // whole-timeline delta non-zero.
+  const { checkShots } = require('../src/shot-check.js');
+  const { planCompression, compressionFacts } = require('../src/compress.js');
+  const src = {
+    durationSec: 60,
+    viewport: { width: 1280, height: 800 },
+    actions: [
+      { type: 'click', index: 0, startSec: 1, clickSec: 1.2, endSec: 1.5 },
+      { type: 'wait', index: 1, startSec: 20, endSec: 25 },
+      { type: 'click', index: 2, startSec: 55, clickSec: 55.2, endSec: 55.5 },
+    ],
+  };
+  const spans = [{ startSec: 20, durationSec: 5, actionIndex: 1 }];
+  const plan = planCompression({ clip: src, narrationSpans: spans, speed: 6 });
+  // The fixture must really have compressible gaps OUTSIDE the wait, or it
+  // cannot catch the bug.
+  const spedOutside = plan.segments.filter((x) => x.speed !== 1)
+    .reduce((n, x) => n + Math.max(0, Math.min(x.oldEnd, 20) - x.oldStart) + Math.max(0, x.oldEnd - Math.max(x.oldStart, 25)), 0);
+  assert.ok(spedOutside > 10, `fixture needs sped gaps outside the wait, got ${spedOutside}`);
+
+  const rec = compressionFacts({ plan, compressed: { newDuration: plan.newDuration }, speed: 6, clip: src });
+  const doc = {
+    durationSec: plan.newDuration,
+    viewport: { width: 1280, height: 800 },
+    actions: [{ type: 'wait', index: 1, startSec: 2, endSec: 7 }],
+  };
+  const dead = checkShots({ doc, outDir: '/tmp', id: 'x', narrationSpans: spans, compression: rec }).deadTime;
+  assert.ok(dead.recoverable < 0.01,
+    `a fully protected wait returns nothing to a speed bump, got ${dead.recoverable}`);
+  assert.strictEqual(dead.bad, false);
+});
+
+test('a missing compression record is said out loud, not silently assumed', () => {
+  const { checkShots } = require('../src/shot-check.js');
+  const { deadTimePhrase } = require('../src/dead-time-phrase.js');
+  const dead = checkShots({ doc: compressedDoc(), outDir: '/tmp', id: 'x' }).deadTime;
+  assert.strictEqual(dead.compressionKnown, false);
+  assert.match(deadTimePhrase(dead, 14.417), /no compression record/,
+    'a share on the old basis must carry the caveat, or it is the overclaim by default');
+  assert.doesNotMatch(deadTimePhrase({ ...dead, compressionKnown: true }, 14.417), /no compression record/);
+});
+
+test('the record finish.mjs writes is the record the checker can read', () => {
+  // A ROUND TRIP, not a description of one. The writer and reader are separate
+  // processes, so nothing else in the suite would notice a renamed field — the
+  // reader's catch would swallow it and the checker would fall back to the old
+  // basis while still printing a number.
+  const { checkShots } = require('../src/shot-check.js');
+  const { planCompression, compressionFacts } = require('../src/compress.js');
+  const plan = planCompression({ clip: sourceFixture(), narrationSpans: [], speed: 6 });
+  const onDisk = JSON.parse(JSON.stringify(
+    compressionFacts({ plan, compressed: { newDuration: plan.newDuration }, speed: 6, clip: sourceFixture() })));
+
+  const dead = checkShots({ doc: compressedDoc(), outDir: '/tmp', id: 'x', compression: onDisk }).deadTime;
+  assert.strictEqual(dead.compressionKnown, true,
+    'every field the checker needs must survive the JSON the writer emits');
+});
+
+test('a take with no lines never reports time held by narration', () => {
+  // A CROSS-BASIS SUBTRACTION, caught on real output. `narrationHeld` is a plan
+  // difference; when `recoverable` moved to the source-timeline delta and the
+  // other term stayed on the finished-cut basis, the remainder stopped
+  // measuring narration and started measuring the gap between the two bases —
+  // 4.5s "held by narration" on a marketing take that speaks not one word.
+  const { checkShots } = require('../src/shot-check.js');
+  const dead = checkShots({
+    doc: compressedDoc(), outDir: '/tmp', id: 'x',
+    narrationSpans: [], compression: compressionRecord(6),
+  }).deadTime;
+  assert.strictEqual(dead.compressionKnown, true, 'the new basis must actually be in play');
+  assert.strictEqual(dead.narrationHeld, 0,
+    'nothing was spoken, so nothing can be held by speech');
+
+  // And the sentence must not grow the clause either.
+  const { deadTimePhrase } = require('../src/dead-time-phrase.js');
+  assert.doesNotMatch(deadTimePhrase(dead, 14.417), /held by narration/);
+});
