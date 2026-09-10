@@ -31,6 +31,17 @@ const BREATHING_SEC = 0.35;   // kept at 1x at the START of each gap, so it does
 const MIN_GAP_SEC = 0.7;      // shorter gaps are left alone; speeding them just stutters
 const POST_CLICK_KEEP = 0.6;  // after a click, for the result to register
 const TAIL_KEEP = 2.0;        // the final beat is the reveal — never sped past
+//: How much of a long `fill` stays at 1x at each end (ENG-6195). The head lets
+//: the viewer see typing start; the tail leaves the finished prompt readable —
+//: and the click that follows a prompt is itself protected, so the completed
+//: text is on screen for the tail PLUS that action.
+const TYPING_HEAD_KEEP = 1.0;
+const TYPING_TAIL_KEEP = 1.0;
+//: Below this a fill is already a beat and splitting it just stutters — the
+//: same reason `MIN_GAP_SEC` exists. Derived, not a fourth tunable: the two
+//: keeps plus the shortest gap worth speeding, so the middle is never smaller
+//: than the minimum the segment builder would speed anyway.
+const TYPING_MIN_COMPRESSIBLE = TYPING_HEAD_KEEP + TYPING_TAIL_KEEP + MIN_GAP_SEC;
 //: The opening beat is DELIBERATE, not idle. Capture already trims the load down
 //: to a lead-in chosen so the viewer can read the starting state; without this,
 //: compression treats that lead-in as a gap and squeezes it — measured, 0.9s
@@ -125,7 +136,10 @@ function rebaseClip(clip, remap, newDuration) {
  * `WAIT_RESULT_KEEP` of every wait, the `BREATHING_SEC` lead-in at the start of
  * every gap, `POST_CLICK_KEEP` after every click, and any residual gap under
  * `MIN_GAP_SEC` that `buildSegments` leaves alone — plus every action's own span
- * and any narration. A caller that imports one of those constants and subtracts it is
+ * and any narration. EXCEPT the middle of a `fill` longer than
+ * `TYPING_MIN_COMPRESSIBLE`, which keeps only its head (from the click) and its
+ * tail: typing is a transport, not a beat (ENG-6195).
+ * A caller that imports one of those constants and subtracts it is
  * describing a different function from the one that runs (ENG-6130).
  *
  * Returns the segments in ORIGINAL time. Those with `speed !== 1` are exactly
@@ -168,6 +182,38 @@ function planCompression({ clip, narrationSpans = [], speed = SPEED }) {
       // through a wait where nothing whatsoever happened. Only the TAIL is
       // kept, because that is where the result arrives.
       active.push([Math.max(start, end - WAIT_RESULT_KEEP), end]);
+    } else if (a.type === 'fill' && end - click >= TYPING_MIN_COMPRESSIBLE) {
+      // TYPING IS NOT A BEAT, IT IS A TRANSPORT. Measured on a real take: the
+      // fill was 14.1s of a 37.1s cut — 38% of the video — and the critique
+      // called it out as "8 of 12 sampled frames on a screen where nothing but
+      // text length differs". Every non-wait action used to be protected for
+      // its WHOLE span, so no compress speed could reach it: `no_visible_change`
+      // fired with `fix: speed_up`, the loop bumped 6x -> 9x -> 12x, and the
+      // score sat at 6/10 for three rounds against a video whose largest block
+      // was immune. Third instance of one shape — a finding whose remedy cannot
+      // touch its cause (ENG-6130, ENG-6137) — and here it was the biggest
+      // thing on screen.
+      //
+      // HEAD AND TAIL, like a wait keeps its tail. The head is where the viewer
+      // sees typing begin and starts reading; the tail is the completed prompt,
+      // which has to be legible before it is sent. The middle — clause four of
+      // seven appearing — carries nothing a viewer needs.
+      //
+      // ANCHORED AT THE CLICK, not at `start`. For a recorded fill `start` is
+      // `moveStartSec` — when the cursor BEGINS gliding toward the field — and
+      // the glide plus its pre-click dwell runs ~0.8-1.6s. Anchoring the head
+      // there spent the entire budget on pointer movement and expired just as
+      // typing began, speeding the click and the first characters: the exact
+      // opposite of what the head is for. Keeping [start, click + HEAD] also
+      // holds the whole glide at 1x by construction, which is right — the
+      // cursor is only visible while it moves. `narrate.js` anchors a fill's
+      // spoken line at `clickSec` for the same reason.
+      //
+      // The threshold is measured on the TYPING span (`end - click`) too, or a
+      // brief fill behind a long glide crosses it and gets split — precisely
+      // the "already a beat" case the threshold exists to exclude.
+      active.push([start, Math.min(end, click + TYPING_HEAD_KEEP)]);
+      active.push([end - TYPING_TAIL_KEEP, end]);
     } else {
       active.push([start, end]);
     }

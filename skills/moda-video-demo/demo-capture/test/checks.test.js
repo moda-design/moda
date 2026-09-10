@@ -1348,7 +1348,9 @@ test('the total and the recoverable share are never swapped', () => {
 // (TAIL_KEEP) when the compressor keeps SIX kinds of span at 1x — the opening
 // HEAD_KEEP, the closing TAIL_KEEP, the final WAIT_RESULT_KEEP of every wait,
 // the BREATHING_SEC lead-in on every gap, POST_CLICK_KEEP after every click,
-// and any residual gap under MIN_GAP_SEC that buildSegments leaves alone.
+// and any residual gap under MIN_GAP_SEC that buildSegments leaves alone —
+// with one carve-out since: the middle of a fill longer than
+// TYPING_MIN_COMPRESSIBLE is NOT protected (ENG-6195).
 // (BREATHING_SEC and POST_CLICK_KEEP are exactly the two an earlier count
 // omitted, which is why the guard below reads the list off compress.js.) A
 // take made of short waits is therefore entirely incompressible, and calling
@@ -2145,4 +2147,119 @@ test('every script in this directory actually parses', () => {
     if (res.status !== 0) broken.push(`${path.relative(dir, f)}: ${String(res.stderr).split('\n')[0]}`);
   }
   assert.deepStrictEqual(broken, [], `these do not parse:\n${broken.join('\n')}`);
+});
+
+// ── ENG-6195: typing is a transport, not a beat ────────────────────────────
+
+test('a long fill has its middle sped, keeping the head and the tail', () => {
+  const { planCompression } = require('../src/compress.js');
+  // THE SHAPE THE RECORDER EMITS. A real fill carries moveStartSec/arrivalSec/
+  // clickSec; omitting them collapses `start` and `click` onto startSec, which
+  // is the one case where anchoring the head at `start` happens to be correct —
+  // so a fixture without them cannot see the anchor at all.
+  const clip = {
+    durationSec: 30,
+    actions: [{
+      type: 'fill', index: 0,
+      startSec: 2, moveStartSec: 2, arrivalSec: 3.3, clickSec: 3.6,
+      clickX: 778, clickY: 204, endSec: 18,
+    }],
+  };
+  const plan = planCompression({ clip, narrationSpans: [], speed: 6 });
+  const sped = plan.segments.filter((s) => s.speed !== 1);
+  assert.ok(sped.length > 0, 'a 16s fill must not be immune to the only lever the loop has');
+
+  // The head is where the viewer sees typing begin; the tail is the finished
+  // prompt, which has to stay legible before it is sent. Measured as OVERLAP
+  // with each region — a `oldStart <` test also catches the sped gap that sits
+  // before the fill begins, and would fail for a reason unrelated to typing.
+  const lap = (aS, aE, bS, bE) => Math.max(0, Math.min(aE, bE) - Math.max(aS, bS));
+  // The first second AFTER THE CLICK — where typing actually begins. Anchoring
+  // on startSec instead spends the whole budget on the cursor glide and expires
+  // just as the first characters appear.
+  const inHead = sped.reduce((n, s) => n + lap(s.oldStart, s.oldEnd, 3.6, 4.6), 0);
+  const inGlide = sped.reduce((n, s) => n + lap(s.oldStart, s.oldEnd, 2, 3.6), 0);
+  const inTail = sped.reduce((n, s) => n + lap(s.oldStart, s.oldEnd, 17, 18), 0);
+  assert.strictEqual(inHead, 0, 'the first second of TYPING must stay at 1x');
+  assert.strictEqual(inGlide, 0, 'and the cursor glide with it — the pointer is visible while it moves');
+  assert.strictEqual(inTail, 0, 'the completed prompt must stay at 1x');
+
+  // And the middle really is the part that moved.
+  const spedInside = sped.reduce((n, s) =>
+    n + Math.max(0, Math.min(s.oldEnd, 18) - Math.max(s.oldStart, 2)), 0);
+  assert.ok(spedInside > 10, `most of the 16s fill should be sped, got ${spedInside.toFixed(1)}s`);
+});
+
+test('a short fill is left alone, because it is already a beat', () => {
+  // Splitting a brief fill just stutters — the same reason MIN_GAP_SEC exists.
+  const { planCompression } = require('../src/compress.js');
+  // Measured on the TYPING span, not the whole action: a 1.2s fill behind a
+  // 1.6s glide is 2.8s end-to-end and would cross a threshold measured from
+  // `start`, splitting exactly the beat the threshold exists to protect.
+  const clip = {
+    durationSec: 30,
+    actions: [{
+      type: 'fill', index: 0,
+      startSec: 2, moveStartSec: 2, arrivalSec: 3.3, clickSec: 3.6, endSec: 4.8,
+    }],
+  };
+  const plan = planCompression({ clip, narrationSpans: [], speed: 6 });
+  const spedInside = plan.segments.filter((s) => s.speed !== 1).reduce((n, s) =>
+    n + Math.max(0, Math.min(s.oldEnd, 4.8) - Math.max(s.oldStart, 2)), 0);
+  assert.strictEqual(spedInside, 0, 'a 1.2s typing span must be untouched');
+});
+
+test('a click is still protected for its whole span', () => {
+  // The change is scoped to typing. A click is a discrete beat — speeding
+  // through one loses the moment the viewer is meant to register.
+  const { planCompression } = require('../src/compress.js');
+  const clip = {
+    durationSec: 30,
+    actions: [{ type: 'click', index: 0, startSec: 2, clickSec: 2.5, endSec: 18 }],
+  };
+  const plan = planCompression({ clip, narrationSpans: [], speed: 6 });
+  const spedInside = plan.segments.filter((s) => s.speed !== 1).reduce((n, s) =>
+    n + Math.max(0, Math.min(s.oldEnd, 18) - Math.max(s.oldStart, 2)), 0);
+  assert.strictEqual(spedInside, 0, 'only fills were opened up, not every action');
+});
+
+test('the real take that motivated this gets materially shorter', () => {
+  // THE ARTIFACT'S OWN NUMBERS, copied from sample-browserless-a1's
+  // timeline.source.json — including moveStartSec/arrivalSec/clickSec, which
+  // the recorder stamps on every fill and which the first cut of this test
+  // omitted. That omission collapsed `click` onto `startSec` and let the test
+  // claim ~11.7s of saving where the code delivers 10.1s: it asserted a number
+  // the artifact never gets, under a comment saying it was measured on one.
+  const { planCompression } = require('../src/compress.js');
+  const clip = {
+    durationSec: 104.334,
+    actions: [
+      { type: 'click', index: 0, moveStartSec: 0.9, arrivalSec: 1.638, clickSec: 1.939, startSec: 0.87, endSec: 3.654 },
+      { type: 'fill', index: 1, moveStartSec: 4.253, arrivalSec: 4.981, clickSec: 5.282, startSec: 3.654, endSec: 17.75 },
+      { type: 'click', index: 2, moveStartSec: 17.789, arrivalSec: 18.506, clickSec: 18.808, startSec: 17.75, endSec: 20.03 },
+      { type: 'wait', index: 3, startSec: 20.03, endSec: 25.652 },
+      { type: 'wait', index: 4, startSec: 25.652, endSec: 29.801 },
+      { type: 'wait', index: 5, startSec: 29.801, endSec: 94.718 },
+      { type: 'wait', index: 6, startSec: 94.718, endSec: 98.876 },
+      { type: 'wait', index: 7, startSec: 98.876, endSec: 102.612 },
+    ],
+  };
+  const fill = clip.actions[1];
+  // The fill ACTION is 14.1s, but only 12.5s of it is typing — the rest is the
+  // cursor glide. Sizing the win against the action span overstates it.
+  const typing = fill.endSec - fill.clickSec;
+  assert.ok(typing > 12 && typing < 13, `fixture must carry the real typing span, got ${typing.toFixed(2)}s`);
+  assert.ok(fill.clickSec - fill.moveStartSec > 1, 'and the real ~1s glide, which is what broke the first anchor');
+
+  const plan = planCompression({ clip, narrationSpans: [], speed: 6 });
+  const lap = (aS, aE, bS, bE) => Math.max(0, Math.min(aE, bE) - Math.max(aS, bS));
+  const sped = plan.segments.filter((s) => s.speed !== 1);
+  const spedTyping = sped.reduce((n, s) => n + lap(s.oldStart, s.oldEnd, fill.clickSec, fill.endSec), 0);
+  assert.ok(spedTyping > 10,
+    `the bulk of the ${typing.toFixed(1)}s typing span must be reachable, got ${spedTyping.toFixed(2)}s`);
+
+  // And the readable first second survives, on the take whose 1.03s glide is
+  // exactly what the old anchor spent its whole budget on.
+  const firstSecond = sped.reduce((n, s) => n + lap(s.oldStart, s.oldEnd, fill.clickSec, fill.clickSec + 1), 0);
+  assert.strictEqual(firstSecond, 0, 'the first second of typing must survive on the real shape too');
 });

@@ -288,7 +288,8 @@ function checkShots({ doc, outDir, id, motionPath = null, cameraWasAttempted = f
   // `HEAD_KEEP`, the closing `TAIL_KEEP`, every wait's `WAIT_RESULT_KEEP`, the
   // `BREATHING_SEC` lead-in on every gap, `POST_CLICK_KEEP` after every click,
   // and any residual gap under `MIN_GAP_SEC` — plus each action's own span and
-  // any narration. An earlier
+  // any narration, EXCEPT the middle of a long `fill`, which is sped from the
+  // click's head keep to the tail keep (ENG-6195). An earlier
   // cut of this imported `TAIL_KEEP` alone and still overclaimed: for a 4.5s
   // wait on a 10s clip it called all 4.5s recoverable when the compressor speeds
   // 1.55s of it.
