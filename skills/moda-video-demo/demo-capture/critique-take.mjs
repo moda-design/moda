@@ -27,12 +27,8 @@ const { ffmpeg: FFMPEG, ffprobe: FFPROBE } = require('./src/bin.js');
 const { critiqueVideo, critiqueFrames } = require('./src/critique.js');
 const { checkMotion, JUMP_PX } = require('./src/motion-check.js');
 const { checkInk } = require('./src/ink-check.js');
-<<<<<<< HEAD
-const { checkShots, DEAD_TIME_SHARE } = require('./src/shot-check.js');
-const { MAX_SPEED } = require('./src/compress.js');
-=======
 const { checkShots, DEAD_TIME_SHARE, NARRATION_HELD_SEC } = require('./src/shot-check.js');
->>>>>>> 21d36bd082 (Give narration its own stage, and a lever that actually shortens it (ENG-6137))
+const { MAX_SPEED } = require('./src/compress.js');
 const { cameraPlanPath } = require('./src/camera-emit.js');
 const { deadTimePhrase, deadTimeDetail, pct, narrationPath, compressionPath } = require('./src/dead-time-phrase.js');
 const { checkLegibility } = require('./src/legibility-check.js');

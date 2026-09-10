@@ -2117,3 +2117,32 @@ test('per-line narration attribution is unmoved by the compression basis', () =>
   assert.ok(Math.abs(with_.narrationWorst.heldSec - without.narrationWorst.heldSec) < 0.01,
     `and so is how much it holds — got ${with_.narrationWorst.heldSec} vs ${without.narrationWorst.heldSec}`);
 });
+
+test('every script in this directory actually parses', () => {
+  // A CONFLICT MARKER SHIPPED TO MAIN in critique-take.mjs and nothing noticed:
+  // the entry-point .mjs files are spawned as subprocesses, never imported by a
+  // test, and nothing in this tree is linted. The suite stayed green while the
+  // critique stage was dead on arrival — every run failed with
+  // `SyntaxError: Unexpected token '<<'` after the video had already been
+  // recorded and scored, which is the most expensive possible place to fail.
+  //
+  // Parses the WHOLE directory rather than a hand-listed set, because a list
+  // that has to be kept in step with the filesystem is the thing that let this
+  // through — critique-take.mjs was simply not on anybody's list.
+  const { readdirSync } = require('node:fs');
+  const dir = HERE;
+  const scripts = readdirSync(dir).filter((f) => /\.(mjs|js)$/.test(f));
+  const srcDir = path.join(dir, 'src');
+  const all = [
+    ...scripts.map((f) => path.join(dir, f)),
+    ...readdirSync(srcDir).filter((f) => f.endsWith('.js')).map((f) => path.join(srcDir, f)),
+  ];
+  assert.ok(all.length > 20, `expected the whole tree, found ${all.length} file(s)`);
+
+  const broken = [];
+  for (const f of all) {
+    const res = spawnSync(process.execPath, ['--check', f], { encoding: 'utf8' });
+    if (res.status !== 0) broken.push(`${path.relative(dir, f)}: ${String(res.stderr).split('\n')[0]}`);
+  }
+  assert.deepStrictEqual(broken, [], `these do not parse:\n${broken.join('\n')}`);
+});
