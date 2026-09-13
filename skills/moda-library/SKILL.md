@@ -44,10 +44,13 @@ moda file upload --from-url [URL]
 
 - The result is a durable `file_…` ref — use it DIRECTLY as a markup image
   fill or a media input. Never re-upload the same bytes per canvas.
-- Files up to 250MB work as-is: large files (over 30 MiB) automatically take a
-  signed direct-to-storage route inside the same command — do NOT re-encode or
-  split a big video just to upload it. Over 250MB is refused locally with the
-  exact limit before any bytes move; only then is shrinking the file the fix.
+- Large files (over 30 MiB) automatically take a signed direct-to-storage route
+  inside the same command — do NOT re-encode or split a big video just to
+  upload it. The ceiling is PER-WORKSPACE, not a flat 250MB: 250MB is the
+  maximum and a free workspace is capped lower, so never promise a size from
+  memory. The command reads the workspace's real limit and refuses locally with
+  the exact number before any bytes move; shrinking is the fix only once the
+  file is over THAT number, and on a free workspace upgrading also lifts it.
 - The response says where the file actually landed; unfiled → `moda drive move`.
 - **HTML has two destinations; uploading picks the drive one.** A `.html` file
   becomes a drive file, not a website — to host it, `moda site create --file
