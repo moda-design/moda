@@ -123,6 +123,53 @@ id only**, and no node has an id until the markup has been applied. That is why
 do `motion` and `captions` run. Concatenate the motion and caption programs into
 **one** `canvas edit` — two calls race the canvas revision.
 
+## Point it at a PRODUCTION build, not a dev server
+
+Every capture against `next dev` has the Next dev overlay burned into **every
+frame** — `page-health.js` flags it, and it is not a framing problem you can
+shoot around: `nextjs-portal` ships on every dev page. Six takes in a row
+carried it. The pipeline can reach a good score and still hand you a video
+nobody can publish.
+
+For studio, record against a local production build:
+
+```bash
+cd <studio>
+# stop the frontend dev server first: distDir is unset, so `next build`
+# clobbers the .next that `next dev` is serving
+DOPPLER_PROJECT=studio DOPPLER_CONFIG=local_personal doppler run -- npm run build
+DOPPLER_PROJECT=studio DOPPLER_CONFIG=local_personal doppler run -- npm start   # :3000
+```
+
+Then run the capture against `http://localhost:3000` as normal. To get hot
+reload back afterwards, stop `npm start` and run `make server` from `<studio>`
+(the root target, which is `next dev`).
+
+**Pin the Doppler config, do not rely on the directory binding.** Doppler binds
+a config to a DIRECTORY and binds it to the main checkout, not to worktrees —
+`demo-capture/auth.mjs` documents this and pins the same two variables for the
+same reason. It also has to be the config `auth.mjs` mints against: every
+`NEXT_PUBLIC_*` (the Clerk publishable key included) is inlined at BUILD time,
+so a bundle built under a different config records as a signed-out app, and
+nothing in the pipeline catches that.
+
+Two more constraints that are easy to trip:
+
+- **The port must stay in 3000-3005.** `auth.mjs` asserts it (the azp trap), so
+  a prod build on :3100 cannot mint a local session.
+- **The collab stack has to be up**, started from `backend/`:
+  `cd backend && BROWSERLESS=1 make server` — API, collab-server and
+  collab-worker together. It must be the BACKEND target: at the studio root
+  `make server` is `doppler run -- npm run dev`, which ignores `BROWSERLESS`,
+  starts no API, and re-clobbers the `.next` you just built. Omni is
+  browserless-only and the browserless preflight (backend/Makefile) rejects
+  `COLLAB=0`.
+
+Measured against the same flow on a dev server, the production build removed the
+overlay, cleared every validation warning, and cut the source recording roughly
+in half (78-104s down to 36-68s). The speed-up was not investigated — treat it
+as an observation, not a promise.
+
 ## The runner — use this, do not rewrite it
 
 `run.mjs` is the whole pipeline. A goal and a URL is the entire input:
