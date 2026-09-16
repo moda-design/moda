@@ -1369,6 +1369,8 @@ test('the total and the recoverable share are never swapped', () => {
 // (TAIL_KEEP) when the compressor keeps SIX kinds of span at 1x — the opening
 // HEAD_KEEP, the closing TAIL_KEEP, the final WAIT_RESULT_KEEP of every wait,
 // the BREATHING_SEC lead-in on every gap, POST_CLICK_KEEP after every click,
+// (a wait whose result lands in the closing beat is held by it instead of
+// keeping its own — ENG-6210)
 // and any residual gap under MIN_GAP_SEC that buildSegments leaves alone —
 // with one carve-out since: the middle of a fill longer than
 // TYPING_MIN_COMPRESSIBLE is NOT protected (ENG-6195).
@@ -2283,4 +2285,147 @@ test('the real take that motivated this gets materially shorter', () => {
   // exactly what the old anchor spent its whole budget on.
   const firstSecond = sped.reduce((n, s) => n + lap(s.oldStart, s.oldEnd, fill.clickSec, fill.clickSec + 1), 0);
   assert.strictEqual(firstSecond, 0, 'the first second of typing must survive on the real shape too');
+});
+
+test('a wait whose result lands in the closing beat is held once, not twice', () => {
+  // TWO HOLDS ON ONE MOMENT (ENG-6210). The closing TAIL_KEEP beat and the last
+  // wait's WAIT_RESULT_KEEP both hold the payoff. When the footage runs on past
+  // the last action they only partly overlap, so their union is longer than
+  // either — on the take that motivated this, 3.27s, which nobody chose. And a
+  // 1x region does not shrink when the loop raises the speed, so its share of
+  // the cut GROWS every pacing round: 17% at 6x, 22% at 12x.
+  const { planCompression } = require('../src/compress.js');
+  // The real shape: the last wait ends 1.67s before the footage does.
+  const clip = {
+    durationSec: 68,
+    actions: [
+      { type: 'fill', index: 0, startSec: 0.88, moveStartSec: 0.9, clickSec: 1.92, endSec: 10.45 },
+      { type: 'click', index: 1, startSec: 10.45, clickSec: 11.52, endSec: 12.66 },
+      { type: 'wait', index: 2, startSec: 12.66, endSec: 66.33 },
+    ],
+  };
+  const plan = planCompression({ clip, narrationSpans: [], speed: 6 });
+  const last = plan.kept[plan.kept.length - 1];
+  const hold = last[1] - last[0];
+
+  // The fixture must actually carry the overlap, or it proves nothing.
+  assert.ok(68 - 66.33 > 1 && 68 - 66.33 < 2.0,
+    'the wait must end inside the tail beat but not at the clip end');
+  assert.ok(Math.abs(hold - 2.0) < 0.01,
+    `the payoff is one 2.0s beat, not the union of two — got ${hold.toFixed(2)}s`);
+  assert.ok(Math.abs(last[1] - 68) < 0.01, 'and it ends with the footage');
+});
+
+test('a wait that ends well before the footage keeps its own result hold', () => {
+  // The collapse is scoped to a wait landing INSIDE the closing beat. A wait
+  // that finishes earlier still needs its own hold — that is where its result
+  // appears, and the tail beat is nowhere near it.
+  const { planCompression } = require('../src/compress.js');
+  const clip = {
+    durationSec: 60,
+    actions: [
+      { type: 'wait', index: 0, startSec: 2, endSec: 30 },
+      { type: 'click', index: 1, startSec: 45, clickSec: 45.5, endSec: 47 },
+    ],
+  };
+  const plan = planCompression({ clip, narrationSpans: [], speed: 6 });
+  const coversWaitEnd = plan.kept.some(([a, b]) => a <= 30 && b >= 29.9);
+  assert.ok(coversWaitEnd,
+    `a wait ending at 30s on a 60s clip must keep its own result hold, got ${JSON.stringify(plan.kept)}`);
+});
+
+test('the closing beat stays one hold on BOTH sides of its edge', () => {
+  // THE DEFECT IS CONTINUOUS, THE FIRST GATE WAS NOT. Gating on "does the wait
+  // end inside the closing beat" left a MIN_GAP_SEC-wide window just outside
+  // it where the result-keep, a sub-MIN_GAP gap that buildSegments leaves at
+  // 1x, and the tail beat form ONE contiguous static run — 3.61s at 65.99 and
+  // 4.00s at 65.60 on this shape, both worse than the 3.27s that motivated the
+  // fix. Swept rather than spot-checked, because a cliff is exactly what a
+  // spot-check at a round number misses.
+  const { planCompression } = require('../src/compress.js');
+  const D = 68;
+  const clipEndingAt = (waitEnd) => ({
+    durationSec: D,
+    actions: [
+      { type: 'fill', index: 0, startSec: 0.88, moveStartSec: 0.9, clickSec: 1.92, endSec: 10.45 },
+      { type: 'click', index: 1, startSec: 10.45, clickSec: 11.52, endSec: 12.66 },
+      { type: 'wait', index: 2, startSec: 12.66, endSec: waitEnd },
+    ],
+  });
+  //: PERCEPTUAL, not strictly contiguous. The first version of this metric
+  //: broke the run on ANY fast segment, so a 67ms sped blip between two holds
+  //: read as two short runs — it reported 2.00s where the viewer sat through
+  //: 4.19s of frozen ending, and the sweep passed while the cliff had only
+  //: moved. A cut too brief to register as motion does not separate two holds.
+  const PERCEPTIBLE = 0.25;
+  const closingRun = (plan) => {
+    let t = 0; const runs = [];
+    for (const s of plan.segments) {
+      const d = (s.oldEnd - s.oldStart) / s.speed;
+      if (s.speed === 1 || d < PERCEPTIBLE) {
+        const prev = runs[runs.length - 1];
+        if (prev && Math.abs(prev[1] - t) < 1e-6) prev[1] = t + d;
+        else runs.push([t, t + d]);
+      }
+      t += d;
+    }
+    const r = runs[runs.length - 1];
+    return r[1] - r[0];
+  };
+
+  // THE REGION THE GATE GOVERNS, at every speed the loop uses. A global sweep
+  // cannot pin this: the residual window further out measures 4.20s and the
+  // edge cliff measured 4.25s, so one bound over the whole range would pass
+  // with the bug back. This asserts the claim the fix actually makes — no
+  // cliff at the beat's edge — and the second assertion pins the residual so
+  // that widening or worsening it shows up as a change rather than as noise.
+  const D_MIN = 68 - 2.0 - 0.7;   // D - TAIL_KEEP - MIN_GAP_SEC
+  let worst = 0; let worstAt = null;
+  for (const speed of [6, 9, 12, 14]) {
+    for (let we = D_MIN; we <= 67.9; we += 0.05) {
+      const run = closingRun(planCompression({ clip: clipEndingAt(+we.toFixed(2)), narrationSpans: [], speed }));
+      if (run > worst) { worst = run; worstAt = `${we.toFixed(2)} @${speed}x`; }
+    }
+  }
+  assert.ok(worst < 2.05,
+    `inside the gate's window no wait-end at any speed may leave a hold longer than the beat — `
+    + `worst ${worst.toFixed(2)}s at waitEnd=${worstAt}`);
+
+  // KNOWN AND LEFT: further out the hold, its lead-in and a brief sped gap can
+  // still read as one block. ~4.2s, worst at the cap. Closing it needs a
+  // MAX_SPEED-sized window that swallows a short take's result holds entirely
+  // (it broke two ENG-6130 guards when tried), so it is recorded on ENG-6210
+  // rather than fixed. Pinned so it cannot quietly get worse.
+  let residual = 0;
+  for (const speed of [6, 9, 12, 14]) {
+    for (let we = 50.0; we < D_MIN; we += 0.05) {
+      const run = closingRun(planCompression({ clip: clipEndingAt(+we.toFixed(2)), narrationSpans: [], speed }));
+      if (run > residual) residual = run;
+    }
+  }
+  assert.ok(residual < 4.5,
+    `the known residual window must not grow — was ~4.2s, got ${residual.toFixed(2)}s`);
+});
+
+test('a wait with an action after it keeps its own result hold', () => {
+  // SCOPED TO THE LAST ACTION. "The closing beat already holds this result" is
+  // only true when nothing after the wait changes the screen. With a click
+  // after it, the tail beat holds the POST-CLICK state and the wait's arrival
+  // falls inside the sped gap — dropping the hold there speeds past the exact
+  // payoff WAIT_RESULT_KEEP exists to protect, which would be a regression
+  // rather than a fix.
+  const { planCompression } = require('../src/compress.js');
+  const clip = {
+    durationSec: 68,
+    actions: [
+      { type: 'fill', index: 0, startSec: 0.88, moveStartSec: 0.9, clickSec: 1.92, endSec: 10.45 },
+      { type: 'wait', index: 1, startSec: 12.66, endSec: 65.4 },
+      { type: 'click', index: 2, startSec: 65.6, clickSec: 65.9, endSec: 66.2 },
+    ],
+  };
+  const plan = planCompression({ clip, narrationSpans: [], speed: 6 });
+  // The fixture must put the wait inside the window, or it proves nothing.
+  assert.ok(65.4 >= 68 - 2.0 - 5.45, 'the wait must land where a LAST wait would be collapsed');
+  assert.ok(plan.kept.some(([a, b]) => a <= 65.4 && b >= 65.35),
+    `the arrival must stay at 1x when something follows it, got ${JSON.stringify(plan.kept)}`);
 });

@@ -285,7 +285,8 @@ function checkShots({ doc, outDir, id, motionPath = null, cameraWasAttempted = f
   //
   // Asked of the compressor rather than derived from its constants — there are
   // SIX of them and an earlier cut of this undercounted: the opening
-  // `HEAD_KEEP`, the closing `TAIL_KEEP`, every wait's `WAIT_RESULT_KEEP`, the
+  // `HEAD_KEEP`, the closing `TAIL_KEEP`, every wait's `WAIT_RESULT_KEEP`
+  // (except a wait already held by that closing beat — ENG-6210), the
   // `BREATHING_SEC` lead-in on every gap, `POST_CLICK_KEEP` after every click,
   // and any residual gap under `MIN_GAP_SEC` — plus each action's own span and
   // any narration, EXCEPT the middle of a long `fill`, which is sped from the

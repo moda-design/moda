@@ -133,7 +133,8 @@ function rebaseClip(clip, remap, newDuration) {
  *
  * Extracted so nothing has to re-derive it. `compressIdleGaps` keeps SIX kinds
  * of span at 1x — the opening `HEAD_KEEP`, the closing `TAIL_KEEP`, the final
- * `WAIT_RESULT_KEEP` of every wait, the `BREATHING_SEC` lead-in at the start of
+ * `WAIT_RESULT_KEEP` of every wait EXCEPT one whose result already lands in the
+ * closing beat (ENG-6210), the `BREATHING_SEC` lead-in at the start of
  * every gap, `POST_CLICK_KEEP` after every click, and any residual gap under
  * `MIN_GAP_SEC` that `buildSegments` leaves alone — plus every action's own span
  * and any narration. EXCEPT the middle of a `fill` longer than
@@ -181,7 +182,57 @@ function planCompression({ clip, narrationSpans = [], speed = SPEED }) {
       // the take measured 1466 unique frames of 1466, "0% holding still",
       // through a wait where nothing whatsoever happened. Only the TAIL is
       // kept, because that is where the result arrives.
-      active.push([Math.max(start, end - WAIT_RESULT_KEEP), end]);
+      // ONE HOLD ON THE PAYOFF, NOT TWO (ENG-6210). A wait whose result lands
+      // inside the closing `TAIL_KEEP` beat is already held by it — pushing a
+      // second `WAIT_RESULT_KEEP` region does not extend the moment, it just
+      // starts the hold earlier. On a real take the last wait ended 1.67s
+      // before the footage did, so the two only partly overlapped and their
+      // union ran 3.27s: 17% of the cut at 6x, and 22% by 12x, because a 1x
+      // region does not shrink when the speed rises. Nobody chose 3.27s.
+      //
+      // The 2.0s beat that remains IS deliberate — it is the reveal, and
+      // shrinking it to satisfy a "nothing changed in these frames" finding
+      // would be chasing a remedy into a beat that exists on purpose
+      // (ENG-6130). This removes the accident, not the intent.
+      // MINUS MIN_GAP_SEC, because the defect is continuous across the beat's
+      // edge and is WORST just outside it. `mergeIntervals` joins abutting
+      // regions and `buildSegments` leaves any residual gap under MIN_GAP_SEC
+      // at 1x, so a wait ending just BEFORE the beat yields one contiguous 1x
+      // run of result-keep + gap + tail. Measured on this shape (D=68,
+      // beat starts 66.00): ending at 65.99 gives 3.61s and 65.60 gives 4.00s,
+      // both worse than the 3.27s that motivated the fix. Gating on "would this
+      // hold merge into the closing beat" rather than "does it land inside it"
+      // closes the window instead of moving its edge.
+      // LAST ACTION ONLY. The justification — "the closing beat already holds
+      // this result" — is only true when nothing after the wait changes the
+      // screen. With a click after it, the tail beat holds the POST-CLICK
+      // state and the wait's arrival falls inside the sped gap, playing at
+      // 6x-14x: dropping the hold there would speed past the very payoff
+      // WAIT_RESULT_KEEP exists to protect.
+      //
+      // ONE MIN_GAP_SEC OUTSIDE THE BEAT, no wider. `mergeIntervals` joins
+      // abutting regions and `buildSegments` leaves a sub-MIN_GAP_SEC residue
+      // at 1x, so that much outside the beat still lands in the same run.
+      //
+      // A RESIDUAL WINDOW REMAINS, and is deliberately left. Further out, the
+      // hold, its BREATHING_SEC lead-in and a brief sped gap can still read as
+      // one block — measured at ~4.2s of effectively frozen ending a few
+      // seconds before the beat, worst at the speed cap, and invisible to a
+      // strictly-contiguous measurement because a 67ms cut "separates" them.
+      // Closing it needs a window sized for MAX_SPEED (~7.5s), which on a 12s
+      // take swallows almost every wait's result hold, breaks two guards that
+      // encode the ENG-6130 lesson, and trades a narrow ending artefact for
+      // speeding past payoffs. Recorded on ENG-6210 rather than engineered
+      // around.
+      //
+      // LAST ACTION ONLY. "The closing beat already holds this result" is only
+      // true when nothing after the wait changes the screen. With a click
+      // after it the beat holds the POST-CLICK state and the arrival falls in
+      // the sped gap, which would speed past the very payoff this keep exists
+      // to protect.
+      const isLast = a === acts[acts.length - 1];
+      const heldByTail = isLast && D > TAIL_KEEP && end >= D - TAIL_KEEP - MIN_GAP_SEC;
+      if (!heldByTail) active.push([Math.max(start, end - WAIT_RESULT_KEEP), end]);
     } else if (a.type === 'fill' && end - click >= TYPING_MIN_COMPRESSIBLE) {
       // TYPING IS NOT A BEAT, IT IS A TRANSPORT. Measured on a real take: the
       // fill was 14.1s of a 37.1s cut — 38% of the video — and the critique
