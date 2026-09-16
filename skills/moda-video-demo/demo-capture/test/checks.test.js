@@ -283,8 +283,29 @@ test('a payoff you can read less well than what it replaced is flagged', (t) => 
   const dir = mkdtempSync(path.join(tmpdir(), 'demo-test-'));
   const fades = path.join(dir, 'fades.mp4');
   const crisp = path.join(dir, 'crisp.mp4');
-  const run = (args) => spawnSync('ffmpeg', args, { encoding: 'utf8' });
-  if (run(['-version']).error) return t.skip('ffmpeg not available');
+  // THROUGH THE RESOLVER, like every other ffmpeg test here. Shelling bare
+  // `ffmpeg` made the bundled ffmpeg-static invisible to this test alone, so on
+  // a machine set up the way the package intends — plain `npm install`, the
+  // bundled binary downloaded, no system ffmpeg on PATH — it skipped while the
+  // rest of the suite ran happily against that binary. That is the same "a skip
+  // is not a pass" hole this guard exists to close, just moved from CI onto
+  // laptops, where nothing ever surfaces it.
+  //
+  // The hard failure keys on the RESOLVER's verdict rather than a PATH probe:
+  // missing means neither bundled nor PATH has one. CI is unchanged — with
+  // --ignore-scripts the bundled binary never downloads, so the resolver falls
+  // through to the apt-installed PATH copy, and DEMO_CAPTURE_REQUIRE_FFMPEG
+  // still turns a removed apt step into a loud failure.
+  const { ffmpeg: FFMPEG_BIN, report: BIN_REPORT } = require('../src/bin.js');
+  const run = (args) => spawnSync(FFMPEG_BIN, args, { encoding: 'utf8' });
+  if (BIN_REPORT.ffmpeg.from === 'missing') {
+    if (process.env.DEMO_CAPTURE_REQUIRE_FFMPEG === '1') {
+      throw new Error('ffmpeg is required here (DEMO_CAPTURE_REQUIRE_FFMPEG=1) but the resolver found '
+        + 'neither a bundled nor a PATH copy — the CI install step was removed or failed, and this '
+        + 'test would otherwise skip silently');
+    }
+    return t.skip('ffmpeg not available (neither bundled nor on PATH)');
+  }
   run(['-v', 'error', '-f', 'lavfi', '-i', 'testsrc=size=640x400:rate=30:duration=2',
     '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-y', crisp]);
   run(['-v', 'error', '-f', 'lavfi', '-i', 'testsrc=size=640x400:rate=30:duration=2',
