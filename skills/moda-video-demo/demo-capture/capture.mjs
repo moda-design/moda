@@ -38,6 +38,21 @@ const VIEWPORT = { width: 1280, height: 800 };
 //: but it changes breakpoints and doubles the canvas), or a recorder that is not
 //: Playwright's. Until then a punch-in is an upscale, and that is the ceiling on
 //: how sharp a zoomed frame can be.
+//:
+//: THIS IS NOT THE OUTPUT FRAME, and do not try to make it one (ENG-6306). The
+//: three places `VIEWPORT` is read — the browser viewport, `recordVideo.size`
+//: and the re-encode's `scale=` — look like a conflation of browser size,
+//: recording size and output size, and the audit that opened ENG-6306 read them
+//: that way. They are one setting: the recording's pixel size, which the
+//: paragraph above shows cannot be decoupled from the layout Playwright will
+//: draw. Splitting them here buys nothing and costs the retina downsample.
+//:
+//: The frame the VIEWER sees is a separate thing and now lives where it belongs,
+//: in the compiler: a page, plus a `ClipBox` saying where this recording sits
+//: inside it (`backend/app/services/demo_video/canvas_compiler.py`). That is
+//: what lets the output be any shape while the capture stays at whatever size
+//: reads best in a browser — aspect ratio is a property of the composition, not
+//: of the capture.
 const RENDER_SCALE = 2;
 //: These three are ONE setting, not three, because the wide beat between two
 //: punch-ins is arithmetic on them:
