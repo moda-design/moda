@@ -179,10 +179,47 @@ cd <studio>/moda-cli/skills/moda-video-demo/demo-capture
 node run.mjs "<goal>" <url> --name <slug> [--no-auth] [--publish "<Title>"]
 ```
 
-It chains discover → curate → validate → record → finish → iterate → publish,
-cheapest stage first, so everything that can be caught before the recording is
-caught before the recording. Two stages exist because doing them by hand was the
-difference between a usable demo and a bad one:
+It chains discover → edit → curate → validate → record → finish → iterate →
+publish, cheapest stage first, so everything that can be caught before the
+recording is caught before the recording. Three stages exist because doing them
+by hand was the difference between a usable demo and a bad one:
+
+- **edit** decides what the demo is ABOUT and which steps tell that story. It is
+  the only stage that can drop a step which works fine and simply is not the
+  point, which is most of the compression a real edit performs — `curate` below
+  is a regex junk filter and the no-op drop is a pixel diff, so between them
+  they cannot touch a correct, boring step. It also assigns each keeper a beat
+  (`hook` / `build` / `payoff`) and a pace (`hold` / `normal` / `hurry`).
+
+  **Generator proposes, code disposes.** The model decides; `disposeEdit`
+  enforces what a machine can check — a `wait` is never cut, the flow never
+  drops below two visible actions, a step the model said nothing about is kept,
+  and there is exactly one payoff which is the last thing that plays. The cuts
+  and the order are proposals like curation's: **the validation walk is what
+  disposes of them.** A reorder that does not replay falls back to source order,
+  and cuts that do not replay are discarded whole, in that order — giving up the
+  reorder first, because it is the cheaper half to lose.
+
+  **Replaying is not the same as meaning the same thing**, so the walk is not
+  the only guard on a reorder: nothing may move across a `wait`. A wait is the
+  flow's only record of "this cannot start until the product has finished", and
+  moving the click that starts a generation to after the wait that guards it
+  replays perfectly — the thing being waited for is simply not there yet — and
+  then the recording races the result and can end mid-generation. Within a
+  segment the editor may permute freely, which is the whole capability on a
+  flow with no waits at all.
+
+  The beat and the pace ride **on the step object**, not in an array indexed by
+  position. Both stages below still remove steps, and a sidecar keyed by index
+  would re-point onto the wrong ones the first time either fired — the symptom
+  being a payoff hold landing on some other moment, which no other check would
+  notice. For the same reason `run.mjs` re-runs `settleBeats` once the step list
+  is final: the no-op drop can perfectly well delete the step the edit called the
+  payoff.
+
+  `close` is a real beat but the editor never assigns it. Nothing it can see is
+  a close — the closing beat is the hold `curate` appends and the brand card
+  composited at publish — so `settleBeats` puts it on the trailing hold instead.
 
 - **curate** drops what a demo must never show. Discovery drives the app to
   reach a goal, which is a different job from showing it off: on Moda's own flow
@@ -264,6 +301,73 @@ free, and getting it wrong fails silently:
 
 1. **Plan the narration** — render each line and MEASURE it. Nothing touches the
    video yet.
+
+   The script is written from the **resolved element name**, not from the flow's
+   `why`. `why` is `action.reason` from the discovery model — what the agent was
+   thinking about clicking — and writing the voiceover from it is the same bug
+   `captions.js` was rewritten to fix, where a real run burned *"The page didn't
+   navigate, let me scroll up to find the Go to App link"* into a video. Both are
+   passed, each labelled as what it is; only the selector is a fact about the
+   screen. One extractor, `src/element-name.js`, serves every caller.
+
+   Then the script is checked for **inventions**: a quoted name matching nothing
+   the flow can show is replaced with the plain `humanizeAction` sentence, on the
+   grounds that a confidently wrong voiceover is worse than a plain one. The
+   check reports its own coverage — a script that quoted nothing comes back
+   `no line quoted a name`, which is not a pass. Only double quotes count; this
+   prompt asks for contraction-heavy prose, so admitting the apostrophe made
+   every *"Let's … Moda's"* line read as one quoted run.
+
+   The CLOSING line is checked too, against the whole flow — it summarises a
+   finished demo, so nothing in it is a forward reference. It is **dropped**
+   rather than replaced when it invents: there is no action to build a fallback
+   sentence from, and silence on the final beat beats the most quotable
+   sentence in the video being false.
+
+   Each step line is checked against what the viewer has seen **by that line**,
+   not against the whole flow. Checking the whole flow let a line spoken over
+   Generate say *click "Share"* and pass, purely because some later step had a
+   Share control. A back reference is still fine; a forward one is the failure.
+
+   Matching is on WORD runs, not substrings. `includes()` in either direction
+   fails **open** — a flow with a button named "Go" validated *"Google Drive"*
+   and *"Let us get going"* — and a guard that returns `measured: true` while
+   deciding nothing is worse than one that says it could not decide. A name may
+   be wrapped in function words (*"the Share button"*) but not padded with
+   invented ones (*"Share to Google Drive"*).
+
+   Matching is also over **Unicode** letters and digits. `[a-z0-9]` stripped
+   every character of a Japanese or Cyrillic name, so a quoted non-Latin
+   control tokenized to nothing and passed on the spot — the same fail-open,
+   for every internationalized app.
+
+   **A typed secret is never said, and never sent to a model.** The fact comes
+   from `snapshot.js`'s resolver, which stamps `sensitive` while the element is
+   still in hand: `type="password"`, or an `autocomplete` naming a credential.
+   It has to be decided there — the resolver prefers a test id or a stable id,
+   so `<input id="login" type="password">` reaches the flow as `#login`, and no
+   later inspection of that string could tell. `src/sensitive.js` then
+   withholds the value at all three seams (the editorial prompt, the narration
+   prompt, the sayable names), falling back to a keyword-and-shape heuristic
+   only for a hand-authored flow that never went through resolution. The
+   field's own LABEL still goes through: "API key" is printed on screen and a
+   line about it is useful; it is the value typed into it that must not be.
+
+   And the fallback matters as much as the check. `humanizeAction` names the
+   resolved element, and a step that resolved none — a CSS locator, say — gets
+   the bland sentence rather than the step's `why`: replacing a confidently
+   wrong line with one built from the same untrustworthy source is not a
+   remedy, it just launders the problem into plainer words.
+
+   A step marked `pace: 'hold'` gets a wall-clock floor composed `max()` with
+   its line, sized to `compress.js`'s `TAIL_KEEP` — a hold shorter than the tail
+   that already plays at 1x is invisible, and a longer one has its overhang sped
+   back up. They compose because the payoff is last by invariant. `hurry` does
+   not subtract: it already acted by asking the script for a short line, and
+   letting it undercut `HOLD_AFTER` would move a term of the camera's beat
+   arithmetic. A **marketing** take never reaches this stage at all, so the
+   floors are derived from the pace alone (`paceFloors`) — that genre has no
+   narrator, which makes the hold the only thing that says a moment matters.
 2. **Compress idle gaps** against those spans. A stretch with no action AND no
    narration plays at 6x; a narrated stretch never does, because a line spoken
    over a sped-up gap describes something the viewer has already flashed past.

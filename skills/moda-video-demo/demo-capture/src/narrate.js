@@ -63,23 +63,18 @@ function narratedDurationSec({ clipEnd, tailNeeded, tailExcess }) {
   return clipEnd;
 }
 
+// `elementName` LIVED HERE TOO and is now in `src/element-name.js` (ENG-5766).
+// It had no consumers at all — written for "say the real names" and never
+// wired, which is why the narration went on being written from the discovery
+// agent's reason. It is NOT re-exported from here: a shim with no callers is
+// exactly what CLAUDE.md says to update callers instead of leaving behind.
+//
 // `deriveLine` LIVED HERE and is deleted (ENG-5919). It was a three-branch
 // template — `Start in X.` / `Then X.` / `And that's X.` — which made every demo
 // read as its own click ledger. It was invented during the port; the reference
 // implementation never had it. The real script pass is `src/narration.js`
 // (`scriptNarration`), and its gap-filler is `humanizeAction`, which is a
 // sentence rather than a label.
-
-/** The accessible name a role selector resolved to, e.g. role=button[name="Create"]. */
-function elementName(action) {
-  const sel = action.selector || '';
-  const m = /name=(?:"([^"]+)"|'([^']+)'|\/([^/]+)\/)/i.exec(sel);
-  const raw = m ? (m[1] ?? m[2] ?? m[3]) : '';
-  if (raw) return raw.replace(/\\/g, '').trim();
-  // No selector (a keypress, a coordinate-only click): fall back to the label,
-  // spoken as written rather than wrapped in a template that would double a verb.
-  return (action.label || '').trim();
-}
 
 /** Render one line and return its measured duration in seconds. */
 function speak(text, out, voice, model) {
@@ -360,4 +355,4 @@ function narrationRecord(planned, keptLines) {
   }));
 }
 
-module.exports = { narrate, planNarration, keepLines, narrationRecord, elementName, speak, narratedDurationSec, TTS_MODEL, TTS_VOICE };
+module.exports = { narrate, planNarration, keepLines, narrationRecord, speak, narratedDurationSec, TTS_MODEL, TTS_VOICE };

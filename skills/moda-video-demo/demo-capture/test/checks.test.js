@@ -1183,11 +1183,20 @@ test('run.mjs HARD-refuses an unfinished walk, on any number of attempts', () =>
     'the walk gate must hard-refuse, not push a soft pre-record finding');
   assert.match(gate, /walk_unfinished/);
 
-  // ...and BEFORE curation and the validation walk, which cost a headless
-  // browser and up to four restore-and-rewalk passes. Nothing about this check
-  // depends on either.
-  assert.ok(src.indexOf('walk_unfinished') < src.indexOf('[2] curating'),
-    'the walk check must run before curation, or an abandoned walk still pays for validation');
+  // ...and BEFORE every stage that costs anything: the editorial pass is a
+  // model call and curation's walk is a headless browser plus up to four
+  // restore-and-rewalk passes. Nothing about this check depends on either.
+  //
+  // Asserted against BOTH markers rather than whichever happens to come first,
+  // because the list of expensive stages has grown once already — ENG-5766 put
+  // `editing` in front of `curating`, and a check pinned only to the old first
+  // stage would have gone on passing while an abandoned walk paid for a model
+  // call it never used to.
+  for (const stage of ['[2] editing', '[3] curating']) {
+    assert.ok(src.includes(stage), `run.mjs should still have a ${stage} stage`);
+    assert.ok(src.indexOf('walk_unfinished') < src.indexOf(stage),
+      `the walk check must run before ${stage}, or an abandoned walk still pays for it`);
+  }
 });
 
 // ENG-6133 round 2: the finding becomes GUIDANCE in the next discovery's system
@@ -2730,4 +2739,1114 @@ test('critique prompt: a defaulted fact is a crash, not a false sentence', () =>
   // makes no camera or card claim, so requiring `composited` there would crash a
   // valid caller — the opposite failure, and just as real.
   assert.doesNotThrow(() => sheetPrompt('g', 10, 's', 1, 'marketing', true));
+});
+
+// ── ENG-5766: the editorial pass ──────────────────────────────────────────
+//
+// The premise the ticket was filed on had gone stale by the time it was picked
+// up: a script IS written, and the recording IS paced to it (ENG-5919 landed
+// `narration.js` and `pacing.js`). What was genuinely absent is what the ticket
+// itself names as the two things the reference does NOT do — an editorial layer
+// that can cut and reorder, and a don't-invent discipline.
+//
+// These pin the DISPOSER. `proposeEdit` is a model call and decides nothing on
+// its own; every rule that can be checked lives in `disposeEdit`/`settleBeats`,
+// which are pure, and that split is the thing worth keeping true.
+const { disposeEdit, settleBeats, describeStep, MIN_EDITABLE } = require('../src/edit.js');
+const { checkInventions, sayableNames } = require('../src/invention.js');
+const { nameFromSelector, stepName, elementName } = require('../src/element-name.js');
+const { paceFloors, HOLD_FLOOR_SEC } = require('../src/pacing.js');
+
+/** A flow long enough to be worth editing — under MIN_EDITABLE nothing is cut. */
+const editableFlow = () => ({
+  goal: 'show off the designer',
+  steps: [
+    { action: 'click', locator: 'role=button[name="Open Moda"i]', why: 'get to the app' },
+    { action: 'click', locator: 'role=button[name="Workspace"i]', why: 'pick a workspace' },
+    { action: 'fill', locator: '#prompt', text: 'a launch deck', why: 'ask for a deck' },
+    { action: 'click', locator: 'role=button[name="Generate"i]', why: 'run it' },
+  ],
+});
+
+const keepAll = (n, over = {}) => ({
+  about: 'Moda turns a prompt into a deck',
+  decisions: Array.from({ length: n }, (_, index) => ({ index, keep: true, beat: 'build', pace: 'normal', why: '' })),
+  ...over,
+});
+
+test('the edit cuts a step that works fine and simply is not the story', () => {
+  const flow = editableFlow();
+  const out = disposeEdit({ flow, proposal: {
+    about: 'Moda turns a prompt into a deck',
+    decisions: [
+      { index: 0, keep: false, why: 'transport — getting to the app is not the point' },
+      { index: 1, keep: false, why: 'picking a workspace is setup' },
+      { index: 2, keep: true, beat: 'hook', pace: 'normal', why: 'the ask' },
+      { index: 3, keep: true, beat: 'payoff', pace: 'hold', why: 'the deck appears' },
+    ],
+  } });
+  assert.equal(out.flow.steps.length, 2);
+  assert.deepEqual(out.cuts.map((c) => c.index), [0, 1]);
+  // The REASON is kept, not just the index. It is what the log prints and what
+  // ENG-5762's review surface has to show a human who disagrees.
+  assert.match(out.cuts[0].why, /transport/);
+  assert.equal(out.about, 'Moda turns a prompt into a deck');
+  assert.equal(out.edited, true);
+  // Nothing curate or the no-op check could have done: both remaining steps and
+  // both cut ones resolve, execute, and change the page.
+  assert.deepEqual(out.flow.steps.map((s) => s.beat), ['hook', 'payoff']);
+});
+
+test('a step the editor said nothing about is KEPT, never silently dropped', () => {
+  const flow = editableFlow();
+  // Three decisions for four steps — the ordinary ragged-output case.
+  const out = disposeEdit({ flow, proposal: {
+    about: 'x',
+    decisions: [
+      { index: 0, keep: true, beat: 'hook', pace: 'normal' },
+      { index: 1, keep: false, why: 'setup' },
+      { index: 2, keep: true, beat: 'build', pace: 'normal' },
+    ],
+  } });
+  assert.equal(out.flow.steps.length, 3, 'step 3 had no decision and must survive');
+  assert.ok(out.flow.steps.some((s) => s.locator.includes('Generate')));
+  assert.match(out.corrections.join(' '), /no decision for step\(s\) 3/);
+});
+
+test('a wait is never cut — it is how the flow waits for the product, not a beat', () => {
+  const flow = {
+    goal: 'g',
+    steps: [
+      { action: 'click', locator: 'role=button[name="A"i]' },
+      { action: 'fill', locator: '#p', text: 'hi' },
+      { action: 'wait', quietMs: 3000, maxMs: 120000, why: 'generating' },
+      { action: 'click', locator: 'role=button[name="Save"i]' },
+    ],
+  };
+  const out = disposeEdit({ flow, proposal: {
+    about: 'x',
+    decisions: [
+      { index: 0, keep: true, beat: 'hook', pace: 'normal' },
+      { index: 1, keep: true, beat: 'build', pace: 'normal' },
+      { index: 2, keep: false, why: 'dead air' },
+      { index: 3, keep: true, beat: 'payoff', pace: 'hold' },
+    ],
+  } });
+  assert.ok(out.flow.steps.some((s) => s.action === 'wait'), 'the wait must survive the edit');
+  assert.equal(out.cuts.length, 0);
+  assert.match(out.corrections.join(' '), /synchronisation step/);
+});
+
+test('an edit that would empty the demo is refused outright, not applied partly', () => {
+  const flow = editableFlow();
+  const out = disposeEdit({ flow, proposal: {
+    about: 'x',
+    decisions: [
+      { index: 0, keep: false, why: 'no' },
+      { index: 1, keep: false, why: 'no' },
+      { index: 2, keep: false, why: 'no' },
+      { index: 3, keep: true, beat: 'payoff', pace: 'hold', why: 'yes' },
+    ],
+  } });
+  // One surviving action is below the floor the rest of the pipeline already
+  // calls "a thin demo", and `run.mjs` refuses the same shape for inert drops.
+  assert.equal(out.flow.steps.length, 4, 'no cuts are applied when the edit goes too far');
+  assert.equal(out.cuts.length, 0);
+  assert.equal(out.edited, false);
+  assert.match(out.corrections.join(' '), /below the floor/);
+});
+
+test('a flow too short to edit is left exactly as discovered', () => {
+  const flow = { goal: 'g', steps: [
+    { action: 'fill', locator: '#p', text: 'hi' },
+    { action: 'click', locator: 'role=button[name="Go"i]' },
+  ] };
+  assert.ok(flow.steps.length < MIN_EDITABLE);
+  const out = disposeEdit({ flow, proposal: {
+    about: 'still useful',
+    decisions: [{ index: 0, keep: false, why: 'cut it' }, { index: 1, keep: true, beat: 'payoff', pace: 'hold' }],
+  } });
+  assert.equal(out.flow, flow, 'the very flow object, untouched');
+  assert.equal(out.plan, null);
+  // The one-line spine is still worth having — it costs nothing and the script
+  // reads it. Only the CUTS are refused.
+  assert.equal(out.about, 'still useful');
+});
+
+test('the film gets exactly one payoff, and it is the last thing that plays', () => {
+  const flow = editableFlow();
+  const out = disposeEdit({ flow, proposal: keepAll(4, { decisions: [
+    { index: 0, keep: true, beat: 'payoff', pace: 'hold' },
+    { index: 1, keep: true, beat: 'payoff', pace: 'hold' },
+    { index: 2, keep: true, beat: 'build', pace: 'normal' },
+    { index: 3, keep: true, beat: 'build', pace: 'normal' },
+  ] }) });
+  const beats = out.flow.steps.map((s) => s.beat);
+  assert.equal(beats.filter((b) => b === 'payoff').length, 1);
+  assert.equal(beats[beats.length - 1], 'payoff', 'the payoff plays last');
+  assert.match(out.corrections.join(' '), /marked at position 1 but 3 plays last/);
+});
+
+test('a step that plays after the payoff is a close, so the demo does not end twice', () => {
+  const flow = editableFlow();
+  const out = disposeEdit({ flow, proposal: keepAll(4, { decisions: [
+    { index: 0, keep: true, beat: 'hook', pace: 'normal' },
+    { index: 1, keep: true, beat: 'build', pace: 'normal' },
+    { index: 2, keep: true, beat: 'payoff', pace: 'hold' },
+    { index: 3, keep: true, beat: 'build', pace: 'normal' },
+  ] }) });
+  // The payoff MOVES to the end rather than everything after it being
+  // relabelled a close. Relabelling was the first implementation and it broke
+  // the invariant it was meant to serve: the last beat came out `close`, so the
+  // payoff was not last, and the hold no longer coincided with the tail
+  // `compress.js` protects at 1x.
+  assert.deepEqual(out.flow.steps.map((s) => s.beat), ['hook', 'build', 'build', 'payoff']);
+  assert.match(out.corrections.join(' '), /moved, and the earlier one is a build/);
+});
+
+test('the editor cannot label a step `close` — that beat belongs to the trailing hold', () => {
+  const flow = editableFlow();
+  const out = disposeEdit({ flow, proposal: keepAll(4, { decisions: [
+    { index: 0, keep: true, beat: 'hook', pace: 'normal' },
+    { index: 1, keep: true, beat: 'close', pace: 'normal' },
+    { index: 2, keep: true, beat: 'build', pace: 'normal' },
+    { index: 3, keep: true, beat: 'payoff', pace: 'hold' },
+  ] }) });
+  // Nothing the editor can see is a close: the closing beat is the hold
+  // `ensureTrailingHold` appends after this pass, plus the outro card that is
+  // composited at publish.
+  assert.deepEqual(out.flow.steps.map((s) => s.beat), ['hook', 'build', 'build', 'payoff']);
+  assert.match(out.corrections.join(' '), /the closing beat is the appended hold/);
+});
+
+test('a `close` on the LAST real action does not displace the payoff', () => {
+  // Rejecting `close` only when it was not final left this one standing, and
+  // `settleBeats` then skipped it when looking for the last substantive step —
+  // so the payoff settled onto the step BEFORE it, breaking the one invariant
+  // the hold depends on. The beat is refused at the door instead.
+  const flow = editableFlow();
+  const out = disposeEdit({ flow, proposal: keepAll(4, { decisions: [
+    { index: 0, keep: true, beat: 'hook', pace: 'normal' },
+    { index: 1, keep: true, beat: 'build', pace: 'normal' },
+    { index: 2, keep: true, beat: 'payoff', pace: 'hold' },
+    { index: 3, keep: true, beat: 'close', pace: 'normal' },
+  ] }) });
+  const beats = out.flow.steps.map((s) => s.beat);
+  assert.equal(beats[beats.length - 1], 'payoff', 'the payoff is still last');
+  assert.ok(!beats.includes('close'), 'no step the editor chose carries a close');
+  assert.equal(out.flow.steps[out.flow.steps.length - 1].pace, 'hold');
+});
+
+test('the appended trailing hold becomes the close, so the storyboard has three pages', () => {
+  const { ensureTrailingHold } = require('../src/curate.js');
+  const flow = editableFlow();
+  const edited = disposeEdit({ flow, proposal: keepAll(4) });
+  // `curate` appends the hold AFTER the edit, so it arrives here with no beat.
+  const withHold = ensureTrailingHold(edited.flow).flow;
+  const settled = settleBeats(withHold.steps);
+  assert.equal(settled.steps[settled.steps.length - 1].action, 'wait');
+  assert.equal(settled.steps[settled.steps.length - 1].beat, 'close');
+  // ...and the payoff did NOT walk onto it.
+  assert.equal(settled.steps[settled.steps.length - 2].beat, 'payoff');
+  // Idempotent across that, which is the call `run.mjs` actually makes.
+  const again = settleBeats(settled.steps);
+  assert.deepEqual(again.steps.map((s) => s.beat), settled.steps.map((s) => s.beat));
+  assert.deepEqual(again.corrections, []);
+});
+
+test('a hook that does not open is a mislabel, not a structure', () => {
+  const flow = editableFlow();
+  const out = disposeEdit({ flow, proposal: keepAll(4, { decisions: [
+    { index: 0, keep: true, beat: 'build', pace: 'normal' },
+    { index: 1, keep: true, beat: 'hook', pace: 'normal' },
+    { index: 2, keep: true, beat: 'build', pace: 'normal' },
+    { index: 3, keep: true, beat: 'payoff', pace: 'hold' },
+  ] }) });
+  assert.deepEqual(out.flow.steps.map((s) => s.beat), ['build', 'build', 'build', 'payoff']);
+  assert.match(out.corrections.join(' '), /marked hook but does not open/);
+});
+
+test('the payoff is always held, even when the edit asked to hurry it', () => {
+  const flow = editableFlow();
+  const out = disposeEdit({ flow, proposal: keepAll(4, { decisions: [
+    { index: 0, keep: true, beat: 'hook', pace: 'normal' },
+    { index: 1, keep: true, beat: 'build', pace: 'hurry' },
+    { index: 2, keep: true, beat: 'build', pace: 'hurry' },
+    { index: 3, keep: true, beat: 'payoff', pace: 'hurry' },
+  ] }) });
+  const last = out.flow.steps[out.flow.steps.length - 1];
+  assert.equal(last.beat, 'payoff');
+  assert.equal(last.pace, 'hold', 'a hurried payoff contradicts the edit\'s own decision');
+  // The other hurries are the editor's call and are left alone.
+  assert.deepEqual(out.flow.steps.map((s) => s.pace), ['normal', 'hurry', 'hurry', 'hold']);
+});
+
+test('an unknown beat or pace is coerced and SAID, not passed through', () => {
+  const flow = editableFlow();
+  const out = disposeEdit({ flow, proposal: keepAll(4, { decisions: [
+    { index: 0, keep: true, beat: 'HOOK', pace: 'normal' },
+    { index: 1, keep: true, beat: 'montage', pace: 'slow' },
+    { index: 2, keep: true, beat: 'build', pace: 'normal' },
+    { index: 3, keep: true, beat: 'payoff', pace: 'hold' },
+  ] }) });
+  assert.deepEqual(out.flow.steps.map((s) => s.beat), ['build', 'build', 'build', 'payoff']);
+  assert.deepEqual(out.flow.steps.map((s) => s.pace), ['normal', 'normal', 'normal', 'hold']);
+  const said = out.corrections.join(' ');
+  assert.match(said, /unknown beat "montage"/);
+  assert.match(said, /unknown pace "slow"/);
+  assert.match(said, /unknown beat "HOOK"/, 'the vocabulary is exact, not case-folded');
+});
+
+test('a reorder is applied, and a step the order forgot keeps its place', () => {
+  const flow = editableFlow();
+  const out = disposeEdit({ flow, proposal: keepAll(4, { order: [3, 0] }) });
+  // 3 and 0 as asked, then 1 and 2 appended in source order rather than dropped
+  // by omission — the same rule as a missing decision.
+  assert.deepEqual(out.plan.map((p) => p.sourceIndex), [3, 0, 1, 2]);
+  assert.equal(out.reordered, true);
+  assert.match(out.corrections.join(' '), /omitted step\(s\) 1, 2/);
+  assert.ok(out.flow.steps[0].locator.includes('Generate'), 'the flow itself is reordered');
+});
+
+test('the caller can refuse a reorder, and then source order is what plays', () => {
+  const flow = editableFlow();
+  const out = disposeEdit({ flow, proposal: keepAll(4, { order: [3, 2, 1, 0] }), allowReorder: false });
+  assert.deepEqual(out.plan.map((p) => p.sourceIndex), [0, 1, 2, 3]);
+  assert.equal(out.reordered, false);
+  assert.match(out.corrections.join(' '), /refused by the caller/);
+});
+
+test('the beat and pace ride ON the step, so a later drop cannot desync them', () => {
+  const { without } = require('../src/curate.js');
+  const flow = editableFlow();
+  const out = disposeEdit({ flow, proposal: keepAll(4, { decisions: [
+    { index: 0, keep: true, beat: 'hook', pace: 'normal' },
+    { index: 1, keep: true, beat: 'build', pace: 'hurry' },
+    { index: 2, keep: true, beat: 'build', pace: 'normal' },
+    { index: 3, keep: true, beat: 'payoff', pace: 'hold' },
+  ] }) });
+
+  // `curate.without` and the no-op drop both filter `flow.steps` and know
+  // nothing about any sidecar. A plan addressed by index would re-point onto
+  // the wrong steps here, and the symptom would be the payoff hold landing on
+  // some other moment — a wrong video that every other check passes.
+  const trimmed = without(out.flow, [1]);
+  assert.equal(trimmed.steps.length, 3);
+  assert.deepEqual(trimmed.steps.map((s) => s.beat), ['hook', 'build', 'payoff']);
+  assert.equal(trimmed.steps[2].pace, 'hold');
+  assert.ok(trimmed.steps[2].locator.includes('Generate'), 'the hold is still on the Generate step');
+});
+
+test('settleBeats re-asserts the payoff after a later stage deletes it', () => {
+  const { without } = require('../src/curate.js');
+  const flow = editableFlow();
+  const edited = disposeEdit({ flow, proposal: keepAll(4, { decisions: [
+    { index: 0, keep: true, beat: 'hook', pace: 'normal' },
+    { index: 1, keep: true, beat: 'build', pace: 'normal' },
+    { index: 2, keep: true, beat: 'build', pace: 'normal' },
+    { index: 3, keep: true, beat: 'payoff', pace: 'hold' },
+  ] }) });
+
+  // The no-op check removes the LAST step: it resolved and executed but moved
+  // zero pixels. The edit's payoff is now gone, and without a re-settle the
+  // flow reaches the recorder with no payoff and therefore no hold.
+  const afterDrop = without(edited.flow, [3]);
+  assert.ok(!afterDrop.steps.some((s) => s.beat === 'payoff'), 'the premise: the payoff was dropped');
+
+  const settled = settleBeats(afterDrop.steps);
+  assert.equal(settled.steps[settled.steps.length - 1].beat, 'payoff');
+  assert.equal(settled.steps[settled.steps.length - 1].pace, 'hold', 'and it is held');
+  assert.match(settled.corrections.join(' '), /no step was marked payoff/);
+});
+
+test('settleBeats is idempotent, so calling it twice reports nothing the second time', () => {
+  const flow = editableFlow();
+  const edited = disposeEdit({ flow, proposal: keepAll(4) });
+  const once = settleBeats(edited.flow.steps);
+  const twice = settleBeats(once.steps);
+  assert.deepEqual(twice.steps.map((s) => s.beat), once.steps.map((s) => s.beat));
+  assert.deepEqual(twice.corrections, [], 'an already-settled list produces no corrections');
+});
+
+test('settleBeats leaves an unedited flow alone rather than inventing a structure', () => {
+  // The editor failed, or the flow was hand-authored with `--flow`. It must not
+  // acquire a payoff nobody chose — `run.mjs` calls this unconditionally.
+  const steps = editableFlow().steps;
+  const out = settleBeats(steps);
+  assert.deepEqual(out.corrections, []);
+  assert.ok(out.steps.every((s) => s.beat === undefined));
+});
+
+// ── ENG-5766: say the real names ──────────────────────────────────────────
+
+test('one extractor reads every form of a role selector, including the narrow one', () => {
+  assert.equal(nameFromSelector('role=button[name="Create"i]'), 'Create');
+  // `curate.js` had the narrowest of the three copies — double quotes only —
+  // so a single-quoted recovery button slipped past its filter entirely.
+  assert.equal(nameFromSelector("role=button[name='Try again'i]"), 'Try again');
+  assert.equal(nameFromSelector('role=button[name=/Retry/i]'), 'Retry');
+  // An escaped delimiter must not truncate the name: `[^"]*` stopped at the
+  // first `\\"` and returned `Say`, which reads like a real answer.
+  assert.equal(nameFromSelector('role=button[name="Say \\"hi\\""i]'), 'Say "hi"');
+  assert.equal(nameFromSelector('#prompt'), '', 'a selector with no name has no name');
+  assert.equal(nameFromSelector(undefined), '');
+});
+
+test('the flow-step name never falls back to the agent\'s reason', () => {
+  // `elementName` (a recorded action) may fall back to its label, because a
+  // keypress genuinely has no element. `stepName` may not: the flow's `why` is
+  // `action.reason` from the discovery model, and admitting it is exactly the
+  // bug captions.js was rewritten to fix.
+  const step = { action: 'click', locator: '#prompt', why: 'let me scroll up to find the link' };
+  assert.equal(stepName(step), '');
+  assert.equal(elementName({ selector: '', label: 'Enter' }), 'Enter');
+});
+
+test('the editor is shown the element and the reason as DIFFERENT fields', () => {
+  const line = describeStep(
+    { action: 'click', locator: 'role=button[name="Invite teammate"i]', why: 'trying the sharing path' },
+    2
+  );
+  assert.match(line, /element: "Invite teammate"/);
+  assert.match(line, /agent's reason: "trying the sharing path"/);
+  // Presenting them as one field is what let the reasoning be read as a name.
+  assert.ok(line.indexOf('element:') < line.indexOf("agent's reason:"));
+});
+
+/**
+ * A fake `claude` on PATH that records the prompts it was given and replies
+ * with `script`. Returns the directory it recorded into.
+ *
+ * The transport is the one thing in this lane that cannot be tested purely —
+ * `scriptNarration` shells out — and it is also where "say the real names"
+ * either happens or does not, because the whole fix is what goes INTO the
+ * prompt. Asserting on `narration.js`'s source instead would have passed just
+ * as well before the change.
+ */
+function fakeClaude(script, conclusion = 'done') {
+  const dir = tmp();
+  const reply = JSON.stringify({ script, conclusion });
+  // Paths QUOTED: a tmpdir with a space in it is ordinary on some CI images,
+  // and an unquoted redirect target there is a shell syntax error rather than
+  // a test failure anyone can read.
+  const q = (f) => JSON.stringify(path.join(dir, f));
+  writeFileSync(path.join(dir, 'claude'), [
+    '#!/bin/sh',
+    'while [ $# -gt 0 ]; do',
+    '  case "$1" in',
+    `    -p) printf '%s' "$2" > ${q('user.txt')}; shift 2;;`,
+    `    --append-system-prompt) printf '%s' "$2" > ${q('system.txt')}; shift 2;;`,
+    '    *) shift;;',
+    '  esac',
+    'done',
+    `cat ${q('reply.json')}`,
+  ].join('\n'));
+  writeFileSync(path.join(dir, 'reply.json'), JSON.stringify({ result: reply }));
+  execFileSync('chmod', ['+x', path.join(dir, 'claude')]);
+  return dir;
+}
+
+/** Run `fn` with `dir` first on PATH and no API key, so the CLI branch is taken. */
+async function withFakeClaude(dir, fn) {
+  const prevKey = process.env.ANTHROPIC_API_KEY;
+  const prevPath = process.env.PATH;
+  delete process.env.ANTHROPIC_API_KEY;
+  process.env.PATH = `${dir}:${prevPath}`;
+  try {
+    return await fn();
+  } finally {
+    process.env.PATH = prevPath;
+    if (prevKey !== undefined) process.env.ANTHROPIC_API_KEY = prevKey;
+  }
+}
+
+test('the script writer is handed the resolved name, not only the reason', async () => {
+  const { scriptNarration } = require('../src/narration.js');
+  const dir = fakeClaude('one\ntwo');
+  const out = await withFakeClaude(dir, () => scriptNarration({
+    goal: 'g',
+    about: 'Moda turns a prompt into a deck',
+    steps: [
+      { type: 'click', label: 'get to the app', name: 'Open Moda', beat: 'hook', pace: 'normal' },
+      { type: 'click', label: 'run it', name: 'Generate', beat: 'payoff', pace: 'hold' },
+    ],
+  }));
+  assert.deepEqual(out.lines, ['one', 'two']);
+  assert.equal(out.conclusion, 'done');
+
+  const system = readFileSync(path.join(dir, 'system.txt'), 'utf8');
+  // The reference's prompt survives verbatim, and ours is APPENDED to it —
+  // two of its rules have already been "improved" backwards once (ENG-5919).
+  assert.match(system, /You write the voiceover script for a short product demo video/);
+  assert.match(system, /Vary the\s+openings naturally/);
+  assert.match(system, /RESOLVED ELEMENT NAME/);
+  assert.match(system, /NEVER NAME SOMETHING YOU WERE NOT GIVEN/);
+
+  const user = readFileSync(path.join(dir, 'user.txt'), 'utf8');
+  // THE ACTUAL FIX: the element name is in the prompt, and the agent's reason
+  // is still there but labelled as the reason rather than presented as a name.
+  assert.match(user, /element: "Open Moda"/);
+  assert.match(user, /element: "Generate"/);
+  assert.match(user, /reason: "run it"/);
+  assert.match(user, /beat: payoff/);
+  assert.match(user, /pace: hold/);
+  assert.match(user, /What this video is about: Moda turns a prompt into a deck/);
+});
+
+test('the script prompt carries no beat or spine when nothing was edited', async () => {
+  const { scriptNarration } = require('../src/narration.js');
+  const dir = fakeClaude('one');
+  await withFakeClaude(dir, () => scriptNarration({
+    goal: 'g',
+    steps: [{ type: 'click', label: 'run it', name: 'Generate' }],
+  }));
+  const user = readFileSync(path.join(dir, 'user.txt'), 'utf8');
+  assert.match(user, /element: "Generate"/);
+  assert.ok(!user.includes('beat:'), 'an unedited step must not claim a beat');
+  assert.ok(!user.includes('What this video is about'));
+});
+
+// ── ENG-5766: don't invent ────────────────────────────────────────────────
+
+test('a quoted name the demo cannot show is caught', () => {
+  const flow = editableFlow();
+  const out = checkInventions({
+    lines: [
+      'Let\'s start by opening Moda from the toolbar.',
+      'Now click "Invite teammate" to bring the rest of the team in.',
+    ],
+    flow,
+  });
+  assert.equal(out.measured, true);
+  assert.equal(out.inventions.length, 1);
+  assert.equal(out.inventions[0].index, 1);
+  assert.equal(out.inventions[0].quoted, 'Invite teammate');
+});
+
+test('a quoted name that IS on screen passes, in either direction', () => {
+  const flow = editableFlow();
+  // One line per step, in step order — the shape the prompt actually produces.
+  // Exactly the name, PART of the name, a name that CONTAINS the quote, and
+  // the typed text.
+  const out = checkInventions({
+    lines: [
+      'The "Open" control gets us into the app.',        // part of "Open Moda"
+      'Pick a "Workspace" to work in.',                  // exactly the name
+      'We type "a launch deck" into the prompt box.',    // the typed text
+      'Hit the "Generate" button and watch it go.',      // contains the name
+    ],
+    flow,
+  });
+  assert.deepEqual(out.inventions, []);
+  assert.equal(out.checked, 4);
+  assert.equal(out.measured, true);
+});
+
+test('a script that quotes nothing reports UNMEASURED, which is not a pass', () => {
+  const out = checkInventions({
+    lines: ['Let us begin in the designer.', 'Then the deck appears.'],
+    flow: editableFlow(),
+  });
+  assert.equal(out.measured, false);
+  assert.equal(out.checked, 0);
+  assert.deepEqual(out.inventions, []);
+  // The distinction this package has shipped three checks without: "nothing
+  // wrong" and "nothing to look at" must not read the same.
+  assert.match(out.reason, /nothing this check can decide/);
+});
+
+test('the agent\'s reason is never admitted as something the script may quote', () => {
+  const flow = {
+    goal: 'g',
+    steps: [
+      { action: 'click', locator: '#a', why: 'let me scroll up to find the Go to App link' },
+      { action: 'click', locator: 'role=button[name="Save"i]', why: 'save it' },
+      { action: 'fill', locator: '#p', text: 'hello', why: 'type' },
+    ],
+  };
+  const names = sayableNames(flow);
+  assert.ok(names.has('save'));
+  assert.ok(names.has('hello'));
+  assert.ok(!names.has('let me scroll up to find the go to app link'));
+  const out = checkInventions({ lines: ['Click "Go to App" to continue.'], flow });
+  assert.equal(out.inventions.length, 1, 'the reason must not license quoting itself back');
+});
+
+test('a possessive apostrophe is not read as a claim about a button', () => {
+  const out = checkInventions({
+    lines: ["Let's open the designer and see what Moda's engine does."],
+    flow: editableFlow(),
+  });
+  assert.deepEqual(out.inventions, [], 'an apostrophe-s fragment is not a name');
+});
+
+// ── ENG-5766: hold-or-hurry actually reaches the recorder ─────────────────
+
+test('a hold becomes a recorder floor on a take with no voiceover at all', () => {
+  // The marketing genre never reaches planPacing, so without this the hold
+  // would be a lever that silently does nothing on the genre all three
+  // reference demos use.
+  const steps = [
+    { action: 'click', beat: 'hook', pace: 'normal' },
+    { action: 'fill', beat: 'build', pace: 'hurry' },
+    { action: 'click', beat: 'payoff', pace: 'hold' },
+  ];
+  assert.deepEqual(paceFloors(steps), [0, 0, HOLD_FLOOR_SEC]);
+});
+
+test('an unedited flow asks for no floors, rather than an array of zeroes', () => {
+  // `stepMinDurations` is passed straight to the recorder, which treats a
+  // present array as a decision. An unedited take must keep its own cadence.
+  assert.equal(paceFloors(editableFlow().steps), null);
+  assert.equal(paceFloors([]), null);
+});
+
+test('the hold floor is sized to the beat the compressor already protects', () => {
+  const { TAIL_KEEP } = require('../src/compress.js');
+  // Two numbers that have to agree: a payoff held for less than the tail that
+  // plays at 1x is a hold nobody can see, and the payoff is the last step by
+  // invariant, so the two describe the same stretch of footage. Pinned so they
+  // cannot be tuned apart.
+  assert.equal(HOLD_FLOOR_SEC, TAIL_KEEP);
+});
+
+test('run.mjs re-settles the beats AFTER every stage that can drop a step', () => {
+  const src = readFileSync(path.join(HERE, 'run.mjs'), 'utf8');
+  const settle = src.indexOf('settleBeats(curated.steps)');
+  assert.ok(settle > 0, 'run.mjs must re-settle the beats before writing the flow it records');
+  // Both droppers run before it, or the payoff can be deleted after the last
+  // thing that could notice.
+  //
+  // EACH MARKER IS ASSERTED TO EXIST before its index is compared. `indexOf`
+  // returns -1 for a string that is not there, and `-1 < settle` is true — so
+  // rewording either log line would have turned this into a guard that passes
+  // by finding nothing, which is the failure it is here to prevent.
+  for (const [marker, why] of [
+    ["dropping step(s) ${inert.join(', ')}", 'the no-op drop must run before the re-settle'],
+    ['putting step ${restore} back', "curate's restore loop must run before the re-settle"],
+  ]) {
+    const at = src.indexOf(marker);
+    assert.ok(at >= 0, `run.mjs should still log ${JSON.stringify(marker)} — this guard reads its position`);
+    assert.ok(at < settle, why);
+  }
+  // ...and the flow that is actually recorded is the settled one.
+  assert.match(src.slice(settle, settle + 400), /steps: settled\.steps/);
+});
+
+// ── ENG-5766: the whole of planPacing, over a fake transport ──────────────
+//
+// `paceFloors` covers the no-voiceover path, but the `max()` that composes a
+// hold with a measured line lives inside `planPacing`, and so does the
+// substitution that an invented line triggers. Both are new arithmetic on the
+// number handed straight to the recorder, so neither should be reachable only
+// by reading the source.
+
+/** Voice a line without paying for TTS: duration proportional to its length. */
+const fakeSpeak = (text, out) => {
+  writeFileSync(out, '');
+  return +(text.length / 20).toFixed(2);
+};
+
+test('a held payoff gets the floor; a line longer than the floor keeps its own length', async () => {
+  const { planPacing, HOLD_FLOOR_SEC, NARRATION_GAP_SEC } = require('../src/pacing.js');
+  const outDir = tmp();
+  const short = 'Now hit Generate.';                                  // ~0.85s + gap
+  const long = 'x'.repeat(200);                                       // 10s + gap
+  const dir = fakeClaude([short, long].join('\n'));
+  const steps = [
+    { action: 'click', locator: 'role=button[name="Generate"i]', why: 'run it', beat: 'payoff', pace: 'hold' },
+    { action: 'click', locator: 'role=button[name="Share"i]', why: 'share', beat: 'build', pace: 'hold' },
+  ];
+  const out = await withFakeClaude(dir, () =>
+    planPacing({ goal: 'g', steps, outDir, speak: fakeSpeak, voice: 'v', model: 'm' })
+  );
+
+  // A SHORT line on a held step is raised to the floor...
+  assert.ok(fakeSpeak(short, path.join(outDir, 'probe')) + NARRATION_GAP_SEC < HOLD_FLOOR_SEC,
+    'the fixture must actually exercise the floor, or this asserts nothing');
+  assert.equal(out.stepMinDurations[0], HOLD_FLOOR_SEC);
+
+  // ...and a LONG one is not truncated to it. `max()`, not a replacement: a
+  // floor that overrode the measured line would cut the voiceover off.
+  const measured = fakeSpeak(long, path.join(outDir, 'probe')) + NARRATION_GAP_SEC;
+  assert.ok(measured > HOLD_FLOOR_SEC, 'the fixture must exceed the floor too');
+  assert.equal(out.stepMinDurations[1], measured);
+});
+
+test('an unheld step is paced by its line alone, exactly as before the edit existed', async () => {
+  const { planPacing, NARRATION_GAP_SEC } = require('../src/pacing.js');
+  const outDir = tmp();
+  const line = 'Now hit Generate.';
+  const dir = fakeClaude(line);
+  const out = await withFakeClaude(dir, () =>
+    planPacing({
+      goal: 'g',
+      steps: [{ action: 'click', locator: 'role=button[name="Generate"i]', why: 'run it' }],
+      outDir, speak: fakeSpeak, voice: 'v', model: 'm',
+    })
+  );
+  assert.equal(out.stepMinDurations[0], fakeSpeak(line, path.join(outDir, 'probe')) + NARRATION_GAP_SEC);
+});
+
+test('an invented line is replaced before it is ever voiced', async () => {
+  const { planPacing } = require('../src/pacing.js');
+  const outDir = tmp();
+  // The second line names a control this flow cannot show.
+  const dir = fakeClaude([
+    'Let\'s start by hitting "Generate" to build the deck.',
+    'Now click "Invite teammate" to bring the rest of the team in.',
+  ].join('\n'));
+  const steps = [
+    { action: 'click', locator: 'role=button[name="Generate"i]', why: 'run it' },
+    { action: 'click', locator: 'role=button[name="Share"i]', why: 'share it' },
+  ];
+  const out = await withFakeClaude(dir, () =>
+    planPacing({ goal: 'g', steps, outDir, speak: fakeSpeak, voice: 'v', model: 'm' })
+  );
+
+  // The good line survives untouched.
+  assert.match(out.spoken[0].text, /hitting "Generate"/);
+  // The bad one never reaches TTS — it is the `humanizeAction` sentence built
+  // from the resolved element, which is plain rather than confidently wrong.
+  assert.ok(!out.spoken[1].text.includes('Invite teammate'));
+  assert.match(out.spoken[1].text, /Share/);
+
+  // ...and it is written down, so the take carries what was replaced and why.
+  const record = JSON.parse(readFileSync(path.join(outDir, 'pacing.json'), 'utf8'));
+  assert.equal(record.inventions.measured, true);
+  assert.equal(record.inventions.inventions.length, 1);
+  assert.equal(record.inventions.inventions[0].quoted, 'Invite teammate');
+});
+
+test('the flow author\'s own narration outranks the invention check', async () => {
+  const { planPacing } = require('../src/pacing.js');
+  const outDir = tmp();
+  const dir = fakeClaude('Now click "Nonexistent control" to continue.');
+  const out = await withFakeClaude(dir, () =>
+    planPacing({
+      goal: 'g',
+      // A human wrote this line. It cannot have invented anything, and a
+      // machine finding must not discard it.
+      steps: [{ action: 'click', locator: '#go', why: 'go', narration: 'Here is the part I care about.' }],
+      outDir, speak: fakeSpeak, voice: 'v', model: 'm',
+    })
+  );
+  assert.equal(out.spoken[0].text, 'Here is the part I care about.');
+});
+
+test('the runner can describe an edit it was not allowed to make', () => {
+  const { describeEdit } = require('../src/edit.js');
+  // `plan` is null whenever the flow was too short to edit, and the inline
+  // version of this read `edit.plan.map(...)` — so every run on a two-action
+  // outcome demo died in the log line, after paying for the model call and
+  // before recording anything.
+  const flow = { goal: 'g', steps: [
+    { action: 'fill', locator: '#p', text: 'hi' },
+    { action: 'click', locator: 'role=button[name="Go"i]' },
+  ] };
+  const edit = disposeEdit({ flow, proposal: {
+    about: 'a QR code appears as you type',
+    decisions: [{ index: 0, keep: false, why: 'cut it' }],
+  } });
+  assert.equal(edit.plan, null, 'the premise: a short flow gets no plan');
+  const lines = describeEdit(edit, flow.steps.length);
+  assert.ok(lines.some((l) => l.includes('a QR code appears as you type')));
+  assert.ok(lines.some((l) => /nothing to cut — 2 step\(s\)/.test(l)));
+});
+
+test('the runner says so when no edit was proposed at all', () => {
+  const { describeEdit } = require('../src/edit.js');
+  assert.deepEqual(describeEdit(null, 4), ['no edit proposed — recording the flow as discovered']);
+});
+
+// ── ENG-5766 review round 1: three holes Codex found ──────────────────────
+
+test('a reorder may not move a step across a wait, because replaying is not meaning', () => {
+  // The walk was doing all the disposing, and a walk establishes that steps
+  // still EXECUTE, not that they still mean the same thing. Moving the click
+  // that starts a generation to after the wait that guards it replays fine —
+  // the thing being waited for is simply not there yet — and the recording
+  // then races the result and can end mid-generation.
+  const steps = [
+    { action: 'click', locator: 'role=button[name="Prompt"i]' },
+    { action: 'fill', locator: '#p', text: 'a launch deck' },
+    { action: 'wait', quietMs: 3000, maxMs: 120000, why: 'generating' },
+    { action: 'click', locator: 'role=button[name="Download"i]' },
+  ];
+  const all = (order) => ({
+    about: 'x',
+    decisions: steps.map((_, index) => ({ index, keep: true, beat: 'build', pace: 'normal' })),
+    order,
+  });
+
+  const across = disposeEdit({ flow: { goal: 'g', steps }, proposal: all([3, 0, 1, 2]) });
+  assert.deepEqual(across.plan.map((p) => p.sourceIndex), [0, 1, 2, 3], 'source order is kept');
+  assert.equal(across.reordered, false);
+  assert.match(across.corrections.join(' '), /moves step\(s\) 3 across a wait/);
+
+  // Within a segment it may still permute freely — which is the whole
+  // capability on a flow with no waits at all.
+  const within = disposeEdit({ flow: { goal: 'g', steps }, proposal: all([1, 0, 2, 3]) });
+  assert.deepEqual(within.plan.map((p) => p.sourceIndex), [1, 0, 2, 3]);
+  assert.equal(within.reordered, true);
+});
+
+test('a line may not name a control that has not appeared yet', () => {
+  const flow = { steps: [
+    { action: 'click', locator: 'role=button[name="Generate"i]' },
+    { action: 'click', locator: 'role=button[name="Share"i]' },
+  ] };
+  // Checking against the WHOLE flow let a line spoken over Generate say
+  // click "Share" and pass, purely because a later step had a Share control.
+  const forward = checkInventions({ lines: ['Now click "Share" to send it.', 'And hit "Generate".'], flow });
+  assert.deepEqual(forward.inventions.map((i) => i.quoted), ['Share']);
+
+  // A BACK reference is fine — it is already on screen, and a false positive
+  // here replaces a good line.
+  const back = checkInventions({ lines: ['Hit "Generate".', 'Now send that "Generate" result with "Share".'], flow });
+  assert.deepEqual(back.inventions, []);
+});
+
+test('a step with no resolved element gets the bland line, not the agent\'s reason', () => {
+  const { humanizeAction } = require('../src/narration.js');
+  // `pacing.js` always sets `name`, so `name: ''` means "this step resolved no
+  // element identity". Falling through to the label there put the discovery
+  // model's reason straight back into the voiceover — through the one path
+  // that the don't-invent check FALLS BACK TO, which is the worst place for it.
+  assert.equal(
+    humanizeAction({ type: 'click', name: '', label: 'go to the thing' }),
+    "Let's move on to the next step."
+  );
+  // A resolved name is still used...
+  assert.equal(humanizeAction({ type: 'click', name: 'Share', label: 'share it' }), "Now, let's click on Share.");
+  // ...and a RECORDED action, which sets no `name` at all, keeps the
+  // selector-then-label fallback: a keypress genuinely has no element.
+  assert.equal(
+    humanizeAction({ type: 'click', selector: 'role=button[name="Create"i]', label: 'x' }),
+    "Now, let's click on Create."
+  );
+  assert.equal(humanizeAction({ type: 'click', label: 'Enter' }), "Now, let's click on Enter.");
+});
+
+test('the invented-line fallback cannot reintroduce the reason it was replacing', async () => {
+  const { planPacing } = require('../src/pacing.js');
+  const outDir = tmp();
+  const dir = fakeClaude('Now click "Nonexistent" to continue.');
+  const out = await withFakeClaude(dir, () =>
+    planPacing({
+      goal: 'g',
+      // A CSS locator: no accessible name to fall back to.
+      steps: [{ action: 'click', locator: '#go', why: 'let me try the other link' }],
+      outDir, speak: fakeSpeak, voice: 'v', model: 'm',
+    })
+  );
+  assert.ok(!out.spoken[0].text.includes('Nonexistent'), 'the invented name is gone');
+  assert.ok(!out.spoken[0].text.includes('other link'), 'and the reason did not take its place');
+  assert.equal(out.spoken[0].text, "Let's move on to the next step.");
+});
+
+// ── ENG-5766 review round 2 ───────────────────────────────────────────────
+
+test('a short control name does not validate every quoted phrase that contains it', () => {
+  // The matcher was `n.includes(q) || q.includes(n)` on normalized strings,
+  // which FAILS OPEN — worse than not checking, because it returns
+  // `measured: true, inventions: []` and reads as a clean pass. And short
+  // names are the common case.
+  const named = (...names) => ({
+    steps: names.map((n) => ({ action: 'click', locator: `role=button[name="${n}"i]` })),
+  });
+  const flagged = (flow, line) => checkInventions({ lines: [line], flow }).inventions.length === 1;
+
+  assert.ok(flagged(named('Go'), 'Open "Google Drive" and pick a file.'), '"Go" must not validate "Google Drive"');
+  assert.ok(flagged(named('Go'), 'Click "Let us get going" first.'), 'nor a sentence that merely contains it');
+  assert.ok(flagged(named('OK'), 'Check "look at the results" below.'));
+  assert.ok(flagged(named('Share'), 'Send it with "Share to Google Drive".'), 'a real name plus invented text');
+
+  // ...while every legitimate shape still passes.
+  const ok = (flow, line) => assert.deepEqual(checkInventions({ lines: [line], flow }).inventions, [], line);
+  ok(named('Go'), 'Hit "Go" now.');                                   // exact
+  ok(named('Create a new canvas'), 'Just hit "Create".');             // the quote is part of the name
+  ok(named('Share'), 'Hit the "Share" button.');                      // the name is the quote
+  ok(named('Share'), 'Use "the Share button" up top.');               // wrapped in function words
+  ok(named('Invite teammate'), 'Click "Invite teammate" to add them.');
+});
+
+test('the caption and the narration resolve the SAME name, in every selector form', () => {
+  // The third copy of the extractor lived in `captions.js` and matched
+  // `name="..."` alone, so on a single-quoted or regex-form locator the
+  // narration spoke the element name while the caption resolved nothing and
+  // emitted no caption at all — the divergence between the two writers that
+  // the shared extractor exists to end.
+  const { deriveCaption } = require('../src/captions.js');
+  for (const [selector, expected] of [
+    ['role=button[name="Create"i]', 'Create'],
+    ["role=button[name='Try again'i]", 'Try again'],
+    ['role=button[name=/Retry/i]', 'Retry'],
+  ]) {
+    assert.equal(nameFromSelector(selector), expected, `narration resolves ${selector}`);
+    const caption = deriveCaption({ type: 'click', selector });
+    assert.ok(caption && caption.includes(expected), `caption resolves ${selector} — got ${JSON.stringify(caption)}`);
+  }
+  // The local parts of captions' resolver survive: a `text=` fallback, and
+  // null rather than '' for a selector with no identity at all.
+  assert.ok(deriveCaption({ type: 'click', selector: 'text=Create' }).includes('Create'));
+  assert.equal(deriveCaption({ type: 'click', selector: '#nameless' }), null);
+});
+
+test('narrate.js leaves behind no re-export shim for the moved extractor', () => {
+  // CLAUDE.md: moving a module means updating callers, not leaving a shim.
+  // Nothing in the package consumed `narrate.elementName` — the tests import
+  // from `element-name.js` directly.
+  const narrate = require('../src/narrate.js');
+  assert.equal(narrate.elementName, undefined);
+  assert.equal(typeof require('../src/element-name.js').elementName, 'function');
+});
+
+test('run.mjs does not edit a flow someone wrote by hand', () => {
+  const src = readFileSync(path.join(HERE, 'run.mjs'), 'utf8');
+  // `--flow` is an explicit step list. Having a model cut those steps as
+  // "transport" overrides a decision already made, with a log line as the only
+  // signal — and `take.mjs` already assumed the opposite in its own comment.
+  assert.match(src, /const handAuthored = Boolean\(flowPath && flowPath === flag\('--flow', null\)\)/);
+  assert.match(src, /handAuthored \? null : proposeEdit\(/);
+  // The two paths must agree about what a hand-authored flow means.
+  const take = readFileSync(path.join(HERE, 'take.mjs'), 'utf8');
+  assert.match(take, /Absent on a hand-authored `--flow`/);
+});
+
+test('a secret never reaches a model prompt, the sayable names, or the voiceover', () => {
+  const { isSensitive, safeText } = require('../src/sensitive.js');
+  const { describeStep } = require('../src/edit.js');
+  const { humanizeAction } = require('../src/narration.js');
+
+  const secrets = [
+    { action: 'fill', locator: '#password', text: 'hunter2' },
+    { action: 'fill', locator: 'role=textbox[name="API key"i]', text: 'whatever' },
+    { action: 'fill', locator: 'role=textbox[name="One-time code"i]', text: '123456' },
+    // ...and by VALUE, whatever it was typed into.
+    { action: 'fill', locator: '#prompt', text: 'sk-abcdefghijklmnopqrstuvwx' },
+    { action: 'fill', locator: '#prompt', text: 'ghp_abcdefghijklmnopqrstuvwxyz0123' },
+    { action: 'fill', locator: '#prompt', text: 'AKIAIOSFODNN7EXAMPLE' },
+  ];
+  for (const s of secrets) {
+    assert.ok(isSensitive(s), `${s.locator} / ${s.text} should be sensitive`);
+    assert.equal(safeText(s), null);
+    // 1. the editorial prompt
+    const shown = describeStep(s, 0);
+    assert.ok(!shown.includes(s.text), `the editor prompt must not carry ${JSON.stringify(s.text)}`);
+    assert.match(shown, /a secret — withheld/);
+    // 2. what a script is allowed to quote — the VALUE is gone. The field's
+    //    own label is not: "API key" is printed on screen, and a line saying
+    //    "paste your API key here" is both true and useful. It is the thing
+    //    typed into it that must never be spoken.
+    const sayable = [...sayableNames({ steps: [s] })];
+    assert.ok(!sayable.some((n) => n.includes(s.text.toLowerCase().slice(0, 8))),
+      `${JSON.stringify(s.text)} must not be sayable — got ${JSON.stringify(sayable)}`);
+    // 3. the spoken fallback
+    const spoken = humanizeAction({ type: 'fill', name: '', text: safeText(s) });
+    assert.ok(!spoken.includes(s.text));
+    assert.equal(spoken, "Next, let's type in our text.");
+  }
+
+  // An ordinary prompt is untouched — the guard must not redact the demo.
+  const ordinary = { action: 'fill', locator: '#prompt', text: 'a launch deck for Q4' };
+  assert.equal(isSensitive(ordinary), false);
+  assert.match(describeStep(ordinary, 0), /a launch deck for Q4/);
+  assert.ok([...sayableNames({ steps: [ordinary] })].length > 0);
+  // ...and a click types nothing, so it can leak nothing.
+  assert.equal(isSensitive({ action: 'click', locator: '#password' }), false);
+});
+
+test('a fill\'s fallback line says typing, not clicking', () => {
+  const { humanizeAction } = require('../src/narration.js');
+  // The reference called this action `type`; every flow here calls it `fill`,
+  // so the typing sentence was unreachable and a fill fell through to the
+  // CLICK branch — "Now, let's click on Prompt." over footage of typing. A
+  // confidently wrong sentence from the fallback whose job is to be the safe
+  // one, and the line the don't-invent check replaces an invention WITH.
+  assert.equal(
+    humanizeAction({ type: 'fill', name: 'Prompt', text: 'a launch deck' }),
+    'Next, let\'s type in \u201Ca launch deck\u201D.'
+  );
+  assert.ok(humanizeAction({ type: 'type', name: 'Prompt', text: 'x' }).startsWith("Next, let's type in"));
+  assert.equal(humanizeAction({ type: 'click', name: 'Share' }), "Now, let's click on Share.");
+});
+
+test('the secret does not reach the narration model\'s prompt either', async () => {
+  const { planPacing } = require('../src/pacing.js');
+  const outDir = tmp();
+  const dir = fakeClaude('Now enter your key.');
+  const secret = 'sk-abcdefghijklmnopqrstuvwx';
+  await withFakeClaude(dir, () =>
+    planPacing({
+      goal: 'connect the integration',
+      steps: [
+        { action: 'fill', locator: 'role=textbox[name="API key"i]', text: secret, why: 'paste the key' },
+        { action: 'click', locator: 'role=button[name="Connect"i]', why: 'connect' },
+      ],
+      outDir, speak: fakeSpeak, voice: 'v', model: 'm',
+    })
+  );
+  // This is the boundary that matters most and the one nothing else covers:
+  // `describeStep` guards the EDITOR's prompt, but the script model gets its
+  // own, built in `pacing.js`.
+  const user = readFileSync(path.join(dir, 'user.txt'), 'utf8');
+  assert.ok(!user.includes(secret), 'the script prompt must not carry the typed secret');
+  // The field's own label still goes, because it is on screen and the script
+  // needs it to say anything specific at all.
+  assert.match(user, /element: "API key"/);
+});
+
+// ── ENG-5766 review round 3 ───────────────────────────────────────────────
+
+test('a non-Latin name is checked, not waved through', () => {
+  // `[^a-z0-9]` stripped every character of a Japanese, Chinese, Cyrillic or
+  // Greek name, so a quoted non-Latin control normalized to '', tokenized to
+  // nothing, and `supported()` returned true on the spot — `measured: true`
+  // with no inventions, for a name matching nothing on screen. The same
+  // fail-open the word-run matcher closed, reintroduced for every
+  // internationalized app.
+  const named = (n) => ({ steps: [{ action: 'click', locator: `role=button[name="${n}"i]` }] });
+
+  const jp = checkInventions({ lines: ['まず “作成する” を押します。'], flow: named('設定') });
+  assert.equal(jp.measured, true);
+  assert.deepEqual(jp.inventions.map((i) => i.quoted), ['作成する']);
+  assert.deepEqual(checkInventions({ lines: ['まず “設定” を押します。'], flow: named('設定') }).inventions, []);
+
+  const ru = checkInventions({ lines: ['Нажмите “Удалить”.'], flow: named('Создать') });
+  assert.deepEqual(ru.inventions.map((i) => i.quoted), ['Удалить']);
+  assert.deepEqual(checkInventions({ lines: ['Нажмите “Создать”.'], flow: named('Создать') }).inventions, []);
+
+  // A fragment with no letters or digits is not a claim about a control, and
+  // is not COUNTED — reporting it as checked would claim coverage this guard
+  // does not have.
+  const punct = checkInventions({ lines: ['Wait for it “…” then go.'], flow: named('Создать') });
+  assert.equal(punct.checked, 0);
+  assert.equal(punct.measured, false);
+});
+
+test('a password field is redacted even when its selector says nothing', () => {
+  const { isSensitive, safeText } = require('../src/sensitive.js');
+  // The resolver prefers a test id or a stable id, so `<input id="login"
+  // type="password">` reaches the flow as `#login` — and `hunter2` matches no
+  // credential shape. No amount of guessing downstream could recover that, so
+  // the fact is carried from resolution, where the element was in hand.
+  const stamped = { action: 'fill', locator: '#login', text: 'hunter2', sensitive: true };
+  assert.equal(isSensitive(stamped), true);
+  assert.equal(safeText(stamped), null);
+  // The heuristic alone cannot see it — which is exactly why the stamp exists.
+  assert.equal(isSensitive({ action: 'fill', locator: '#login', text: 'hunter2' }), false);
+});
+
+test('the password fact survives EVERY path that can return a selector', () => {
+  // Scoped to the whole module, not to `pageResolve`.
+  //
+  // Scanning one function was itself the bug: `resolveDurableSelector`'s
+  // csspath fallback returned a bare `{type, selector}` and dropped the stamp,
+  // and this guard could not see it because it only ever read the other
+  // function. A password field whose role selector happened to be ambiguous —
+  // two similar inputs in one form, i.e. a sign-in page — silently lost the
+  // fact that keeps its value out of two model prompts and the voiceover.
+  const src = readFileSync(path.join(HERE, 'src', 'snapshot.js'), 'utf8');
+
+  assert.match(src, /const sensitive =\s*\n?\s*kind === 'password'/);
+  assert.match(src, /one-time-code/);
+
+  // Every return of a selector object, wherever it is, carries the fact —
+  // either through `pageResolve`'s wrapper or by naming it explicitly.
+  const returns = [...src.matchAll(/return (out\()?\{ type: [^}]*\}/g)];
+  assert.ok(returns.length >= 7, `expected every selector return, found ${returns.length}`);
+  for (const [whole, wrapped] of returns) {
+    const stamped = wrapped === 'out(' || /\bsensitive:/.test(whole);
+    assert.ok(stamped, `a selector return drops the password stamp: ${whole.slice(0, 90)}`);
+  }
+});
+
+test('discovery carries the stamp onto the flow step', () => {
+  const src = readFileSync(path.join(HERE, 'src', 'discovery.js'), 'utf8');
+  assert.match(src, /durable\.sensitive \? \{ sensitive: true \} : \{\}/);
+});
+
+// ── ENG-5766: the Claude guideline review (rubric 10.7) ───────────────────
+
+test('an HTML name attribute is not an accessible name', () => {
+  // `snapshot.js`'s resolver emits the plain CSS attribute form for any
+  // element with an HTML `name` and no test id or stable id (branch 3, ahead
+  // of the role= branch). An HTML `name` is a form-field KEY — nothing with
+  // that text is necessarily on screen — and matching `name=` anywhere pulled
+  // "email" out of it and handed it to three consumers as the resolved
+  // element name.
+  //
+  // Self-confirming, which is what made it worth a rubric item: the
+  // don't-invent guard, whose whole job is to catch a name that is not on
+  // screen, was reading the same bad source and would have licensed a line
+  // saying `click "email"`.
+  assert.equal(nameFromSelector('input[name="email"]'), '');
+  assert.equal(nameFromSelector('textarea[name="body"]'), '');
+  assert.equal(stepName({ action: 'fill', locator: 'input[name="email"]' }), '');
+  assert.deepEqual([...sayableNames({ steps: [{ action: 'click', locator: 'input[name="email"]' }] })], []);
+
+  // ...while every shape that DOES carry an accessible name still resolves.
+  assert.equal(nameFromSelector('role=button[name="Create"i]'), 'Create');
+  assert.equal(nameFromSelector("role=button[name='Try again'i]"), 'Try again');
+  assert.equal(nameFromSelector('role=textbox[name=/API key/i]'), 'API key');
+
+  // And the other selector shapes the resolver emits stay empty, as the
+  // docstring has always claimed.
+  for (const sel of ['[data-testid="go"]', '#login', '[placeholder="Search"]', 'div:has-text("Create")']) {
+    assert.equal(nameFromSelector(sel), '', sel);
+  }
+});
+
+test('the caption writer inherits the same rule, so the two still agree', () => {
+  const { deriveCaption } = require('../src/captions.js');
+  // `captions.js` had the bug too — its own regex matched `name=` anywhere.
+  // Delegating to the shared extractor fixed both at once, and no caption is
+  // the honest answer here: `deriveCaption` says so itself.
+  assert.equal(deriveCaption({ type: 'click', selector: 'input[name="email"]' }), null);
+  assert.ok(deriveCaption({ type: 'click', selector: 'role=button[name="Create"i]' }).includes('Create'));
+});
+
+test('the closing line is checked too — it is the last thing the video says', async () => {
+  const { planPacing } = require('../src/pacing.js');
+  const flow = { steps: [
+    { action: 'click', locator: 'role=button[name="Generate"i]', why: 'run it' },
+    { action: 'click', locator: 'role=button[name="Share"i]', why: 'share it' },
+  ] };
+
+  // `checkInventions` examined `script.lines` only. The conclusion is voiced
+  // and muxed as the LAST thing the video says — the most quotable sentence in
+  // it — and the run reported full coverage while never having looked.
+  const bad = checkInventions({
+    lines: ['Hit "Generate".'],
+    flow,
+    closing: 'Find it all under "Team Settings".',
+  });
+  assert.equal(bad.closing.quoted, 'Team Settings');
+  assert.equal(bad.checked, 2, 'the closing line counts toward coverage as well');
+
+  // Its scope is the WHOLE flow: it summarises a finished demo, so nothing in
+  // it is a forward reference. "Share" is step 1 and would be an invention on
+  // line 0 — here it is fine.
+  assert.equal(checkInventions({ lines: [], flow, closing: 'That is how you "Share" a deck.' }).closing, null);
+
+  // End to end: an inventing conclusion is DROPPED rather than replaced. There
+  // is no action to build a fallback sentence from, and the pipeline already
+  // handles having no conclusion.
+  const outDir = tmp();
+  const dir = fakeClaude('Hit "Generate".\nThen hit "Share".', 'Find it all under "Team Settings".');
+  const out = await withFakeClaude(dir, () =>
+    planPacing({ goal: 'g', steps: flow.steps, outDir, speak: fakeSpeak, voice: 'v', model: 'm' })
+  );
+  assert.equal(out.conclusion, null, 'an inventing conclusion must not be voiced');
+  assert.equal(JSON.parse(readFileSync(path.join(outDir, 'pacing.json'), 'utf8')).inventions.closing.quoted,
+    'Team Settings');
+
+  // ...while a truthful one still is.
+  const okDir = tmp();
+  const good = fakeClaude('Hit "Generate".\nThen hit "Share".', 'That is how you "Share" a deck.');
+  const kept = await withFakeClaude(good, () =>
+    planPacing({ goal: 'g', steps: flow.steps, outDir: okDir, speak: fakeSpeak, voice: 'v', model: 'm' })
+  );
+  assert.ok(kept.conclusion && kept.conclusion.text.includes('Share'));
 });

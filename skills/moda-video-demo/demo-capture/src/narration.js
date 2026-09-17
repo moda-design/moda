@@ -30,8 +30,45 @@
 // Captions are a DIFFERENT job with a different source and length — see the
 // header of `captions.js` (ENG-5766). Do not merge the two.
 const { execFileSync } = require('node:child_process');
+const { elementName } = require('./element-name.js');
 
 const SCRIPT_MODEL = 'claude-opus-5';
+
+//: What the script is told BEYOND the reference's prompt (ENG-5766).
+//:
+//: Appended rather than merged, and the reason is in this file's header: the
+//: reference's prompt is the asset, it has been iterated on, and two of its
+//: rules have already been "improved" backwards once. Keeping the addition
+//: separate means a future reader can see exactly which sentences are ours and
+//: revert them without touching the part that was earned.
+//:
+//: Both halves are ENG-5766's "two things it must get right", and each is paired
+//: with something code enforces, because neither is trustworthy on its own:
+//:   - say the real names -> the element name is now IN the input (it was not:
+//:     the script was fed the discovery agent's reason, the same source
+//:     `captions.js` was moved off)
+//:   - don't invent       -> `src/invention.js` checks every quoted name against
+//:     what the flow can actually show, and replaces a line that fails
+const EDITORIAL = [
+  '',
+  'Each action is given with the RESOLVED ELEMENT NAME — the accessible name of the thing actually',
+  'clicked. Use it. "Now let\'s hit Invite teammate to bring the rest of the team in" is worth far',
+  'more than "now let\'s click the button", and that specificity is most of what separates a demo',
+  'script from filler.',
+  '',
+  'NEVER NAME SOMETHING YOU WERE NOT GIVEN. If an action has no element name, describe what is',
+  'happening without asserting what the screen says — a plain sentence is fine, a confidently wrong',
+  'one is the worst thing this video can contain. The "reason" on an action is what the agent was',
+  'thinking, not a fact about the screen: never quote it as a label.',
+  '',
+  'Each action also carries its place in the film and how much room it wants:',
+  '  hook    the opening. Say what this is.',
+  '  build   the work. Keep it moving.',
+  '  payoff  the moment the product delivers. This is the line that matters most.',
+  '  close   after the payoff has landed.',
+  '  pace "hurry" means the moment is transport — write a SHORT line, under about 8 words, or the',
+  '  video has to wait for you. pace "hold" means the moment has room: use it.',
+].join('\n');
 
 //: The reference's prompt, unchanged. Edit with care — see the header.
 const SYSTEM =
@@ -55,28 +92,68 @@ const SYSTEM =
  * gap-filler is a sentence, not `${name}`.
  */
 function humanizeAction(a) {
-  const label = (a.label || '')
+  // THE RESOLVED NAME FIRST (ENG-5766). This read `a.label`, which is the
+  // discovery agent's reason — so the sentence this produces said "Now, let's
+  // click on share it." rather than naming the Share button.
+  //
+  // It matters more here than anywhere else, because this is what the
+  // don't-invent check falls back TO. Replacing a confidently wrong line with
+  // a line built from the same untrustworthy source is not a remedy; it just
+  // launders the problem into a plainer sentence.
+  //
+  // PRESENT-BUT-EMPTY IS AN ANSWER. `pacing.js` always sets `name` from the
+  // flow step's selector, so `name: ''` means "this step resolved no element
+  // identity" — and falling through to `elementName` there put us straight
+  // back on `label`, i.e. the discovery model's reason, for every step with a
+  // CSS locator. The laundering this function was just fixed to stop, via the
+  // one path that still reached it.
+  //
+  // So a flow-derived action is trusted to its `name` alone, and the
+  // `selector`-then-label fallback is kept only for a RECORDED clip action,
+  // which sets no `name` and where a keypress genuinely has no element.
+  // When neither yields anything the sentence below is the bland one, which is
+  // the whole trade: plain beats confidently wrong.
+  const identity = 'name' in a ? a.name : elementName(a);
+  const label = (identity || '')
     .replace(/^(click|type)\s+/i, '')
     .replace(/^["“”']+|["“”']+$/g, '')
     .trim();
   if (a.type === 'scroll') return `Now, let's scroll ${/up/i.test(a.label || '') ? 'back up' : 'down'} to see more.`;
-  if (a.type === 'type') return `Next, let's type in ${a.text ? `“${a.text}”` : 'our text'}.`;
+  // `fill` AS WELL AS `type`. The reference called this action `type`; every
+  // flow in this pipeline calls it `fill`, so the typing sentence was
+  // unreachable and a fill fell through to the CLICK branch — "Now, let's
+  // click on Prompt." over footage of someone typing. A confidently wrong
+  // sentence, produced by the fallback whose whole job is to be the plain,
+  // safe one (ENG-5766).
+  //
+  // No text means there is nothing to quote — either the step carried none, or
+  // `sensitive.js` withheld it — and "our text" is the right thing to say
+  // about a password field.
+  if (a.type === 'type' || a.type === 'fill') {
+    return `Next, let's type in ${a.text ? `“${a.text}”` : 'our text'}.`;
+  }
   return label ? `Now, let's click on ${label}.` : `Let's move on to the next step.`;
 }
 
 /** Ask over whichever transport this machine has. Returns raw reply text. */
 function ask(user) {
+  // ONE prompt for both transports. They used to be assembled separately, which
+  // is how the SDK branch would have kept the reference prompt while the CLI
+  // branch got the editorial addition — the same shape as `style.js`'s dead SDK
+  // branch, which returned null on every machine that had the variable set and
+  // survived precisely because nobody here has it.
+  const system = SYSTEM + '\n' + EDITORIAL;
   if (process.env.ANTHROPIC_API_KEY) {
     const Anthropic = require('@anthropic-ai/sdk').default ?? require('@anthropic-ai/sdk');
     return new Anthropic().messages
-      .create({ model: SCRIPT_MODEL, max_tokens: 1024, system: SYSTEM, messages: [{ role: 'user', content: user }] })
+      .create({ model: SCRIPT_MODEL, max_tokens: 1024, system, messages: [{ role: 'user', content: user }] })
       .then((r) => r.content.filter((b) => b.type === 'text').map((b) => b.text).join('\n'));
   }
   // stdout ONLY — the CLI writes MCP chatter to stderr, and merging the two puts
   // "Client.listTools() called but..." in front of the JSON.
   const raw = execFileSync(
     'claude',
-    ['-p', user, '--output-format', 'json', '--append-system-prompt', SYSTEM, '--strict-mcp-config'],
+    ['-p', user, '--output-format', 'json', '--append-system-prompt', system, '--strict-mcp-config'],
     { encoding: 'utf8', maxBuffer: 8 << 20, stdio: ['ignore', 'pipe', 'ignore'] }
   );
   return Promise.resolve(JSON.parse(raw).result ?? '');
@@ -102,10 +179,35 @@ function parseReply(raw) {
  * Returns `{ lines, conclusion, transport }`, or null on any failure so the
  * caller falls back to `humanizeAction` per step — still sentences, still human.
  */
-async function scriptNarration({ goal, steps }) {
-  const stepList = steps.map((s, i) => `${i + 1}. (${s.type}) ${s.label || '(no label)'}`).join('\n');
+async function scriptNarration({ goal, steps, about }) {
+  // ONE LINE PER ACTION, and the element name is the first thing on it.
+  //
+  // What this replaces is the whole of ENG-5766's "say the real names": the
+  // list used to be `(${s.type}) ${s.label}`, and `label` arrives here as the
+  // flow's `why`, which `discovery.js:110` sets from the model's `reason`. So
+  // the voiceover was written from the agent's reasoning while the captions
+  // were written from the resolved element — two descriptions of one video,
+  // and only one of them a fact about it.
+  //
+  // The reason is still passed, LABELLED as the reason, because it carries
+  // intent the element name does not ("pick a format", "run it"). What changed
+  // is that it is no longer the only thing here, and no longer presented as if
+  // it were a name.
+  const stepList = steps.map((s, i) => {
+    const bits = [`${i + 1}. (${s.type})`];
+    if (s.name) bits.push(`element: ${JSON.stringify(s.name)}`);
+    if (s.text) bits.push(`types: ${JSON.stringify(s.text)}`);
+    if (s.beat) bits.push(`beat: ${s.beat}`);
+    if (s.pace && s.pace !== 'normal') bits.push(`pace: ${s.pace}`);
+    if (s.label) bits.push(`reason: ${JSON.stringify(s.label)}`);
+    return bits.length > 1 ? bits.join('  ') : `${i + 1}. (${s.type}) (no label)`;
+  }).join('\n');
   const user = [
     `Demo goal: ${goal}`,
+    // The editorial pass's one-line spine, when there was one. It is a stronger
+    // brief than the goal: the goal says what the agent was asked to do, this
+    // says what the finished video demonstrates.
+    ...(about ? ['', `What this video is about: ${about}`] : []),
     '',
     'Actions (in order):',
     stepList,
@@ -147,4 +249,4 @@ async function scriptNarration({ goal, steps }) {
   };
 }
 
-module.exports = { scriptNarration, humanizeAction, SCRIPT_MODEL };
+module.exports = { scriptNarration, humanizeAction, SCRIPT_MODEL, SYSTEM, EDITORIAL };

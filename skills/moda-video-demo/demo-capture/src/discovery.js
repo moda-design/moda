@@ -109,7 +109,16 @@ function parseAction(raw) {
 function asFlowStep(action, durable) {
   const why = action.reason || action.type;
   if (action.type === 'click') return durable ? { action: 'click', locator: durable.selector, why } : null;
-  if (action.type === 'type') return durable ? { action: 'fill', locator: durable.selector, text: action.text ?? '', why } : null;
+  // `sensitive` rides ALONG WITH the selector, from `pageResolve`, where the
+  // element was in hand and `type="password"` was a fact rather than a guess
+  // about a name. `sensitive.js`'s heuristic is then only the fallback, for a
+  // hand-authored flow that never went through resolution (ENG-6319).
+  if (action.type === 'type') {
+    return durable
+      ? { action: 'fill', locator: durable.selector, text: action.text ?? '', why,
+          ...(durable.sensitive ? { sensitive: true } : {}) }
+      : null;
+  }
   if (action.type === 'wait') return { action: 'wait', quietMs: 3000, maxMs: 120_000, why };
   // Scroll is how a demo GETS somewhere, not something worth a step of its own —
   // and in an agent-driven run it is usually the model recovering from a wrong

@@ -11,7 +11,7 @@ import { capture } from './capture.mjs';
 import { resolveStorageState } from './auth.mjs';
 
 const require = createRequire(import.meta.url);
-const { planPacing } = require('./src/pacing.js');
+const { planPacing, paceFloors } = require('./src/pacing.js');
 const { validateFlow, MIN_NET_CHANGE } = require('./src/validate.js');
 const { describeHealth } = require('./src/page-health.js');
 const { chooseStyle } = require('./src/style.js');
@@ -121,10 +121,22 @@ console.log(`style: ${genre.style} — ${genre.why}`);
 // one that counts and this is where it is recorded.
 writeFileSync(`${outDir}/genre.json`, JSON.stringify(genre, null, 2));
 
+// `about` is the editorial pass's one-line spine, written into the flow by
+// `run.mjs` (ENG-5766). It is a stronger brief for the script than the goal:
+// the goal says what the agent was asked to do, `about` says what the finished
+// video demonstrates. Absent on a hand-authored `--flow`, and the script falls
+// back to the goal exactly as before.
 const pacing =
   process.env.DEMO_NO_VOICE === '1' || genre.style === 'marketing'
-    ? { stepMinDurations: null }
-    : await planPacing({ goal: flow.goal, steps: flow.steps, outDir, speak, voice: TTS_VOICE, model: TTS_MODEL });
+    ? // NO VOICEOVER STILL HAS AN EDIT. The genre decides whether there are
+      // lines to pace to; it does not decide whether the payoff gets held. On a
+      // marketing take the hold is the ONLY thing that says a moment matters,
+      // because there is no narrator to say it.
+      { stepMinDurations: paceFloors(flow.steps) }
+    : await planPacing({
+        goal: flow.goal, steps: flow.steps, outDir, speak, voice: TTS_VOICE, model: TTS_MODEL,
+        about: flow.about ?? null,
+      });
 
 const cap = await capture({
   id, flow, start, outDir, storageState: auth.path, stepMinDurations: pacing.stepMinDurations,

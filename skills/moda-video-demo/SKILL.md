@@ -124,6 +124,12 @@ each line is either a number or an explicit "not measured" — never a silent pa
 
 | It says | It means |
 |---|---|
+| `about: …` | what the edit decided the video demonstrates; the script is written to it |
+| `cut step N: …` | the edit dropped a working step because it is not the story |
+| `N of M step(s) kept — 0:hook 2:build 3:payoff/hold` | the edit, and where each kept moment sits |
+| `still does not replay — discarding the edit` | the cuts did not survive a walk; recording the flow as discovered |
+| `don't-invent: N quoted name(s) checked` | that many **double-quoted** names, across the script and its closing line, are on screen. A single-quoted or unquoted name is not decidable and is not counted |
+| `don't-invent: no line quoted a name` | the check had nothing to decide — **not** a pass |
 | `not recording this flow` | the walk found the demo is not worth filming; it is re-discovering |
 | `⚠ step N returns the page to…` | the flow revisits a state the viewer has seen |
 | `⚠ N of M clicks land on one row` | a tour of one widget, not a demo of a product |

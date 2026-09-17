@@ -25,6 +25,8 @@
 // agent was thinking about clicking. Only the first is a fact about the video.
 
 
+const { nameFromSelector } = require('./element-name.js');
+
 const MODEL = 'claude-sonnet-4-6';
 
 /** Longest caption the compiler's plate reads cleanly at font-size 28. */
@@ -39,11 +41,24 @@ function unwrap(text) {
   return text;
 }
 
-/** Pull the accessible name out of a Playwright role selector. */
+/**
+ * Pull the accessible name out of a Playwright role selector.
+ *
+ * The extraction is `element-name.js`'s; this keeps only what is local to
+ * captions — the `text=` fallback, and returning NULL rather than `''` for a
+ * selector with no identity, which is what `deriveCaption` gates on.
+ *
+ * It was the third copy of that regex and the reason the consolidation in
+ * ENG-5766 was incomplete: it matched `name="..."` alone, so on a
+ * single-quoted or regex-form locator the narration resolved and spoke the
+ * element name while the caption resolved nothing and emitted no caption for
+ * that step — the exact divergence between the two writers that the shared
+ * extractor exists to end.
+ */
 function accessibleName(selector) {
   if (!selector) return null;
-  const m = /name="((?:[^"\\]|\\.)*)"/.exec(selector);
-  if (m) return m[1].replace(/\\(.)/g, '$1').trim() || null;
+  const name = nameFromSelector(selector);
+  if (name) return name;
   // css/text selectors: `text=Create`, or a bare visible-text selector
   const t = /^text=(.+)$/.exec(selector);
   return t ? t[1].trim() : null;

@@ -10,6 +10,7 @@
 // The order matters, and it is cheapest-first on purpose:
 //
 //   discover   drive the app, find the steps            model calls, minutes
+//   edit       decide what the demo is ABOUT, and cut   one model call
 //   curate     drop what a demo must never show         free
 //   validate   walk the flow, measure every step        one headless browser
 //   take       record it                                minutes, drives the app
@@ -42,6 +43,7 @@ const { chromium } = require('playwright');
 const { validateFlow } = require('./src/validate.js');
 const { keptReport, nextStep, canSelect } = require('./src/kept-report.js');
 const { proposeDrops, without, ensureTrailingHold } = require('./src/curate.js');
+const { proposeEdit, disposeEdit, settleBeats, describeEdit } = require('./src/edit.js');
 const { checkFlowShape } = require('./src/flow-shape.js');
 const { checkInputShown } = require('./src/input-check.js');
 const { checkWalkFinished } = require('./src/walk-outcome.js');
@@ -74,7 +76,7 @@ const target = Number(flag('--target', '8'));
 const publishAs = flag('--publish', null);
 const env = { ...process.env, ...(noAuth ? { DEMO_NO_AUTH: '1' } : {}) };
 //: Stages STREAM to the terminal. Piping their stdout swallowed it — a run
-//: printed "[5] finishing" and "[6] critiquing" with nothing under either, so
+//: printed "[6] finishing" and "[7] critiquing" with nothing under either, so
 //: the scores, the pacing and every warning the stages exist to emit were
 //: invisible in the one command anybody is meant to use.
 const run = (c, a, e = {}) => execFileSync(c, a, { encoding: 'utf8', maxBuffer: 64 << 20, env: { ...env, ...e }, stdio: ['ignore', 'inherit', 'inherit'] });
@@ -141,33 +143,105 @@ async function attemptOnce(n, guidancePath) {
       `discovery did not complete this walk — ${walkOutcome.reason}. ${walkOutcome.advice}` }] };
   }
 
-  // ── 2. curate ───────────────────────────────────────────────────────────
-  console.log('\n[2] curating');
-  const proposed = proposeDrops(flow);
-  for (const d of proposed) console.log(`    would drop step ${d.index}: ${d.why}`);
-  const held = ensureTrailingHold(flow);
-  if (held.added) console.log('    appending a hold so the payoff is on screen for more than a frame');
-  flow = held.flow;
-  // Indices shift once a step is appended, but only at the END, so the proposed
-  // indices still address the same steps.
-  let dropped = proposed.map((d) => d.index);
-  let curated = dropped.length ? without(flow, dropped) : flow;
-
-  // ── 3. validate, restoring any drop that turns out to be load-bearing ───
-  console.log('\n[3] validating');
-  const walk = (f) => validateFlow({ flow: f, startUrl, storageState, chromium });
-  let report = await walk(curated);
-
-  // A dismissal is junk when the dialog did not appear and load-bearing when it
-  // did. Rather than guess, the flow is walked without it and the step is put
-  // back if the walk breaks — the only way to tell from outside the app.
-  for (let attempt = 0; !report.ok && dropped.length && attempt < 4; attempt++) {
-    const restore = dropped.pop();
-    console.log(`    the walk failed at step ${report.step ?? '?'} (${report.reason ?? report.errors?.[0] ?? 'unknown'})`);
-    console.log(`    putting step ${restore} back — its removal was load-bearing`);
-    curated = without(flow, dropped);
-    report = await walk(curated);
+  // ── 2. edit ─────────────────────────────────────────────────────────────
+  //
+  // What is this demo ABOUT, and which of these steps tell that story? Nothing
+  // upstream asks: discovery drives the product to REACH a goal, `curate` is a
+  // regex junk filter, and the no-op drop is a pixel diff. None of them can cut
+  // a step that works fine and simply is not the point, which is most of the
+  // compression a real edit performs.
+  //
+  // Here, not after the recording, because a cut costs nothing before the take
+  // and costs a re-record after it — the same reason curation and validation
+  // are up here. It also means the script is written for the EDIT rather than
+  // for the transcript: `pacing.js` reads `about`, and the beat and pace that
+  // `disposeEdit` attaches to each step.
+  console.log('\n[2] editing');
+  // NOT ON A FLOW SOMEONE WROTE BY HAND.
+  //
+  // `--flow` is an explicit step list: the user chose those steps, in that
+  // order, and having a model cut them as "transport" overrides a decision
+  // that was already made — with a log line as the only signal. Discovery's
+  // output is a proposal and is the thing this stage exists to edit; a
+  // hand-authored flow is not.
+  //
+  // `take.mjs` already assumed this in its own comment about `about` being
+  // absent on a hand-authored flow. The two paths now agree.
+  const handAuthored = Boolean(flowPath && flowPath === flag('--flow', null));
+  const proposal = handAuthored ? null : proposeEdit({ goal, steps: flow.steps });
+  const edit = proposal ? disposeEdit({ flow, proposal }) : null;
+  if (handAuthored) {
+    console.log('    hand-authored flow — not editing what someone chose deliberately');
+  } else {
+    for (const line of describeEdit(edit, flow.steps.length)) console.log(`    ${line}`);
   }
+  // Kept even if the cuts are discarded below for not replaying. It is one
+  // sentence about what the product does, which stays true of the uncut flow —
+  // and it is a better brief for the script than the goal either way.
+  const about = edit?.about ?? null;
+
+  // ── 3. curate, and 4. validate ──────────────────────────────────────────
+  //
+  // Together, because the walk is what disposes of BOTH proposals. `curate`
+  // proposes junk drops and the walk puts back any that were load-bearing; the
+  // edit proposes cuts and an order, and the walk is equally the only thing
+  // that can tell whether the result still replays. Neither is trusted; both
+  // are tried cheapest-first and demoted when the app disagrees.
+  const walk = (f) => validateFlow({ flow: f, startUrl, storageState, chromium });
+
+  /**
+   * Curate a base flow and walk it, restoring any junk drop that breaks it.
+   *
+   * A dismissal is junk when the dialog did not appear and load-bearing when it
+   * did. Rather than guess, the flow is walked without it and the step is put
+   * back if the walk breaks — the only way to tell from outside the app.
+   */
+  async function curateAndWalk(base, { quiet = false } = {}) {
+    const proposedDrops = proposeDrops(base);
+    if (!quiet) for (const d of proposedDrops) console.log(`    would drop step ${d.index}: ${d.why}`);
+    const heldFlow = ensureTrailingHold(base);
+    if (heldFlow.added && !quiet) console.log('    appending a hold so the payoff is on screen for more than a frame');
+    const withHold = heldFlow.flow;
+    // Indices shift once a step is appended, but only at the END, so the
+    // proposed indices still address the same steps.
+    const drops = proposedDrops.map((d) => d.index);
+    let out = drops.length ? without(withHold, drops) : withHold;
+    let rep = await walk(out);
+    for (let attempt = 0; !rep.ok && drops.length && attempt < 4; attempt++) {
+      const restore = drops.pop();
+      console.log(`    the walk failed at step ${rep.step ?? '?'} (${rep.reason ?? rep.errors?.[0] ?? 'unknown'})`);
+      console.log(`    putting step ${restore} back — its removal was load-bearing`);
+      out = without(withHold, drops);
+      rep = await walk(out);
+    }
+    return { flow: withHold, curated: out, report: rep };
+  }
+
+  console.log('\n[3] curating');
+  let attempt = await curateAndWalk(edit?.flow ?? flow);
+
+  // THE EDIT IS A PROPOSAL, AND THE WALK DISPOSES OF IT — in two steps, because
+  // its two halves fail differently and the cheaper one to give up is the
+  // reorder. A reordering that does not replay is a dependency the editor could
+  // not see from an action list; a cut that does not replay means something it
+  // called transport was load-bearing. Giving up both at once would throw away
+  // a good set of cuts over one bad move.
+  if (!attempt.report.ok && edit?.edited) {
+    if (edit.reordered) {
+      console.log('    the edited flow does not replay — retrying in source order');
+      const sourceOrder = disposeEdit({ flow, proposal, allowReorder: false });
+      attempt = await curateAndWalk(sourceOrder.flow, { quiet: true });
+    }
+    if (!attempt.report.ok) {
+      console.log('    still does not replay — discarding the edit and recording the flow as discovered');
+      attempt = await curateAndWalk(flow, { quiet: true });
+    }
+  }
+
+  console.log('\n[4] validating');
+  flow = attempt.flow;
+  let curated = attempt.curated;
+  let report = attempt.report;
   if (!report.ok) {
     const why = report.reason ?? JSON.stringify(report.errors);
     console.error(`\n  the flow does not survive a walk: ${why}`);
@@ -292,20 +366,31 @@ async function attemptOnce(n, guidancePath) {
     console.log(`\n  ⚠ recording anyway (no attempts left): ${preRecord.map((f) => f.type).join(', ')}`);
   }
 
+  // RE-SETTLE THE BEATS, because the step list only just became final.
+  //
+  // `disposeEdit` guaranteed "exactly one payoff and it is last" over the steps
+  // it kept — and then `curate` dropped junk and the no-op check dropped steps
+  // that moved zero pixels, either of which can remove the step the edit called
+  // the payoff. Left alone, the flow would reach `pacing.js` with no payoff and
+  // therefore no hold, and the last thing on screen would be whatever happened
+  // to survive. `settleBeats` is idempotent, so this costs nothing when nothing
+  // was dropped.
+  const settled = settleBeats(curated.steps);
+  for (const c of settled.corrections) console.log(`    ⚠ after the drops: ${c}`);
   const finalFlow = path.join(work, `curated-${n}.json`);
-  writeFileSync(finalFlow, JSON.stringify({ ...curated, goal }, null, 2));
+  writeFileSync(finalFlow, JSON.stringify({ ...curated, steps: settled.steps, goal, about }, null, 2));
 
-  // ── 4-6. record, finish, iterate ────────────────────────────────────────
+  // ── 5-7. record, finish, iterate ────────────────────────────────────────
   const runName = attempts > 1 ? `${name}-a${n}` : name;
-  console.log(`\n[4] recording${tag}`);
+  console.log(`\n[5] recording${tag}`);
   run('node', ['take.mjs'], { DEMO_NAME: runName, DEMO_START: startUrl, DEMO_FLOW: finalFlow });
   const outDir = capture('bash', ['-c', `ls -dt out/${runName}-*/ | head -1`]).trim().replace(/\/$/, '');
   const id = path.basename(outDir);
 
-  console.log('\n[5] finishing');
+  console.log('\n[6] finishing');
   run('node', ['finish.mjs', outDir, id]);
 
-  console.log('\n[6] critiquing and fixing what is cheap to fix');
+  console.log('\n[7] critiquing and fixing what is cheap to fix');
   run('node', ['iterate.mjs', outDir, id, '--rounds', rounds]);
 
   let score = 0;
@@ -350,12 +435,12 @@ for (let n = 1; n <= attempts; n++) {
   // return a bare `null` for a walk failure and exit(1) here, which threw away a
   // finished, scored, iterated cut from an earlier attempt: measured, attempt 1
   // scored 2/10 and set `best`, attempt 2's flow failed its walk, and the process
-  // exited before stage 7 — a complete take sat unpublished in `out/` and the
+  // exited before stage 8 — a complete take sat unpublished in `out/` and the
   // user got no link for either attempt.
   //
   // A THROWN attempt is the same harm by another route — a recorder or finisher
   // that dies would take an earlier attempt's finished take down with it — so it
-  // is caught and turned into the same failed-attempt shape. Only stage 7
+  // is caught and turned into the same failed-attempt shape. Only stage 8
   // decides whether the run has nothing to show.
   let r;
   try {
@@ -409,7 +494,7 @@ for (let n = 1; n <= attempts; n++) {
   console.log(`  ${r.flowFindings.length} finding(s) are about the steps themselves — re-discovering with them as guidance.`);
 }
 
-// ── 7. publish the BEST attempt, not the last ─────────────────────────────
+// ── 8. publish the BEST attempt, not the last ─────────────────────────────
 if (!best) {
   // Distinguish the two ways this happens: nothing recorded at all, versus a
   // recording whose report could not be reconciled with the cut on disk. The

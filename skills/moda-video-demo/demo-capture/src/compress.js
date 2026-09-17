@@ -381,4 +381,8 @@ function compressionFacts({ plan, compressed, speed, clip }) {
 // SPEED is exported as the RESOLVED default, not re-derived by each caller:
 // `finish.mjs` has to record the speed the cut actually got, and a second
 // `Number(process.env...) || 6` there could disagree with the one that ran.
-module.exports = { compressIdleGaps, planCompression, planFromKept, compressionFacts, MAX_SPEED, SPEED };
+//: `TAIL_KEEP` is exported because `pacing.js` sizes a `hold` against it: a
+//: payoff held for less than the tail this stage already protects at 1x is a
+//: hold nobody can see, and one held for longer has its overhang sped up. The
+//: two numbers are one decision, so they are one constant.
+module.exports = { compressIdleGaps, planCompression, planFromKept, compressionFacts, MAX_SPEED, SPEED, TAIL_KEEP };

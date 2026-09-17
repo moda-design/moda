@@ -17,6 +17,8 @@
 // blocked by a modal. So this proposes drops; the caller re-walks the flow and
 // puts back anything whose removal broke it. See `run.mjs`.
 
+const { nameFromSelector } = require('./element-name.js');
+
 //: Clicks whose whole purpose is to get the product back to working order.
 //: Matched on the accessible name, which is what the selector carries.
 const RECOVERY = [
@@ -43,11 +45,10 @@ const INTERSTITIAL = [
   /\bupgrade\b/i,
 ];
 
-/** The accessible name a role= selector carries, if it has one. */
-function nameOf(step) {
-  const m = /name="([^"]*)"/i.exec(step.locator ?? '');
-  return m ? m[1] : '';
-}
+// The accessible name a role= selector carries. Was a third copy of this
+// regex, and the narrowest of the three — double quotes only, no unescaping —
+// so `name='Try again'` slipped past the recovery filter entirely.
+const nameOf = (step) => nameFromSelector(step.locator);
 
 /**
  * Steps worth proposing for removal, each with the reason.

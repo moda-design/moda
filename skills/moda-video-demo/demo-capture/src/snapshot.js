@@ -107,11 +107,32 @@ function pageResolve(refSel) {
   const q = (s) => JSON.stringify(s); // safe quoting + escaping
   const tag = el.tagName.toLowerCase();
 
+  // WHAT KIND OF INPUT THIS IS, carried out with the selector (ENG-5766).
+  //
+  // Decided HERE because here it is a fact: the element is in hand, and
+  // `type="password"` is what the browser itself masks. Downstream all that
+  // survives is a selector string, and the resolver prefers a test id or a
+  // stable id — so `<input id="login" type="password">` becomes `#login` and
+  // every later guess about whether it holds a secret is guessing at a name.
+  //
+  // `autocomplete` counts too: a field marked `current-password` or
+  // `one-time-code` is telling the password manager exactly what it holds.
+  const kind = tag === 'input' ? (el.getAttribute('type') || 'text').toLowerCase()
+    : tag === 'textarea' ? 'textarea'
+    : el.isContentEditable ? 'contenteditable'
+    : tag;
+  const autocomplete = (el.getAttribute('autocomplete') || '').toLowerCase();
+  const sensitive =
+    kind === 'password' || ['current-password', 'new-password', 'one-time-code'].includes(autocomplete);
+  //: Every return below carries them, so a new resolution branch cannot
+  //: silently drop the fact the redaction depends on.
+  const out = (o) => (o ? { ...o, kind, sensitive } : o);
+
   // 1) Test attributes (most durable).
   const TEST_ATTRS = ['data-testid', 'data-test', 'data-test-id', 'data-qa', 'data-cy', 'data-tid'];
   for (const attr of TEST_ATTRS) {
     const v = el.getAttribute(attr);
-    if (v) return { type: 'testid', selector: `[${attr}=${q(v)}]` };
+    if (v) return out({ type: 'testid', selector: `[${attr}=${q(v)}]` });
   }
 
   // 2) Stable id (reject framework-generated/volatile ids).
@@ -119,14 +140,14 @@ function pageResolve(refSel) {
   const volatile = /(^radix-)|(_r_)|(^:r)|(^react-aria)|(^headlessui-)|(^mui-)|^[0-9a-f]{8}-[0-9a-f]{4}/i;
   if (id && !volatile.test(id)) {
     const simple = /^[A-Za-z][\w-]*$/.test(id);
-    return { type: 'id', selector: simple ? `#${id}` : `[id=${q(id)}]` };
+    return out({ type: 'id', selector: simple ? `#${id}` : `[id=${q(id)}]` });
   }
 
   // 3) Stable form attributes.
   const nameAttr = el.getAttribute('name');
-  if (nameAttr) return { type: 'name', selector: `${tag}[name=${q(nameAttr)}]` };
+  if (nameAttr) return out({ type: 'name', selector: `${tag}[name=${q(nameAttr)}]` });
   const ph = el.getAttribute('placeholder');
-  if (ph) return { type: 'placeholder', selector: `[placeholder=${q(ph)}]` };
+  if (ph) return out({ type: 'placeholder', selector: `[placeholder=${q(ph)}]` });
 
   // 4) role + accessible name
   let role = el.getAttribute('role');
@@ -144,8 +165,8 @@ function pageResolve(refSel) {
   if (!name) name = (el.innerText || el.textContent || '').trim();
   name = name.replace(/\s+/g, ' ').slice(0, 50);
 
-  if (role && name) return { type: 'role', selector: `role=${role}[name=${q(name)}i]` };
-  if (name) return { type: 'text', selector: `${tag}:has-text(${q(name)})` };
+  if (role && name) return out({ type: 'role', selector: `role=${role}[name=${q(name)}i]` });
+  if (name) return out({ type: 'text', selector: `${tag}:has-text(${q(name)})` });
   return null; // nothing durable — caller flags the step
 }
 
@@ -225,7 +246,13 @@ async function resolveDurableSelector(page, ref) {
     }
     if (count !== 1) {
       const path = await page.evaluate(pageCssPath, refSel);
-      if (path) return { type: 'csspath', selector: path };
+      // CARRY THE STAMP ACROSS. This returned a bare `{type, selector}` and
+      // dropped `sensitive`, so a password field whose role selector happened
+      // to be ambiguous — two similar inputs in one form, which is what a
+      // sign-in page looks like — lost the one fact that keeps its value out
+      // of two model prompts and the voiceover. The redaction is only as good
+      // as its least-travelled return.
+      if (path) return { type: 'csspath', selector: path, kind: res.kind, sensitive: res.sensitive };
       // NO SELECTOR beats a selector that does not resolve. This used to fall
       // through and return the role selector anyway, unverified — so a name the
       // page reports and a name Playwright computes could disagree and the step
