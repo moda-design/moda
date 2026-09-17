@@ -91,9 +91,39 @@ for (const stale of ['narrated', 'scored', 'with-outro', 'final']) {
 const recordedGenre = existsSync(`${outDir}/genre.json`)
   ? JSON.parse(readFileSync(`${outDir}/genre.json`, 'utf8'))
   : null;
-const { style: STYLE, why } = recordedGenre
-  ? { style: recordedGenre.style, why: `${recordedGenre.why} (decided at capture)` }
-  : chooseStyle(clip);
+// An explicit DEMO_STYLE still wins over a recorded genre. Persisting a genre
+// finish chose itself (below) made the override STICKY on a standalone outDir:
+// the first run recorded `{why: 'DEMO_STYLE was set'}` and every later run took
+// the recorded branch and ignored the env var — silently building for the old
+// genre and logging "(decided at capture)" about a genre nothing captured.
+const styleOverride = process.env.DEMO_STYLE || null;
+const { style: STYLE, why } = styleOverride
+  ? { style: styleOverride, why: 'DEMO_STYLE was set' }
+  : recordedGenre
+    ? { style: recordedGenre.style, why: `${recordedGenre.why} (decided at capture)` }
+    : chooseStyle(clip);
+if (styleOverride && recordedGenre && recordedGenre.style !== styleOverride) {
+  console.log(`  style:  DEMO_STYLE=${styleOverride} overrides the recorded ${recordedGenre.style}`);
+}
+// PERSIST A GENRE WE PICKED OURSELVES (ENG-6295). Running the stages standalone
+// on an outDir take.mjs did not create — which references/capture.md documents
+// as supported — leaves no genre.json, so this falls back to chooseStyle. If
+// that answers "marketing" we blank every caption label and skip narration,
+// while critique-take finds no genre.json, grades the take as a tutorial, and
+// marks it down for the captions we deliberately removed. That is this ticket's
+// own bug reproduced on the fallback path. Write down the genre the cut was
+// actually built for, in the shape take.mjs writes.
+// PERSIST WHENEVER THE RECORD DISAGREES WITH THE CUT, not only when it is
+// absent. Writing only in the absent case left DEMO_STYLE overriding an
+// EXISTING genre: finish built the cut for the override and genre.json kept
+// saying the old one, so critique-take graded a marketing cut as a tutorial —
+// this ticket's own bug, recreated by the fix for the previous round.
+if (!recordedGenre || recordedGenre.style !== STYLE) {
+  // `why` says where it came from — NOT "decided at capture", which would be a
+  // lie about a genre finish picked or overrode for itself.
+  writeFileSync(`${outDir}/genre.json`,
+    JSON.stringify({ style: STYLE, why: `${why} (decided at finish)` }, null, 2));
+}
 
 // The script and its audio were made BEFORE the recording, and the recording
 // was paced to them (`src/pacing.js`). So finish reuses them: re-scripting here

@@ -2429,3 +2429,305 @@ test('a wait with an action after it keeps its own result hold', () => {
   assert.ok(plan.kept.some(([a, b]) => a <= 65.4 && b >= 65.35),
     `the arrival must stay at 1x when something follows it, got ${JSON.stringify(plan.kept)}`);
 });
+
+// ── ENG-6295: the grader must be told what the take actually contains ───────
+
+test('a marketing take is not told to expect captions it deliberately has none of', () => {
+  // THE BUG WAS THE PROMPT TEXT. It asserted "The video is a screen recording
+  // with on-screen step captions … a synthesized voiceover … and no music" on
+  // EVERY take. A marketing take is the opposite of all three: music bed, no
+  // captions, no voiceover — finish.mjs blanks every label on purpose. So the
+  // grader hunted for captions, found none, and reported their absence as a
+  // medium finding with `fix: none`, which run.mjs then fed into the next
+  // discovery pass as something to fix by re-walking the flow.
+  //
+  // The prompt already learned this once, for intro/outro cards; its own
+  // comment says a model told to expect something absent reports it as a
+  // defect. This is that lesson applied to the rest of the sentence.
+  const { buildPrompt, sheetPrompt } = require('../src/critique.js');
+  const video = buildPrompt('design a launch post', 'marketing', true, false, false);
+  const frames = sheetPrompt('design a launch post', 20, '/tmp/sheet.png', 1.6, 'marketing', false);
+
+  assert.match(video, /NO on-screen captions/, 'the video prompt must say captions are absent by design');
+  assert.match(video, /a music bed/, 'and name the bed when there is one — the old text denied it');
+  assert.doesNotMatch(video, /captions that are unreadable/,
+    'and must not ask about caption readability on a take with no captions');
+  assert.doesNotMatch(frames, /Are captions readable/,
+    'same for the frame-sheet rubric');
+});
+
+test('a tutorial take still gets the caption checks', () => {
+  // The fix is to make the question match the genre, not to stop asking it. An
+  // unreadable or overlapping caption is a real defect on a tutorial take, and
+  // caption_unreadable / caption_overlap exist in the vocabulary for it.
+  const { buildPrompt, sheetPrompt } = require('../src/critique.js');
+  const video = buildPrompt('design a launch post', 'tutorial', true, true, false);
+  const frames = sheetPrompt('design a launch post', 20, '/tmp/sheet.png', 1.6, 'tutorial', true);
+
+  assert.match(video, /on-screen step captions/);
+  assert.match(video, /captions that are unreadable/);
+  assert.match(frames, /Are captions readable/);
+});
+
+test('an unknown genre grades as a tutorial rather than guessing', () => {
+  // `genre.json` missing means UNKNOWN, not "marketing". Falling back to the
+  // marketing wording would tell the grader to ignore captions on a take that
+  // has them — the same class of false premise, pointing the other way.
+  const { buildPrompt } = require('../src/critique.js');
+  const unknown = buildPrompt('design a launch post', null, true, true, false);
+  assert.match(unknown, /on-screen step captions/, 'unknown falls back to what the prompt always said');
+  assert.match(unknown, /captions that are unreadable/);
+});
+
+test('a caller that forgets the genre fails loudly instead of regrading silently', () => {
+  // THE WIRING, not the wording. Removing `genre` from critique-take.mjs's call
+  // sites left every test green: the builders defaulted to null, produced the
+  // tutorial wording, and every marketing take quietly went back to being
+  // marked down for absent captions. An omitted argument looked exactly like a
+  // valid one.
+  //
+  // `null` stays meaningful — genre.json absent, grade as a tutorial. Only
+  // `undefined` throws.
+  const { buildPrompt, sheetPrompt } = require('../src/critique.js');
+  assert.throws(() => buildPrompt('goal'), /genre must be passed explicitly/);
+  assert.throws(() => sheetPrompt('goal', 20, '/tmp/s.png', 1.6), /genre must be passed explicitly/);
+  assert.doesNotThrow(() => buildPrompt('goal', null, true, true, false), 'null is a real answer, not an omission');
+});
+
+test('a marketing take is not asked about a voiceover it never has', () => {
+  // THE SAME BUG, IN THE BULLET BELOW THE ONE I FIXED. finish.mjs sets
+  // `planned = []` for marketing, so nothing is narrated or muxed — yet the
+  // rubric still asked "does the voiceover match what is on screen", with
+  // narration_mismatch in the vocabulary and shorten_narration in FIXES. The
+  // prompt said NO voiceover and then asked the grader to judge it.
+  const { buildPrompt } = require('../src/critique.js');
+  assert.doesNotMatch(buildPrompt('g', 'marketing', true, false, false), /does the voiceover match/);
+  assert.match(buildPrompt('g', 'tutorial', true, true, false), /does the voiceover match/);
+});
+
+test('the music claim follows the take, in both directions', () => {
+  // THIS TEST PREVIOUSLY ASSERTED THE BUG. It required every prompt to claim a
+  // music bed, because the old text denied one on every take and I over-
+  // corrected. Both blanket claims are wrong: finish.mjs skips the bed under
+  // DEMO_NO_MUSIC=1 and its generateBed call is a metered render inside a
+  // try/catch that logs "scored: skipped" on failure. Asserting music that is
+  // not there is the same false premise as denying music that is — and worse
+  // on a marketing take, where the bed is the only audio at all.
+  const { buildPrompt } = require('../src/critique.js');
+  for (const genre of ['marketing', 'tutorial', null]) {
+    const withMusic = buildPrompt('g', genre, true, genre !== 'marketing', false);
+    const without = buildPrompt('g', genre, false, genre !== 'marketing', false);
+    assert.match(withMusic, /a music bed/, `${genre ?? 'unknown'}: names the bed when present`);
+    assert.doesNotMatch(withMusic, /no music/, `${genre ?? 'unknown'}: does not also deny it`);
+    // Absent, it must SUPPRESS rather than stay silent — a bare omission lets
+    // the grader notice missing audio and report it.
+    assert.match(without, /no music \(do not report its absence\)/,
+      `${genre ?? 'unknown'}: says so, and suppresses the finding, when there is none`);
+  }
+});
+
+test('the genre guard fires at the entry point, not deep inside a try', () => {
+  // critiqueFrames calls sheetPrompt INSIDE its try, so a dropped argument
+  // became {ok:false, reason:...} and critique-take printed "critique
+  // unavailable" and carried on — a silently degraded critique, which is the
+  // failure the guard exists to prevent. Asserting through the builders alone
+  // could not see that.
+  const { critiqueFrames, critiqueVideo } = require('../src/critique.js');
+  return Promise.all([
+    assert.rejects(() => critiqueFrames({ videoPath: '/tmp/x.mp4', goal: 'g', outDir: '/tmp' }),
+      /genre must be passed explicitly/),
+    assert.rejects(() => critiqueVideo({ videoPath: '/tmp/x.mp4', goal: 'g' }),
+      /genre must be passed explicitly/),
+  ]);
+});
+
+test('finish.mjs records a genre it chose itself', () => {
+  // When genre.json is absent finish picks one via chooseStyle and builds the
+  // cut for it. If it does not write that down, critique-take finds no
+  // genre.json, grades as a tutorial, and marks the take down for captions
+  // finish deliberately blanked — this ticket's bug on the fallback path.
+  const src = readFileSync(path.join(HERE, 'finish.mjs'), 'utf8');
+  // ABSENT **OR DISAGREEING**. Persisting only when absent left DEMO_STYLE
+  // overriding an existing genre: the cut was built for the override while
+  // genre.json kept naming the old one, so critique graded a marketing cut as
+  // a tutorial — this ticket's bug, recreated by the previous round's fix.
+  const block = /if \(!recordedGenre \|\| recordedGenre\.style !== STYLE\) \{[\s\S]*?\n\}/.exec(src);
+  assert.ok(block, 'finish.mjs must persist whenever the record disagrees with the cut');
+  assert.match(block[0], /genre\.json/, 'and write it where critique-take reads it');
+  assert.match(block[0], /style: STYLE/, 'in the shape take.mjs writes');
+});
+
+test('a marketing prompt offers no vocabulary for findings it cannot own', () => {
+  // The bullets were gated by genre and the ENUMS were not. If the model
+  // reaches for one of these anyway, the finding arrives with a remedy the cut
+  // cannot apply: fix_caption_overlap is not in run.mjs's cheap-lane exclusion
+  // list, so a medium one becomes a flow finding and a re-walk, and
+  // shorten_narration routes to a narration stage whose `planned` is empty.
+  // Take the token away rather than hoping it goes unused.
+  const { buildPrompt, sheetPrompt } = require('../src/critique.js');
+  const m = buildPrompt('g', 'marketing', true, false, false);
+  const mf = sheetPrompt('g', 20, '/tmp/s.png', 1.6, 'marketing', false);
+  const t = buildPrompt('g', 'tutorial', true, true, false);
+
+  for (const tok of ['narration_mismatch', 'caption_overlap', 'caption_unreadable',
+                     'shorten_narration', 'fix_caption_overlap']) {
+    assert.ok(!m.includes(tok), `marketing video prompt must not offer ${tok}`);
+    assert.ok(!mf.includes(tok), `marketing frames prompt must not offer ${tok}`);
+    assert.ok(t.includes(tok), `tutorial prompt must still offer ${tok}`);
+  }
+  // The shared vocabulary survives on both.
+  for (const tok of ['visual_glitch', 'blank_screen', 're_record', 'none']) {
+    assert.ok(m.includes(tok) && t.includes(tok), `${tok} belongs to both genres`);
+  }
+});
+
+test('critiqueVideo returns the {ok} contract its caller gates on', () => {
+  // PRE-EXISTING, and it nullified the Gemini path entirely: critiqueFrames has
+  // always returned {ok:true,via}, critiqueVideo returned {score,summary,issues}
+  // with no `ok`, and critique-take gates on `if (!verdict.ok)`. So a SUCCESSFUL
+  // Gemini critique printed "critique unavailable (undefined)", exited 0, and
+  // never wrote critique.json. Invisible in every run here because the default
+  // path has no GEMINI_API_KEY and takes critiqueFrames.
+  //
+  // Asserted on the SOURCE because exercising it needs a Gemini key and a real
+  // upload; what matters is that both success paths speak the same contract.
+  const src = readFileSync(path.join(HERE, 'src', 'critique.js'), 'utf8');
+  assert.match(src, /ok: true,\s*\n\s*via: 'gemini'/,
+    "critiqueVideo's success return must carry ok+via like critiqueFrames does");
+  assert.doesNotMatch(src, /return \{ skipped:/,
+    'and its early returns must use {ok:false, reason} — `skipped` is not a contract the caller reads');
+});
+
+test('the genre vocabulary is enforced, not merely suggested', () => {
+  // Narrowing the enums in the prompt is advice. If the model reaches for a
+  // token anyway it has to be clamped, or a fix_caption_overlap on a marketing
+  // take reaches critique.json, clears run.mjs's cheap-lane filter, and buys a
+  // full re-walk. BOTH paths clamp — frames is the default one and was the
+  // unclamped one.
+  const src = readFileSync(path.join(HERE, 'src', 'critique.js'), 'utf8');
+  const clamps = src.match(/fixesFor\(genre, hasVoiceover\)\.includes\(x\.fix\)/g) || [];
+  assert.strictEqual(clamps.length, 2,
+    `both critiqueVideo and critiqueFrames must clamp the fix, found ${clamps.length}`);
+  // COUNTING THE CLAMP IS NOT ENOUGH. Dropping `issues` from the frames return
+  // leaves the clamp in the file, unused, and a count-based assertion passes
+  // while the default path ships unclamped issues again.
+  assert.match(src, /via: 'frames', sheet, \.\.\.out, issues \}/,
+    'the frames return must ship the CLAMPED issues, not spread the parsed JSON');
+});
+
+test('the voiceover claim follows the take, and marketing never has one', () => {
+  // Same shape as the music fact. A tutorial cut can lose every line through
+  // the loop's own shorten_narration remedy (keepLines + DEMO_DROP_LINES →
+  // planNarration returns []), after which asserting a voiceover hands the
+  // grader narration_mismatch over silence, whose remedy routes to a narration
+  // stage with nothing left to drop.
+  const { buildPrompt } = require('../src/critique.js');
+  const cases = [
+    ['marketing', true, false], ['marketing', false, false],
+    ['tutorial', true, true], ['tutorial', false, false],
+  ];
+  for (const [genre, hasVoice, expectVoice] of cases) {
+    const p = buildPrompt('g', genre, true, hasVoice, false);
+    assert.strictEqual(/a synthesized voiceover/.test(p), expectVoice,
+      `${genre}/${hasVoice}: names a voiceover only when there is one`);
+    assert.strictEqual(/does the voiceover match/.test(p), expectVoice,
+      `${genre}/${hasVoice}: asks about it only when there is one`);
+    assert.strictEqual(p.includes('narration_mismatch'), expectVoice,
+      `${genre}/${hasVoice}: offers the token only when there is one`);
+    // Suppression is asserted semantically: the marketing branch says "Do not
+    // report the absence of captions, narration, or title cards", the tutorial
+    // branch says "no voiceover (do not report its absence)". Different
+    // wording, same job — pinning one phrasing would fail on the other.
+    if (!expectVoice) {
+      assert.match(p, /do not report (the absence of captions, narration|its absence)/i,
+        `${genre}/${hasVoice}: suppresses rather than staying silent`);
+    }
+  }
+});
+
+test('an explicit DEMO_STYLE is not shadowed by a genre finish recorded itself', () => {
+  // Persisting a fallback genre made the override sticky on a standalone
+  // outDir: the first run wrote {why: 'DEMO_STYLE was set'}, every later run
+  // took the recorded branch and ignored the env var — building for the old
+  // genre and logging "(decided at capture)" about a genre nothing captured.
+  const src = readFileSync(path.join(HERE, 'finish.mjs'), 'utf8');
+  assert.match(src, /const styleOverride = process\.env\.DEMO_STYLE \|\| null;/,
+    'the env override must be read');
+  assert.match(src, /styleOverride\s*\n?\s*\?/,
+    'and must be checked BEFORE the recorded genre');
+  assert.match(src, /decided at finish/,
+    'a genre finish picked itself must not claim capture decided it');
+});
+
+test('a prohibited issue type is dropped, not merely stripped of its fix', () => {
+  // CODEX, round 4: both paths clamped `issue.fix` and neither validated
+  // `issue.type`. A marketing take that got `caption_unreadable` back anyway
+  // kept a medium, actionable finding — it clears run.mjs's cheap-lane filter
+  // and buys a re-walk, which is the same harm the token removal exists to
+  // stop, arriving through the other field.
+  //
+  // Driven with the exact output the prompt forbids.
+  const { admissibleIssue, typesFor, FRAME_TYPES, VIDEO_TYPES } = require('../src/critique.js');
+
+  const prohibited = { type: 'caption_unreadable', severity: 'medium', description: 'x', fix: 'fix_caption_overlap' };
+  const allowedMarketing = typesFor(FRAME_TYPES, 'marketing', false);
+  assert.strictEqual(admissibleIssue(prohibited, allowedMarketing, 'marketing', false), null,
+    'a caption finding on a captionless take must be dropped entirely');
+
+  // DROPPED, not remapped: coercing type to `other` would keep it actionable
+  // and just hide where it came from.
+  const kept = admissibleIssue(prohibited, typesFor(FRAME_TYPES, 'tutorial', true), 'tutorial', true);
+  assert.ok(kept, 'the same finding is legitimate on a tutorial take');
+  assert.strictEqual(kept.type, 'caption_unreadable');
+  assert.strictEqual(kept.fix, 'fix_caption_overlap', 'and keeps its remedy there');
+
+  // A narration finding follows the voiceover fact, not just the genre.
+  const narr = { type: 'narration_mismatch', severity: 'medium', description: 'x', fix: 'shorten_narration' };
+  assert.strictEqual(admissibleIssue(narr, typesFor(VIDEO_TYPES, 'tutorial', false), 'tutorial', false), null,
+    'a tutorial that lost every line has no narration to mismatch');
+  assert.ok(admissibleIssue(narr, typesFor(VIDEO_TYPES, 'tutorial', true), 'tutorial', true),
+    'but a voiced tutorial does');
+
+  // A shared type survives everywhere, with an out-of-vocabulary fix clamped.
+  const shared = { type: 'visual_glitch', severity: 'low', description: 'x', fix: 'shorten_narration' };
+  const m = admissibleIssue(shared, allowedMarketing, 'marketing', false);
+  assert.ok(m, 'visual_glitch belongs to every genre');
+  assert.strictEqual(m.fix, 'none', 'but a fix the genre cannot run is clamped away');
+});
+
+//: ENG-6295 — the enumeration pass. Four review rounds each found the same bug:
+//: the prompt asserted a fact the pipeline did not guarantee, so the grader was told
+//: not to report a defect that was really on screen. These tests walk EVERY
+//: combination of the facts the prompt asserts, rather than sampling one more.
+test('critique prompt: the camera claim follows the cut, in every combination', () => {
+  const { buildPrompt } = require('../src/critique.js');
+  for (const genre of ['marketing', 'tutorial', null]) {
+    for (const hasMusic of [true, false]) {
+      for (const hasVoiceover of [true, false]) {
+        const loop = buildPrompt('g', genre, hasMusic, hasVoiceover, false);
+        const pub = buildPrompt('g', genre, hasMusic, hasVoiceover, true);
+        const where = `genre=${genre} music=${hasMusic} voice=${hasVoiceover}`;
+        // A loop cut is graded BEFORE publish: it has no camera and no card.
+        assert.ok(/NO camera movement/.test(loop), `loop cut must not claim punch-ins (${where})`);
+        assert.ok(!/and camera punch-ins on some clicks/.test(loop), `loop claims punch-ins (${where})`);
+        assert.ok(/no intro or outro card/.test(loop), `loop cut has no card, say so (${where})`);
+        // The .final cut carries both.
+        assert.ok(/and camera punch-ins on some clicks/.test(pub), `final cut has punch-ins (${where})`);
+        assert.ok(!/no intro or outro card/.test(pub), `final cut HAS a card (${where})`);
+      }
+    }
+  }
+});
+
+test('critique prompt: a defaulted fact is a crash, not a false sentence', () => {
+  const { buildPrompt, sheetPrompt } = require('../src/critique.js');
+  // The bug class in one assertion: every fact the prompt asserts must be passed.
+  assert.throws(() => buildPrompt('g', 'marketing', true, true, undefined), /composited must be passed/);
+  assert.throws(() => buildPrompt('g', 'marketing', undefined, true, false), /hasMusic must be passed/);
+  assert.throws(() => buildPrompt('g', 'marketing', true, undefined, false), /hasVoiceover must be passed/);
+  assert.throws(() => buildPrompt('g', undefined, true, true, false), /genre must be passed/);
+  // ...but a guard must not demand a fact its own prompt never claims. sheetPrompt
+  // makes no camera or card claim, so requiring `composited` there would crash a
+  // valid caller — the opposite failure, and just as real.
+  assert.doesNotThrow(() => sheetPrompt('g', 10, 's', 1, 'marketing', true));
+});

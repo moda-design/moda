@@ -26,47 +26,224 @@ const FIXES = [
   'none',
 ];
 
-function buildPrompt(goal) {
+//: Issue types and fixes a given genre can actually own.
+//:
+//: The bullets were made genre-aware but the VOCABULARY was not: a marketing
+//: prompt still offered `narration_mismatch`, `caption_overlap` and
+//: `caption_unreadable` as types, and `shorten_narration` / `fix_caption_overlap`
+//: as fixes. The "do not report the absence of captions" sentence closes the
+//: main vector, but if the model reaches for one anyway the finding arrives
+//: with a remedy the cut cannot apply — `fix_caption_overlap` is not in
+//: run.mjs's cheap-lane exclusion list, so a medium one becomes a flow finding
+//: and a re-walk, and `shorten_narration` routes to a narration stage whose
+//: `planned` is empty. Take the tokens away rather than hoping they go unused.
+const CAPTION_VOICE_TYPES = ['narration_mismatch', 'caption_overlap', 'caption_unreadable'];
+//: ONE list per prompt, used for BOTH the enum the model is offered and the
+//: filter its reply is checked against. Two copies would drift, and the drift
+//: would be silent: the prompt would stop offering a token the filter still
+//: accepted.
+const VIDEO_TYPES = ['pacing_too_slow', 'pacing_too_fast', 'dead_air', 'narration_mismatch',
+  'zoom_jarring', 'caption_overlap', 'caption_unreadable', 'visual_glitch', 'blank_screen', 'other'];
+const FRAME_TYPES = ['no_visible_change', 'result_cropped', 'incoherent_content', 'caption_unreadable',
+  'caption_overlap', 'visual_glitch', 'blank_screen', 'other'];
+const CAPTION_VOICE_FIXES = ['shorten_narration', 'fix_caption_overlap'];
+
+function typesFor(all, genre, hasVoiceover = true) {
+  const drop = new Set();
+  if (genre === 'marketing') for (const t of CAPTION_VOICE_TYPES) drop.add(t);
+  // Narration vocabulary follows the VOICEOVER, not the genre: a tutorial take
+  // whose lines were all dropped has no narration to mismatch either.
+  if (genre === 'marketing' || !hasVoiceover) drop.add('narration_mismatch');
+  return all.filter((t) => !drop.has(t));
+}
+function fixesFor(genre, hasVoiceover = true) {
+  const drop = new Set();
+  if (genre === 'marketing') for (const f of CAPTION_VOICE_FIXES) drop.add(f);
+  if (genre === 'marketing' || !hasVoiceover) drop.add('shorten_narration');
+  return FIXES.filter((f) => !drop.has(f));
+}
+
+//: An issue the take can actually own, or null.
+//:
+//: Clamping `fix` alone was half the job: the prompt stops offering
+//: `caption_unreadable` / `narration_mismatch`, but nothing rejected one that
+//: came back anyway. A medium finding with an excluded TYPE still reaches
+//: critique.json, still clears run.mjs's cheap-lane filter, and still buys a
+//: re-walk — the same harm, arriving through the other field.
+//:
+//: DROPPED, not remapped. Coercing the type to `other` would keep it
+//: actionable and merely disguise where it came from.
+function admissibleIssue(x, allowedTypes, genre, hasVoiceover) {
+  const type = x.type || 'other';
+  if (!allowedTypes.includes(type)) return null;
+  return {
+    ...x,
+    type,
+    severity: x.severity || 'low',
+    atSeconds: typeof x.atSeconds === 'number' ? x.atSeconds : null,
+    description: x.description || '',
+    fix: fixesFor(genre, hasVoiceover).includes(x.fix) ? x.fix : 'none',
+  };
+}
+
+function buildPrompt(goal, genre, hasMusic, hasVoiceover, composited) {
   return (
     `You are a senior product-demo video editor reviewing an automated ` +
     `screen-recording demo of: "${goal || 'a web app feature'}".\n\n` +
     // Describing what is ACTUALLY there. An earlier version of this prompt
     // mentioned an intro/outro card, which this pipeline does not produce — and
     // a model told to expect one reports its absence as a defect.
-    `The video is a screen recording with on-screen step captions on a dark ` +
-    `plate, a synthesized voiceover, and camera punch-ins on some clicks. There ` +
-    `is no intro or outro card and no music; do not report their absence.\n\n` +
+    `${whatIsInTheTake(genre, hasMusic, hasVoiceover, composited)}\n\n` +
     `Watch the whole video and give concise, actionable director's notes. Focus ` +
     `on what only watching reveals:\n` +
     `- pacing: dead air, or steps that go by too fast to follow\n` +
-    `- does the voiceover match what is on screen at that moment\n` +
+    (genre !== 'marketing' && hasVoiceover
+      ? `- does the voiceover match what is on screen at that moment\n` : '') +
     `- jarring, drifting or pointless camera movement\n` +
-    `- captions that are unreadable, cover the thing being demonstrated, or ` +
-    `overlap each other\n` +
+    (genre === 'marketing' ? '' :
+      `- captions that are unreadable, cover the thing being demonstrated, or ` +
+      `overlap each other\n`) +
     `- visual glitches: blank or half-rendered screens, nothing happening, the ` +
     `wrong thing on screen\n\n` +
     `Return ONLY JSON of this shape:\n` +
     `{"score": <1-10>, "summary": "<one or two sentences>", "issues": [` +
-    `{"type": "<pacing_too_slow|pacing_too_fast|dead_air|narration_mismatch|` +
-    `zoom_jarring|caption_overlap|caption_unreadable|visual_glitch|blank_screen|other>",` +
+    `{"type": "<${typesFor(VIDEO_TYPES, genre, hasVoiceover).join('|')}>",` +
     `"severity": "<low|medium|high>", "atSeconds": <number>, ` +
-    `"description": "<what is wrong>", "fix": "<${FIXES.join('|')}>"}]}\n` +
+    `"description": "<what is wrong>", "fix": "<${fixesFor(genre, hasVoiceover).join('|')}>"}]}\n` +
     `If it is clean, return a high score and an empty issues array. Be honest, ` +
     `and do not invent problems.`
   );
 }
 
+/**
+ * What the take ACTUALLY contains, as a sentence for the grader.
+ *
+ * The prompt already learned this lesson once — it used to promise an intro/outro
+ * card this pipeline never produces, and a model told to expect one reported its
+ * absence as a defect. The same sentence then went on promising step captions and
+ * a voiceover, and denying music, on every take regardless of genre.
+ *
+ * `marketing` is defined as music only, no captions, no voiceover: `finish.mjs`
+ * blanks every label on purpose (ENG-5766), because per-step captions are a
+ * tutorial device. So on a marketing take all three clauses were false, and the
+ * grader correctly reported the missing captions it had been told to expect —
+ * a medium finding with `fix: none`, which `run.mjs` then fed into the next
+ * discovery pass as something to fix by re-walking the flow (ENG-6295).
+ *
+ * Says what is there and what is deliberately absent, so the model neither hunts
+ * for a missing feature nor flags a present one.
+ */
+/**
+ * UNDEFINED IS A WIRING BUG, null is a real answer.
+ *
+ * `null` means genre.json was absent and the take grades as a tutorial, which
+ * is what the prompt always said. `undefined` means a caller stopped passing
+ * it — and that consequence is silent: the marketing wording disappears and
+ * the grader goes back to hunting for captions that are not there. Loud beats
+ * silent for a parameter whose absence looks exactly like a valid value.
+ *
+ * ONE definition, called by BOTH builders. The first cut guarded only the
+ * video prompt, so dropping the argument from the frame-sheet call site stayed
+ * silent — half a guard on a two-sided seam.
+ */
+function assertGenrePassed(genre, where) {
+  if (genre === undefined) {
+    throw new TypeError(`${where}: genre must be passed explicitly (null when unknown) — `
+      + 'an omitted genre silently regrades every marketing take as a tutorial (ENG-6295)');
+  }
+}
+
+/**
+ * Every fact the prompt ASSERTS about the take must be passed, never defaulted.
+ *
+ * Four review rounds of this PR found the same bug four times: the prompt told the
+ * grader something the pipeline did not guarantee, so the grader was instructed not
+ * to report a defect that was really there. A default is how that happens quietly —
+ * `hasMusic = false` made an unscored claim on every caller that forgot the argument.
+ * So the facts are required, and a missing one is a crash, not a false sentence.
+ */
+function assertFactsPassed(facts, where, required) {
+  assertGenrePassed(facts.genre, where);
+  // Each prompt demands exactly the facts IT asserts. Demanding more would crash a
+  // caller over a fact the prompt never claims; demanding fewer is the bug this guards.
+  for (const k of required) {
+    if (typeof facts[k] !== 'boolean') {
+      throw new TypeError(`${where}: ${k} must be passed as a boolean — the prompt asserts it `
+        + 'to the grader, and a defaulted fact asserts something the take may not contain (ENG-6295)');
+    }
+  }
+}
+
+function whatIsInTheTake(genre, hasMusic, hasVoiceover, composited) {
+  assertFactsPassed({ genre, hasMusic, hasVoiceover, composited }, 'whatIsInTheTake',
+    ['hasMusic', 'hasVoiceover', 'composited']);
+  const marketing = genre === 'marketing';
+  // THE MUSIC FACT IS PASSED, NOT ASSUMED. The first cut of this fix replaced a
+  // blanket "no music" with a blanket "there is a music bed" — the same false
+  // premise pointed the other way. `DEMO_NO_MUSIC=1` skips the bed, and
+  // `generateBed` shells out to a metered render inside a try/catch that logs
+  // "scored: skipped" on failure, so a take can legitimately have none. The old
+  // wording was wrong more often but harmless: it was paired with "do not
+  // report their absence". A positive claim with nothing suppressing it is
+  // worse, and it bites hardest on a marketing take where the bed is the only
+  // audio there is.
+  const music = hasMusic
+    ? 'a music bed'
+    : 'no music (do not report its absence)';
+  // THE VOICEOVER IS A FACT TOO, for the same reason. A tutorial cut can
+  // legitimately have none: `keepLines` + DEMO_DROP_LINES can drop every
+  // pre-voiced line and `planNarration` then returns [], so nothing is muxed —
+  // and that path is reached by the loop's OWN `shorten_narration` remedy on a
+  // short take. Asserting a voiceover that is not there hands the grader
+  // `narration_mismatch` over silence, whose remedy routes to a narration
+  // stage with nothing left to drop.
+  const voice = !marketing && hasVoiceover
+    ? 'a synthesized voiceover'
+    : 'no voiceover (do not report its absence)';
+  // The music bed is NOT genre-dependent: finish.mjs muxes one on every genre
+  // unless DEMO_NO_MUSIC=1 (ducked under narration, not skipped for tutorial).
+  // The old sentence said "no music" on every take, and the first cut of this
+  // fix carried that clause into the tutorial branch unchanged — rewriting the
+  // wording around a claim without checking it.
+  // THE CAMERA AND THE CARD ARE THE SAME FACT. Both are composited at PUBLISH, and
+  // the iterate loop grades a cut from BEFORE that (critique-take picks the first of
+  // final/scored/narrated/silent that exists). So on a loop cut the old text asserted
+  // punch-ins that were provably absent — `iterate.mjs` says it outright: the camera
+  // "is emitted at publish and the loop runs before it". Claiming them told the grader
+  // to overlook the flatness that is the take's most visible defect. Mirrored, the
+  // `.final` cut DOES carry a brand outro, and "do not report its absence" invited the
+  // grader to discount a card that is really on screen.
+  const camera = composited
+    ? 'and camera punch-ins on some clicks. '
+    : 'and NO camera movement — the punch-ins are composited at publish and are not in '
+      + 'this cut, so do not report flat or static framing. ';
+  // Only promise the absence of a card on a cut that genuinely has none.
+  const card = composited ? '' : 'There is no intro or outro card; do not report its absence.';
+  return marketing
+    ? `The video is a screen recording with ${music} ${camera}`
+      + 'By design it has NO on-screen captions and NO voiceover — this genre lets the screen '
+      + `speak for itself. Do not report the absence of captions or narration. ${card}`
+    : `The video is a screen recording with on-screen step captions on a dark plate, `
+      + `${voice}, ${music}, ${camera}${card}`;
+}
+
 /** Director's notes for a finished cut, or null when unavailable. */
-async function critiqueVideo({ videoPath, goal }) {
+async function critiqueVideo({ videoPath, goal, genre, hasMusic, hasVoiceover, composited }) {
+  // AT THE DOOR. The builder-level assert is a backstop, not the guard: on this
+  // path buildPrompt is only reached after the upload and up to 120s of
+  // PROCESSING polling, so a throw there crashes late and leaks the uploaded
+  // Files API object (the files.delete below never runs).
+  assertFactsPassed({ genre, hasMusic, hasVoiceover, composited }, 'critiqueVideo',
+    ['hasMusic', 'hasVoiceover', 'composited']);
   const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
-  if (!apiKey) return { skipped: 'no GEMINI_API_KEY / GOOGLE_API_KEY' };
-  if (!videoPath || !existsSync(videoPath)) return { skipped: `no file at ${videoPath}` };
+  if (!apiKey) return { ok: false, reason: 'no GEMINI_API_KEY / GOOGLE_API_KEY' };
+  if (!videoPath || !existsSync(videoPath)) return { ok: false, reason: `no file at ${videoPath}` };
 
   let GoogleGenAI;
   try {
     ({ GoogleGenAI } = require('@google/genai'));
   } catch {
-    return { skipped: 'npm install @google/genai' };
+    return { ok: false, reason: 'npm install @google/genai' };
   }
 
   const ai = new GoogleGenAI({ apiKey });
@@ -76,13 +253,13 @@ async function critiqueVideo({ videoPath, goal }) {
     await sleep(2000);
     file = await ai.files.get({ name: file.name });
   }
-  if (file.state !== 'ACTIVE') return { skipped: `file state ${file.state}` };
+  if (file.state !== 'ACTIVE') return { ok: false, reason: `file state ${file.state}` };
 
   const resp = await ai.models.generateContent({
     model: MODEL,
     contents: [{ role: 'user', parts: [
       { fileData: { fileUri: file.uri, mimeType: 'video/mp4' } },
-      { text: buildPrompt(goal) },
+      { text: buildPrompt(goal, genre, hasMusic, hasVoiceover, composited) },
     ] }],
     config: { responseMimeType: 'application/json' },
   });
@@ -91,7 +268,15 @@ async function critiqueVideo({ videoPath, goal }) {
   ai.files.delete({ name: file.name }).catch(() => {});
   const json = JSON.parse(text);
   const issues = Array.isArray(json.issues) ? json.issues : [];
-  return {
+    // `ok` AND `via`, because critique-take gates on `verdict.ok` and
+    // critiqueFrames has always returned it. Without them a SUCCESSFUL Gemini
+    // critique printed "critique unavailable (undefined)", exited 0, and never
+    // wrote critique.json — so everything threaded into this path could never
+    // reach a recorded verdict. Invisible in practice because the default path
+    // has no GEMINI_API_KEY and takes critiqueFrames.
+    return {
+      ok: true,
+      via: 'gemini',
     score: typeof json.score === 'number' ? json.score : null,
     summary: json.summary || '',
     issues: issues.map((x) => ({
@@ -100,7 +285,7 @@ async function critiqueVideo({ videoPath, goal }) {
       atSeconds: typeof x.atSeconds === 'number' ? x.atSeconds : null,
       description: x.description || '',
       // Clamped to the vocabulary so a hallucinated knob cannot reach the loop.
-      fix: FIXES.includes(x.fix) ? x.fix : 'none',
+      fix: fixesFor(genre, hasVoiceover).includes(x.fix) ? x.fix : 'none',
     })),
   };
 }
@@ -149,7 +334,8 @@ function buildSheet(videoPath, outDir) {
   return { sheet, durationSec: dur, stepSec: step };
 }
 
-function sheetPrompt(goal, durationSec, sheet, stepSec) {
+function sheetPrompt(goal, durationSec, sheet, stepSec, genre, hasVoiceover) {
+  assertFactsPassed({ genre, hasVoiceover }, 'sheetPrompt', ['hasVoiceover']);
   return [
     `Read the image at ${sheet}.`,
     '',
@@ -166,7 +352,7 @@ function sheetPrompt(goal, durationSec, sheet, stepSec) {
     '- Is the RESULT of each action visible, or cropped out of frame by a zoom?',
     '- Does the content look coherent, or half-finished, duplicated, or merged with leftover placeholder',
     '  content from before the demo started?',
-    '- Are captions readable, and do they cover the thing being demonstrated?',
+    ...(genre === 'marketing' ? [] : ['- Are captions readable, and do they cover the thing being demonstrated?']),
     '- Anything visibly broken: blank panes, error badges, broken-image icons, dev overlays.',
     '',
     'You cannot judge motion, audio or pacing from stills — do NOT comment on those, and do not report',
@@ -174,20 +360,25 @@ function sheetPrompt(goal, durationSec, sheet, stepSec) {
     '',
     'Return ONLY JSON:',
     '{"score": <1-10>, "summary": "<one or two sentences>", "issues": [{"type":',
-    '"<no_visible_change|result_cropped|incoherent_content|caption_unreadable|caption_overlap|visual_glitch|blank_screen|other>",',
-    `"severity": "<low|medium|high>", "atSeconds": <number>, "description": "<what is wrong>", "fix": "<${FIXES.join('|')}>"}]}`,
+    `"<${typesFor(FRAME_TYPES, genre, hasVoiceover).join('|')}>",`,
+    `"severity": "<low|medium|high>", "atSeconds": <number>, "description": "<what is wrong>", "fix": "<${fixesFor(genre, hasVoiceover).join('|')}>"}]}`,
     'If it is genuinely clean, return a high score and an empty issues array. Do not invent problems.',
   ].join('\n');
 }
 
-/** Critique from a contact sheet using the `claude` CLI. Never throws. */
-async function critiqueFrames({ videoPath, goal, outDir }) {
+/** Critique from a contact sheet using the `claude` CLI. Never throws except on a caller wiring error (a missing genre). */
+async function critiqueFrames({ videoPath, goal, outDir, genre, hasVoiceover }) {
+  // AT THE DOOR, and this is the path that matters: sheetPrompt is called
+  // inside the try, so a dropped argument became `{ok:false, reason:...}` and
+  // critique-take printed "critique unavailable" and carried on — a silently
+  // degraded critique, which is the failure this guard exists to prevent.
+  assertFactsPassed({ genre, hasVoiceover }, 'critiqueFrames', ['hasVoiceover']);
   if (!existsSync(videoPath)) return { ok: false, reason: `no video at ${videoPath}` };
   try {
     const { sheet, durationSec, stepSec } = buildSheet(videoPath, outDir);
     const raw = execFileSync(
       'claude',
-      ['-p', sheetPrompt(goal, durationSec, sheet, stepSec), '--output-format', 'json',
+      ['-p', sheetPrompt(goal, durationSec, sheet, stepSec, genre, hasVoiceover), '--output-format', 'json',
        '--allowed-tools', 'Read', '--strict-mcp-config'],
       { encoding: 'utf8', maxBuffer: 16 << 20, stdio: ['ignore', 'pipe', 'ignore'] }
     );
@@ -196,10 +387,23 @@ async function critiqueFrames({ videoPath, goal, outDir }) {
     const b = text.lastIndexOf('}');
     if (a < 0 || b <= a) return { ok: false, reason: 'reply was not JSON', sheet };
     const out = JSON.parse(text.slice(a, b + 1));
-    return { ok: true, via: 'frames', sheet, ...out };
+    // CLAMP, do not spread. Narrowing the vocabulary in the prompt is advice;
+    // this is the enforcement. A `fix_caption_overlap` on a marketing take that
+    // slips through anyway is not in run.mjs's cheap-lane exclusion list, so a
+    // medium one becomes a flow finding and a full re-walk — the exact harm the
+    // token removal exists to prevent. And THIS is the default path: no
+    // GEMINI_API_KEY means frames, and frames was the unclamped one.
+    const issues = (Array.isArray(out.issues) ? out.issues : [])
+      .map((x) => admissibleIssue(x, typesFor(FRAME_TYPES, genre, hasVoiceover), genre, hasVoiceover))
+      .filter(Boolean);
+    return { ok: true, via: 'frames', sheet, ...out, issues };
   } catch (e) {
     return { ok: false, reason: String(e.message).split('\n')[0].slice(0, 140) };
   }
 }
 
-module.exports = { critiqueVideo, critiqueFrames, FIXES };
+//: The prompt builders are exported for the tests. This bug WAS the prompt
+//: text — a sentence promising captions a marketing take does not have — so a
+//: guard that cannot read the prompt cannot see it (ENG-6295).
+module.exports = { critiqueVideo, critiqueFrames, buildPrompt, sheetPrompt,
+  admissibleIssue, typesFor, VIDEO_TYPES, FRAME_TYPES, FIXES };

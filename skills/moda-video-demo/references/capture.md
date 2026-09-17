@@ -200,11 +200,16 @@ The individual stages still run standalone — `take.mjs`, `finish.mjs`,
 `critique-take.mjs`, `publish-take.mjs` — and that is the right thing when you
 are iterating on one of them.
 
-`critique-take.mjs` reads two records `finish.mjs` writes: the narration spans
-the compressor was told to protect, and the compression it actually performed
-(its speed and the source timeline). Run standalone against a take that predates
-either, it says so and falls back — the dead-time figures then read high rather
-than silently pretending to be measured. Re-run `finish.mjs` to record them.
+`critique-take.mjs` reads three records `finish.mjs` writes: the narration spans
+the compressor was told to protect, the compression it actually performed (its
+speed and the source timeline), and the genre. Run standalone against a take
+that predates any of them, it says so and falls back — the dead-time figures
+then read high rather than silently pretending to be measured, and the take is
+graded as a tutorial. Re-run `finish.mjs` to record them.
+
+`finish.mjs` also **writes** `genre.json` when it had to pick the genre itself,
+so the genre a cut was built for is the genre the critique reads. An explicit
+`DEMO_STYLE` still overrides a recorded one, and says so when it does.
 
 A flow is `{goal, steps:[{action:'click'|'fill'|'press', locator, why, text?, key?}]}`.
 `why` becomes the caption, so write it as the action, not as your reasoning.
@@ -279,3 +284,13 @@ squeezed to 0.44s.
 On a demo whose steps are back to back there is nothing to compress and the stage
 says so. On one with a real wait between actions it is worth a lot — measured on a
 20s clip with a page load, **20.0s to 11.2s**.
+
+### The critique grades a cut, and the cut decides what is in it
+
+`critique-take.mjs` picks the first of `final`/`scored`/`narrated`/`silent` that exists.
+The camera punch-ins **and** the brand outro card are both composited at *publish*, and
+the iterate loop runs before publish — so on a loop cut neither is present, and on a
+`.final` cut both are. That single fact (`composited`) is passed to the critique prompt.
+Every fact the prompt asserts about the take is passed explicitly and a missing one
+throws: a defaulted fact tells the grader the take contains something it may not, which
+makes the grader overlook a defect that is really on screen.

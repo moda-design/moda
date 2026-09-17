@@ -50,6 +50,11 @@ const doc = JSON.parse(readFileSync(`${outDir}/${id}.moda.json`, 'utf8'));
 const CUTS = ['final', 'scored', 'narrated', 'silent'];
 const finalMp4 = CUTS.map((c) => `${outDir}/${id}.${c}.mp4`).find((f) => existsSync(f));
 const video = finalMp4 ?? `${outDir}/${id}.mp4`;
+//: Did the cut we picked go through publish? The camera punch-ins AND the brand outro
+//: card are both composited there, and the iterate loop runs BEFORE publish — so on a
+//: loop cut neither is present. The prompt asserts both to the grader, so it has to be
+//: told which cut this is or it argues about footage that is not on screen (ENG-6295).
+const composited = !!finalMp4 && finalMp4.endsWith('.final.mp4');
 //: The browser recording, before the camera. This is what gets MEASURED.
 //:
 //: The two measurements below are both about the page's own behaviour, and the
@@ -178,6 +183,31 @@ try {
   console.log('  note: no compression record for this take — the recoverable figure falls back to');
   console.log('        re-planning the finished cut, which overstates it. Re-run finish.mjs to record it.');
 }
+// THE GENRE THE TAKE WAS SHOT IN (ENG-6295). The grader's prompt describes what
+// the video contains, and that description is only true for one genre: a
+// marketing take has a music bed and no captions or voiceover, so telling the
+// model to expect captions made it report their absence as a defect — a medium
+// finding with `fix: none`, which run.mjs then fed into the next discovery pass
+// as something to fix by re-walking. Absent means unknown, and the prompt falls
+// back to the tutorial description, which is what it always said.
+let genre = null;
+try {
+  genre = JSON.parse(readFileSync(`${outDir}/genre.json`, 'utf8'))?.style ?? null;
+} catch {
+  console.log('  note: no genre.json — grading this take as a tutorial (captions and voiceover expected)');
+}
+// WHETHER THIS CUT ACTUALLY HAS MUSIC (ENG-6295 round 2). finish.mjs writes
+// `.scored.mp4` only when addMusicBed succeeded; DEMO_NO_MUSIC=1 skips the bed
+// and a failed metered render logs "scored: skipped" and writes nothing. So the
+// file's existence IS the fact — and asserting music that is not there is the
+// same false premise as denying music that is, worst on a marketing take where
+// the bed is the only audio.
+const hasMusic = existsSync(`${outDir}/${id}.scored.mp4`);
+// WHETHER ANYTHING IS SPOKEN. `narrationSpans` is the record finish.mjs wrote:
+// `[]` means the take genuinely has no lines (marketing, or every line dropped
+// by the loop's own shorten_narration remedy), while `null` means no record at
+// all — unknown, so keep the old assumption rather than inventing silence.
+const hasVoiceover = Array.isArray(narrationSpans) ? narrationSpans.length > 0 : true;
 const shots = checkShots({ doc, outDir, id, cameraWasAttempted, cameraPlan, narrationSpans, compression });
 // TWO NUMBERS, BOTH SAID OUT LOUD (ENG-6130). `share` is now the RECOVERABLE
 // share, so printing it under the old label would have claimed "0% of the
@@ -290,8 +320,8 @@ writeFileSync(`${outDir}/shot-check.json`, JSON.stringify({ ...shots, issues }, 
 
 const useGemini = Boolean(process.env.GEMINI_API_KEY);
 const verdict = useGemini
-  ? await critiqueVideo({ videoPath: video, goal: doc.goal })
-  : await critiqueFrames({ videoPath: video, goal: doc.goal, outDir });
+  ? await critiqueVideo({ videoPath: video, goal: doc.goal, genre, hasMusic, hasVoiceover, composited })
+  : await critiqueFrames({ videoPath: video, goal: doc.goal, outDir, genre, hasMusic, hasVoiceover });
 
 if (!verdict.ok) {
   console.log(`  critique unavailable (${verdict.reason}) — the numbers above still stand`);
