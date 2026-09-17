@@ -42,17 +42,19 @@ if (!outDir || !id) {
 
 const doc = JSON.parse(readFileSync(`${outDir}/${id}.moda.json`, 'utf8'));
 //: What SHIPS, most-finished first. `finish.mjs` writes `.scored` / `.narrated`
-//: and calls that its final cut; only `publish-take.mjs` composites the outro
-//: into `.final`. Checking for `.final` ALONE and falling back to the raw
+//: and calls that its final cut; only `publish-take.mjs` produces `.final`,
+//: which since ENG-6306 is the SEQUENCE export — hook, recording and closing
+//: card stitched from three canvas pages rather than an ffmpeg mux. Checking for `.final` ALONE and falling back to the raw
 //: `.mp4` meant every take that had not been published was judged as the bare
 //: browser recording — no camera, no pacing, no music — and the report said
 //: nothing, because a silent fallback to a file that exists looks like success.
 const CUTS = ['final', 'scored', 'narrated', 'silent'];
 const finalMp4 = CUTS.map((c) => `${outDir}/${id}.${c}.mp4`).find((f) => existsSync(f));
 const video = finalMp4 ?? `${outDir}/${id}.mp4`;
-//: Did the cut we picked go through publish? The camera punch-ins AND the brand outro
-//: card are both composited there, and the iterate loop runs BEFORE publish — so on a
-//: loop cut neither is present. The prompt asserts both to the grader, so it has to be
+//: Did the cut we picked go through publish? The camera punch-ins AND the brand
+//: closing card both arrive there — the camera as motion tracks, the card as the
+//: film's last PAGE — and the iterate loop runs BEFORE publish, so on a loop cut
+//: neither is present. The prompt asserts both to the grader, so it has to be
 //: told which cut this is or it argues about footage that is not on screen (ENG-6295).
 const composited = !!finalMp4 && finalMp4.endsWith('.final.mp4');
 //: The browser recording, before the camera. This is what gets MEASURED.

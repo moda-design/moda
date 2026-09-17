@@ -83,7 +83,7 @@ const RELEASE_SLACK_SEC = 0.25;
  * The camera state at a moment is the most recent keyframe at or before it: a
  * punch-in holds, so the held value is what is on screen.
  */
-function captionSubjectVisible(camera, actions, w, h) {
+function captionSubjectVisible(camera, actions, w, h, clip) {
   // ANY action with a measured result, captioned or not.
   //
   // This required a caption, and the marketing genre CLEARS every label — so on
@@ -105,7 +105,7 @@ function captionSubjectVisible(camera, actions, w, h) {
       best = i;
     }
     if (best == null) return { scale: 1, x: w / 2, y: h / 2 };
-    return focusOf(camera.scale[best], camera.path[best], w, h) ?? { scale: 1, x: w / 2, y: h / 2 };
+    return focusOf(camera.scale[best], camera.path[best], w, h, clip) ?? { scale: 1, x: w / 2, y: h / 2 };
   };
 
   const offenders = [];
@@ -159,13 +159,23 @@ function readCamera(motionJsPath) {
  * RENDERER will do rather than what the planner intended — a planner that
  * frames correctly and emits the wrong transform would pass the other way.
  */
-function focusOf(scaleKf, pathKf, w, h) {
+function focusOf(scaleKf, pathKf, w, h, clip) {
   if (!scaleKf || !pathKf || scaleKf.value <= 0) return null;
+  // THE CLIP IS NOT ALWAYS THE PAGE (ENG-6306). The emitted position is
+  // `clip.x + scale * clip.width * (0.5 - focus)`, so inverting it needs the
+  // clip's ORIGIN and its EXTENT. Assuming (0,0) at the recording's size is
+  // right only on the full-bleed lane; on a composed page the clip sits at
+  // (380,240) 1160x725 for a 1280x800 capture, and the recovered centre comes
+  // out ~200px off in x at scale 2 — against a FRAMING_MARGIN of 0.15, enough
+  // to print "THE CLICK IS OUTSIDE THE SHOT" for a correctly framed punch-in
+  // AND to pass a genuinely mis-framed one.
+  //
+  // Returned in RECORDING pixels, which is what the callers compare clicks in.
   return {
     atSec: scaleKf.tMs / 1000,
     scale: scaleKf.value,
-    x: w / 2 - pathKf.value.x / scaleKf.value,
-    y: h / 2 - pathKf.value.y / scaleKf.value,
+    x: w * (0.5 - (pathKf.value.x - clip.x) / (scaleKf.value * clip.width)),
+    y: h * (0.5 - (pathKf.value.y - clip.y) / (scaleKf.value * clip.height)),
   };
 }
 
@@ -187,12 +197,12 @@ const NEW_SHOT_PX = 24;
  * jammed against the top edge. The report said "1 punch-in, all on target",
  * because the only shot it looked at was the one that happened to be fine.
  */
-function shots(camera, w, h) {
+function shots(camera, w, h, clip) {
   const out = [];
   let lastFocus = null;
   for (let i = 0; i < camera.scale.length; i++) {
     const s = camera.scale[i];
-    const f = focusOf(s, camera.path[i], w, h);
+    const f = focusOf(s, camera.path[i], w, h, clip);
     if (!f) continue;
     if (s.value <= 1.001) { lastFocus = null; continue; }
     const rose = !camera.scale[i - 1] || camera.scale[i - 1].value < s.value - 1e-6;
@@ -204,7 +214,7 @@ function shots(camera, w, h) {
     let endsAt = null;
     for (let j = i + 1; j < camera.scale.length; j++) {
       const k = camera.scale[j];
-      const g = focusOf(k, camera.path[j], w, h);
+      const g = focusOf(k, camera.path[j], w, h, clip);
       if (k.value <= 1.001) { endsAt = k.tMs / 1000; break; }
       if (g && Math.hypot(g.x - f.x, g.y - f.y) > NEW_SHOT_PX) { endsAt = k.tMs / 1000; break; }
     }
@@ -265,9 +275,12 @@ function emptyCameraReason(plan) {
   );
 }
 
-function checkShots({ doc, outDir, id, motionPath = null, cameraWasAttempted = false, cameraPlan = null, narrationSpans = null, compression = null }) {
+function checkShots({ doc, outDir, id, motionPath = null, cameraWasAttempted = false, cameraPlan = null, narrationSpans = null, compression = null, clipBox = null }) {
   const w = doc.viewport?.width || 1280;
   const h = doc.viewport?.height || 800;
+  // Defaults to full-bleed — the clip AS the page — so every existing caller
+  // and the un-composed lane invert exactly as before.
+  const clip = clipBox ?? { x: 0, y: 0, width: w, height: h };
   const actions = doc.actions || [];
   const duration = doc.durationSec || 0;
 
@@ -516,7 +529,7 @@ function checkShots({ doc, outDir, id, motionPath = null, cameraWasAttempted = f
     };
   }
 
-  const peaks = shots(camera, w, h);
+  const peaks = shots(camera, w, h, clip);
   const clicks = actions.filter((a) => a.clickSec != null && a.clickX != null);
   const syncOff = [];
   const framing = [];
@@ -581,7 +594,7 @@ function checkShots({ doc, outDir, id, motionPath = null, cameraWasAttempted = f
     noCamera: { measured: true, bad: false, peaks: peaks.length },
     zoomSync: { measured: true, peaks: peaks.length, offenders: syncOff, bad: syncOff.length > 0 },
     zoomFraming: { measured: true, peaks: peaks.length, offenders: framing, bad: framing.length > 0 },
-    captionSubject: captionSubjectVisible(camera, actions, w, h),
+    captionSubject: captionSubjectVisible(camera, actions, w, h, clip),
     zoomRelease: actions.some((a) => a.type === 'fill')
       ? { measured: true, peaks: peaks.length, offenders: releasedEarly, bad: releasedEarly.length > 0 }
       : { measured: false, reason: 'nothing was typed in this take' },

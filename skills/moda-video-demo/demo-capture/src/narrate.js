@@ -168,9 +168,16 @@ function planNarration({ clip, outDir, voice = TTS_VOICE, model = TTS_MODEL, lin
       // is explicit about why: waiting leaves a silent gap on a static screen,
       // which reads as the demo having ended twice.
       //
-      // It needs no special case downstream. The mux already freezes the final
-      // frame for a closing line that overruns the footage, so appending the
-      // conclusion as the last spoken line gets exactly that behaviour for free.
+      // It USED to need no special case downstream: the freeze held the final
+      // frame for a closing line that overran the footage, and the outro mux
+      // brought the brand card up to cover that freeze, so the conclusion
+      // landed on the card for free.
+      //
+      // ENG-6306 deleted the mux — the card is a page after the recording now —
+      // so the conclusion lands on the frozen app frame instead. That is the
+      // open question in ENG-6354, and one of its options is here: on the
+      // composed lane the conclusion could be WRITTEN on the close card rather
+      // than spoken over a freeze.
       const lastEnd = Math.max(...spoken.map((l) => l.startSec + (l.durationSec || 0)));
       spoken.push({
         text: preVoicedConclusion.text,

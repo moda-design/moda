@@ -217,12 +217,23 @@ if (planned.length) {
     console.log(`    line ${f.index}  ${f.spokenSec}s / ${f.budgetSec}s  ${f.fits ? 'fits' : `OVERRUNS by ${f.overrunSec}s`}`);
   }
   if (r.tailSec > 0) {
-    // Remember where the real FOOTAGE ends, before the freeze that lets the
-    // closing line finish. The outro card wants to come up here rather than
-    // after: otherwise the conclusion plays over a frozen screenshot of the app,
-    // which is a worse place to land the last thing the video says than the card
-    // is. Measured on a real cut — 7s of static app, then the card.
-    clip = { ...clip, footageEndSec: clip.durationSec, durationSec: r.durationSec };
+    // THE FREEZE IS NOW VISIBLE IN THE FILM (ENG-6354). The final frame is held
+    // so the closing line can finish, and `footageEndSec` used to tell
+    // `compositeOutro` to bring the brand card UP over that freeze — so the last
+    // sentence landed on the card, not on a static screenshot of the app.
+    //
+    // ENG-6306 made the card a page, which comes AFTER the recording, so the
+    // frozen tail now plays in full. Measured on a real cut: 7s of static app.
+    // The field is gone rather than left to look handled — nothing consumed it.
+    //
+    // It cannot be fixed by ending the page at the footage: the voiceover rides
+    // the recording as an un-muted video fill, so truncating the page truncates
+    // the closing line with it. ENG-6354 carries the options.
+    console.error(
+      `    NOTE: ${r.tailSec.toFixed(1)}s of frozen final frame so the closing line can finish — ` +
+        'the conclusion lands on a static app frame, not on the brand card (ENG-6354)'
+    );
+    clip = { ...clip, durationSec: r.durationSec };
   }
 }
 

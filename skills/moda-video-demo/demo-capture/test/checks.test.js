@@ -2923,8 +2923,8 @@ test('the editor cannot label a step `close` — that beat belongs to the traili
     { index: 3, keep: true, beat: 'payoff', pace: 'hold' },
   ] }) });
   // Nothing the editor can see is a close: the closing beat is the hold
-  // `ensureTrailingHold` appends after this pass, plus the outro card that is
-  // composited at publish.
+  // `ensureTrailingHold` appends after this pass, plus the closing card that
+  // arrives at publish as the film's last page (ENG-6306).
   assert.deepEqual(out.flow.steps.map((s) => s.beat), ['hook', 'build', 'build', 'payoff']);
   assert.match(out.corrections.join(' '), /the closing beat is the appended hold/);
 });
@@ -3895,4 +3895,162 @@ test('a wait the guard restores does not keep the reason for cutting it', () => 
     { index: 3, keep: false },
   ] } });
   assert.equal(quiet.plan.find((p) => p.sourceIndex === 3).why, 'kept to stay in sync with the product');
+});
+
+// ── the brand card, against the REAL `brand show --json` shape (ENG-6306) ──
+//
+// This read had NO coverage, and that is how it shipped broken: it took the
+// mark from `logo.file_id`, which is the internal structured-data name. The
+// public endpoint rebuilds each image as `{name, id, uuid, url}` — `id` being
+// the encoded `file_` ref — so every logo resolved to null, the mark vanished
+// from every close page, and a kit whose only content is a logo lost its close
+// page entirely. Zero exit, no warning. The fixtures below are that wire shape.
+
+const { cardFromKit } = require('../src/outro.js');
+
+/** One group, one wordmark, shaped exactly as `_public_logo_groups` emits it. */
+const KIT = {
+  default_color_mode: 'light',
+  colors: [
+    { label: 'bg-primary', color: '#ffffff', mode: 'light' },
+    { label: 'text-primary', color: '#0a090a', mode: 'light' },
+    { label: 'bg-primary', color: '#111111', mode: 'dark' },
+  ],
+  logos: [
+    {
+      group_name: 'Primary',
+      images: [{ name: 'Logo (Dark)', id: 'file_01HZX9K2ABCDEFGHJKMNPQRSTV', uuid: 'u', url: 'https://x/y.png' }],
+    },
+  ],
+  tagline: 'Design, delegated',
+  company_url: 'https://moda.app',
+};
+
+test('the mark is the durable file_ id from the PUBLIC `id` field', () => {
+  const card = cardFromKit(KIT);
+  assert.strictEqual(card.logoFileId, 'file_01HZX9K2ABCDEFGHJKMNPQRSTV');
+  // The shape carries no `file_id` at all — asserting that is what stops a
+  // future edit reaching for the internal name again.
+  assert.strictEqual(KIT.logos[0].images[0].file_id, undefined);
+  assert.match(card.logoFileId, /^file_[0-9A-HJKMNP-TV-Z]{26}$/, 'must satisfy the server FILE_REF pattern');
+});
+
+test('an image whose File row did not validate becomes NO mark, not a bad one', () => {
+  // `_public_logo_groups` omits `id` and sets `url_unavailable` for these. A
+  // close page with no mark is fine; one pointing at nothing is not.
+  const card = cardFromKit({
+    ...KIT,
+    logos: [{ group_name: 'Primary', images: [{ name: 'Logo (Dark)', url: null, url_unavailable: true }] }],
+  });
+  assert.strictEqual(card.logoFileId, null);
+});
+
+test('a kit with no logos at all still yields a usable card', () => {
+  const card = cardFromKit({ ...KIT, logos: [] });
+  assert.strictEqual(card.logoFileId, null);
+  assert.strictEqual(card.tagline, 'Design, delegated');
+  assert.strictEqual(card.url, 'moda.app', 'the scheme is stripped');
+});
+
+test('the palette is read at the kit default MODE, not flattened', () => {
+  // The recorded bug this guards: a flat label lookup kept whichever colour
+  // came last and silently returned the dark-mode value, inverting the card.
+  assert.strictEqual(cardFromKit(KIT).background, '#ffffff');
+  assert.strictEqual(cardFromKit(KIT).ink, '#0a090a');
+});
+
+// ── the framing inverse against an INSET clip (ENG-6306) ──
+//
+// The published camera is in PAGE space: every position keyframe is
+// `clip.x + scale * clip.width * (0.5 - focus)`. Inverting it as though the
+// clip WERE the page is right only on the full-bleed lane. On a composed page
+// the recovered shot centre comes out hundreds of px off, and the framing
+// verdict flips BOTH ways — a correctly framed punch-in reports "THE CLICK IS
+// OUTSIDE THE SHOT", and a genuinely mis-framed one reads ok.
+
+const { checkShots: checkShotsClip } = require('../src/shot-check.js');
+
+/** The landscape layout's real numbers for a 1280x800 capture. */
+const INSET = { x: 380, y: 240, width: 1160, height: 725 };
+
+/** A camera that centres `focus` (normalized) at `scale`, emitted page-space.
+ *
+ * CLAMPED like the real emitter: `frame_offset` bounds the slide to what keeps
+ * the scaled clip covering its own box, so an edge focus stops flush. Without
+ * the clamp this fixture would be a program the emitter cannot produce, and
+ * the framing it exercises would be unreachable.
+ */
+function programFor(focus, scale, clip) {
+  const off = (extent, f) => {
+    const wanted = scale * extent * (0.5 - f);
+    const limit = ((scale - 1) * extent) / 2;
+    return Math.min(limit, Math.max(wanted, -limit));
+  };
+  const path = [
+    { tMs: 0, value: { x: clip.x, y: clip.y } },
+    { tMs: 2000, value: { x: clip.x + off(clip.width, focus.x), y: clip.y + off(clip.height, focus.y) } },
+  ];
+  return [
+    'motion.page("p", (t) => {',
+    '  t.clearTarget("n");',
+    `  t.keyframes("n", "scale", ${JSON.stringify([{ tMs: 0, value: 1 }, { tMs: 2000, value: scale }])});`,
+    `  t.motionPath("n", ${JSON.stringify(path)});`,
+    '});',
+  ].join('\n');
+}
+
+function shotsFor(program, clipBox, click = { x: 320, y: 600 }) {
+  const dir = mkdtempSync(path.join(tmpdir(), 'shot-clip-'));
+  const motion = path.join(dir, 'p.motion.js');
+  writeFileSync(motion, program);
+  const doc = {
+    durationSec: 6,
+    viewport: { width: 1280, height: 800 },
+    actions: [
+      {
+        index: 0, type: 'click', label: 'Generate',
+        startSec: 1.6, endSec: 3, clickSec: 2.0,
+        // The click the camera is centring on.
+        clickX: click.x, clickY: click.y,
+        provenance: 'observed',
+      },
+    ],
+  };
+  return checkShotsClip({ doc, outDir: dir, id: 'p', motionPath: motion, cameraWasAttempted: true, clipBox });
+}
+
+test('an INSET clip: framing is judged against the clip box, not the page', () => {
+  // A click NEAR THE EDGE, deliberately. The rule is `slack < 0.15`, i.e. bad
+  // once the click sits more than 0.7 of the half-extent from the shot centre
+  // — 224px at scale 2. The page-vs-clip inverse error grows toward the right
+  // edge (130 + 120·focus px here), so a mid-frame click is misjudged by ~160px
+  // and stays INSIDE the shot: the first cut of this test used one and could
+  // not tell the two inverses apart. At focus 0.9 the error is ~412px.
+  const click = { x: 1152, y: 400 }; // 0.9 / 0.5 of a 1280x800 recording
+  const program = programFor({ x: 0.9, y: 0.5 }, 2.0, INSET);
+  const right = shotsFor(program, INSET, click);
+  const wrong = shotsFor(program, null, click); // the pre-fix behaviour: clip == page
+
+  assert.ok(right.zoomFraming.measured, 'the framing check did not run');
+  assert.ok(
+    !right.zoomFraming.bad,
+    `a correctly framed punch-in was reported bad: ${JSON.stringify(right.zoomFraming.offenders)}`
+  );
+  // The discriminator: without the clip box the SAME program is misjudged, so
+  // this test cannot pass for the wrong reason.
+  assert.ok(
+    wrong.zoomFraming.bad,
+    'inverting against the page judged this program the same — the test proves nothing'
+  );
+});
+
+test('the FULL-BLEED lane is unchanged by the clip-aware inverse', () => {
+  // The control. clipBox omitted must behave exactly as clip == page.
+  const full = { x: 0, y: 0, width: 1280, height: 800 };
+  const program = programFor({ x: 0.25, y: 0.75 }, 2.0, full);
+  const click = { x: 320, y: 600 };
+  const omitted = shotsFor(program, null, click);
+  const explicit = shotsFor(program, full, click);
+  assert.deepEqual(omitted.zoomFraming, explicit.zoomFraming);
+  assert.ok(!omitted.zoomFraming.bad, 'a centred punch-in on the full-bleed lane must still be well framed');
 });

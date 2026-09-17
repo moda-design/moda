@@ -19,8 +19,10 @@
 // The recorder would have captured that flow perfectly. A pre-flight browser
 // that is not the surface under test measures itself, not the product.
 //
-// `outro.js` is deliberately NOT a caller: it renders a static card in a browser
-// that never visits the product, so it needs none of this.
+// There are no non-product launchers left. `outro.js` was the one — it rendered
+// the closing card in a browser that never visited the product — and ENG-6306
+// deleted that renderer: the card is a canvas page now. The exemption is gone
+// from `test/browser-and-mux.test.js` with it.
 
 /**
  * Chromium args for any launch that drives, measures or records the product.

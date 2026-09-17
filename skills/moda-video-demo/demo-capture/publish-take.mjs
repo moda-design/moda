@@ -6,7 +6,7 @@ import { existsSync, readFileSync, writeFileSync, copyFileSync, rmSync } from 'n
 import { createRequire } from 'node:module';
 
 const require = createRequire(import.meta.url);
-const { brandCard, compositeOutro } = require('./src/outro.js');
+const { brandCard } = require('./src/outro.js');
 const { recordIsMeasured } = require('./src/measured.js');
 import { homedir } from 'node:os';
 
@@ -62,32 +62,21 @@ const scored = `${outDir}/${id}.scored.mp4`;
 const narrated = `${outDir}/${id}.narrated.mp4`;
 const source = existsSync(scored) ? scored : existsSync(narrated) ? narrated : `${outDir}/${id}.mp4`;
 console.log(`    source: ${source.replace(/^.*\.(\w+)\.mp4$|^.*\.mp4$/, (m, k) => k || 'silent')}`);
-// Extend the tail BEFORE upload so the card has ground to sit on; the nodes
-// themselves go on the canvas afterwards, so the outro stays editable.
-let uploadSource = source;
-let card = null;
-let compileDocPath = docPath;
-if (brandId) {
-  card = brandCard(brandId);
-  // The hold is chosen from the CLIP's length, so read it back rather than
-  // assuming a constant — the doc has to be extended by exactly what the mux
-  // added or the page ends mid-card.
-  const outro = await compositeOutro({
-    mp4: source, outDir, id, card,
-    // Set only when a closing line extended the clip past its footage.
-    startAtSec: doc.footageEndSec,
-  });
-  uploadSource = outro.path;
-  // The page is exactly `durationSec` long, so an mp4 that is now longer than
-  // the doc exports with the card cut off the end — the whole card, since it is
-  // the last thing in the file. Extend the doc the compiler sees. The actions
-  // keep their original timestamps, so the camera and captions are untouched;
-  // the page simply holds the clip's own tail for the card's duration.
-  compileDocPath = `${outDir}/${id}.moda.outro.json`;
-  writeFileSync(compileDocPath, JSON.stringify({ ...doc, durationSec: doc.durationSec + outro.seconds }, null, 2));
-  console.log(`    outro: ${outro.seconds}s card on ${card.background}${card.logoUrl ? ' with mark' : ''}` +
-    ` · page ${doc.durationSec.toFixed(2)}s -> ${(doc.durationSec + outro.seconds).toFixed(2)}s`);
-}
+// THE CLOSING CARD IS A PAGE NOW, not pixels (ENG-6306).
+//
+// It used to be muxed into the recording's own bytes by ffmpeg, and the compile
+// doc was then stretched by exactly what the mux added so the page would not end
+// mid-card. That worked, and it produced an artifact nobody could edit: the
+// logo, the tagline and the url were baked into the video the moment they were
+// composited, in a pipeline whose entire pitch is an editable canvas.
+//
+// `--scope sequence` stitches every visible page into one mp4, so the close is
+// simply the last page. Same brand facts, read from the same `brandCard`; the
+// recording is uploaded untouched, and the doc needs no stretching because
+// nothing was appended to the clip.
+const uploadSource = source;
+const compileDocPath = docPath;
+const card = brandId ? brandCard(brandId) : null;
 
 const up = moda(['file', 'upload', uploadSource]);
 // The `file_` id is the only form needed: the verb takes it and mints its own
@@ -162,10 +151,61 @@ for (let n = 1; ; n++) {
 // from `backend/app/services/demo_video`, which nobody outside the monorepo
 // has. (ENG-5982.)
 //
-// What stays here is what genuinely cannot move: the outro composite and the
-// upload, because both are ffmpeg on local bytes.
+// What stays here is what genuinely cannot move: the upload, because it is
+// local bytes. The outro composite used to be the other one — it is gone
+// (ENG-6306). The closing card is a PAGE now, so there is no ffmpeg pass and
+// no stretched compile doc; `--scope sequence` stitches it into the film.
 console.log('[5] publishing');
+// THE WORDS, and only the words. Every position, size and type scale is the
+// server's — see `backend/app/services/demo_video/layout.py`.
+//
+// `about` is the editorial pass's one-line answer to "what does this
+// demonstrate" (ENG-5766). It is written to `pacing.json`, which says in its
+// own comment that this is what reads it. No `about`, no title and no hook:
+// a headline invented here would be indistinguishable in the output from one
+// the editor actually chose.
+const pacing = existsSync(`${outDir}/pacing.json`)
+  ? JSON.parse(readFileSync(`${outDir}/pacing.json`, 'utf8'))
+  : {};
+const about = typeof pacing.about === 'string' ? pacing.about.trim() : '';
+const compositionPath = `${outDir}/${id}.composition.json`;
+let composition = null;
+if (about || card) {
+  composition = {
+    frame: 'landscape',
+    ...(about ? { title: about, hook: { title: about } } : {}),
+    // A close page only when the kit has something to SIGN OFF WITH.
+    // `brandCard` always returns a background and an ink (both defaulted), so
+    // `card` alone is not evidence of content: a kit with no tagline, no
+    // company url and no logo would produce a 4-second hold on a flat colour,
+    // which is exactly the blank page `Storyboard` exists to avoid.
+    ...(card && (card.tagline || card.url || card.logoFileId)
+      ? {
+          close: {
+            ...(card.tagline ? { tagline: card.tagline } : {}),
+            ...(card.url ? { url: card.url } : {}),
+            ...(card.background ? { background: card.background } : {}),
+            ...(card.ink ? { ink: card.ink } : {}),
+            // The kit's own `file_` id, passed straight through. The server
+            // refuses a pre-built ref because it cannot verify its capability
+            // signature, and an unsigned one publishes a canvas whose export
+            // 401s on the image with nothing wrong at publish time.
+            ...(card.logoFileId ? { mark: card.logoFileId } : {}),
+          },
+        }
+      : {}),
+  };
+  writeFileSync(compositionPath, JSON.stringify(composition, null, 2));
+  const pages = 1 + (composition.hook ? 1 : 0) + (composition.close ? 1 : 0);
+  console.log(
+    `    composition: ${pages} page(s)` +
+      (about ? ` · "${about.slice(0, 60)}${about.length > 60 ? '…' : ''}"` : ' · no headline (no `about`)') +
+      (composition.close ? ` · close on ${card.background}${composition.close.mark ? ' with mark' : ''}` : '')
+  );
+}
+
 const args = ['demo', 'publish', '--timeline', compileDocPath, '--video', fileId, '--name', name];
+if (composition) args.push('--composition', compositionPath);
 const finalMp4 = `${outDir}/${id}.final.mp4`;
 args.push('-o', finalMp4);
 // A punch-in planned from an INFERRED low-confidence click is not written
@@ -243,6 +283,14 @@ try {
     doc, outDir, id,
     motionPath: publishedMotion,
     cameraWasAttempted: toldUs && !onPurpose,
+    // FROM THE SERVER, because the published camera is in PAGE space. On a
+    // composed publish the clip sits inset — (380,240) 1160x725 for a 1280x800
+    // capture — and inverting the transform as though the clip WERE the page
+    // puts the recovered shot centre ~200px out at scale 2, against a 0.15
+    // margin. That flips the framing verdict both ways: a correctly framed
+    // punch-in reads "THE CLICK IS OUTSIDE THE SHOT", and a mis-framed one can
+    // read ok. Absent (the full-bleed lane) checkShots defaults to the page.
+    clipBox: published.clip_box ?? null,
   });
   const say = (label, r, describe) => {
     if (!r) return console.log(`    ${label}: not measured (the check did not run)`);

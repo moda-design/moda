@@ -409,7 +409,8 @@ function settleBeats(steps) {
   //
   // In this pipeline nothing the editor can see is a close. The closing beat is
   // the trailing hold `curate.ensureTrailingHold` APPENDS — after this pass has
-  // already run — plus the brand outro card, which is composited at publish.
+  // already run — plus the brand closing card, which arrives at publish as the
+  // film's last PAGE (ENG-6306), so it is not in a loop cut either.
   // So a `close` on a step the editor chose is always a mislabel, and allowing
   // it broke the invariant that matters: the payoff stopped being last, because
   // everything after it was being relabelled `close` instead of the payoff

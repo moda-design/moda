@@ -219,7 +219,8 @@ by hand was the difference between a usable demo and a bad one:
 
   `close` is a real beat but the editor never assigns it. Nothing it can see is
   a close — the closing beat is the hold `curate` appends and the brand card
-  composited at publish — so `settleBeats` puts it on the trailing hold instead.
+  added at publish as the film's last PAGE (ENG-6306) — so `settleBeats` puts it
+  on the trailing hold instead.
 
 - **curate** drops what a demo must never show. Discovery drives the app to
   reach a goal, which is a different job from showing it off: on Moda's own flow
@@ -392,7 +393,8 @@ says so. On one with a real wait between actions it is worth a lot — measured 
 ### The critique grades a cut, and the cut decides what is in it
 
 `critique-take.mjs` picks the first of `final`/`scored`/`narrated`/`silent` that exists.
-The camera punch-ins **and** the brand outro card are both composited at *publish*, and
+The camera punch-ins are composited at *publish* and the brand closing card arrives there
+as the film's last **page** (ENG-6306), and
 the iterate loop runs before publish — so on a loop cut neither is present, and on a
 `.final` cut both are. That single fact (`composited`) is passed to the critique prompt.
 Every fact the prompt asserts about the take is passed explicitly and a missing one

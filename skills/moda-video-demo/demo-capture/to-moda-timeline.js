@@ -145,10 +145,6 @@ async function toModa(clip, { captions = true } = {}) {
     name: clip.name,
     goal: clip.goal,
     durationSec: clip.durationSec,
-    // Where the real footage stops, when a closing line pushed `durationSec`
-    // past it. The publish step brings the outro card up here so the conclusion
-    // lands on the card instead of on a frozen screenshot.
-    ...(clip.footageEndSec ? { footageEndSec: clip.footageEndSec } : {}),
     viewport: { width: vp.width, height: vp.height },
     integrity: {
       actionsIssued: issued,

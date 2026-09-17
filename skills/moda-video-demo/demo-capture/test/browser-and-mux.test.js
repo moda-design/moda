@@ -23,10 +23,15 @@ const read = (rel) => readFileSync(path.join(HERE, rel), 'utf8');
 
 // ── ENG-6108: every stage that touches the product launches the same browser ──
 
-//: The ONE launch that legitimately skips the flags: outro.js renders a static
-//: card from inlined HTML and never navigates to the product. Named as an
-//: exemption rather than omitted from a list, so it has to be justified.
-const NON_PRODUCT_LAUNCHERS = new Set(['src/outro.js']);
+//: EMPTY, and that is the finding. `src/outro.js` was the one exemption — it
+//: rendered the closing card from inlined HTML and never navigated — and
+//: ENG-6306 deleted that renderer: the card is a canvas page now, not a
+//: screenshot muxed into the recording.
+//:
+//: Kept as an empty set rather than removed, because the gate below is about
+//: EVERY launcher and an exemption list that cannot grow silently is the point.
+//: A new entry here has to justify itself the way that one did.
+const NON_PRODUCT_LAUNCHERS = new Set();
 
 /**
  * Every source file in the tool. ONE walk, because both completeness gates below
@@ -53,9 +58,14 @@ const launchSites = () => sourceFiles().filter((rel) => /chromium\.launch\(/.tes
 
 test('every browser launch in the tool is derived, not listed', () => {
   // 3.24: a completeness gate that hand-lists today's files cannot see tomorrow's.
-  // A sixth gate added with a bare launch would reintroduce ENG-6108 green.
+  // A new gate added with a bare launch would reintroduce ENG-6108 green.
+  //
+  // FLOOR WAS 6 until ENG-6306 deleted outro.js's card renderer — the launch
+  // count is a real fact about the tool, so it moves when the tool does. It is
+  // a floor rather than an equality for the same reason it exists: a NEW
+  // launcher must be caught, and a deleted one is a deliberate edit.
   const sites = launchSites();
-  assert.ok(sites.length >= 6, `expected to find the known launch sites, found ${sites.length}`);
+  assert.ok(sites.length >= 5, `expected to find the known launch sites, found ${sites.length}`);
   for (const rel of sites) {
     if (NON_PRODUCT_LAUNCHERS.has(rel)) continue;
     const src = read(rel);
@@ -75,12 +85,19 @@ test('every browser launch in the tool is derived, not listed', () => {
   }
 });
 
-test('the outro exemption is real — it never navigates to the product', () => {
-  // An exemption is a claim, so it gets checked too. outro.js may render its own
-  // markup, but it must not visit a URL; the day it does, it needs the flags.
+test('there are no launcher exemptions left to justify', () => {
+  // An exemption is a claim, so it got checked. The only one was outro.js, and
+  // ENG-6306 deleted the renderer behind it — so the claim to check now is that
+  // the list is empty, and that outro.js really did stop launching a browser
+  // rather than merely stopping being listed.
+  assert.strictEqual(NON_PRODUCT_LAUNCHERS.size, 0, 'a new exemption needs its own justification test');
+  // Matched on CODE, not prose: the first cut of this asserted the word
+  // "Playwright" was absent and failed on outro.js's own comment explaining
+  // that it used to use it. A module is allowed to describe what it stopped
+  // doing; what must be gone is the call.
   const src = read('src/outro.js');
-  assert.match(src, /setContent\(/, 'outro renders inlined HTML');
-  assert.doesNotMatch(src, /page\.goto\(/, 'outro must not navigate — if it does it is a product launch');
+  assert.doesNotMatch(src, /chromium\.launch\(/, 'outro.js must no longer launch a browser');
+  assert.doesNotMatch(src, /\.setContent\(/, 'outro.js must no longer render a page');
 });
 
 test('the product launch carries the GPU flags, headless, and any caller extras', () => {
