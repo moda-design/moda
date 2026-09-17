@@ -187,6 +187,21 @@ function proposeEdit({ goal, steps }) {
 const isVisibleAction = (s) => s?.action === 'click' || s?.action === 'fill';
 
 /**
+ * Reframe a cut rationale for a step a guard put back.
+ *
+ * TWO restore paths exist — the wait guard and the visible-action floor — and
+ * the first fix covered only one, leaving the other recording e.g. "transport,
+ * not the story" as a step's reason for being KEPT. That text reaches the log,
+ * `pacing.json` and ENG-5762's review surface, so a record that argues against
+ * its own decision is worse than a blank one.
+ *
+ * One helper rather than the same rewrite twice, so a third restore path gets
+ * it by construction. The editor's argument is preserved but demoted to what
+ * it became: a request that was overruled.
+ */
+const overruled = (why, because) => (why ? `${because} (the edit wanted it cut: ${why})` : because);
+
+/**
  * Apply an edit proposal to a flow, enforcing everything code can check.
  *
  * PURE — no model call, no I/O — so every invariant below is testable without a
@@ -254,11 +269,20 @@ function disposeEdit({ flow, proposal, allowReorder = true }) {
     // the next step race a result that has not arrived. Its own dead time is
     // already handled, and handled better, by `compress.js`, which speeds a
     // wait's body and keeps only the tail where the result lands.
+    let why = typeof d?.why === 'string' ? d.why.trim() : '';
     if (!keep && step.action === 'wait') {
       corrections.push(`step ${index}: a wait is a synchronisation step, not a beat — kept`);
       keep = true;
+      // ...AND ITS REASON IS REPLACED. The editor's `why` argued for cutting
+      // it, and that text is what the log prints, what `pacing.json` records,
+      // and what a human reviewing the edit will read (ENG-5762). Measured on
+      // a real flow: two restored waits carried "Redundant generation wait"
+      // and "Renderer retry is an agent reliability hedge, not a product
+      // moment" as their reasons for being KEPT. A record that argues against
+      // the decision it describes is worse than a blank one.
+      why = overruled(why, 'kept to stay in sync with the product');
     }
-    return { index, keep, beat: beat ?? 'build', pace: pace ?? 'normal', why: typeof d?.why === 'string' ? d.why.trim() : '' };
+    return { index, keep, beat: beat ?? 'build', pace: pace ?? 'normal', why };
   });
 
   // NEVER EMPTY THE FLOW, and never cut past "a thin demo". `run.mjs` already
@@ -273,7 +297,10 @@ function disposeEdit({ flow, proposal, allowReorder = true }) {
       `the edit kept ${keptActions} visible action(s) of ${sourceActions}, below the floor of ${floor} — ` +
         'no cuts applied'
     );
-    for (const d of decisions) d.keep = true;
+    for (const d of decisions) {
+      if (!d.keep) d.why = overruled(d.why, 'kept because the edit cut too much');
+      d.keep = true;
+    }
   }
 
   const kept = decisions.filter((d) => d.keep);

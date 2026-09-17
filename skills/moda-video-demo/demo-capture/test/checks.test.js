@@ -2854,6 +2854,16 @@ test('an edit that would empty the demo is refused outright, not applied partly'
   assert.equal(out.cuts.length, 0);
   assert.equal(out.edited, false);
   assert.match(out.corrections.join(' '), /below the floor/);
+
+  // ...and the steps it put back do not record the argument for cutting them
+  // as their reason for being kept. Same defect as the wait guard's, reached
+  // through the other restore path — both go through one helper now.
+  for (const p of out.plan.filter((x) => x.sourceIndex !== 3)) {
+    assert.match(p.why, /kept because the edit cut too much/, `step ${p.sourceIndex}`);
+    assert.match(p.why, /the edit wanted it cut: no/);
+  }
+  // A step the edit wanted to KEEP is untouched by the override.
+  assert.equal(out.plan.find((x) => x.sourceIndex === 3).why, 'yes');
 });
 
 test('a flow too short to edit is left exactly as discovered', () => {
@@ -3849,4 +3859,40 @@ test('the closing line is checked too — it is the last thing the video says', 
     planPacing({ goal: 'g', steps: flow.steps, outDir: okDir, speak: fakeSpeak, voice: 'v', model: 'm' })
   );
   assert.ok(kept.conclusion && kept.conclusion.text.includes('Share'));
+});
+
+test('a wait the guard restores does not keep the reason for cutting it', () => {
+  // Measured on a real flow: the editor proposed cutting two generation waits
+  // with "Redundant generation wait" and "Renderer retry is an agent
+  // reliability hedge, not a product moment". The guard kept both — and the
+  // plan then recorded those as the reasons they were KEPT. That text is what
+  // the log prints, what `pacing.json` stores, and what a human reviewing the
+  // edit reads (ENG-5762); a record that argues against its own decision is
+  // worse than a blank one.
+  const flow = { goal: 'g', steps: [
+    { action: 'click', locator: 'role=textbox[name="prompt"i]' },
+    { action: 'fill', locator: '#p', text: 'a post' },
+    { action: 'click', locator: 'role=button[name="Send"i]' },
+    { action: 'wait', quietMs: 3000, maxMs: 120000 },
+  ] };
+  const out = disposeEdit({ flow, proposal: { about: 'x', decisions: [
+    { index: 0, keep: true, beat: 'hook', pace: 'normal', why: 'the premise' },
+    { index: 1, keep: true, beat: 'build', pace: 'normal', why: 'the ask' },
+    { index: 2, keep: true, beat: 'payoff', pace: 'hold', why: 'it delivers' },
+    { index: 3, keep: false, why: 'Redundant generation wait' },
+  ] } });
+  const restored = out.plan.find((p) => p.sourceIndex === 3);
+  assert.ok(restored, 'the wait must survive');
+  assert.match(restored.why, /kept to stay in sync/);
+  // The editor's argument is preserved, but framed as what it was — a request
+  // that was overruled, not a justification for keeping the step.
+  assert.match(restored.why, /the edit wanted it cut: Redundant generation wait/);
+  // A wait the editor never argued about gets no editorialising either way.
+  const quiet = disposeEdit({ flow, proposal: { about: 'x', decisions: [
+    { index: 0, keep: true, beat: 'hook', pace: 'normal' },
+    { index: 1, keep: true, beat: 'build', pace: 'normal' },
+    { index: 2, keep: true, beat: 'payoff', pace: 'hold' },
+    { index: 3, keep: false },
+  ] } });
+  assert.equal(quiet.plan.find((p) => p.sourceIndex === 3).why, 'kept to stay in sync with the product');
 });
