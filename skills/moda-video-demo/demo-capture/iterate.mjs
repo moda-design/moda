@@ -233,7 +233,19 @@ for (let round = 1; round <= MAX_ROUNDS; round++) {
     break;
   }
   if (!best || critique.score > best.score) {
-    best = { score: critique.score, round, snap: snapshot(), issues: critique.issues ?? [] };
+    // The contradiction follows the KEPT round, exactly as `issues` does: it is a
+    // statement about frames, so carrying a later round's onto this cut would
+    // steer the next walk with a finding about a video that was reverted.
+    best = { score: critique.score, round, snap: snapshot(), issues: critique.issues ?? [],
+      contradiction: critique.contradiction ?? null };
+  }
+  // HERE, because this loop SWALLOWS critique-take's stdout — it runs with
+  // stdio 'pipe' and reprints only its own round summary, so the warning
+  // critique-take prints reaches nobody running the documented entry point.
+  if (critique.contradiction) {
+    console.log(`    ⚠ round ${round} contradicts the screen: claims `
+      + `"${critique.contradiction.claim.slice(0, 70)}" but the screen reads `
+      + `"${critique.contradiction.screen.slice(0, 70)}"`);
   }
 
   console.log(`\n  round ${round}: ${critique.score}/10 — ` +
@@ -385,6 +397,7 @@ if (best) {
     // Always present, never inferred from its absence: a consumer has to be able
     // to tell "the artifact is this cut" from "we could not make it so".
     keptRound: best.round, score: best.score, reconciled, issues: best.issues ?? [], rounds: history,
+    contradiction: best.contradiction ?? null,
   }, null, 2));
 }
 console.log('\n  history:');

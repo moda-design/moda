@@ -333,7 +333,17 @@ if (!verdict.ok) {
 console.log(`\n  score ${verdict.score}/10 via ${verdict.via ?? 'gemini'} — ${verdict.summary}`);
 writeFileSync(`${outDir}/critique.json`, JSON.stringify({
   score: verdict.score, summary: verdict.summary, issues: verdict.issues ?? [], shots: issues,
+  // `?? null` so the key is ALWAYS present: absent and "nothing found" must not
+  // look alike downstream, where `keptReport` falls back from the kept cut to
+  // this file and cannot otherwise tell "this cut was clean" from "an older
+  // build wrote this file and never asked" (ENG-6375).
+  contradiction: verdict.contradiction ?? null,
 }, null, 2));
+if (verdict.contradiction) {
+  const { claim, screen } = verdict.contradiction;
+  console.log(`\n  ⚠ the film contradicts the screen — it claims "${claim.slice(0, 90)}"`);
+  console.log(`    but the screen reads "${screen.slice(0, 90)}"`);
+}
 for (const issue of verdict.issues ?? []) {
   console.log(`    [${issue.severity}] ${issue.type} @${issue.atSeconds}s — ${issue.description}  (fix: ${issue.fix})`);
 }

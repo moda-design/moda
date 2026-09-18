@@ -115,7 +115,7 @@ node <DC>/run.mjs "<what to demonstrate>" <url> --name <slug> [--no-auth] \
 **`<DC>` is the literal path step 2 printed** — paste it in. Each Bash call is a
 fresh shell, so `$DC` from step 2 does not survive into this one.
 
-`--attempts 2` lets it re-discover when the first flow is not worth filming.
+`--attempts 2` lets it re-discover when the first flow is not worth filming — and it is what a contradiction needs to be acted on. If the critique finds the film asserting something the screen denies, the take is never treated as good enough to stop on, and a truthful retake is preferred over it even if it scores up to two points lower — beyond that the better film still wins, so a misfire cannot ship something materially worse. With the default single attempt there is no budget to spend, so the contradiction is printed beside the score and that take still publishes — it is a preference between takes, not a refusal to ship one.
 Without `--publish` it stops after the critique and prints the command to
 publish, which is the right shape when you want to look first.
 

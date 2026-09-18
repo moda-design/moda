@@ -41,7 +41,7 @@ import { resolveStorageState } from './auth.mjs';
 const require = createRequire(import.meta.url);
 const { chromium } = require('playwright');
 const { validateFlow } = require('./src/validate.js');
-const { keptReport, nextStep, canSelect } = require('./src/kept-report.js');
+const { keptReport, nextStep, canSelect, betterTake, CONTRADICTION_FINDING } = require('./src/kept-report.js');
 const { proposeDrops, without, ensureTrailingHold } = require('./src/curate.js');
 const { proposeEdit, disposeEdit, settleBeats, describeEdit } = require('./src/edit.js');
 const { checkFlowShape } = require('./src/flow-shape.js');
@@ -395,6 +395,12 @@ async function attemptOnce(n, guidancePath) {
 
   let score = 0;
   let flowFindings = [];
+  let contradiction = null;
+  // EXPLICIT, never inferred from a null contradiction. The critique can fail
+  // to produce a report at all — `critiqueFrames` shells out to the `claude`
+  // CLI — and this attempt stays selectable at score 0 when it does. Only the
+  // path below, where critique.json actually parsed, may set this.
+  let graded = false;
   // Until a report proves otherwise. A run with no critique at all is unscored
   // but still selectable; only a FAILED reconciliation makes an attempt unusable.
   let usable = true;
@@ -405,6 +411,7 @@ async function attemptOnce(n, guidancePath) {
     let kept = null;
     try { kept = JSON.parse(readFileSync(`${outDir}/iterate.json`, 'utf8')); } catch { /* not iterated */ }
     const report = keptReport({ kept, critique: c });
+    graded = report.usable;
     usable = report.usable;
     if (!usable) {
       console.log('  ⚠ this attempt could not be reconciled with the cut it kept — the files on disk are');
@@ -418,8 +425,28 @@ async function attemptOnce(n, guidancePath) {
     // low severity is either about the steps or about nothing actionable.
     flowFindings = issues.filter((i) =>
       i.severity !== 'low' && !['speed_up', 'shorten_narration', 'disable_zoom'].includes(i.fix));
+    // A CONTRADICTION joins them as an ordinary finding (ENG-6375). It is not an
+    // issue in the critique's own list — the list is clamped to a per-genre
+    // vocabulary this does not belong to — so it is folded in here, where the
+    // guidance file and `nextStep`'s empty-list check both already read.
+    //
+    // A FINDING, not a refusal: the detector fired on 6 of 7 runs against the
+    // film it was written for and named the real defect on 3, and its
+    // false-positive rate is unmeasured. That is enough to spend another walk
+    // on and not enough to hold a publish, so `canSelect` ignores it.
+    contradiction = report.contradiction;
+    if (report.contradiction) {
+      const { claim, screen } = report.contradiction;
+      flowFindings = [...flowFindings, {
+        type: CONTRADICTION_FINDING,
+        severity: 'high',
+        description: `the film claims "${claim}" but the screen shows "${screen}" — `
+          + 'walk to the surface that actually does what the goal describes',
+        fix: 're_record',
+      }];
+    }
   } catch { /* no critique — treat as unscored */ }
-  return { outDir, id, score, flowFindings, usable };
+  return { outDir, id, score, flowFindings, usable, graded, contradiction: contradiction ?? null };
 }
 
 // ── the outer loop ────────────────────────────────────────────────────────
@@ -456,7 +483,11 @@ for (let n = 1; n <= attempts; n++) {
   // predicate, named — a merge previously left a second, unguarded copy of this
   // line above it, and the unguarded one won because it ran first.
   if (r.outDir && !r.usable) unusableSeen = true;
-  if (canSelect(r) && (!best || r.score > best.score)) best = r;
+  // `betterTake` owns BOTH halves now — `canSelect` and the comparison. Ranking
+  // on the score alone made the re-walk decorative: a contradicted take that
+  // scores well (which is the dangerous shape) could not be displaced by a
+  // truthful retake unless that retake out-scored it.
+  if (betterTake(r, best)) best = r;
   if (!r.outDir) {
     console.log(`\n  attempt ${n}: nothing recorded.`);
     if (n === attempts) break;
@@ -471,6 +502,15 @@ for (let n = 1; n <= attempts; n++) {
     console.log(`\n  attempt ${n}: unusable — the report does not describe the cut on disk.`);
   } else {
     console.log(`\n  attempt ${n}: ${r.score}/10${best === r ? ' (best so far)' : ` — best is still ${best.score}/10`}`);
+    // NEXT TO THE SCORE, because the score is what makes this one invisible: a
+    // contradicted film can grade well, and `critique-take`'s own warning is
+    // swallowed (iterate captures its stdout). Without this line an operator
+    // running the documented entry point sees the contradiction nowhere.
+    const said = r.contradiction;
+    if (said) {
+      console.log(`  ⚠ it contradicts the screen — claims "${said.claim.slice(0, 80)}"`);
+      console.log(`    but the screen reads "${said.screen.slice(0, 80)}"`);
+    }
   }
   const step = nextStep({ ...r, target, n, attempts });
   if (step === 'reached-target') {

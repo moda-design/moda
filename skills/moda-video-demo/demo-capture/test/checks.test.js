@@ -27,7 +27,8 @@ const { checkWalkFinished, GAVE_UP } = require('../src/walk-outcome.js');
 const { checkLegibility } = require('../src/legibility-check.js');
 const { recordIsMeasured } = require('../src/measured.js');
 
-const { keptReport, nextStep, canSelect } = require('../src/kept-report.js');
+const { keptReport, nextStep, canSelect, betterTake, CONTRADICTION_FINDING,
+  TRUTH_OVER_POLISH } = require('../src/kept-report.js');
 
 const HERE = path.join(__dirname, '..');
 const tmp = () => mkdtempSync(path.join(tmpdir(), 'demo-test-'));
@@ -820,8 +821,17 @@ test('run.mjs has exactly ONE best-selection assignment', () => {
   const assignments = src.split('\n').filter((l) => /\bbest\s*=\s*r\b/.test(l) && !l.trim().startsWith('//'));
   assert.strictEqual(assignments.length, 1,
     `expected one \`best = r\` assignment, found ${assignments.length}:\n${assignments.join('\n')}`);
-  assert.match(assignments[0], /canSelect\(/,
-    'the selection assignment must go through canSelect, not an inline predicate');
+  assert.match(assignments[0], /betterTake\(/,
+    'the selection assignment must go through betterTake, not an inline predicate');
+
+  // AND the refusal must survive inside it. `betterTake` absorbed `canSelect`
+  // when the contradiction became a tie-break, so the guard has to follow it
+  // there: asserting only the call site would let the predicate quietly stop
+  // refusing an unreconciled report while this test still passed.
+  const kr = readFileSync(path.join(HERE, 'src', 'kept-report.js'), 'utf8');
+  const body = kr.slice(kr.indexOf('function betterTake('));
+  assert.match(body.slice(0, body.indexOf('\n}')), /if \(!canSelect\(candidate\)\) return false;/,
+    'betterTake must refuse anything canSelect refuses, before any comparison');
 });
 
 
@@ -2620,8 +2630,32 @@ test('the genre vocabulary is enforced, not merely suggested', () => {
   // COUNTING THE CLAMP IS NOT ENOUGH. Dropping `issues` from the frames return
   // leaves the clamp in the file, unused, and a count-based assertion passes
   // while the default path ships unclamped issues again.
-  assert.match(src, /via: 'frames', sheet, \.\.\.out, issues \}/,
+  assert.match(src, /via: 'frames', sheet, \.\.\.out, issues,/,
     'the frames return must ship the CLAMPED issues, not spread the parsed JSON');
+  // `contradiction` has the same hazard and further to travel: unnormalised it
+  // becomes a false flow finding, pollutes the guidance handed to the next
+  // discovery pass, and reaches two `.slice()` calls that a bare string or a
+  // `{}` would crash. `...out` would carry the model's raw key, so the
+  // normalised value has to be assigned after it — in BOTH paths, frames being
+  // the default and the one that spreads. It does NOT refuse a publish: the
+  // test ~1,570 lines below pins that, and these two must not disagree.
+  const normalised = src.match(/contradiction: admissibleContradiction\(/g) || [];
+  assert.strictEqual(normalised.length, 2,
+    `both critique paths must normalise the contradiction, found ${normalised.length}`);
+  // PRESENCE BEFORE ORDER. `indexOf` returns -1 when the needle is absent, and
+  // -1 is less than every real index — so comparing the two directly passes
+  // whenever the normaliser call is MISSING, which is the arrangement this
+  // assertion exists to reject. Both reviewers caught it; the message was a
+  // claim about a check rather than a check.
+  const framesReturn = src.slice(src.indexOf("via: 'frames'"));
+  const atNormalise = framesReturn.indexOf('contradiction: admissibleContradiction(');
+  const atSpread = framesReturn.indexOf('...out');
+  const atEnd = framesReturn.indexOf(';');
+  assert.ok(atNormalise > -1, 'the frames return must normalise the contradiction at all');
+  assert.ok(atSpread > -1, 'and must still spread the parsed reply');
+  assert.ok(atSpread < atNormalise && atNormalise < atEnd,
+    'the normalised value must be assigned AFTER the spread and inside the same return, '
+    + `got spread@${atSpread} normalise@${atNormalise} end@${atEnd}`);
 });
 
 test('the voiceover claim follows the take, and marketing never has one', () => {
@@ -4053,4 +4087,253 @@ test('the FULL-BLEED lane is unchanged by the clip-aware inverse', () => {
   const explicit = shotsFor(program, full, click);
   assert.deepEqual(omitted.zoomFraming, explicit.zoomFraming);
   assert.ok(!omitted.zoomFraming.bad, 'a centred punch-in on the full-bleed lane must still be well framed');
+});
+
+// ── the contradiction finding (ENG-6375) ─────────────────────────────────────
+//
+// The critique could always SEE that the film asserted something the screen
+// denied; it had no way to say so. The observed run published a film whose 90px
+// headline promised an endpoint that "lets Claude Code design in Moda" over a
+// screen reading "read-only filesystem over all Moda documentation", and the
+// grader's own summary called it a success.
+
+test('a contradiction is carried from the cut it describes, like the score', () => {
+  const critique = { score: 4, issues: [], contradiction: { claim: 'c', screen: 's', atSeconds: 1 } };
+
+  // No iterate run: the critique's own finding stands.
+  assert.deepStrictEqual(keptReport({ kept: null, critique }).contradiction,
+    { claim: 'c', screen: 's', atSeconds: 1 });
+
+  // Iterated: the KEPT round wins, because a later round's finding is about a
+  // cut that was reverted.
+  const kept = { score: 7, issues: [], contradiction: { claim: 'k', screen: 'ks', atSeconds: 2 } };
+  assert.strictEqual(keptReport({ kept, critique }).contradiction.claim, 'k');
+
+  // A kept cut that was CLEAN must not inherit the last critique's finding.
+  assert.strictEqual(
+    keptReport({ kept: { score: 7, issues: [], contradiction: null }, critique }).contradiction, null,
+    'a clean kept cut must not inherit an older critique\'s contradiction');
+
+  // An unreconciled report has no findings at all, this one included.
+  assert.strictEqual(keptReport({ kept: { reconciled: false }, critique }).contradiction, null);
+});
+
+test('a contradiction does NOT refuse selection — it is a finding, not a gate', () => {
+  // Deliberate, and measured: over seven runs against the film it was written
+  // for the detector fired 6 times and named the real defect 3, and its
+  // false-positive rate against a truthful film is unmeasured. That is enough
+  // to spend a walk on and not enough to hold a publish. This test exists so
+  // the refusal is not added back without that measurement.
+  assert.strictEqual(
+    canSelect({ outDir: '/tmp/x', usable: true, contradiction: { claim: 'c', screen: 's' } }), true,
+    'a contradiction must not block publication until its false-positive rate is measured');
+  assert.strictEqual(canSelect({ outDir: '/tmp/x', usable: false, contradiction: null }), false,
+    'the unreconciled refusal must still stand');
+});
+
+test('both critique paths ask the truth question, and both normalise the answer', () => {
+  // A TWO-SIDED SEAM, and this file has already paid for getting it wrong once:
+  // `assertGenrePassed` exists because a fact was guarded on the video path and
+  // not the frame path — and frames is the DEFAULT, since no GEMINI_API_KEY
+  // means frames. A criterion on one side only is a check that is off for most
+  // runs.
+  const { buildPrompt, sheetPrompt, admissibleContradiction } = require('../src/critique.js');
+  for (const [name, p] of [
+    ['video', buildPrompt('g', null, false, true, true)],
+    ['frames', sheetPrompt('g', 20, '/tmp/s.png', 2, null, true)],
+  ]) {
+    assert.match(p, /CONTRADICTS? them/, `${name}: must ask whether the screen contradicts the claims`);
+    assert.match(p, /"contradiction":/, `${name}: must offer the slot to answer in`);
+    assert.match(p, /return null/, `${name}: must allow "nothing wrong" without inventing one`);
+  }
+
+  // The normaliser is what stands between a hallucinated key and the loop.
+  // BOTH quotes are required: the design is that the grader shows its evidence,
+  // and a finding with no evidence is the waving this exists to replace.
+  for (const junk of [null, undefined, {}, 'x', [], { claim: 'a' }, { screen: 'b' }, { claim: '', screen: 'b' }]) {
+    assert.strictEqual(admissibleContradiction(junk), null, `must reject ${JSON.stringify(junk)}`);
+  }
+  assert.deepStrictEqual(admissibleContradiction({ claim: ' a ', screen: 'b', atSeconds: 'x' }),
+    { claim: 'a', screen: 'b', atSeconds: null }, 'trims, and refuses a non-numeric timestamp');
+});
+
+test('the contradiction survives to the consumer that reads it', () => {
+  // THE BUG THIS CLASS KEEPS HAVING. `keptReport` reads the field off
+  // `iterate.json`, falling back to `critique.json` — and when this was first
+  // wired NEITHER writer persisted it, so the whole feature resolved to null at
+  // every call site while every unit test passed.
+  const critiqueTake = readFileSync(path.join(HERE, 'critique-take.mjs'), 'utf8');
+  assert.match(critiqueTake, /contradiction: verdict\.contradiction \?\? null/,
+    'critique-take must persist the contradiction into critique.json');
+
+  const iterate = readFileSync(path.join(HERE, 'iterate.mjs'), 'utf8');
+  assert.match(iterate, /contradiction: critique\.contradiction \?\? null/,
+    'iterate must capture the KEPT round\'s contradiction');
+  assert.match(iterate, /contradiction: best\.contradiction \?\? null/,
+    'iterate must persist it into iterate.json');
+
+  // And run.mjs has to fold it into the findings, or it reaches nothing.
+  const run = readFileSync(path.join(HERE, 'run.mjs'), 'utf8');
+  assert.match(run, /if \(report\.contradiction\)/,
+    'run.mjs must turn the contradiction into a flow finding');
+  // The SHARED constant, not a literal. `run.mjs` creates the finding and
+  // `nextStep` matches on it; spelled out in both, a rename would leave the
+  // early exit matching nothing, and the symptom is a contradicted film quietly
+  // reported "good enough" — the exact defect this change exists to remove.
+  assert.match(run, /type: CONTRADICTION_FINDING/,
+    'run.mjs must tag the finding with the shared constant, not a literal');
+  assert.match(run, /CONTRADICTION_FINDING \} = require\('\.\/src\/kept-report\.js'\)/,
+    'and import it from the module that matches on it');
+
+  // And it has to be SAID. critique-take's own warning is swallowed — iterate
+  // captures its stdout — so an operator on the documented entry point would
+  // otherwise find a contradicted film reported nowhere.
+  assert.match(iterate, /contradicts the screen/, 'iterate must print it per round');
+  assert.match(run, /it contradicts the screen/, 'run must print it beside the attempt score');
+
+  // `graded` may be set ONLY where critique.json actually parsed. Inferred from
+  // a null contradiction instead, an ungraded take reads as truthful.
+  assert.match(run, /let graded = false;/, 'run.mjs must default an attempt to ungraded');
+  assert.match(run, /graded = report\.usable;/,
+    'and may only mark it graded from a parsed, reconciled report');
+  assert.match(run, /usable, graded, contradiction/, 'and must return it for the comparator');
+});
+
+test('a contradiction stops the loop calling a take good enough', () => {
+  // THE CASE THE FEATURE EXISTS FOR, and it was inert: `nextStep` returned
+  // 'reached-target' before it ever looked at the findings. The dangerous film
+  // is the WELL-MADE one — ENG-6375 records "layout, camera, captions and
+  // pacing were all fine; the film simply demonstrates the wrong feature" — so
+  // it scores at or above target, and the loop would append the finding and
+  // stop on the line above it with attempts still unspent.
+  const contradicted = [{ type: CONTRADICTION_FINDING, severity: 'high', fix: 're_record' }];
+  assert.strictEqual(
+    nextStep({ usable: true, score: 9, flowFindings: contradicted, target: 8, n: 1, attempts: 3 }),
+    're-record', 'a contradicted take is never "good enough", however well made');
+  assert.strictEqual(
+    nextStep({ usable: true, score: 9, flowFindings: [], target: 8, n: 1, attempts: 3 }),
+    'reached-target', 'and a clean one still stops — the control for the line above');
+
+  // It defeats the early exit, NOT the attempt budget: the loop must still end.
+  assert.strictEqual(
+    nextStep({ usable: true, score: 9, flowFindings: contradicted, target: 8, n: 3, attempts: 3 }),
+    'out-of-attempts', 'it must not loop past the budget');
+
+  // Defeating `reached-target` is a different decision from refusing to
+  // publish, and only the first is taken: see canSelect.
+  assert.strictEqual(canSelect({ outDir: '/tmp/x', usable: true, contradiction: { claim: 'c', screen: 's' } }),
+    true, 'stopping the loop must not have become a publish gate');
+});
+
+test('a truthful retake displaces a contradicted one that scored higher', () => {
+  // The re-walk was DECORATIVE without this. `nextStep` spends another attempt
+  // on a contradiction, but selection ranked on score alone — and ENG-6375's
+  // premise is that the contradicted film is well made ("layout, camera,
+  // captions and pacing were all fine"), so it scores high. A truthful retake
+  // would have had to out-score it to displace it, and a clean 7 losing to a
+  // contradicted 8 republishes the lie while reporting the re-walk as done.
+  const contradicted = { outDir: '/tmp/a', usable: true, graded: true, score: 8,
+    contradiction: { claim: 'c', screen: 's' } };
+  const cleanerButWorse = { outDir: '/tmp/b', usable: true, graded: true, score: 7,
+    contradiction: null };
+
+  assert.strictEqual(betterTake(cleanerButWorse, contradicted), true,
+    'a truthful take must win even a point down');
+  assert.strictEqual(betterTake(contradicted, cleanerButWorse), false,
+    'and the contradicted one must not win it back');
+
+  // Within a class, score still decides — the control for the line above.
+  assert.strictEqual(betterTake({ ...cleanerButWorse, score: 9 }, cleanerButWorse), true);
+  assert.strictEqual(betterTake({ ...cleanerButWorse, score: 5 }, cleanerButWorse), false);
+  assert.strictEqual(betterTake({ ...contradicted, score: 9 }, contradicted), true,
+    'two contradicted takes still rank by score — this is a preference, not a refusal');
+
+  // A TIE-BREAK, NOT A GATE: with nothing else on offer the contradicted take
+  // is still selected and still publishes. That is the decision the
+  // measurement supports; `canSelect` stays open.
+  assert.strictEqual(betterTake(contradicted, null), true,
+    'a contradicted take must still be publishable when it is all there is');
+
+  // The refusal that IS a gate must survive inside the new predicate.
+  assert.strictEqual(betterTake({ outDir: '/tmp/c', usable: false, score: 10 }, cleanerButWorse), false,
+    'an unreconciled report must never win, at any score');
+});
+
+test('an UNGRADED take is not mistaken for a truthful one', () => {
+  // The regression the tie-break introduced, caught by both reviewers. An
+  // attempt can record and never be graded — `critiqueFrames` shells out to the
+  // `claude` CLI, so a missing binary, a rate limit or a non-JSON reply leaves
+  // no critique.json — and `attemptOnce` deliberately keeps it selectable at
+  // score 0. Read as "no contradiction" it counts as truthful, displaces a
+  // graded 8/10, and the run publishes the ungraded cut reporting `done (0/10)`:
+  // strictly worse than the score-only ranking it replaced.
+  //
+  // "Asked and found nothing" and "never asked" must not look alike — which is
+  // what critique-take.mjs says where it writes the field, and what this test
+  // exists to keep true here.
+  const gradedContradicted = { outDir: '/tmp/a', usable: true, graded: true, score: 8,
+    contradiction: { claim: 'c', screen: 's' } };
+  const ungraded = { outDir: '/tmp/b', usable: true, graded: false, score: 0, contradiction: null };
+
+  assert.strictEqual(betterTake(ungraded, gradedContradicted), false,
+    'an ungraded take must not beat a graded one on a question it was never asked');
+
+  // Still selectable when it is the only artifact — the point is the ordering,
+  // not a new refusal.
+  assert.strictEqual(betterTake(ungraded, null), true,
+    'an ungraded take must still be selectable when nothing else is');
+
+  // And the tie-break must still work between two GRADED takes: the control
+  // that stops this being fixed by disabling the preference outright.
+  const gradedClean = { outDir: '/tmp/c', usable: true, graded: true, score: 7, contradiction: null };
+  assert.strictEqual(betterTake(gradedClean, gradedContradicted), true,
+    'the preference must survive between two graded takes');
+
+  // An ungraded take out-scoring a graded one still wins on score, exactly as
+  // before this change — nothing here was meant to alter that.
+  assert.strictEqual(betterTake({ ...ungraded, score: 9 }, gradedContradicted), true);
+});
+
+test('preferring truth over polish is BOUNDED, and the comparator is antisymmetric', () => {
+  // Unbounded, this was not the weak intervention its own docstring claimed.
+  // Cleanliness deciding outright means a false positive on a 9/10 hands the
+  // run to whatever the retake produced — a 2/10 with blank screens, or (since
+  // keptReport resolves a missing score to 0) a graded take with no score at
+  // all — and publishes the materially worse film while reporting the re-walk
+  // as done. That is the same mis-reported success the change exists to remove.
+  const dirty = (score) => ({ outDir: '/tmp/a', usable: true, graded: true, score,
+    contradiction: { claim: 'c', screen: 's' } });
+  const clean = (score) => ({ outDir: '/tmp/b', usable: true, graded: true, score,
+    contradiction: null });
+
+  assert.strictEqual(TRUTH_OVER_POLISH, 2, 'the margin is a judgement; changing it is a decision');
+
+  // Inside the margin the truthful take wins, including exactly AT it.
+  assert.strictEqual(betterTake(clean(7), dirty(8)), true, 'one point down still wins');
+  assert.strictEqual(betterTake(clean(6), dirty(8)), true, 'exactly at the margin still wins');
+  // Past it, it does not — this is the row that fails on an unbounded preference.
+  assert.strictEqual(betterTake(clean(5), dirty(8)), false, 'past the margin it does not');
+  assert.strictEqual(betterTake(clean(0), dirty(9)), false,
+    'a materially worse film must not ship on an unmeasured false positive');
+
+  // Symmetric from the other side: a contradicted take displaces a truthful one
+  // only by beating it by MORE than the margin.
+  assert.strictEqual(betterTake(dirty(8), clean(7)), false);
+  assert.strictEqual(betterTake(dirty(9), clean(7)), false, 'exactly the margin is not enough');
+  assert.strictEqual(betterTake(dirty(10), clean(7)), true, 'beyond it, craft wins');
+
+  // ANTISYMMETRY across the whole grid. A comparator where both sides can win
+  // makes `best` depend on attempt order, which is invisible until it bites.
+  for (let a = 0; a <= 10; a++) {
+    for (let b = 0; b <= 10; b++) {
+      for (const da of [true, false]) {
+        for (const db of [true, false]) {
+          const A = da ? dirty(a) : clean(a);
+          const B = db ? dirty(b) : clean(b);
+          assert.ok(!(betterTake(A, B) && betterTake(B, A)),
+            `both win: ${a}/${da ? 'dirty' : 'clean'} vs ${b}/${db ? 'dirty' : 'clean'}`);
+        }
+      }
+    }
+  }
 });

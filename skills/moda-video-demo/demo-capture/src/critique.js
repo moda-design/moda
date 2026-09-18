@@ -8,6 +8,14 @@
 // all. Native video understanding can.
 //
 // Advisory, never a gate. It informs the next run; it does not block this one.
+//
+// `contradiction` is reported alongside the score rather than inside `issues`
+// because it is a different KIND of claim — the film asserting something the
+// screen denies (ENG-6375), not a craft defect — and because the issues list is
+// clamped to a per-genre vocabulary it does not belong to. `run.mjs` turns it
+// into a flow finding, so it steers the next walk and still blocks nothing.
+// Measured before being trusted: 6 fires in 7 runs against the film it was
+// written for, and only 3 of those named the actual defect.
 const { existsSync } = require('node:fs');
 
 const MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
@@ -86,6 +94,68 @@ function admissibleIssue(x, allowedTypes, genre, hasVoiceover) {
   };
 }
 
+/**
+ * The truth question, asked identically of both graders.
+ *
+ * ONE string because the two prompts are a two-sided seam and this file has
+ * already paid for that once: `assertGenrePassed` exists because a fact was
+ * guarded on the video path and not the frame path, and the frame path is the
+ * DEFAULT — no GEMINI_API_KEY means frames. A criterion on one side only is a
+ * gate that is off for most runs.
+ *
+ * Written against the observed failure (ENG-6375), where the grader did not
+ * merely miss the defect but CERTIFIED it: "The video effectively shows the
+ * location of the connector URL", over a film whose 90px headline promised an
+ * endpoint that "lets Claude Code design in Moda" and whose screen read
+ * "read-only filesystem over all Moda documentation" — both legible in the same
+ * frame. So it asks for QUOTES from both sides rather than a verdict: a grader
+ * that must copy out the words it is comparing cannot wave at them.
+ */
+const CONTRADICTION_INSTRUCTION =
+  'SEPARATELY from the issues above, and last: check the film\'s own claims against what is ' +
+  'actually on screen. Its headline, captions and narration ASSERT things. Read the text ' +
+  'VISIBLE in the frames — product labels, URLs, descriptions, button text — and decide ' +
+  'whether it SUPPORTS those assertions or CONTRADICTS them.\n' +
+  'This is not about polish. A well-paced, well-captioned film that demonstrates a DIFFERENT ' +
+  'feature from the one its words name is exactly what this question exists to catch, and it ' +
+  'is the failure a viewer cannot spot without knowing the product. Judge only what you can ' +
+  'read on screen; do not assume the film is about what it says it is about.\n' +
+  'Quote both sides verbatim. If the visible text supports every claim the film makes, ' +
+  'return null — do not invent one.';
+
+//: The `contradiction` slot, spelled the same into both prompts' JSON shape.
+const CONTRADICTION_SHAPE =
+  '"contradiction": {"claim": "<the film\'s own words, quoted>", ' +
+  '"screen": "<the visible text that contradicts them, quoted>", ' +
+  '"atSeconds": <number>} or null';
+
+/**
+ * A contradiction the report may act on, or null.
+ *
+ * NORMALISED, never spread. `critiqueFrames` returns `{ ...out, issues }`, so an
+ * unvalidated key from the model would reach the consumers verbatim: a flow
+ * finding that steers the next walk, the guidance text handed to discovery, and
+ * two `.slice()` calls printing it to the operator — where a bare string or a
+ * `{}` is a crash or a line of noise that costs a whole re-record.
+ *
+ * Both quotes are required and must be non-empty: the design is that the grader
+ * shows its evidence, and a finding with no evidence is the waving this exists
+ * to replace. (It does NOT refuse a publish — see `canSelect`.)
+ */
+function admissibleContradiction(raw) {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
+  const claim = typeof raw.claim === 'string' ? raw.claim.trim() : '';
+  const screen = typeof raw.screen === 'string' ? raw.screen.trim() : '';
+  if (!claim || !screen) return null;
+  return {
+    claim,
+    screen,
+    // `Number.isFinite`, not `typeof`: NaN and Infinity are both numbers, and
+    // either one reaches a `@${atSeconds}s` in the operator's console. (Gemini.)
+    atSeconds: Number.isFinite(raw.atSeconds) ? raw.atSeconds : null,
+  };
+}
+
 function buildPrompt(goal, genre, hasMusic, hasVoiceover, composited) {
   return (
     `You are a senior product-demo video editor reviewing an automated ` +
@@ -105,8 +175,10 @@ function buildPrompt(goal, genre, hasMusic, hasVoiceover, composited) {
       `overlap each other\n`) +
     `- visual glitches: blank or half-rendered screens, nothing happening, the ` +
     `wrong thing on screen\n\n` +
+    `${CONTRADICTION_INSTRUCTION}\n\n` +
     `Return ONLY JSON of this shape:\n` +
-    `{"score": <1-10>, "summary": "<one or two sentences>", "issues": [` +
+    `{"score": <1-10>, "summary": "<one or two sentences>", ` +
+    `${CONTRADICTION_SHAPE}, "issues": [` +
     `{"type": "<${typesFor(VIDEO_TYPES, genre, hasVoiceover).join('|')}>",` +
     `"severity": "<low|medium|high>", "atSeconds": <number>, ` +
     `"description": "<what is wrong>", "fix": "<${fixesFor(genre, hasVoiceover).join('|')}>"}]}\n` +
@@ -279,6 +351,7 @@ async function critiqueVideo({ videoPath, goal, genre, hasMusic, hasVoiceover, c
       via: 'gemini',
     score: typeof json.score === 'number' ? json.score : null,
     summary: json.summary || '',
+    contradiction: admissibleContradiction(json.contradiction),
     issues: issues.map((x) => ({
       type: x.type || 'other',
       severity: x.severity || 'low',
@@ -358,8 +431,12 @@ function sheetPrompt(goal, durationSec, sheet, stepSec, genre, hasVoiceover) {
     'You cannot judge motion, audio or pacing from stills — do NOT comment on those, and do not report',
     'the absence of anything you cannot see.',
     '',
+    // The stills carry the headline and the captions as TEXT, so this question is
+    // answerable here — and it has to be, because this is the default path.
+    CONTRADICTION_INSTRUCTION,
+    '',
     'Return ONLY JSON:',
-    '{"score": <1-10>, "summary": "<one or two sentences>", "issues": [{"type":',
+    `{"score": <1-10>, "summary": "<one or two sentences>", ${CONTRADICTION_SHAPE}, "issues": [{"type":`,
     `"<${typesFor(FRAME_TYPES, genre, hasVoiceover).join('|')}>",`,
     `"severity": "<low|medium|high>", "atSeconds": <number>, "description": "<what is wrong>", "fix": "<${fixesFor(genre, hasVoiceover).join('|')}>"}]}`,
     'If it is genuinely clean, return a high score and an empty issues array. Do not invent problems.',
@@ -396,7 +473,12 @@ async function critiqueFrames({ videoPath, goal, outDir, genre, hasVoiceover }) 
     const issues = (Array.isArray(out.issues) ? out.issues : [])
       .map((x) => admissibleIssue(x, typesFor(FRAME_TYPES, genre, hasVoiceover), genre, hasVoiceover))
       .filter(Boolean);
-    return { ok: true, via: 'frames', sheet, ...out, issues };
+    // AFTER the spread, deliberately: `...out` would otherwise carry the model's
+    // raw `contradiction` straight through to its consumers — a flow finding,
+    // the guidance text handed to the next discovery pass, and two `.slice()`
+    // calls printing it. (It does not gate a publish; see `canSelect`.)
+    return { ok: true, via: 'frames', sheet, ...out, issues,
+      contradiction: admissibleContradiction(out.contradiction) };
   } catch (e) {
     return { ok: false, reason: String(e.message).split('\n')[0].slice(0, 140) };
   }
@@ -406,4 +488,4 @@ async function critiqueFrames({ videoPath, goal, outDir, genre, hasVoiceover }) 
 //: text — a sentence promising captions a marketing take does not have — so a
 //: guard that cannot read the prompt cannot see it (ENG-6295).
 module.exports = { critiqueVideo, critiqueFrames, buildPrompt, sheetPrompt,
-  admissibleIssue, typesFor, VIDEO_TYPES, FRAME_TYPES, FIXES };
+  admissibleIssue, admissibleContradiction, typesFor, VIDEO_TYPES, FRAME_TYPES, FIXES };
