@@ -8,6 +8,7 @@ import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
 const { brandCard } = require('./src/outro.js');
 const { recordIsMeasured } = require('./src/measured.js');
+const { readConclusion } = require('./src/conclusion.js');
 import { homedir } from 'node:os';
 
 const outDir = process.argv[2], id = process.argv[3], name = process.argv[4];
@@ -168,9 +169,43 @@ const pacing = existsSync(`${outDir}/pacing.json`)
   ? JSON.parse(readFileSync(`${outDir}/pacing.json`, 'utf8'))
   : {};
 const about = typeof pacing.about === 'string' ? pacing.about.trim() : '';
+// The film's closing sentence, WRITTEN on the close card instead of spoken over
+// a frozen final frame (ENG-6354).
+//
+// READ, NOT RE-DERIVED. `finish.mjs` is what decided, and it recorded the
+// decision; deciding again here from the ambient DEMO_BRAND would let a
+// standalone re-run of either stage disagree with the other, which says the
+// line twice or not at all and is silent both ways. A missing record means
+// finish did not suppress it, so the audio already carries it.
+const recorded = readConclusion(outDir, id);
+const conclusion = recorded.written || '';
+// SKEW, NAMED. The record says finish left this line out of the audio; if the
+// kit it was chosen against is not the one being published, it is landing on a
+// card nobody picked for it. Not fatal — the prose is still the film's — but
+// silent would be worse than loud.
+if (conclusion && recorded.brandId && recorded.brandId !== brandId) {
+  console.log(
+    brandId
+      ? `    NOTE: the closing line was written for brand ${recorded.brandId} and this publish uses ${brandId}`
+      : // THE LIKELIER SKEW, and the one round 2 made reachable: with no brand
+        // here the close page is built from the line alone, so it keeps the
+        // words and loses the ground, the ink and the mark. Content preserved,
+        // which was the point — but an operator should not have to infer it
+        // from a missing clause in the summary.
+        `    NOTE: the closing line was written for brand ${recorded.brandId} and this publish has no ` +
+        'DEMO_BRAND — the close page carries the line with no mark, ground or ink'
+  );
+}
 const compositionPath = `${outDir}/${id}.composition.json`;
 let composition = null;
-if (about || card) {
+// `conclusion` ALONE is enough to build a composition. finish has already
+// dropped the line from the audio by the time this runs, so a publish that
+// skipped the close page because the ambient DEMO_BRAND was absent would lose
+// the film's last sentence outright — neither heard nor read. That is the loss
+// `src/conclusion.js` exists to prevent, and the server agrees: a headline is
+// sign-off content on its own, so `close: { headline }` with no brand facts is
+// a valid card. (Review round 2.)
+if (about || card || conclusion) {
   composition = {
     frame: 'landscape',
     ...(about ? { title: about, hook: { title: about } } : {}),
@@ -179,28 +214,57 @@ if (about || card) {
     // `card` alone is not evidence of content: a kit with no tagline, no
     // company url and no logo would produce a 4-second hold on a flat colour,
     // which is exactly the blank page `Storyboard` exists to avoid.
-    ...(card && (card.tagline || card.url || card.logoFileId)
+    // A CONCLUSION IS SIGN-OFF CONTENT. Without it in this condition a kit with
+    // no tagline, url or mark would produce no close page — and `finish.mjs`
+    // has already stopped speaking the line by then, so the film's last
+    // sentence would be neither heard nor read. The server's own validator
+    // counts it the same way, for the same reason.
+    ...(conclusion || (card && (card.tagline || card.url || card.logoFileId))
       ? {
           close: {
-            ...(card.tagline ? { tagline: card.tagline } : {}),
-            ...(card.url ? { url: card.url } : {}),
-            ...(card.background ? { background: card.background } : {}),
-            ...(card.ink ? { ink: card.ink } : {}),
+            // It REPLACES the tagline on the card: both are prose, and a
+            // sign-off carrying two sentences reads as a page that could not
+            // choose. So only ONE is sent. Sending both is accepted — the
+            // server drops the tagline and warns `close_tagline_dropped` — but
+            // that warning then fired on every correct branded publish, which
+            // is how an advisory teaches its reader to ignore advisories. It
+            // is for a caller who did not know the precedence; this one does.
+            ...(conclusion ? { headline: conclusion } : {}),
+            ...(card?.tagline && !conclusion ? { tagline: card.tagline } : {}),
+            ...(card?.url ? { url: card.url } : {}),
+            ...(card?.background ? { background: card.background } : {}),
+            ...(card?.ink ? { ink: card.ink } : {}),
             // The kit's own `file_` id, passed straight through. The server
             // refuses a pre-built ref because it cannot verify its capability
             // signature, and an unsigned one publishes a canvas whose export
             // 401s on the image with nothing wrong at publish time.
-            ...(card.logoFileId ? { mark: card.logoFileId } : {}),
+            ...(card?.logoFileId ? { mark: card.logoFileId } : {}),
           },
         }
       : {}),
   };
   writeFileSync(compositionPath, JSON.stringify(composition, null, 2));
   const pages = 1 + (composition.hook ? 1 : 0) + (composition.close ? 1 : 0);
+  // Hoisted so the guard and the read sit on ONE line: the derived null-card
+  // check in checks.test.js reads line by line, and it is right to — a read
+  // whose guard is on another line is a refactor away from being unguarded.
+  const droppedTagline = composition.close?.headline && card?.tagline ? card.tagline.slice(0, 40) : '';
   console.log(
     `    composition: ${pages} page(s)` +
       (about ? ` · "${about.slice(0, 60)}${about.length > 60 ? '…' : ''}"` : ' · no headline (no `about`)') +
-      (composition.close ? ` · close on ${card.background}${composition.close.mark ? ' with mark' : ''}` : '')
+      (composition.close
+        ? ` · close${card?.background ? ` on ${card.background}` : ''}` +
+          `${composition.close.mark ? ' with mark' : ''}` +
+          (composition.close.headline ? ' · closing line WRITTEN, not spoken' : '') +
+          // SAID HERE, because it can no longer be said anywhere else. The
+          // server warns `close_tagline_dropped` when both prose fields
+          // arrive; withholding the tagline (so that advisory stops firing on
+          // every correct run) also removed the only statement of the fact.
+          // The kit's tagline really is not on the card — same kit, same
+          // command, different sign-off — and without this every line the run
+          // prints reports success.
+          (droppedTagline ? ` · the kit's tagline "${droppedTagline}" is not on the card` : '')
+        : '')
   );
 }
 
@@ -215,6 +279,46 @@ const located = (doc.actions ?? []).filter((a) => a.clickX != null).map((a) => a
 if (!noZoom && located.length) args.push('--accept-zoom', located.join(','));
 
 const published = moda(args);
+
+// A HIDDEN CLOSE PAGE IS FATAL WHEN IT CARRIED THE CONCLUSION — and this is
+// checked FIRST, before the mp4 is copied and the success lines are printed.
+// The verb has already exported by the time it returns, so the file exists
+// either way; what must not happen is handing the operator a Desktop file and
+// a "done" line for a film missing its conclusion.
+//
+// `publish_demo` turns a rejected chrome-page markup write into a SUCCESSFUL
+// publish: it hides the page and warns. Right for a decorative card, wrong for
+// this one — `finish.mjs` has already left the line out of the audio, so a
+// hidden close page ships a film carrying the conclusion neither spoken nor
+// written.
+//
+// MATCHED ON `close`, not on the bare prefix. The warning names the card since
+// ENG-6354; without that, a rejected HOOK on a take whose close wrote fine
+// aborted the publish with this message — a false diagnosis about the wrong
+// card, and the camera grading below never ran.
+const closeRejected =
+  conclusion &&
+  (published.warnings ?? []).map(String).find((w) => w.startsWith('chrome_page_not_written: close'));
+if (closeRejected) {
+  // THE REASON GOES WITH IT. This check now runs before the warning dump below,
+  // which is the only place the server's warnings are ever printed — so exiting
+  // here would swallow the one thing that says WHAT to fix: the rejection is
+  // embedded in this warning's text. Telling an operator to fix markup while
+  // eating the rejection reason is a remedy they cannot act on.
+  console.error(`\n  ${closeRejected}`);
+  console.error(
+    '\n  the close page was rejected, and it was carrying the film\'s closing line — which is not in\n' +
+      '  the audio either, because it was written instead of spoken. Publishing this would ship a film\n' +
+      '  missing its conclusion entirely.\n' +
+      '\n' +
+      '  Re-run `finish.mjs` without DEMO_BRAND to have the line spoken again — it re-cuts the\n' +
+      '  narration, which re-publishing alone does not: this stage reads the decision finish\n' +
+      '  recorded, so re-running it without DEMO_BRAND changes nothing. Or fix the close page\n' +
+      '  markup and publish again. (ENG-6354.)'
+  );
+  process.exit(1);
+}
+
 
 // KEEP THE CAMERA THE SERVER JUST EMITTED, so the shot checks can grade it.
 //
@@ -248,6 +352,7 @@ copyFileSync(finalMp4, desktop);
 const url = published.editor_url ?? published.canvas?.editor_url ?? `(canvas ${published.canvas_id ?? published.canvas?.id})`;
 console.log(`\ncanvas  ${url}\nvideo   ${desktop}`);
 for (const w of published.warnings ?? []) console.log(`  · ${String(w).slice(0, 170)}`);
+
 
 // GRADE THE CAMERA THAT WAS JUST PUBLISHED.
 //

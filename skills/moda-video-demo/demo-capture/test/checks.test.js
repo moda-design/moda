@@ -4337,3 +4337,240 @@ test('preferring truth over polish is BOUNDED, and the comparator is antisymmetr
     }
   }
 });
+
+// ── the conclusion is WRITTEN, not spoken (ENG-6354) ─────────────────────────
+//
+// A spoken conclusion overruns the footage, so `finish.mjs` freezes the final
+// frame to let it finish. ENG-6306 made the brand card a PAGE after the
+// recording, so that freeze now plays in full and the film's last sentence
+// lands on a static screenshot of the app.
+
+test('the conclusion decision is one predicate, at every boundary', () => {
+  // Round 1 found the two stages re-deriving it differently — close enough to
+  // read as one rule and not one rule. Now there is a single function, tested
+  // on BEHAVIOUR rather than on the source text: the old guards matched the
+  // literal expressions, which cannot see a semantic divergence and break on a
+  // reformat.
+  const { chooseConclusion, MAX_WRITTEN_CHARS } = require('../src/conclusion.js');
+  const line = 'That is the whole handoff.';
+
+  assert.strictEqual(chooseConclusion({ pacing: { conclusion: { text: line } }, brandId: 'b1' }).written, line);
+  assert.strictEqual(chooseConclusion({ pacing: { conclusion: { text: line } }, brandId: null }).written, null,
+    'no brand means no close card to write it on, so it stays spoken');
+  assert.strictEqual(chooseConclusion({ pacing: {}, brandId: 'b1' }).written, null);
+  assert.strictEqual(chooseConclusion({ pacing: { conclusion: { text: '   ' } }, brandId: 'b1' }).written, null,
+    'a blank line is not a conclusion');
+
+  // THE 422 THIS EXISTS TO PREVENT. The server caps the card at 140, and a
+  // model-authored wrap-up over that is routine. Sent blind it aborts the
+  // publish AFTER the upload and AFTER finish dropped the line from the audio
+  // — no film and no spoken line. It falls back to spoken instead.
+  assert.strictEqual(chooseConclusion({ pacing: { conclusion: { text: 'y'.repeat(MAX_WRITTEN_CHARS) } }, brandId: 'b' }).written,
+    'y'.repeat(MAX_WRITTEN_CHARS), 'exactly at the cap is still written');
+  const over = chooseConclusion({ pacing: { conclusion: { text: 'y'.repeat(MAX_WRITTEN_CHARS + 1) } }, brandId: 'b' });
+  assert.strictEqual(over.written, null, 'one character over falls back to spoken, never to a failed publish');
+  assert.match(over.reason, /characters/, 'and says why, with the measurement in it');
+});
+
+test('a missing conclusion record means SPOKEN, never a guess', () => {
+  // The record is the contract between two processes. `capture.md` supports
+  // running the stages standalone, so publish cannot assume it saw the same
+  // ambient DEMO_BRAND finish did — it reads what finish wrote. An absent
+  // record means finish never suppressed the line, so the audio carries it and
+  // writing it on the card too would say it twice.
+  const { recordConclusion, readConclusion } = require('../src/conclusion.js');
+  const dir = mkdtempSync(path.join(tmpdir(), 'conclusion-'));
+
+  assert.strictEqual(readConclusion(dir, 'take').written, null, 'no record reads as spoken');
+
+  recordConclusion(dir, 'take', { written: null, reason: 'no brand' });
+  assert.strictEqual(readConclusion(dir, 'take').written, null, 'a recorded SPOKEN decision also reads as spoken');
+
+  recordConclusion(dir, 'take', { written: 'Written line.', reason: 'written' }, 'brand_a');
+  assert.strictEqual(readConclusion(dir, 'take').written, 'Written line.');
+  // THE BRAND TRAVELS WITH IT. The line was chosen against a particular kit,
+  // and a publish run standalone against a different one is putting it on a
+  // card nobody picked for it. Without this recorded, that is unnoticeable.
+  assert.strictEqual(readConclusion(dir, 'take').brandId, 'brand_a');
+
+  writeFileSync(path.join(dir, 'take.conclusion.json'), 'not json');
+  assert.deepStrictEqual(readConclusion(dir, 'take'), { written: null, brandId: null },
+    'an unreadable record is not a licence to guess');
+});
+
+test('a conclusion alone justifies a close page', () => {
+  // THE LOSS CASE. `finish.mjs` stops speaking the line as soon as one is
+  // written, so if a kit with no tagline, url or mark produced no close page,
+  // the film's last sentence would be neither heard nor read — worse than the
+  // frozen frame this replaces. The server's validator counts a headline as
+  // sign-off content for the same reason; this is the CLI half of that pair.
+  const publish = readFileSync(path.join(HERE, 'publish-take.mjs'), 'utf8');
+  // SUFFICIENT ON ITS OWN, on BOTH gates. Round 2 found the record closing only
+  // half the skew: the decision was read from it, but whether a close page
+  // existed at all was still re-derived from the ambient DEMO_BRAND — so a
+  // publish run standalone without it dropped the page and lost a line finish
+  // had already removed from the audio.
+  assert.match(publish, /if \(about \|\| card \|\| conclusion\) \{/,
+    'a conclusion alone must be enough to build a composition');
+  assert.match(publish, /\.\.\.\(conclusion \|\| \(card && \(card\.tagline \|\| card\.url \|\| card\.logoFileId\)\)/,
+    'and enough to justify the close page');
+  assert.match(publish, /\.\.\.\(conclusion \? \{ headline: conclusion \} : \{\}\)/,
+    'and must be sent as the card headline');
+  // ONE PROSE FIELD, not both. The server drops the tagline when a headline is
+  // present and warns `close_tagline_dropped` — so sending both made that
+  // advisory fire on every correct branded publish, which is how a warning
+  // teaches its reader to ignore warnings.
+  assert.match(publish, /card\?\.tagline && !conclusion \? \{ tagline: card\.tagline \} : \{\}/,
+    'the tagline must not be sent alongside a headline the card will render instead');
+  // AND THE DROP MUST STILL BE SAID. Withholding the tagline stops the
+  // server's `close_tagline_dropped` firing on every correct run — and also
+  // removes the only statement of the fact, so the kit's tagline silently
+  // stops appearing on the card. The CLI is the one making the choice, so it
+  // is the one that has to say so.
+  assert.match(publish, /is not on the card/,
+    'the CLI must report the tagline it withheld, since the server can no longer see it');
+
+  // And publish must READ the record rather than re-deriving the decision.
+  assert.match(publish, /readConclusion\(outDir, id\)/,
+    'publish must consume what finish recorded, not decide again');
+  // A brandless close page must not crash on a `card` that is now null.
+  //
+  // DERIVED, NOT LISTED. The first version of this named three properties and
+  // claimed "every card read" — `card?.url` and `card?.ink` went unchecked,
+  // and they are on the very path round 2 made reachable: a recorded
+  // conclusion with no DEMO_BRAND leaves `card === null` while the conclusion
+  // alone builds the page. Dropping a `?.` from either throws at the
+  // composition step, after the upload and after finish cut the line from the
+  // audio, with this guard still green. A covered subset that reads as full
+  // coverage is the shape the rubric names.
+  //
+  // So the list comes out of the file: every property read off `card`, and
+  // every line that reads one must also guard it on the same line.
+  const props = [...new Set([...publish.matchAll(/card\??\.([A-Za-z_$][\w$]*)/g)].map((m) => m[1]))];
+  assert.ok(props.length >= 5, `expected several card reads, found ${props.length}: ${props}`);
+  // TWO guard forms are real, and both are used: `card?.prop`, and a `card &&`
+  // that dominates the reads after it. A rule that only knew the first called
+  // the (correct) page gate a bug, which is the wrong direction for a guard.
+  for (const prop of props) {
+    for (const line of publish.split('\n')) {
+      const read = new RegExp(`(?<!\\?\\.)\\bcard\\.${prop}\\b`);
+      if (!read.test(line)) continue;
+      const guardedHere = new RegExp(`card\\?\\.${prop}\\b`).test(line);
+      const dominated = /\bcard &&/.test(line) && line.indexOf('card &&') < line.search(read);
+      assert.ok(guardedHere || dominated,
+        `a null card would throw on card.${prop} here: ${line.trim()}`);
+    }
+  }
+  const finish = readFileSync(path.join(HERE, 'finish.mjs'), 'utf8');
+  assert.match(finish, /recordConclusion\(outDir, id, conclusionChoice, process\.env\.DEMO_BRAND \|\| null\)/,
+    'finish must record what it actually did, AND the brand it decided against');
+});
+
+test('a rejected close page is not a successful publish when it carried the line', () => {
+  // THE FIFTH ROUTE TO THE SAME LOSS. `publish_demo` turns a rejected
+  // chrome-page markup write into a SUCCESSFUL publish — it hides the page and
+  // reports `chrome_page_not_written`, which is right for a decorative card
+  // and wrong for this one. finish has already left the conclusion out of the
+  // audio by then, so a hidden close page ships a film carrying it neither
+  // spoken nor written, and the command would exit 0 with the mp4 in hand.
+  const publish = readFileSync(path.join(HERE, 'publish-take.mjs'), 'utf8');
+  // MATCHED ON THE CARD, not the bare prefix. The warning is emitted per
+  // rejected chrome page, so a rejected HOOK produced an identical prefix and
+  // aborted a publish whose conclusion had written fine — a false diagnosis
+  // about the wrong card, with the camera grading skipped after it.
+  assert.match(publish, /startsWith\('chrome_page_not_written: close'\)/,
+    'publish must distinguish a rejected CLOSE from a rejected hook');
+  assert.match(publish, /^\s*conclusion &&$/m,
+    'and must only treat it as fatal when the page was carrying the written line');
+  // The matched warning carries the rejection REASON, and this check now runs
+  // before the only place warnings are printed — so exiting without it would
+  // tell an operator to fix markup while eating the explanation.
+  assert.match(publish, /\.find\(\(w\) => w\.startsWith\('chrome_page_not_written: close'\)\)/,
+    'the warning must be captured, not merely detected');
+  assert.match(publish, /console\.error\(`\\n {2}\$\{closeRejected\}`\)/,
+    'and printed, so the rejection reason survives the exit');
+  assert.match(publish, /process\.exit\(1\)/, 'and must fail rather than report success');
+
+  // BEFORE the artifact is handed over. The verb has already exported by the
+  // time it returns, so the check cannot prevent the file existing — but it
+  // must not follow the Desktop copy and the success lines.
+  assert.ok(
+    publish.indexOf("chrome_page_not_written: close") < publish.indexOf('copyFileSync(finalMp4'),
+    'the fatal check must run before the mp4 is copied and announced'
+  );
+
+  // The remedy has to be performable. Re-running THIS stage does nothing: it
+  // reads the decision finish recorded, so the line stays written and the
+  // audio stays cut. Only finish re-decides.
+  assert.match(publish, /Re-run `finish\.mjs` without DEMO_BRAND/,
+    'the remedy must name the stage that can actually carry it out');
+});
+
+test('the brandless skew is announced, not only the two-brand one', () => {
+  // The likelier skew, and the one round 2 made reachable: the record names a
+  // brand and this publish has none, so the close page is built from the line
+  // alone and keeps the words while losing the ground, ink and mark. The only
+  // other hint is a missing clause in a summary line.
+  const publish = readFileSync(path.join(HERE, 'publish-take.mjs'), 'utf8');
+  assert.match(publish, /recorded\.brandId && recorded\.brandId !== brandId/,
+    'the skew check must fire when this publish has no brand at all');
+  assert.match(publish, /no mark, ground or ink/, 'and must say what the page lost');
+});
+
+test('a marketing cut has no spoken line to move, so nothing is written', () => {
+  // The remedy is "written INSTEAD OF spoken", and on a marketing cut the
+  // status quo is SILENCE, not a frozen frame: `finish.mjs` sets `planned =
+  // []`, so planNarration never runs, nothing overruns and no tail is held.
+  // Writing it anyway applied the fix where the defect cannot occur — and cost
+  // the brand its tagline on the one genre defined as having no narration.
+  //
+  // Reachable and supported: DEMO_STYLE=marketing over a take pacing.js
+  // recorded as a tutorial leaves pacing.conclusion.text populated while
+  // finish builds a marketing cut.
+  const { chooseConclusion } = require('../src/conclusion.js');
+  const pacing = { conclusion: { text: 'That is the whole handoff.' } };
+
+  const marketing = chooseConclusion({ pacing, brandId: 'b1', style: 'marketing' });
+  assert.strictEqual(marketing.written, null, 'a marketing cut must not displace the tagline');
+  assert.match(marketing.reason, /no voiceover/);
+
+  // The control: every other genre still writes it, or the gate is just an off
+  // switch.
+  for (const style of ['tutorial', null, undefined]) {
+    assert.strictEqual(chooseConclusion({ pacing, brandId: 'b1', style }).written,
+      'That is the whole handoff.', `style ${String(style)} must still write it`);
+  }
+
+  // And finish must actually PASS the genre — the predicate cannot read it
+  // otherwise, and the omission looked exactly like the working code.
+  const finish = readFileSync(path.join(HERE, 'finish.mjs'), 'utf8');
+  assert.match(finish, /chooseConclusion\(\{ pacing, brandId: process\.env\.DEMO_BRAND \|\| null, style: STYLE \}\)/,
+    'finish must hand the genre to the choice');
+});
+
+test('the finish log never claims a spoken line the cut does not contain', () => {
+  // On a marketing cut `planned` is `[]`, so the conclusion is in neither the
+  // audio nor the card. The else-arm said "the closing line stays spoken",
+  // which contradicted its own reason — and compounded the earlier line
+  // announcing the conclusion's duration out of pacing.json, so a reader saw
+  // two messages implying it was in the film.
+  const finish = readFileSync(path.join(HERE, 'finish.mjs'), 'utf8');
+  assert.ok(!/the closing line stays spoken/.test(finish),
+    'the log must not assert a spoken line on a cut that has no narration');
+  assert.match(finish, /dropped with the rest of the voiceover/,
+    'a marketing cut must say the line went with the voiceover');
+  assert.match(finish, /is not written on the close card/,
+    'and every other spoken path must be phrased around the decision');
+
+  // THE SIBLING MESSAGE, which the first pass of this fix did not re-ask.
+  // `tailSec` comes from the last SPOKEN span, and once the conclusion is
+  // written it is not in `planned` — so an ordinary step line overrunning
+  // (normal here; `DEMO_DROP_LINES` exists for it) made the same run print
+  // "WRITTEN on the close card" and then a NOTE swearing the conclusion landed
+  // on a frozen app frame, citing a ticket already fixed.
+  const note = finish.slice(finish.indexOf('s of frozen final frame') - 400);
+  assert.match(note, /writeConclusion\s*\?/,
+    'the frozen-tail NOTE must say WHICH line is holding the tail');
+  assert.match(note, /the last STEP line can finish/,
+    'and must not blame the conclusion when the conclusion is on the card');
+});

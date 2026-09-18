@@ -16,6 +16,7 @@ const { planNarration, narrate, keepLines, narrationRecord } = require('./src/na
 const { compressIdleGaps, planCompression, compressionFacts, SPEED: COMPRESS_SPEED } = require('./src/compress.js');
 const { generateBed, addMusicBed } = require('./src/music.js');
 const { narrationPath, compressionPath } = require('./src/dead-time-phrase.js');
+const { chooseConclusion, recordConclusion } = require('./src/conclusion.js');
 const { chooseStyle } = require('./src/style.js');
 
 const [outDir, id, linesJson] = process.argv.slice(2);
@@ -161,6 +162,18 @@ const { kept: keptLines, dropped } = keepLines(pacing?.spoken, process.env.DEMO_
 if (dropped.length) {
   console.log(`  script: dropping ${dropped.length} line(s) at action ${dropped.join(', ')} to unprotect their wait`);
 }
+// WRITTEN, NOT SPOKEN, when a close card can carry the line (ENG-6354). A
+// spoken conclusion overruns the footage, which freezes the final frame so it
+// can finish — and since ENG-6306 made the card a PAGE after the recording,
+// that freeze plays in full and the last sentence lands on a static screenshot
+// of the app.
+//
+// The RULE is not here: `src/conclusion.js` owns it, because publish has to
+// reach the same answer and round 1 caught these two stages re-deriving it
+// differently. `DEMO_BRAND` is an input to the choice made HERE, and the
+// choice is written down for publish rather than re-derived there.
+const conclusionChoice = chooseConclusion({ pacing, brandId: process.env.DEMO_BRAND || null, style: STYLE });
+const writeConclusion = Boolean(conclusionChoice.written);
 const planned = STYLE === 'marketing'
   ? []
   : planNarration({
@@ -168,8 +181,25 @@ const planned = STYLE === 'marketing'
       outDir,
       lines,
       preVoiced: lines ? null : keptLines,
-      preVoicedConclusion: lines ? null : pacing?.conclusion,
+      preVoicedConclusion: lines || writeConclusion ? null : pacing?.conclusion,
     });
+// RECORDED, not just decided. `publish-take.mjs` runs in another process and
+// `references/capture.md` supports running these stages standalone, so the
+// ambient DEMO_BRAND it sees may not be the one this run saw. It reads this
+// file instead of re-deriving the answer.
+recordConclusion(outDir, id, conclusionChoice, process.env.DEMO_BRAND || null);
+console.log(
+  writeConclusion
+    ? '  script: the closing line is WRITTEN on the close card, not spoken (ENG-6354)'
+    // PHRASED AROUND THE DECISION, not the outcome. "stays spoken" is false on
+    // a marketing cut — `planned` is `[]`, so the line is in neither the audio
+    // nor the card — and the sentence contradicted its own reason. It also
+    // compounded the earlier line announcing the conclusion's duration out of
+    // pacing.json, so a reader saw two messages implying it was in the film.
+    : STYLE === 'marketing'
+      ? `  script: the closing line is dropped with the rest of the voiceover — ${conclusionChoice.reason}`
+      : `  script: the closing line is not written on the close card — ${conclusionChoice.reason}`
+);
 // Name the reason, not just the choice. A genre picked wrongly is the single
 // biggest difference between the cuts and it is invisible in the output — the
 // marketing cut of a navigation demo looks like a demo that needed no captions.
@@ -229,9 +259,23 @@ if (planned.length) {
     // It cannot be fixed by ending the page at the footage: the voiceover rides
     // the recording as an un-muted video fill, so truncating the page truncates
     // the closing line with it. ENG-6354 carries the options.
+    //
+    // WHICH LINE IS HOLDING THE TAIL MATTERS. `tailSec` is computed from the
+    // last SPOKEN span whatever that span is, and once the conclusion is
+    // written it is not in `planned` at all — so the tail is an ordinary step
+    // line overrunning, which is a normal chased condition here (`fit` reports
+    // it as OVERRUNS and `DEMO_DROP_LINES` exists for it). Left unqualified,
+    // the same run printed "the closing line is WRITTEN on the close card" and
+    // then this NOTE swearing the conclusion landed on a frozen app frame — a
+    // false diagnosis about the film's most important sentence, citing a
+    // ticket whose remedy had already been applied, to an operator and to the
+    // iterate loop that reads this output.
     console.error(
-      `    NOTE: ${r.tailSec.toFixed(1)}s of frozen final frame so the closing line can finish — ` +
-        'the conclusion lands on a static app frame, not on the brand card (ENG-6354)'
+      writeConclusion
+        ? `    NOTE: ${r.tailSec.toFixed(1)}s of frozen final frame so the last STEP line can finish — ` +
+          'the closing line is on the card and unaffected; shorten or drop that step line to lose the freeze'
+        : `    NOTE: ${r.tailSec.toFixed(1)}s of frozen final frame so the closing line can finish — ` +
+          'the conclusion lands on a static app frame, not on the brand card (ENG-6354)'
     );
     clip = { ...clip, durationSec: r.durationSec };
   }
