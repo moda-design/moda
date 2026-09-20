@@ -85,8 +85,12 @@ persist one, never hand one to the user. They expire.
 
 - **A template that fits the ask beats building from scratch.** Instantiate
   it: `moda canvas create --template cvs_… --name "Q3 QBR — Acme"`. The
-  server makes a full copy; `--template` defines the size, page count, and
-  category, so passing those flags with it is an error.
+  server makes a full copy that arrives with the source's size, page count,
+  category, brand kit and content, so `--size`, `--pages`, `--category`,
+  `--intent`, `--folder`, `--visibility` and `--brand` are all REJECTED
+  alongside `--template` — a copy has no blank page for an `--intent` to
+  explain. Place the copy afterwards with `moda drive move`, and rebind its
+  kit with `moda canvas brand cvs_… bk_…`.
 - The copy is a **regular canvas** — read it, then edit its content through
   the normal flow. Nothing about it is locked or linked back to the source.
 - Want a copy of an EXISTING canvas rather than a template? `moda canvas
