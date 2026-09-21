@@ -54,7 +54,7 @@ Use the Edit service for deterministic cut-list changes to the Main Edit:
   {"op":"trim_clip","clip_id":"clip-a","edge":"end","time":{"value":"5000","timescale":1000}}
   {"op":"remove_clip","clip_id":"clip-a"}
   {"op":"reorder_clip","track_id":"track-v1","clip_id":"clip-a","before_clip_id":"clip-b"}
-  {"op":"insert_clip","track_id":"track-v1","clip":{"id":"clip-new","source":{"kind":"composition","composition_id":"composition-page-id"},"start":{"value":"0","timescale":1},"duration":{"value":"5","timescale":1}}}
+  {"op":"insert_clip","track_id":"track-v1","clip":{"id":"clip-new","source":{"kind":"composition","composition_id":"<page-id>"},"start":{"value":"0","timescale":1},"duration":{"value":"5","timescale":1}}}
   {"op":"insert_clip","track_id":"track-v1","ripple":false,"clip":{"id":"clip-vid","source":{"kind":"media","asset_id":"file_..."},"start":{"value":"5","timescale":1},"duration":{"value":"2","timescale":1},"source_start":{"value":"0","timescale":1},"rate":{"numerator":1,"denominator":2},"audio":{"mode":"follow-source","gain_db":-3}}}
   {"op":"create_track","track":{"id":"track-music","kind":"audio","role":"music"}}
   {"op":"insert_clip","track_id":"track-music","clip":{"id":"clip-bed","source":{"kind":"media-stream","asset_id":"file_...","stream":{"kind":"audio","index":0}},"start":{"value":"0","timescale":1},"duration":{"value":"8","timescale":1},"source_start":{"value":"0","timescale":1},"gain_db":-12}}
@@ -72,7 +72,10 @@ Use the Edit service for deterministic cut-list changes to the Main Edit:
 
   The inserted clip `id` is a new caller-chosen unique id; every track, canvas,
   source composition, existing clip, and relationship id must come from
-  `moda edit read` rather than being invented.
+  `moda edit read` rather than being invented. A composition IS a canvas page:
+  `composition_id` takes the page's id from `moda canvas read` (or the page
+  UUID) — never the canvas's own `cvs_` id, which fails with "references
+  missing composition".
 - Apply atomically with `moda edit apply CANVAS_REF --file operations.json
   --revision REV`. The whole batch commits or none of it does; re-read
   after `stale_revision` and retry with the new revision.
