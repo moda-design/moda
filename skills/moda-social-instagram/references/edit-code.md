@@ -95,7 +95,7 @@ Key fields in the `--json` result of a committed edit:
 
 ## Failure semantics — NOTHING applied
 
-When the call exits nonzero (typed `invalid_edit_program`, exit 2), no ops are applied — edit failures are atomic:
+When the call exits nonzero (a typed `invalid_edit_program*` code naming the cause, exit 2), no ops are applied — edit failures are atomic:
 
 - **Parse failure** — fix the *syntax*; do NOT strip APIs you think are blocked.
 - **Blocked pattern** — a sandbox speedbump was tripped (or you called `remove()`). Remove the forbidden pattern.

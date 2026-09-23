@@ -32,10 +32,10 @@ and `canvas add-pages` send no revision unless you passed `--revision`, so a sta
 not what went wrong there; a parallel batch of those contends on the canvas LOCK instead, and
 surfaces as `canvas_busy` when it surfaces at all.
 
-### `invalid_markup` / `invalid_edit_program`
+### `invalid_markup` / `invalid_edit_program*`
 
 The markup or edit program was rejected atomically: nothing was applied, and the message names the
-construct that failed. Do not re-send it unchanged, and do not degrade to a simpler design because
+construct that failed. An edit program names its cause in the code itself: `invalid_edit_program_parse_failed` (it did not compile), `invalid_edit_program_runtime_error` (it threw, and the WHOLE call rolled back), `invalid_edit_program_patch_field` (`update()` rejected a field name), `invalid_edit_program_no_render_impact` (nothing renderable changed) and `invalid_edit_program_blocked_verb` (a verb `edit()` does not expose — deletion lives in `canvas delete-items`). Plain `invalid_edit_program` is the residual: a rejection we did not classify. Do not re-send it unchanged, and do not degrade to a simpler design because
 of it — the fix is almost always a wrong attribute name, not an impossible request.
 
 **Recipe:** read the named construct in the message → fix that attribute or element → re-apply.
