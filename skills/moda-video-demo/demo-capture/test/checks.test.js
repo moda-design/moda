@@ -10,7 +10,7 @@
 const { test } = require('node:test');
 const assert = require('node:assert');
 const { execFileSync, spawnSync } = require('node:child_process');
-const { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } = require('node:fs');
+const { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, symlinkSync, writeFileSync } = require('node:fs');
 const { tmpdir } = require('node:os');
 const path = require('node:path');
 
@@ -32,6 +32,19 @@ const { keptReport, nextStep, canSelect, betterTake, CONTRADICTION_FINDING,
 
 const HERE = path.join(__dirname, '..');
 const tmp = () => mkdtempSync(path.join(tmpdir(), 'demo-test-'));
+//: A real copy of `entry` in `dir`, so stubs written beside it ARE its sibling
+//: stages. Every stage resolves its siblings against its own directory
+//: (ENG-6442); the old seam, a stub in the CWD, was the very lookup that broke
+//: the documented invocation. `src/`, `node_modules/` and `auth.mjs` are linked
+//: back, so the copy still loads the real modules. Spawn the returned path from
+//: a DIFFERENT directory: pinning the CWD is what hid ENG-6442.
+function stageCopy(dir, entry) {
+  copyFileSync(path.join(HERE, entry), path.join(dir, entry));
+  // 'junction' so directory links need no elevation on Windows; ignored elsewhere.
+  for (const d of ['src', 'node_modules']) symlinkSync(path.join(HERE, d), path.join(dir, d), 'junction');
+  symlinkSync(path.join(HERE, 'auth.mjs'), path.join(dir, 'auth.mjs'));
+  return path.join(dir, entry);
+}
 
 test('curate proposes the steps that nurse a product through an error', () => {
   const flow = { steps: [
@@ -579,8 +592,8 @@ test('the cut left on disk is the round iterate.json says it kept', () => {
   writeFileSync(path.join(dir, `${id}.moda.json`), JSON.stringify({ actions: [] }));
   writeFileSync(path.join(dir, 'speed.txt'), '6');
 
-  const res = spawnSync('node', [path.join(HERE, 'iterate.mjs'), dir, id, '--rounds', '3', '--target', '9'], {
-    cwd: dir,
+  const res = spawnSync('node', [stageCopy(dir, 'iterate.mjs'), dir, id, '--rounds', '3', '--target', '9'], {
+    cwd: tmp(),
     encoding: 'utf8',
     env: { ...process.env, PATH: `${dir}:${process.env.PATH}`, DEMO_COMPRESS_SPEED: '6' },
   });
@@ -633,7 +646,7 @@ test('a run whose best round is its last does not re-cut the artifact', () => {
   // compile.py` when that interpreter exists and falls back to `moda demo
   // camera` when it does not — so stubbing only one makes the test depend on
   // whether this checkout happens to have a backend virtualenv. compile.py is
-  // resolved against the CWD, which is this fixture dir.
+  // resolved beside iterate.mjs, and `stageCopy` puts that copy in this dir.
   writeFileSync(path.join(dir, 'compile.py'),
     `import pathlib, sys\npathlib.Path(r'${dir}/planner.log').open('a').write('py\\n')\n`);
 
@@ -642,8 +655,8 @@ test('a run whose best round is its last does not re-cut the artifact', () => {
   // restore's doing.
   writeFileSync(path.join(dir, `${id}.motion.js`), '// already emitted\n');
 
-  const res = spawnSync('node', [path.join(HERE, 'iterate.mjs'), dir, id, '--rounds', '3', '--target', '8'], {
-    cwd: dir,
+  const res = spawnSync('node', [stageCopy(dir, 'iterate.mjs'), dir, id, '--rounds', '3', '--target', '8'], {
+    cwd: tmp(),
     encoding: 'utf8',
     env: { ...process.env, PATH: `${dir}:${process.env.PATH}`, DEMO_COMPRESS_SPEED: '6' },
   });
@@ -706,8 +719,8 @@ test('restoring a camera-only difference does not re-cut the picture', () => {
   writeFileSync(path.join(dir, `${id}.moda.json`), JSON.stringify({ actions: [
     { index: 0, type: 'click', clickX: 100, clickY: 100, clickSec: 1 }] }));
 
-  const res = spawnSync('node', [path.join(HERE, 'iterate.mjs'), dir, id, '--rounds', '3', '--target', '9'], {
-    cwd: dir, encoding: 'utf8',
+  const res = spawnSync('node', [stageCopy(dir, 'iterate.mjs'), dir, id, '--rounds', '3', '--target', '9'], {
+    cwd: tmp(), encoding: 'utf8',
     env: { ...process.env, PATH: `${dir}:${process.env.PATH}`, DEMO_COMPRESS_SPEED: '6' },
   });
   assert.strictEqual(res.status, 0, `iterate.mjs failed:\n${res.stdout}\n${res.stderr}`);
@@ -1986,8 +1999,8 @@ test('a narration drop that wins is kept on disk', () => {
   writeFileSync(path.join(dir, 'compile.py'), 'import sys\nsys.exit(1)\n');
   writeFileSync(path.join(dir, `${id}.moda.json`), JSON.stringify({ actions: [] }));
 
-  const res = spawnSync('node', [path.join(HERE, 'iterate.mjs'), dir, id, '--rounds', '3', '--target', '9'], {
-    cwd: dir, encoding: 'utf8',
+  const res = spawnSync('node', [stageCopy(dir, 'iterate.mjs'), dir, id, '--rounds', '3', '--target', '9'], {
+    cwd: tmp(), encoding: 'utf8',
   });
   assert.strictEqual(res.status, 0, res.stderr);
   const drops = readFileSync(path.join(dir, 'drops.log'), 'utf8').trim().split('\n');
@@ -2034,8 +2047,8 @@ test('a narration drop that does not win is reverted on disk', () => {
   writeFileSync(path.join(dir, 'compile.py'), 'import sys\nsys.exit(1)\n');
   writeFileSync(path.join(dir, `${id}.moda.json`), JSON.stringify({ actions: [] }));
 
-  const res = spawnSync('node', [path.join(HERE, 'iterate.mjs'), dir, id, '--rounds', '3', '--target', '9'], {
-    cwd: dir, encoding: 'utf8',
+  const res = spawnSync('node', [stageCopy(dir, 'iterate.mjs'), dir, id, '--rounds', '3', '--target', '9'], {
+    cwd: tmp(), encoding: 'utf8',
   });
   assert.strictEqual(res.status, 0, res.stderr);
   const kept = JSON.parse(readFileSync(path.join(dir, 'iterate.json'), 'utf8'));
@@ -4573,4 +4586,56 @@ test('the finish log never claims a spoken line the cut does not contain', () =>
     'the frozen-tail NOTE must say WHICH line is holding the tail');
   assert.match(note, /the last STEP line can finish/,
     'and must not blame the conclusion when the conclusion is on the card');
+});
+
+// ENG-6442. The documented invocation is `node <DC>/run.mjs …` from wherever
+// the caller happens to be, and it died at discovery with MODULE_NOT_FOUND:
+// every stage was spawned by bare filename, so it resolved against the CALLER'S
+// working directory. The suite was green throughout because every spawning test
+// pinned `cwd` to the stage directory — so this one must not.
+test('run.mjs finds its stages from any working directory', () => {
+  const dir = tmp();
+  const entry = stageCopy(dir, 'run.mjs');
+  // Discovery is reached, and stops the run: it records that it ran, then
+  // fails, so nothing past it drives a browser.
+  writeFileSync(path.join(dir, 'discover-flow.mjs'), [
+    "import { writeFileSync } from 'node:fs';",
+    `writeFileSync(${JSON.stringify(path.join(dir, 'discovered'))}, process.argv.slice(2).join('\\n'));`,
+    'process.exit(1);',
+  ].join('\n'));
+
+  const res = spawnSync('node', [entry, 'show the thing', 'http://localhost:3999', '--no-auth'], {
+    cwd: tmp(), encoding: 'utf8',
+  });
+  assert.doesNotMatch(res.stderr, /Cannot find module/, res.stderr);
+  assert.ok(existsSync(path.join(dir, 'discovered')),
+    `run.mjs never reached its discovery stage:\n${res.stdout}\n${res.stderr}`);
+  assert.strictEqual(readFileSync(path.join(dir, 'discovered'), 'utf8').split('\n')[0], 'show the thing');
+});
+
+// The guard for a tenth stage. Any sibling script named as a bare string — in
+// any quote style, at any position in an argument list — is the ENG-6442 defect,
+// whatever helper spawns it. The one shape allowed is resolved against the
+// script's own directory: `stage('x')` or `path.join(here, 'x')`.
+test('no stage is spawned by a bare filename', () => {
+  const siblings = readdirSync(HERE).filter((n) => /\.(mjs|js|py)$/.test(n));
+  const sources = [
+    ...siblings.filter((n) => /\.(mjs|js)$/.test(n)),
+    ...readdirSync(path.join(HERE, 'src')).filter((n) => n.endsWith('.js')).map((n) => path.join('src', n)),
+  ];
+  const escape = (n) => n.replace(/[.]/g, '\\.');
+  const named = new RegExp(`(?:(stage\\(|here,\\s*)|(?<=[[,(]\\s*))(['"\`])(?:${siblings.map(escape).join('|')})\\2`, 'g');
+  const bare = [];
+  for (const f of sources) {
+    // WHOLE FILE, not line by line, so `[\s*` reaches across a wrapped argument
+    // list. Comment and import lines are blanked, not dropped, so an index still
+    // maps to its line.
+    const text = readFileSync(path.join(HERE, f), 'utf8').split('\n')
+      .map((l) => (/^\s*(\/\/|\*)/.test(l) || /require\(|import\(|\bfrom\s+['"]/.test(l) ? '' : l))
+      .join('\n');
+    for (const m of text.matchAll(named)) {
+      if (!m[1]) bare.push(`${f}:${text.slice(0, m.index).split('\n').length}: ${m[0].trim()}`);
+    }
+  }
+  assert.deepStrictEqual(bare, [], 'resolve the stage against the script\'s own directory (see `stage` in run.mjs)');
 });

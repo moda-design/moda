@@ -12,7 +12,9 @@ import { readFileSync, existsSync, statSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 
-const PROD_STATE = 'auth.json';
+//: Not a bare name: that read the CALLER'S directory, so the documented
+//: `node <DC>/run.mjs` from anywhere else could never find it (ENG-6442).
+const { PROD_STATE } = createRequire(import.meta.url)('./src/state-dir.js');
 
 /** Local targets get a freshly minted session; anything else uses the saved one. */
 function isLocal(hostname) {
@@ -159,7 +161,10 @@ export function resolveStorageState(url, { studioDir } = {}) {
   }
 
   if (!existsSync(PROD_STATE)) {
-    throw new Error(`no saved session at ${PROD_STATE} for ${target.origin}.`);
+    throw new Error(
+      `no saved session at ${PROD_STATE} for ${target.origin}. Save a Playwright storage state ` +
+        `signed in to ${target.origin} there, or pass --no-auth for an app without sign-in.`
+    );
   }
   if (!stateCovers(PROD_STATE, target)) {
     const { fromOrigins } = originsIn(PROD_STATE);

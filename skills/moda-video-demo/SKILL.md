@@ -119,6 +119,9 @@ fresh shell, so `$DC` from step 2 does not survive into this one.
 Without `--publish` it stops after the critique and prints the command to
 publish, which is the right shape when you want to look first.
 
+Every take is written to `~/.moda/demo-capture/out/<slug>-<timestamp>/`, whichever
+directory you run it from — never into the project you are demoing.
+
 **Read its report rather than summarising it.** Everything below is measured, and
 each line is either a number or an explicit "not measured" — never a silent pass:
 

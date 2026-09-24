@@ -9,6 +9,11 @@
 import { createRequire } from 'node:module';
 import { readFileSync, writeFileSync, existsSync, rmSync, copyFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+//: Siblings resolve against this directory, not the caller's (ENG-6442).
+const here = path.dirname(fileURLToPath(import.meta.url));
 
 const require = createRequire(import.meta.url);
 const { ffmpeg: FFMPEG, ffprobe: FFPROBE } = require('./src/bin.js');
@@ -316,7 +321,7 @@ writeFileSync(narrationPath(outDir, id),
 // No `--raw-labels`: the bridge runs `scriptCaptions`, which writes the ON-SCREEN
 // text from the resolved element. That is a different job from the voiceover
 // above and deliberately so (ENG-5766).
-const doc = JSON.parse(execFileSync('node', ['to-moda-timeline.js', clipPath], { encoding: 'utf8' }));
+const doc = JSON.parse(execFileSync('node', [path.join(here, 'to-moda-timeline.js'), clipPath], { encoding: 'utf8' }));
 if (STYLE === 'marketing') {
   // Per-step captions are a tutorial device. Declined by blanking the label in
   // the DOCUMENT — `compile_demo` skips any action with no label — which needs no

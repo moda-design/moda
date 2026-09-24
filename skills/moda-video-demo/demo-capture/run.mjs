@@ -36,11 +36,23 @@ import { readFileSync, writeFileSync, mkdtempSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { resolveStorageState } from './auth.mjs';
+
+//: Every sibling stage, and every file this pipeline owns, resolves against THIS
+//: directory — never the caller's working directory (ENG-6442). SKILL.md runs
+//: `node <DC>/run.mjs` from wherever the caller is, and bare filenames died there
+//: with MODULE_NOT_FOUND. Not a `cwd` on the spawn: that would also re-root the
+//: caller's own relative arguments (`--flow`). Per module on purpose, not a
+//: helper in src/: required through a symlink, that would resolve to the REAL
+//: directory, and the tests' sibling stubs (`stageCopy`) could never stand in.
+const here = path.dirname(fileURLToPath(import.meta.url));
+const stage = (f) => path.join(here, f);
 
 const require = createRequire(import.meta.url);
 const { chromium } = require('playwright');
 const { validateFlow } = require('./src/validate.js');
+const { takeDir } = require('./src/state-dir.js');
 const { keptReport, nextStep, canSelect, betterTake, CONTRADICTION_FINDING } = require('./src/kept-report.js');
 const { proposeDrops, without, ensureTrailingHold } = require('./src/curate.js');
 const { proposeEdit, disposeEdit, settleBeats, describeEdit } = require('./src/edit.js');
@@ -80,8 +92,6 @@ const env = { ...process.env, ...(noAuth ? { DEMO_NO_AUTH: '1' } : {}) };
 //: the scores, the pacing and every warning the stages exist to emit were
 //: invisible in the one command anybody is meant to use.
 const run = (c, a, e = {}) => execFileSync(c, a, { encoding: 'utf8', maxBuffer: 64 << 20, env: { ...env, ...e }, stdio: ['ignore', 'inherit', 'inherit'] });
-//: ...and `capture` for the few calls whose OUTPUT is the point.
-const capture = (c, a, e = {}) => execFileSync(c, a, { encoding: 'utf8', maxBuffer: 64 << 20, env: { ...env, ...e }, stdio: ['ignore', 'pipe', 'inherit'] });
 // `resolveStorageState` decides this everywhere else — take.mjs and capture.mjs
 // both call it — and it does real work: not every target is Moda, and it is
 // what stops a local app with no sign-in being asked for a Clerk session.
@@ -112,7 +122,7 @@ async function attemptOnce(n, guidancePath) {
   if (!flowPath) {
     flowPath = path.join(work, `flow-${n}.json`);
     console.log(`\n[1] discovering the flow${tag}`);
-    const argv = ['discover-flow.mjs', goal, startUrl, flowPath];
+    const argv = [stage('discover-flow.mjs'), goal, startUrl, flowPath];
     if (guidancePath) argv.push('--guidance', guidancePath);
     run('node', argv);
   } else {
@@ -383,15 +393,18 @@ async function attemptOnce(n, guidancePath) {
   // ── 5-7. record, finish, iterate ────────────────────────────────────────
   const runName = attempts > 1 ? `${name}-a${n}` : name;
   console.log(`\n[5] recording${tag}`);
-  run('node', ['take.mjs'], { DEMO_NAME: runName, DEMO_START: startUrl, DEMO_FLOW: finalFlow });
-  const outDir = capture('bash', ['-c', `ls -dt out/${runName}-*/ | head -1`]).trim().replace(/\/$/, '');
+  // NAMED here and handed to take.mjs, never found afterwards: guessing the
+  // newest `<name>-*` directory could pick up a concurrent run's recording and
+  // finish, score and publish it under this run's title (ENG-6442).
+  const outDir = takeDir(runName);
+  run('node', [stage('take.mjs')], { DEMO_OUT_DIR: outDir, DEMO_START: startUrl, DEMO_FLOW: finalFlow });
   const id = path.basename(outDir);
 
   console.log('\n[6] finishing');
-  run('node', ['finish.mjs', outDir, id]);
+  run('node', [stage('finish.mjs'), outDir, id]);
 
   console.log('\n[7] critiquing and fixing what is cheap to fix');
-  run('node', ['iterate.mjs', outDir, id, '--rounds', rounds]);
+  run('node', [stage('iterate.mjs'), outDir, id, '--rounds', rounds]);
 
   let score = 0;
   let flowFindings = [];
@@ -555,8 +568,8 @@ if (publishAs) {
   // for a name already used, and the second publish then fails on a stale
   // revision against a canvas somebody else is editing.
   const stamp = new Date().toISOString().slice(11, 16).replace(':', '');
-  run('node', ['publish-take.mjs', best.outDir, best.id, `${publishAs} ${stamp}`]);
+  run('node', [stage('publish-take.mjs'), best.outDir, best.id, `${publishAs} ${stamp}`]);
 } else {
-  console.log(`\n  not published. To publish:  node publish-take.mjs ${best.outDir} ${best.id} "<Title>"`);
+  console.log(`\n  not published. To publish:  node "${stage('publish-take.mjs')}" "${best.outDir}" "${best.id}" "<Title>"`);
 }
 console.log(`\n  done — ${best.outDir} (${best.score}/10)`);

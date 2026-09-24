@@ -23,6 +23,12 @@
 import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+//: Sibling stages resolve against this directory, not the caller's (ENG-6442).
+const here = path.dirname(fileURLToPath(import.meta.url));
+const stage = (f) => path.join(here, f);
 
 const require = createRequire(import.meta.url);
 // The SAME interpreter publish-take.mjs uses. `python3` on PATH has no pydantic,
@@ -90,7 +96,7 @@ function emitMotion() {
   const out = `${outDir}/${id}.motion.js`;
   const { ran, report } = emitCameraInto(out, () => {
     if (PY) {
-      sh(PY, ['compile.py', 'motion', docPath, PLACEHOLDER_REF, 'p_iter', 'n_iter', out]);
+      sh(PY, [stage('compile.py'), 'motion', docPath, PLACEHOLDER_REF, 'p_iter', 'n_iter', out]);
       // No JSON on this lane — the report stays null and the checker says it was
       // not told, rather than inventing a reason (ENG-6128).
       return;
@@ -170,7 +176,7 @@ const droppedLines = new Set();
 
 /** Re-cut from the immutable source, then put the suppressions back. */
 function refinish(speed) {
-  sh('node', ['finish.mjs', outDir, id], {
+  sh('node', [stage('finish.mjs'), outDir, id], {
     DEMO_COMPRESS_SPEED: String(speed),
     DEMO_DROP_LINES: [...droppedLines].join(','),
   });
@@ -215,7 +221,7 @@ for (let round = 1; round <= MAX_ROUNDS; round++) {
   if (!existsSync(`${outDir}/${id}.motion.js`)) cameraAttempted = emitMotion();
   else cameraAttempted = true;
   console.log(`\n── round ${round} ─────────────────────────────────────────────`);
-  sh('node', ['critique-take.mjs', outDir, id, ...(cameraAttempted ? ['--camera-attempted'] : [])]);
+  sh('node', [stage('critique-take.mjs'), outDir, id, ...(cameraAttempted ? ['--camera-attempted'] : [])]);
 
   const critique = JSON.parse(readFileSync(`${outDir}/critique.json`, 'utf8'));
   const all = [...(critique.shots ?? []), ...(critique.issues ?? []).filter((i) => i.severity !== 'low')];

@@ -7,11 +7,13 @@
 import { chromium } from 'playwright';
 import { readFileSync, mkdirSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
+import path from 'node:path';
 import { capture } from './capture.mjs';
 import { resolveStorageState } from './auth.mjs';
 
 const require = createRequire(import.meta.url);
 const { planPacing, paceFloors } = require('./src/pacing.js');
+const { takeDir } = require('./src/state-dir.js');
 const { validateFlow, MIN_NET_CHANGE } = require('./src/validate.js');
 const { describeHealth } = require('./src/page-health.js');
 const { chooseStyle } = require('./src/style.js');
@@ -19,8 +21,11 @@ const { speak, TTS_VOICE, TTS_MODEL } = require('./src/narrate.js');
 
 const flow = JSON.parse(readFileSync(process.env.DEMO_FLOW || '/tmp/flow5.json', 'utf8'));
 const start = process.env.DEMO_START || 'https://moda.app/';
-const id = `${process.env.DEMO_NAME || 'take'}-${new Date().toISOString().replace(/[:.]/g, '-')}`;
-const outDir = `out/${id}`;
+//: run.mjs NAMES the directory rather than finding it afterwards: a search by
+//: newest mtime could pick up a concurrent run's take (ENG-6442). Standalone,
+//: this picks its own under the same root.
+const outDir = process.env.DEMO_OUT_DIR || takeDir(process.env.DEMO_NAME || 'take');
+const id = path.basename(outDir);
 mkdirSync(outDir, { recursive: true });
 
 const auth = resolveStorageState(start);
