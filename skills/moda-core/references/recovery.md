@@ -101,6 +101,20 @@ If you were already writing serially, someone else holds the lock — usually a 
 on that canvas. Wait for it and retry with backoff rather than hammering; if it never clears, say
 so rather than looping.
 
+Screenshots take the same lock. A parallel batch of captures of one canvas, or a capture fired
+while your own write is still running, loses the same way — capture one canvas serially (several
+pages per call is fine), after the write it verifies has returned.
+
+### `screenshot_refused`
+
+The requested page could not be captured because that page id is not on the canvas. Nothing is
+wrong with the canvas, and retrying the same id cannot succeed.
+
+**Recipe:** use one of the page ids the error lists in `details.available_page_ids`, or re-read them
+with `moda canvas show`. Short page ids (`p_a`-style) expire after 24h — an id from an older
+session is the usual cause, so re-read rather than reuse it. An empty list means the canvas has no
+pages to capture (its content, if any, sits on the canvas root) — read it instead of retrying.
+
 ### `canvas_crdt_state_corrupt`
 
 The canvas itself needs recovery; retrying cannot succeed. Stop and tell the user.

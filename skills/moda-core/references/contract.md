@@ -41,7 +41,9 @@ hand work over.
 - Mutations on the SAME canvas stay serial — including per-page markup of one canvas. The server
   serializes them for you anyway, so a parallel batch buys nothing: it either queues behind the
   canvas lock, or comes back `canvas_busy` when a running task or another process holds it.
-- Independent reads and screenshots fan out freely.
+- Screenshots of the SAME canvas take the canvas lock too, so serialize them like writes: a
+  parallel batch — or a capture while a write or task holds the canvas — comes back `canvas_busy`.
+  Reads fan out freely, and so do screenshots of different canvases.
 - Work in small batches: one section or one slide per markup apply. A big apply that fails is a
   big apply you have to diagnose; a small one is a small fix.
 - Screenshot at milestones, not after every call — it is the slowest verb.
