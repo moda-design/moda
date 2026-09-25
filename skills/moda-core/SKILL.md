@@ -39,10 +39,12 @@ templates, drive, and `moda ask` are FREE. Only generated media and the research
 1. `moda doctor --json` — verifies install, auth, org, entitlements. Doctor reports an update →
    run `moda update` (one command; refreshes the CLI and the installed skills, never elevates).
    Any `moda` command output mentioning an update is available → run `moda update` before continuing.
-2. `moda brand list` — one cheap call, never skipped. A kit exists → BIND it at create time; none
-   exists → offer to make one ONCE (load moda-brand), then proceed. No kit means you INVENT an
-   identity for the piece — never neutral, plain, or a default template look; the format skill's
-   no-brand design reference carries the method.
+2. `moda brand list` — one cheap call, never skipped. Every NEW design → ASK which brand kit, then
+   wait, even with one kit or none: their kits (name + logo), a NEW one (load moda-brand), or no
+   kit. A team `(default)` or a sole kit is not their answer; a kit they named or pinned
+   (`.moda/context.json`, `moda brand use`) is. BIND the chosen kit at create time.
+   No kit means you INVENT an identity for the piece — never neutral, plain, or a default
+   template look; the format skill's no-brand design reference carries the method.
 3. No vision in this harness? Follow the degraded verify loop in references/contract.md.
 4. Unsure, or a call failed? `moda ask "<question>"` — free and fast. Ask early, never guess.
 5. You are the designer here. Moda's own agent is a separate ACTOR you can hand the whole job

@@ -34,15 +34,17 @@ NEW mark is canvas work → moda-social; the kit stores the logo FILES.
 
 `moda brand list` first (one cheap call, never skipped), then exactly one of:
 
-- one kit, one marked `(default)`, or one the request names ("the Acme deck")
-  → use it;
-- several and no such signal → ASK which. Topic fit is never a signal, and
+- the user already answered — a kit the request names ("the Acme deck"), one
+  pinned (`.moda/context.json`, `moda brand use`), or an explicit "no brand" →
+  use that;
+- otherwise ASK which brand kit this NEW design uses, then wait — even with one
+  kit or none. Offer their kits (name + logo), a NEW kit (`moda brand create`
+  from their website, free), or no kit. A team `(default)` is not the user's
+  answer, nor is being the only kit; topic fit is never a signal, and
   near-identical names (Acme, Acme 2) mean ask even when named;
 - none fits — a personal or off-topic ask among other people's brands → say so
-  in one line and design without a kit. This is the only exit you may take
-  unasked, and never in silence;
-- no kits at all → offer once to make one (`moda brand create`, free); if they
-  decline, design without a kit.
+  in one line when you ask, and offer a new kit or none. Never unbranded in
+  silence.
 
 **No kit means you invent an identity**, never that you design plain: a
 palette with two color worlds, distinctive faces, a motif, all chosen for this
