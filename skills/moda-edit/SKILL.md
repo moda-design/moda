@@ -55,8 +55,9 @@ nothing (follow the typed hint); never re-run a command that exited 0.
 4. **Re-read after structural changes** before referencing new ids — created nodes get fresh short refs. A write against a stale
    revision exits 5 with `STALE_REVISION` and commits nothing: re-read, then re-apply. A busy canvas (running task) also exits 5 after
    built-in retries: back off or `moda task cancel`.
-5. **Verify**: `moda canvas screenshot` the changed pages and review with your own vision (`--screenshot PATH` on markup/edit folds the
-   capture in), against the five-criterion checklist in references/reading-and-verifying.md.
+5. **Verify**: fold the capture into your last write (`--screenshot PATH` on markup/edit) or `moda canvas screenshot` the changed pages,
+   and review with your own vision against the five-criterion checklist in references/reading-and-verifying.md. Fix with the ids your
+   write results named — `moda canvas read` only for structure they did not give you.
 6. Close with the canvas URL, plus the file when one was asked for.
 
 ## The canvas decides the craft, not the verb

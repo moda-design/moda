@@ -46,13 +46,13 @@ gradients, shapes, type, and generated patterns.
 ## Recipe — the size set (master first)
 
 1. `moda canvas create --name "[Campaign] — ads" --intent "[the one promise]" --size 300x250 --category web-ads --brand [KIT]` — send the link immediately.
-2. Design and APPROVE the master on page 1: `moda canvas markup [CANVAS_REF] --file - --page [PAGE_ID]`, then `moda canvas screenshot [CANVAS_REF]`. Do not adapt anything until the master is right.
+2. Design and APPROVE the master on page 1: `moda canvas markup [CANVAS_REF] --file - --page [PAGE_ID] --screenshot PATH`, then at most one repair write. Do not adapt anything until the master is right.
 3. `moda canvas add-pages [CANVAS_REF] --count 1 --size 728x90` — one page per size, repeated for each size in the set.
 4. Re-COMPOSE each size (never squash): one markup apply per page, serial on the
    one canvas — the same message, re-laid for the shape. Check the two hostile
    sizes (728×90, 320×50) first; they break layouts before the others do.
 5. `moda canvas screenshot [CANVAS_REF]` in ≤3-page batches; judge the set for
-   one voice, one CTA, one brand presence.
+   one voice, one CTA, one brand presence. ONE repair round, then export.
 6. `moda export [CANVAS_REF] --format png --pixel-ratio 2 -o [campaign]-ads.zip`
    — multi-page png arrives as a zip: the set ships together, one file for the
    trafficker.
@@ -64,7 +64,7 @@ gradients, shapes, type, and generated patterns.
    [category] that [single claim]." Kill every secondary message.
 3. Author in ONE apply; keep the CTA inside the placement's chrome-free zone.
 4. `moda canvas screenshot [CANVAS_REF]` — squint test: blurred, does it still
-   show what it is for and where the eye lands? Fix, re-screenshot.
+   show what it is for and where the eye lands? Fix what fails in at most ONE repair write, captured the same way, then ship.
 5. `moda export [CANVAS_REF] --format png --pixel-ratio 2 -o [campaign]-[size].png`.
 
 ## Examples

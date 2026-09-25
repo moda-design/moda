@@ -161,10 +161,10 @@ Renders pages to image files at `--output` (one file per page, extension from th
 
 ## The explicit screenshot → review → edit loop
 
-Mutations attach nothing — no screenshot, no state echo. Verification is a loop you drive:
+A mutation returns a picture only when you ask for one (`--screenshot PATH` on markup/edit). Verification is a loop you drive:
 
 1. Mutate (`moda canvas markup` / `moda canvas edit`) in small batches.
-2. `moda canvas screenshot` at milestones (it is the slowest verb) and review the image with your own vision.
+2. Capture at milestones — fold it into the milestone's write with `--screenshot PATH` rather than a separate `moda canvas screenshot` (the slowest verb) — and review the image with your own vision. The write results already name the ids you fix with: `moda canvas read` after a screenshot only for structure you do not have.
 3. **Run the five-criterion review checklist below** over every page you captured, classify what you find, and fix only what earns a fix.
 4. Fix problems with targeted `moda canvas edit` calls BEFORE building more — never build on a broken foundation.
 

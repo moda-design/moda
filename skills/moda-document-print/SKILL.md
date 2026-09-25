@@ -56,7 +56,7 @@ All `--category prints`; sizes are canvas pixels at the piece's physical intent.
    dense page (or one page per side) before authoring anything.
 3. Imagery: a poster or invitation usually earns a generated hero — `moda media generate-image --prompt "[subject, brand palette]" --model [MODEL]`; a menu or resume is a legitimate type-only piece. State the choice.
 4. Author one apply per page/side: `moda canvas markup [CANVAS_REF] --file - --page [PAGE_ID]` (references/markup.md), with the kit's tokens.
-5. `moda canvas screenshot [CANVAS_REF]` — check edge clearance, fold panels, type floor, and that nothing critical sits in a trim zone; fix and re-screenshot.
+5. Look ONCE — `--screenshot PATH` on the last apply returns the capture (or `moda canvas screenshot [CANVAS_REF]`): check edge clearance, fold panels, type floor, and that nothing critical sits in a trim zone; at most ONE repair write, captured the same way, then ship.
 6. `moda export [CANVAS_REF] --format pdf -o [piece].pdf` — the default PDF is vector with selectable text and embedded fonts, crisp at any print scale. Do NOT pass `--flatten` unless the user asks for raster.
 7. Read `warnings[]` and relay honestly: `font_substituted` (a face did not embed) is the one that matters for print.
 

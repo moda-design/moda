@@ -45,17 +45,17 @@ TikTok video is moda-video (render format wins over platform).
 1. `moda canvas create --name "[Topic] — TikTok" --intent "[one-line brief]" --size 1080x1920 --category social --brand [KIT]` — send the link immediately.
 2. Image-led? `moda media generate-image --prompt "[subject, brand palette]" --model [MODEL]` for the backdrop; type-led is equally strong.
 3. Author in ONE apply: `moda canvas markup [CANVAS_REF] --file - --page [PAGE_ID]` — title inside x 120–840, y 252–1742 (references/markup.md).
-4. `moda canvas screenshot [CANVAS_REF]` — check the right rail and caption band are clear, then judge the title at tile scale; fix and re-screenshot.
+4. Look ONCE — `--screenshot PATH` on that apply returns the capture (or `moda canvas screenshot [CANVAS_REF]`): check the right rail and caption band are clear, then judge the title at tile scale; at most ONE repair write, captured the same way, then ship.
 5. `moda export [CANVAS_REF] --format png --pixel-ratio 2 -o [topic]-tiktok.png`.
 
 ## Recipe — photo-mode set
 
 1. `moda canvas create --name "[Topic] — photo set" --size 1080x1920 --category carousel --brand [KIT]` — link immediately.
-2. Prove page 1 alone (author → screenshot → fix) before adding pages: it sets
+2. Prove page 1 alone (author → look → at most one fix) before adding pages: it sets
    the system every later page repeats — 2–4 colors, two fonts, one motif.
 3. `moda canvas add-pages [CANVAS_REF] --count [N-1]`, then one markup apply per
    page, serial on the one canvas; vary composition so neighbours differ.
-4. `moda canvas screenshot [CANVAS_REF]` in ≤3-page batches; judge as a set.
+4. `moda canvas screenshot [CANVAS_REF]` in ≤3-page batches; judge as a set, fix in ONE repair round, then export.
 5. `moda export [CANVAS_REF] --format png --pixel-ratio 2 -o [topic]-tiktok.zip`
    — the zip of page images IS the photo-mode deliverable.
 
@@ -69,8 +69,8 @@ TikTok video is moda-video (render format wins over platform).
 ## Errors
 
 Any typed error → load moda-core and read its recovery reference.
-Most likely here: text drifting under the right rail — re-screenshot after every
-fix. `stale_revision` heals — re-read and retry once.
+Most likely here: text drifting under the right rail — capture the fixing write
+(`--screenshot PATH`); still one repair round, not a loop. `stale_revision` heals — re-read and retry once.
 
 ## Make it recurring
 

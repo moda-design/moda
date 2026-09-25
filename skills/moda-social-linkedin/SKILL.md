@@ -42,9 +42,9 @@ images.** The description promises it; the export step is where it is kept.
 
 1. `moda canvas create --name "[Topic] — LinkedIn doc" --intent "[brief]" --size 1080x1350 --category carousel --brand [KIT]` — send the link immediately.
 2. Lock the system first: 2–4 colors, exactly two fonts, one grid, one motif.
-3. Author page 1 ALONE — the hook, 5–9 words, no logo: `moda canvas markup [CANVAS_REF] --file - --page [PAGE_ID]`; `moda canvas screenshot [CANVAS_REF]`; fix until it proves the look.
+3. Author page 1 ALONE — the hook, 5–9 words, no logo: `moda canvas markup [CANVAS_REF] --file - --page [PAGE_ID] --screenshot PATH`; at most one repair write, then it is the look.
 4. `moda canvas add-pages [CANVAS_REF] --count [N-1]`, then one markup apply per page — serial on one canvas. Last page carries the one ask and the brand.
-5. `moda canvas screenshot [CANVAS_REF]` in ≤3-page batches; judge as a set.
+5. `moda canvas screenshot [CANVAS_REF]` in ≤3-page batches; judge as a set, fix in ONE repair round, then export.
 6. `moda export [CANVAS_REF] --format pdf -o [topic]-linkedin.pdf` — one multi-page PDF. Read `warnings[]` and relay any caveat honestly; put the URL in the caption, since LinkedIn consumes the pages as images.
 
 ## Recipe — single post image, banner, or company art
@@ -54,7 +54,7 @@ images.** The description promises it; the export step is where it is kept.
    supports); company-led only on request: logo + one value prop, no headshots.
 3. Author in one apply: `moda canvas markup [CANVAS_REF] --file - --page [PAGE_ID]`.
 4. `moda canvas screenshot [CANVAS_REF]` — check the bottom-left avatar zone on a
-   banner, contrast and type floor everywhere; fix and re-screenshot.
+   banner, contrast and type floor everywhere (`--screenshot PATH` on the apply saves the separate call); at most ONE repair write, captured the same way, then ship.
 5. `moda export [CANVAS_REF] --format png --pixel-ratio 2 -o [topic]-linkedin.png`.
 
 ## Examples

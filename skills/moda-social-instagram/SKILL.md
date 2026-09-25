@@ -44,7 +44,7 @@ stay inside:
 1. `moda canvas create --name "[Topic] — IG" --intent "[one-line brief]" --size 1080x1350 --category social --brand [KIT]` — send the link immediately.
 2. Image-led concept? `moda media generate-image --prompt "[hero, in the brand's palette]" --model [MODEL]` for the hero. Type-led is equally strong — state the choice either way.
 3. Author the page in ONE apply: `moda canvas markup [CANVAS_REF] --file - --page [PAGE_ID]` (grammar: references/markup.md). Essentials inside the safe area above.
-4. `moda canvas screenshot [CANVAS_REF]` — check safe area, type floor, contrast, grid crop; fix and re-screenshot until clean.
+4. Look ONCE — `--screenshot PATH` on that apply returns the capture (or `moda canvas screenshot [CANVAS_REF]`): check safe area, type floor, contrast, grid crop. Fix what fails in at most ONE repair write, captured the same way, then ship.
 5. Deliver: live link + `moda export [CANVAS_REF] --format png --pixel-ratio 2 -o [topic]-ig.png`.
 
 ## Recipe — carousel (5–8 slides)
@@ -53,13 +53,13 @@ stay inside:
 2. Lock the system before slide 1: 2–4 colors, exactly two fonts, one grid, one
    repeating motif.
 3. Author slide 1 ALONE — the hook: 5–9 words, no logo (branding on slide 1
-   reads as an ad). Screenshot and fix until it proves the system.
+   reads as an ad). Look once (`--screenshot PATH` on the apply); at most one repair write, then it is the system.
 4. `moda canvas add-pages [CANVAS_REF] --count [N-1]`, then one markup apply per
    slide — vary composition (full-bleed type, number-hero, split, quiet slide,
    pull-quote, photo-led) so adjacent slides never repeat a layout; applies to
    ONE canvas stay serial. The last slide carries the one ask and the brand.
 5. Screenshot all pages and judge as a set: brightness spread, motif continuity,
-   one stat per slide (oversized numeral, small source footer).
+   one stat per slide (oversized numeral, small source footer). ONE repair round for what fails, then export.
 6. `moda export [CANVAS_REF] --format png --pixel-ratio 2 -o [topic]-carousel.zip`
    — the zip of page images IS the IG carousel deliverable.
 
