@@ -41,6 +41,7 @@ it (there the clip is TIMED to the track: the track's length is the clip's).
 | voiceover, narration, "read this aloud" | `--mode text_to_speech` | the SCRIPT, spoken verbatim — no "read this in a warm voice" (Eleven v3 audio tags are the one exception, below) |
 | jingle, background music, a bed | `--mode text_to_music` | a description: genre, instrumentation, mood, tempo |
 | sound effect, ambience, sting | `--mode text_to_sfx` | a description of the sound |
+| re-voice a recording (keep the delivery, change the voice) | `--mode speech_to_speech` | none: `--source-audio` is the performance (managed voices only, below) |
 
 ## The recipe
 
@@ -108,6 +109,40 @@ voice deliberately and let the user hear it before recording the whole script.
   second); where you have a speech-to-text tool, transcribe it and confirm the
   words and the brand name. A rejected voice ("deeper", "less creepy") is the new
   casting: audition again if still open, then re-record the whole script.
+
+## Managed voices (`elevenlabs-native-…`)
+
+Moda's own voice lane: a catalog of `vox_…` voices, workspace pronunciation
+dictionaries, re-voicing a recording, and character timings with every text
+take. `moda voice capabilities` lists these models (they are not on
+`moda media models`) with the only `--model-params` each takes; when it says
+`UNAVAILABLE`, use a model from `moda media models` instead.
+
+- **Cast from the catalog.** `moda voice search --language en --accent british --use-case narration`
+  (every `--query` word must match); `moda voice show vox_…` adds a free preview
+  URL; `moda voice favorites` holds saved picks and the workspace default. On
+  these models `--voice` takes only a `vox_…` id, never a name.
+- **Quote, then generate.** `--quote` prices a take for free and starts nothing;
+  pass `--max-credits N` on the real call to hold it to the figure approved.
+- **Audition in parallel.** `--no-wait` hands back a `task_…` at once: start one
+  per candidate on the same opening line, then `moda task status TASK --wait`
+  each and `moda file download file_… -o …` the takes. `moda task cancel TASK`
+  is free until the request reaches the provider; after that the take still
+  lands and is charged.
+- **Re-runs replay.** An identical command returns its earlier take (or its
+  failure) and never charges twice; `--new-take` buys a second take of the same
+  input. A failed take says `nothing was charged` — fix what it names, or run a
+  new take.
+- **Pronunciation.** On Eleven v3 write it into the script (the sound-alike
+  spelling). The v2-family models take a workspace dictionary:
+  `moda voice create-dictionary --name "Product names" --rules rules.json`, then
+  `--dictionary pdict_…@N` on the call. Revise with the COMPLETE rule list
+  (`moda voice revise-dictionary pdict_… --base-revision N --rules rules.json`);
+  earlier takes keep the revision they used.
+- **Re-voice a performance.** `--mode speech_to_speech --model elevenlabs-native-sts-multilingual-v2 --voice vox_… --source-audio take.mp3`
+  keeps the timing and emotion of a recording (MP3, WAV or AAC, 1–300 s) in
+  the chosen voice. It bills per second of the recording; `--quote --source-seconds N`
+  prices one before recording.
 
 ## Pairing with video
 
