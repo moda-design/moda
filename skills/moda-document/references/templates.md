@@ -102,26 +102,30 @@ persist one, never hand one to the user. They expire.
 - Tell the user which template you started from — it is a decision they may
   want to correct.
 
-## One page, not a whole template
+## One item, not a whole template
 
-When the ask names a single existing slide or section — "add our timeline
-slide from the pitch deck", "use the team page we always use" — search the
-PAGES inside the team's templates and themes instead of copying a whole one:
+When the ask names a single existing slide or piece — "add our timeline
+slide from the pitch deck", "use the team page we always use", "start from
+our 2-page resume" — search the ITEMS inside the team's templates and themes
+instead of copying a whole one. An item is one slide of a deck or theme, or a
+whole document or set (a resume, a menu, a carousel):
 
 ```
-moda template search "timeline"                  # cvs_… page_id  Title — Template  [kind · category]
-moda template search --category team             # browse one category
+moda template search "timeline slide"            # cvs_… page_ids  label — Template  [kind · category · item kind]
+moda template search --item-kind team            # browse one kind of slide
+moda template search resume --category resume    # whole documents come back as one item
 ```
 
-Each hit names a canvas and a page. LOOK at the page before choosing
-(`moda canvas screenshot cvs_… --page <page_id>`), then copy just that page
-into the canvas you are working on:
-`moda canvas import-pages <target> --source cvs_… --pages <page_id>`. The
-imported page arrives with fresh ids after the last page; move it and replace
-its content like any other page.
+Each hit names a canvas and the item's page ids (one for a slide, several for
+a document). LOOK at it before choosing
+(`moda canvas screenshot cvs_… --page <page_id>[,<page_id>…]`), then copy the
+item into the canvas you are working on, passing EVERY page id it lists:
+`moda canvas import-pages <target> --source cvs_… --pages <page_id> [<page_id>…]`. The
+imported pages arrive with fresh ids after the last page; move them and replace
+their content like any other page.
 
 A search with no hits that reports meaning-based matching was unavailable is
-not proof the page does not exist — retry it, or search the page's literal
+not proof the item does not exist — retry it, or search its literal
 words. A plain no-hits result is an answer: say so in one line and build the
 page per the usual design references.
 
