@@ -102,6 +102,29 @@ persist one, never hand one to the user. They expire.
 - Tell the user which template you started from — it is a decision they may
   want to correct.
 
+## One page, not a whole template
+
+When the ask names a single existing slide or section — "add our timeline
+slide from the pitch deck", "use the team page we always use" — search the
+PAGES inside the team's templates and themes instead of copying a whole one:
+
+```
+moda template search "timeline"                  # cvs_… page_id  Title — Template  [kind · category]
+moda template search --category team             # browse one category
+```
+
+Each hit names a canvas and a page. LOOK at the page before choosing
+(`moda canvas screenshot cvs_… --page <page_id>`), then copy just that page
+into the canvas you are working on:
+`moda canvas import-pages <target> --source cvs_… --pages <page_id>`. The
+imported page arrives with fresh ids after the last page; move it and replace
+its content like any other page.
+
+A search with no hits that reports meaning-based matching was unavailable is
+not proof the page does not exist — retry it, or search the page's literal
+words. A plain no-hits result is an answer: say so in one line and build the
+page per the usual design references.
+
 ## Working inside a theme or an instantiated template
 
 The theme already decided the look. Your job is to fill it: pick the layout

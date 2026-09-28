@@ -93,9 +93,11 @@ Upload local files or by URL; search team assets, stock photography (placeable d
 result's attribution credited wherever the photo appears), and icon packs; read an uploaded PDF,
 DOCX, PPTX, XLSX, or CSV as text — the "ground the design in the user's own brief" lane; browse and
 organize folders (a folder owns its contents' visibility); list team templates, LOOK before
-choosing (a template IS a canvas — screenshot it), then instantiate one as a full copy.
+choosing (a template IS a canvas — screenshot it), then instantiate one as a full copy; or search
+single pages inside templates and themes and import just the one you need.
 `moda file upload`, `moda file search`, `moda file download`, `moda drive tree`, `moda drive mkdir`,
-`moda drive move`, `moda drive visibility`, `moda template list`, `moda template pull`.
+`moda drive move`, `moda drive visibility`, `moda template list`, `moda template pull`,
+`moda template search`.
 
 Moda designs NEW pages grounded in the user's files; it never rewrites the uploaded source file in
 place. A DOCX or PDF goes in as reference and comes out as a new designed artifact.
