@@ -107,8 +107,8 @@ persist one, never hand one to the user. They expire.
 When the ask names a single existing slide or piece — "add our timeline
 slide from the pitch deck", "use the team page we always use", "start from
 our 2-page resume" — search the ITEMS inside the team's templates and themes
-instead of copying a whole one. An item is one slide of a deck or theme, or a
-whole document or set (a resume, a menu, a carousel):
+instead of copying a whole one. An item is one slide or page (of a deck, theme
+or carousel), or a whole document (a resume, a menu):
 
 ```
 moda template search "timeline slide"            # cvs_… page_ids  label — Template  [kind · category · item kind]
