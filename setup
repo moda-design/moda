@@ -6,16 +6,22 @@
 set -eu
 cd "$(dirname "$0")"
 
-SKILLS="moda-core moda-deck moda-deck-theme moda-deck-pptx moda-document moda-document-print moda-social moda-social-instagram moda-social-linkedin moda-social-tiktok moda-social-youtube moda-social-ads moda-diagram moda-chart moda-mockup moda-website moda-video moda-video-clip moda-video-demo moda-video-motion moda-video-footage moda-image moda-audio moda-brand moda-edit moda-library moda-templates moda-context moda-automate"
+SKILLS="moda-core moda-deck moda-deck-theme moda-deck-pptx moda-document moda-document-print moda-social moda-social-instagram moda-social-linkedin moda-social-tiktok moda-social-youtube moda-social-ads moda-diagram moda-chart moda-mockup moda-website moda-video moda-video-clip moda-video-motion moda-video-footage moda-image moda-audio moda-brand moda-edit moda-library moda-templates moda-context moda-automate"
 installed=""
+
+# Skills that earlier installs shipped and this one does not: removed from each
+# harness directory below so a re-run of setup switches them off on a machine
+# that already has them. A symlinked copy (a developer's live checkout) is left
+# alone. Kept equal to skills_taxonomy.DISABLED_SKILLS by
+# scripts/export-mirror.py --check.
+RETIRED_SKILLS="moda-video-demo"
 
 # Runtime state that must never be installed. Mirrors
 # skills_taxonomy.NEVER_SHIPPED, which the mirror export applies for the same
-# reason — skills/ now contains a RUNNABLE tool
-# (moda-video-demo/demo-capture), so a working checkout carries node_modules,
-# an out/ of recorded takes that has reached 205MB, and auth.json, which on a
-# developer machine is a symlink to a live prod session. `cp -R` would copy all
-# three into every harness directory below.
+# reason — a skill dir can carry a RUNNABLE tool, so a working checkout of
+# one carries node_modules, an out/ of recorded takes that has reached 205MB,
+# and auth.json, which on a developer machine is a symlink to a live prod
+# session. `cp -R` would copy all three into every harness directory below.
 #
 # Kept in step by check_setup_excludes_runtime_state in scripts/validate.py.
 NEVER_INSTALL="node_modules out auth.json .studio .moda-review"
@@ -23,6 +29,9 @@ NEVER_INSTALL="node_modules out auth.json .studio .moda-review"
 copy_into() {
   dest="$1"
   mkdir -p "$dest"
+  for r in $RETIRED_SKILLS; do
+    if [ -d "$dest/$r" ] && [ ! -L "$dest/$r" ]; then rm -rf "$dest/$r"; fi
+  done
   for s in $SKILLS; do
     rm -rf "$dest/$s"
     cp -R "skills/$s" "$dest/$s"
