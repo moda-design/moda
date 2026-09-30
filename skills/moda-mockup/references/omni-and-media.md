@@ -61,6 +61,7 @@ Results return durable refs that feed markup `image(...)` fills and `src` attrib
 - **Grok Imagine Pro** — The quality tier of Grok v1 — the same surface, dearer output.
 - **Kling Image V3** — Kling's image line at one flat rate, with single-image editing.
 - **Kling Image O3** — The 4K Kling line, with a multi-image edit list; 4K costs double.
+- **Ideogram 4.5** — Ideogram's newest model: strong typography, and edits that follow a source image. Flat per image at any size, priced by quality.
 <!-- /generated: image-model roster -->
 
 ### Image rules
