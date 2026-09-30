@@ -65,7 +65,9 @@ it (there the clip is TIMED to the track: the track's length is the clip's).
 6. A render that outruns the wait comes back as a RETRYABLE error, not a loss:
    re-run the identical command to collect it — that adopts the existing job and
    can never pay twice. Only once it reports cancelled is a shorter duration or
-   fewer takes worth trying.
+   fewer takes worth trying. The ElevenLabs models are the exception: they render
+   inside the call, so an overrun is `submission_uncertain` — do not re-run it;
+   ask for a shorter track or script instead.
 
 ## Narration that sounds like a person
 
@@ -78,8 +80,8 @@ voice deliberately and let the user hear it before recording the whole script.
 - **Cast it.** A voice the user named or used before wins. Otherwise decide from
   the brand, audience and script (gender, age, accent, energy, warmth), and
   default to a natural, conversational read. Avoid breathy, whispery, sultry or
-  movie-trailer voices unless asked: those come across as creepy. Eleven v3
-  presets to start from — warm conversational woman: Jessica, Matilda, Aria;
+  movie-trailer voices unless asked: those come across as creepy. ElevenLabs
+  presets to start from — warm conversational woman: Jessica, Matilda, Sarah;
   British woman: Lily, Alice; deep warm man: Brian, Eric; casual man: Chris,
   Will, Liam; authoritative or documentary: Daniel, George, Bill; neutral: River.
   Pass `language_code` in `--model-params` for anything but English.
@@ -87,24 +89,26 @@ voice deliberately and let the user hear it before recording the whole script.
   live chat), first ask the voice (Woman / Man / You decide) and tone (Warm,
   Calm, Upbeat, Formal, You decide), skipping what the brief already answers.
   Then have 2–3 fitting voices read the same opening line or two (about a cent
-  each on v3), save each with `-o` (e.g. `auditions/jessica.mp3`), hand over the
+  each on v4), save each with `-o` (e.g. `auditions/jessica.mp3`), hand over the
   paths and ask which one, with the script in the same message so the words and
   voice are approved together. Record the full script only after the pick. A
   named voice, "you decide", "just go ahead" or an unattended run skips this:
   pick from the casting, name the voice in the handoff, offer a swap.
-- **Record one performance.** Final narration on `elevenlabs-eleven-v3`, never
-  a turbo or flash tier (built for latency, they read flatly); MiniMax Speech HD
+- **Record one performance.** Final narration on `elevenlabs-eleven-v4`;
+  `elevenlabs-eleven-v4-turbo` (half the price) is for auditions and drafts, and
+  never a v2.5 flash tier (built for latency, it reads flatly). MiniMax Speech HD
   only when the script needs its pronunciation or pause controls. Generate the
   WHOLE script in one call, never sentence by sentence and stitched: each line
-  then starts cold, which is exactly what sounds robotic. A script past v3's
-  5,000 characters goes whole to `elevenlabs-multilingual-v2` (10,000 per call):
-  decide that before auditioning and audition on it too, with no audio tags. Past
-  10,000, split at paragraph (else sentence) breaks, passing `previous_text`/`next_text` in
-  `--model-params`, join the parts into one file and `moda file upload` it.
-  Mark breaks in the text (line breaks, an ellipsis); don't speed the voice up
-  to fit a duration — trim the script instead. On v3 only, direct it with a few
-  audio tags (`[warmly]` at the start, `[excited]` on the reveal). `stability`
-  0.5 is natural; lower is more expressive, higher drifts toward monotone.
+  then starts cold, which is exactly what sounds robotic. v4 takes 10,000
+  characters per call; past that, split at paragraph (else sentence) breaks,
+  passing `previous_text`/`next_text` in `--model-params`, join the parts into one
+  file and `moda file upload` it. Mark breaks in the text (line breaks, an
+  ellipsis); don't speed the voice up to fit a duration — trim the script
+  instead (v4 has no speed control). Direct it with a few audio tags (`[warmly]`
+  at the start, `[excited]` on the reveal; v4 also takes short directions such
+  as `[quietly curious]`). `stability` 0.5 is natural; lower is more
+  expressive, higher drifts toward monotone. v4's launch price runs to
+  2026-10-12 (UTC): `moda media models` shows `promo_until` while it does.
 - **Check the take.** Its length should fit the script (about 2.5 words a
   second); where you have a speech-to-text tool, transcribe it and confirm the
   words and the brand name. A rejected voice ("deeper", "less creepy") is the new
