@@ -39,7 +39,7 @@ Results return durable refs that feed markup `image(...)` fills and `src` attrib
 
 <!-- generated: image-model roster. Authored in backend/app/services/media/image/ (label + roster_line, falling back to description); regenerate with: uv run python -m scripts.render_model_roster -->
 - **NanoBanana 2 Lite** — Fastest, lowest-cost baseline; the default when nothing else is demanded.
-- **NanoBanana 2** — The balanced Gemini tier — better than Lite for everyday work, well short of Pro's price.
+- **NanoBanana 2.1** — The balanced Gemini tier — better than Lite for everyday work, well short of Pro's price.
 - **NanoBanana Pro** — The Gemini premium tier for the most complex, high-fidelity briefs, and the dearest of the three.
 - **GPT Image 2.0** — Strong in-image text rendering.
 - **Ideogram V4** — Crisp posters, logos and accurate in-image text. Billed by megapixel rather than per call, so cost tracks output size.
