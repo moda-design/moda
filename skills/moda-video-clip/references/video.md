@@ -302,7 +302,7 @@ to the registry when it disagrees):
   top of the output's, so an 8 s clip driving a 3 s render bills 11 s.
 - **Wan 3.0 / Wan 3.0 Prime** — text/start-frame/reference video, 2–30 s or `auto`, optional audio/end frame,
   480p/720p/1080p, and up to 10 images, 5 videos (15 s total, ≥16 fps), plus 5 audios (15 s total; needs a visual).
-  Standard is $0.05/$0.10/$0.20 per second; faster Prime is $0.068/$0.14/$0.28. Default 1080p/audio on.
+  Standard is $0.0485/$0.097/$0.194 per second; faster Prime is $0.066/$0.136/$0.272. Default 1080p/audio on.
   This is the roster's strongest audio-REFERENCE lane: tracks ride beside image/video references, with a
   SEED, in one native 2–30 s pass — route reference-consistent clips that a supplied track must drive here.
 - **Happy Horse 1.1** — the lip-sync pick: synchronized native audio and

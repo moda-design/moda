@@ -20,7 +20,7 @@ one-shotting the hero model. Registry rates for the lanes below: Veo 3.1 Lite is
 **$0.03/s silent at 720p** (its audio default bills $0.05/s, so pass
 `--no-generate-audio` on every draft), Veo 3.1 Fast **$0.10/s**, Veo 3.1
 **$0.20/s** (720p and 1080p share that rate; audio doubles it), Seedance 2.0
-Fast **$0.2419/s at 720p** and area-metered, so 480p is materially cheaper on
+Fast **$0.1814/s at 720p** and area-metered, so 480p is materially cheaper on
 it. `moda media models` is the authority when any of that has moved.
 
 ## The motion model — what makes the motion CORRECT
