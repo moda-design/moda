@@ -96,6 +96,7 @@ moda file download [file_ref] -o -                 # stream a text file to stdou
 ```
 moda drive tree                              # how this workspace is really organized
 moda drive folders --parent root
+moda drive ls [fld_…|root]                   # what a folder holds: files, canvases, sites (typed)
 moda drive mkdir "[project]" --in [fld_…]
 moda drive move [cvs_…|file_…|fld_…] [fld_…|root]
 moda drive rename [ref] "[new name]"
@@ -111,6 +112,8 @@ moda drive rm [ref] --yes                    # destructive; --recursive takes th
 ## Examples
 
 - "what canvases do we have" → `moda canvas list`; answer with names + links.
+- "what's in the Customers folder" → `moda drive tree` for its `fld_…`, then
+  `moda drive ls fld_…`.
 - "find our logo" → `moda brand show` (kits carry logo file ids), then
   `moda file search "logo"`.
 - "use the numbers in the brief I uploaded" → `moda file list` → download →
