@@ -22,6 +22,7 @@ its id, a raw UUID, or a pasted moda.app canvas or share URL.
 | Copy a whole canvas as-is, then edit the copy | `moda canvas duplicate` |
 | Rename, re-describe, re-brand, or flag as a team template | `moda canvas rename`, `moda canvas brand`, `moda canvas template` |
 | Read a canvas's owner guidance before editing someone else's work | `moda canvas instructions` |
+| Read the comment threads reviewers left on a canvas | `moda canvas comments` |
 | Share: a public link, view-only or view-and-remix | `moda canvas share` |
 | Find work again: newest first, or by name | `moda canvas list`, `moda canvas search` |
 
