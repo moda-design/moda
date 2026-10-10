@@ -159,9 +159,9 @@ to the registry when it disagrees):
 
 - **MiniMax Hailuo H3** — up to 4K, intrinsic audio, end-frame control, and image/video/audio references.
 - **MiniMax Hailuo H3 Max** — H3's fast lane: SILENT clips at 480p/768p/1080p
-  with a seed and an optional end frame, from text or a start frame (no
-  reference mode); 480p is the cheap tier, and 1080p refines a 768p render at
-  twice 768p's rate. Community practice favors it for motion-graphics-style
+  with a seed and an optional end frame, from text, a start frame or up to nine
+  reference images (no video or audio references); 480p is the cheap tier, and
+  1080p refines a 768p render at twice 768p's rate. Community practice favors it for motion-graphics-style
   work — kinetic type, logo motion, animated shapes — where its speed and rates
   suit broad iteration; finish on H3 or another tier when sound or a native
   high-resolution frame matters.
