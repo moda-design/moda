@@ -114,7 +114,7 @@ voice deliberately and let the user hear it before recording the whole script.
   words and the brand name. A rejected voice ("deeper", "less creepy") is the new
   casting: audition again if still open, then re-record the whole script.
 
-## Managed voices (`elevenlabs-native-…`)
+## Managed voices (`elevenlabs-native-…`, `fishaudio-native-…`)
 
 Moda's own voice lane: a catalog of `vox_…` voices, workspace pronunciation
 dictionaries, re-voicing a recording, and character timings with every text
@@ -143,6 +143,14 @@ take. `moda voice capabilities` lists these models (they are not on
   `--dictionary pdict_…@N` on the call. Revise with the COMPLETE rule list
   (`moda voice revise-dictionary pdict_… --base-revision N --rules rules.json`);
   earlier takes keep the revision they used.
+- **Fish Audio voices.** `moda voice search --provider fishaudio --category featured`
+  lists Fish's licensed voices, celebrity and creator voices such as Uncle Roger
+  included (`--category community` for popular community voices). A Fish voice
+  renders only on a `fishaudio-native-…` model: `fishaudio-native-s2.1-pro` by
+  default, `fishaudio-native-drama-3` for performances (word tags such as
+  `<whisper>…</whisper>`). Direct them with free-form `[bracket]` cues; spell a
+  pronunciation into the script or as `<|phoneme_start|>T AH0 M EY1 T OW0<|phoneme_end|>`.
+  No timings, no re-voicing, no dictionaries.
 - **Re-voice a performance.** `--mode speech_to_speech --model elevenlabs-native-sts-multilingual-v2 --voice vox_… --source-audio take.mp3`
   keeps the timing and emotion of a recording (MP3, WAV or AAC, 1–300 s) in
   the chosen voice. It bills per second of the recording; `--quote --source-seconds N`
