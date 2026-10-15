@@ -130,7 +130,7 @@ appeared. Re-capture shortly instead.
 An export can succeed with caveats. `pptx_shape_rasterized` (an image baked in rather than shipped
 as an editable shape), `pptx_content_dropped` (elements missing from the deck),
 `pdf_pages_dropped` (pages missing from the document), `pdf_page_rasterized` (a page shipped as
-pixels — it looks right, but its text is not selectable and its links are not clickable),
+pixels — it looks right and its links still work, but its text is not selectable or searchable),
 `pdf_page_reduced_quality` (an oversized page rendered below the DPI you asked for),
 `font_substituted` (a requested family was unavailable),
 `audio_source_dropped` (an mp4 shipped without one clip's audio).
