@@ -29,6 +29,8 @@ moda brand remove-image BRAND_REF BKI_ID # detach by bki_ id
 
 `moda brand show --json` returns colors, fonts, and per-asset **two handles**: a durable `file_` reference and a signed, short-lived preview `url`. The `file_` ref is the only thing that ever goes into markup or media inputs — refs resolve server-side; never retype a URL or a hex you think you remember. The signed `url` is use-and-discard: download it to LOOK at the asset with your own vision, then discard it.
 
+A kit built from a website also carries `personality` (the site's `tone` and `energy` as the extraction read them — a hint for copy and pacing, not a brand rule). Where the read returns preview URLs, the kit's homepage capture rides along as `screenshot` with the same two handles.
+
 ## Applying a kit (the deterministic lane)
 
 - **Binding:** first, so it cannot be forgotten last. `moda canvas create --name "…" --brand BRAND_REF`; on a canvas that already exists, `moda canvas brand CANVAS_REF BRAND_REF`. A template-sourced create (`--template`) keeps the SOURCE canvas's kit and refuses `--brand` — rebind the copy afterwards if the user wants a different brand.
