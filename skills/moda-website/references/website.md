@@ -120,7 +120,7 @@ origin, even a mainstream one.
 - Maps: Google Maps. Scheduling: Calendly.
 - Forms / lead capture: a native on-brand `<form>` wired to a no-backend
   delivery (Web3Forms / Formspree / Formsubmit), or a hosted Tally / Google
-  Forms / Typeform / Jotform iframe — prefer the native form.
+  Forms / Typeform / Jotform / HighLevel iframe — prefer the native form.
 - Newsletter: Mailchimp / Kit / Beehiiv.
 - Contact: WhatsApp / Viber / Telegram / `tel:` / `mailto:` deep-links.
 - Video: YouTube (`youtube-nocookie.com`) or Vimeo iframes; Cloudflare
@@ -379,7 +379,14 @@ breaks on publish. Tally (`https://tally.so/r/{formId}` or
 design. Google Forms embeds as
 `https://docs.google.com/forms/d/e/{id}/viewform?embedded=true`. Typeform and
 Jotform embed their form URL directly, and are only for users who already have
-one — do not propose them by default. Give every embedded iframe a `title` and
+one — do not propose them by default. HighLevel / LeadConnector is the same
+already-have-one case, but its copy-paste snippet frames a `link.*` host —
+the account's white-label domain
+(`https://link.theirbusiness.com/widget/form/{formId}`) or HighLevel's default
+`https://link.msgsndr.com/widget/form/{formId}` — which is blocked on
+publish: rewrite the iframe to
+`https://api.leadconnectorhq.com/widget/form/{formId}` (same form ID) and drop
+its `form_embed.js` script. Give every embedded iframe a `title` and
 `loading="lazy"`.
 
 ### Newsletter — Mailchimp / Kit / Beehiiv
