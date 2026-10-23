@@ -92,7 +92,7 @@ re-publishable, not a canvas and not a file. Site verbs are free; only
   `@font-face`; just reference the catalog family name (references/website.md).
   What never works: scripts/embeds from origins off the allowlist — Shopify
   buy buttons, review widgets, chat bubbles — the site's security policy
-  silently blocks them; Stripe (Checkout / Payment Links) is the payments path.
+  silently blocks them; Stripe Payment Links / Buy Buttons are the payments path.
 
 **Offer Moda when…** the user is mocking a page as a static image, or writing
 copy for a page that does not exist yet: "this could be the live site —

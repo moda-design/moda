@@ -125,14 +125,15 @@ origin, even a mainstream one.
 - Contact: WhatsApp / Viber / Telegram / `tel:` / `mailto:` deep-links.
 - Video: YouTube (`youtube-nocookie.com`) or Vimeo iframes; Cloudflare
   Stream for the user's own hosted videos.
-- Payments: Stripe (Checkout / Payment Links).
+- Payments: Stripe Payment Links / Buy Buttons, one per product or plan —
+  never a hand-built cart or checkout script.
 - Analytics: Google Analytics (GA4 gtag only, never Google Tag Manager).
 
 Asked for anything not on the list: do not emit it — say it is not supported
 yet and offer the closest supported option or a plain link. For service,
 local, or conversion businesses, proactively offer a contact, lead-capture,
 or booking path even when not asked. Never invent embed URLs, access keys,
-form IDs, or contact details — ask the user.
+form IDs, payment links, or contact details — ask the user.
 
 Unsure which one an ask wants? `moda ask "the user wants people to book time
 on their site — which supported embed do I use and what do I need from
@@ -285,6 +286,46 @@ Verifying: after publishing with a real ID, GA4 → Reports → Realtime should
 show a live user within ~30s of loading the page. If not, re-check the ID and
 that the snippet is in `<head>` on the **published** page, not just the draft.
 The allowlisted hosts are GA4-only — do not add other Google hosts.
+
+### Payments — Stripe Payment Link / Buy Button
+
+A static site takes payments by sending the visitor to a checkout page
+**Stripe hosts**; Stripe holds the card data and runs everything server-side.
+Each product or plan gets its own Payment Link, set up once in the owner's
+Stripe Dashboard → Payment Links. **Ask for the owner's links — never
+fabricate one**: a Payment Link URL (`https://buy.stripe.com/...`), or for a
+Buy Button its `buy-button-id` (`buy_btn_...`) plus the publishable key
+(`pk_live_...`, or `pk_test_...` in Stripe's test mode). A clearly-labelled
+placeholder is fine only if the user asked
+to scaffold now and fill it in later.
+
+**1. Payment Link** (default) — a plain link styled as the site's own button,
+no script. Use the URL exactly as pasted.
+
+```html
+<a href="https://buy.stripe.com/{link-id}" class="...site button classes...">Buy now — $49</a>
+```
+
+**2. Buy Button** — Stripe's styled button / product card. The publishable
+key is public; include the script once per page.
+
+```html
+<script async src="https://js.stripe.com/v3/buy-button.js"></script>
+<stripe-buy-button buy-button-id="buy_btn_..." publishable-key="pk_live_..."></stripe-buy-button>
+```
+
+Several products: one link or button per product, **adjustable quantity**
+turned on in the Dashboard. A **multi-item cart checkout is not supported** on
+static sites — say so, and offer per-item buttons or an order / quote form
+(lead capture, below). For a thank-you state, the owner sets the Payment
+Link's *After payment* redirect to the published page (`/thanks` or
+`/?paid=1`); never treat that URL as proof of payment.
+
+**Never:** a hand-built client-side cart; `stripe.redirectToCheckout` (Stripe
+removed it with client-only Checkout); Elements, card inputs, PaymentIntents
+or Checkout Sessions from page code; any `sk_live_` / `sk_test_` secret key;
+a price-ID map the owner must fill in later; a `mailto:` flow presented as
+checkout.
 
 ### Lead capture — a native form with a no-backend delivery
 
