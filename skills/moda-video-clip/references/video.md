@@ -264,6 +264,14 @@ to the registry when it disagrees):
   storytelling live in `model_params`. Prompts and negative prompts are capped
   at 2,048 UTF-8 bytes, not characters. Extension returns source plus tail but
   bills only the requested tail duration.
+- **Kling 4.0** (`kling-4`) — text, start/end frames, or up to 10 image references,
+  with integer durations of 3–30 s. Choose 720p at $0.157/s or 1080p at $0.235/s
+  (the default). Audio is intrinsic; there is no audio toggle, seed, negative prompt,
+  or CFG control. Text and image-reference generation support cinematic 21:9;
+  start-frame animation follows the image's framing. Reference images are named
+  `@Image1`, `@Image2`, etc. in the prompt. Structured multi-shot prompts, video
+  references/elements, and video editing use the fal provider proxy rather than
+  the neutral video-generation tool.
 - **Kling 3 Standard / Pro / 4K** — a quality lane of its own, and the one
   family where the TIER IS THE RESOLUTION: 4K is a separate model, not a
   setting, so the output size is the entry you pick. Asking `kling-3-4k`
