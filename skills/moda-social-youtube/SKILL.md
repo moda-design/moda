@@ -38,7 +38,7 @@ never guess.
 2. Subject first: a photo the user gave you (`moda file upload [photo.jpg]`) or `moda media generate-image --prompt "[subject, high contrast, brand palette]" --model [MODEL]`.
 3. Author in ONE apply: `moda canvas markup [CANVAS_REF] --file - --page [PAGE_ID]` — ≤4 words, type ≥120px, one focal point (references/markup.md).
 4. **The 320px check** (this recipe's verify twist): `--screenshot thumb.png` on that apply (or `moda canvas screenshot [CANVAS_REF] -o thumb.png`), then judge it at thumbnail scale — a thumbnail that only reads full-size is a failed thumbnail. Fix what fails in at most ONE repair write, captured the same way, then ship.
-5. `moda export [CANVAS_REF] --format png --pixel-ratio 2 -o [episode]-thumb.png`.
+5. `moda export [CANVAS_REF] --format png -o [episode]-thumb.png`.
 
 ## Recipe — channel banner
 
@@ -47,7 +47,7 @@ never guess.
    texture, and colour outward to the full frame in the same apply.
 3. `moda canvas screenshot [CANVAS_REF]`; check that cropping to the core loses
    nothing that carries meaning; at most ONE repair write, captured the same way, then ship.
-4. `moda export [CANVAS_REF] --format png --pixel-ratio 2 -o [channel]-banner.png`.
+4. `moda export [CANVAS_REF] --format png -o [channel]-banner.png`.
 
 ## Examples
 

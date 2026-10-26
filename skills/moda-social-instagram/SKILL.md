@@ -45,7 +45,7 @@ stay inside:
 2. Image-led concept? `moda media generate-image --prompt "[hero, in the brand's palette]" --model [MODEL]` for the hero. Type-led is equally strong — state the choice either way.
 3. Author the page in ONE apply: `moda canvas markup [CANVAS_REF] --file - --page [PAGE_ID]` (grammar: references/markup.md). Essentials inside the safe area above.
 4. Look ONCE — `--screenshot PATH` on that apply returns the capture (or `moda canvas screenshot [CANVAS_REF]`): check safe area, type floor, contrast, grid crop. Fix what fails in at most ONE repair write, captured the same way, then ship.
-5. Deliver: live link + `moda export [CANVAS_REF] --format png --pixel-ratio 2 -o [topic]-ig.png`.
+5. Deliver: live link + `moda export [CANVAS_REF] --format png -o [topic]-ig.png`.
 
 ## Recipe — carousel (5–8 slides)
 
@@ -60,7 +60,7 @@ stay inside:
    ONE canvas stay serial. The last slide carries the one ask and the brand.
 5. Screenshot all pages and judge as a set: brightness spread, motif continuity,
    one stat per slide (oversized numeral, small source footer). ONE repair round for what fails, then export.
-6. `moda export [CANVAS_REF] --format png --pixel-ratio 2 -o [topic]-carousel.zip`
+6. `moda export [CANVAS_REF] --format png -o [topic]-carousel.zip`
    — the zip of page images IS the IG carousel deliverable.
 
 ## Examples

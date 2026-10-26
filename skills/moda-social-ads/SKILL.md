@@ -32,7 +32,7 @@ The IAB core set (`--category web-ads`), plus any size the user names:
 | 320×50 | mobile banner | hostile: type only, 4–6px off every edge |
 | 970×250 | billboard | the only size with room for imagery |
 
-Platform-native single ads (`--category web-ads` or `social`): IG story ad
+Platform-native single ads (`--category social`): IG story ad
 1080×1920 (bottom reserved from y 1400 for CTA chrome), Facebook feed ad
 1200×628, IG feed ad 1080×1080 or 1080×1350.
 
@@ -53,19 +53,19 @@ gradients, shapes, type, and generated patterns.
    sizes (728×90, 320×50) first; they break layouts before the others do.
 5. `moda canvas screenshot [CANVAS_REF]` in ≤3-page batches; judge the set for
    one voice, one CTA, one brand presence. ONE repair round, then export.
-6. `moda export [CANVAS_REF] --format png --pixel-ratio 2 -o [campaign]-ads.zip`
+6. `moda export [CANVAS_REF] --format png -o [campaign]-ads.zip`
    — multi-page png arrives as a zip: the set ships together, one file for the
    trafficker.
 
 ## Recipe — one platform-native ad
 
-1. `moda canvas create --name "[Campaign] — [placement]" --intent "[the one promise]" --size [WxH] --category web-ads --brand [KIT]` — link immediately.
+1. `moda canvas create --name "[Campaign] — [placement]" --intent "[the one promise]" --size [WxH] --category social --brand [KIT]` — link immediately.
 2. Write the idea in one sentence first: "For [audience], [brand] is the
    [category] that [single claim]." Kill every secondary message.
 3. Author in ONE apply; keep the CTA inside the placement's chrome-free zone.
 4. `moda canvas screenshot [CANVAS_REF]` — squint test: blurred, does it still
    show what it is for and where the eye lands? Fix what fails in at most ONE repair write, captured the same way, then ship.
-5. `moda export [CANVAS_REF] --format png --pixel-ratio 2 -o [campaign]-[size].png`.
+5. `moda export [CANVAS_REF] --format png -o [campaign]-[size].png`.
 
 ## Examples
 

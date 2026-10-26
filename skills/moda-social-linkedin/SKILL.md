@@ -55,7 +55,7 @@ images.** The description promises it; the export step is where it is kept.
 3. Author in one apply: `moda canvas markup [CANVAS_REF] --file - --page [PAGE_ID]`.
 4. `moda canvas screenshot [CANVAS_REF]` — check the bottom-left avatar zone on a
    banner, contrast and type floor everywhere (`--screenshot PATH` on the apply saves the separate call); at most ONE repair write, captured the same way, then ship.
-5. `moda export [CANVAS_REF] --format png --pixel-ratio 2 -o [topic]-linkedin.png`.
+5. `moda export [CANVAS_REF] --format png -o [topic]-linkedin.png`.
 
 ## Examples
 

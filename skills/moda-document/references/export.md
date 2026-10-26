@@ -39,6 +39,11 @@ moda export CANVAS_REF --format pdf|pptx|png|jpeg|mp4|gif [-o PATH] [--page N]  
   per-format (mp4 18000 frames / 600 s, gif 9000 frames / 300 s), so 60 fps
   halves the longest exportable mp4 timeline (300 s); pixel ratio (1–4)
   is the resolution lever; mp4/gif default to 1 (page resolution).
+- **Stills: leave `--pixel-ratio` off unless the user asks for a specific size.**
+  Omitted, png/jpeg default to 1 on `social`/`carousel` canvases (already at
+  the platform's pixel size) and 2 elsewhere, pdf to 3 — stepped down
+  automatically when a page is too large. It is the same resolver as the
+  in-app Export dialog.
 - **mp4 has two encode knobs, both optional and both mp4-only.**
   `--video-quality standard|high|max` (default `standard`) buys sharpness with
   encode time and file size; nothing about the render changes, so a re-export

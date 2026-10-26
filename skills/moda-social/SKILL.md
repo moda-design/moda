@@ -59,7 +59,7 @@ Tie-breakers at this fork:
 5. One page per `moda canvas markup` apply, then `moda canvas screenshot`; fix
    what you see. Applies to ONE canvas stay serial.
 6. Deliver: live link first; platform creative implies the file
-   (`moda export [CANVAS_REF] --format png --pixel-ratio 2`); a platformless
+   (`moda export [CANVAS_REF] --format png`); a platformless
    one-off gets the link + ONE file offer.
 
 Post-in-platform-frame pages (creative shown "in situ"): compose the raw
