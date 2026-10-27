@@ -175,7 +175,7 @@ Design work driven through the Moda app passes a separate, server-side design QA
 
 | Criterion | The bar |
 |---|---|
-| **Readability** | all text is legible in the actual screenshots — sufficient text/background contrast, no text occluded by front layers, no invisible or broken-rendering content, logos not undersized |
+| **Readability** | all text is legible in the actual screenshots — sufficient text/background contrast, no text occluded by front layers, no invisible or broken-rendering content, logos not undersized. Where the user asked for type to tuck behind a subject, partial cover is fine, but every word must still read as itself: a word with its first or last letter fully hidden, or whose visible letters spell a different word or a typo, is a `[blocker]` |
 | **Brand kit** | the produced pages match the brand kit — colors, logo usage, and overall aesthetic — when one is present |
 | **Typography** | type is sized by role and viewing context with deliberate hierarchy contrast — evenly-sized type reads timid. Fonts honor the brand kit (or its listed alternatives) when one is present |
 | **AI slop** | the pages avoid obvious AI design/copy tropes unless the user asked for them — em-dash overuse in copy; a thick single-side accent border on a card or page; a pill-with-dot overline above a heading; and similar generic AI tells |

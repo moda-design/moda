@@ -157,6 +157,15 @@ Photography rarely reads at small ad sizes — prefer solid color, gradients,
 shapes, type, and `<generate>` patterns there, with a product silhouette over
 scenic imagery. Copy over a photo always gets a scrim.
 
+**Type behind the subject.** For a depth effect, stack the photo, then the
+headline, then a background-removed cut-out of the same photo at the same
+bounds. Place the headline from the subject's silhouette: let the subject
+cross the middle of a word or part of a letter, never a word's first or last
+letters. A word that loses a letter at either end reads as a typo or a
+different word ("Free" for "Freedom") even when the user
+invited type behind the subject. If no position keeps every word intact,
+break the headline across lines or resize it.
+
 ## Style references vs content images
 
 An attached image is one of two things, and the answer changes what you do:
