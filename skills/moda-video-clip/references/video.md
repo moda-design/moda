@@ -383,9 +383,10 @@ route that work to the Kling 3 family or the Seedance 2.0 tiers, then dub the
 result.
 
 **Not on the roster, and why** — do not reach for these, they are notes so the
-question is not re-opened: `infinitalk` (image+audio, 720p ceiling,
-open-source class) is a plausible budget lane for long audio and is on the
-watchlist only; `veed/avatars` offers preset characters with no custom photo, so
+question is not re-opened: `infinitalk` is gone — fal stopped running it on
+2026-11-02 (requests queue and never start), so use `omnihuman-1.5` for a photo
+plus audio, and the dub lane above (`kling-lipsync`, `sync-lipsync-2-pro`) to
+re-voice a clip; `veed/avatars` offers preset characters with no custom photo, so
 it cannot do identity work at all; PixVerse's lip-sync is weaker than the lanes
 above; and OmniHuman v1 exists at a slightly lower rate than v1.5 but with
 weaker motion, so v1.5 is the single entry we carry.
