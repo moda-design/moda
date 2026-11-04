@@ -272,6 +272,11 @@ to the registry when it disagrees):
   `@Image1`, `@Image2`, etc. in the prompt. Structured multi-shot prompts, video
   references/elements, and video editing use the fal provider proxy rather than
   the neutral video-generation tool.
+- **Kling 4.0 Flash** (`kling-4-flash`) — the fast, cheaper Kling 4.0 tier: text, a
+  start frame, or up to 10 image references, 720p only, integer durations of 3–20 s,
+  at $0.0799/s. Audio is intrinsic; no end frame, voices, seed, or negative prompt.
+  Video references, elements, and Flash video editing (charged on output plus
+  source length) use the provider proxy rather than the neutral video-generation tool.
 - **Kling 3 Standard / Pro / 4K** — a quality lane of its own, and the one
   family where the TIER IS THE RESOLUTION: 4K is a separate model, not a
   setting, so the output size is the entry you pick. Asking `kling-3-4k`
