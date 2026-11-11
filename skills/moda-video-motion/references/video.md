@@ -264,6 +264,11 @@ to the registry when it disagrees):
   storytelling live in `model_params`. Prompts and negative prompts are capped
   at 2,048 UTF-8 bytes, not characters. Extension returns source plus tail but
   bills only the requested tail duration.
+- **PixVerse V6 Max** (`pixverse-v6-max`) — V6's premium tier: the same text
+  and first-frame animation (no transition or extension), 1–15 s, 360p–1080p,
+  the same `model_params`, at about 2.2x V6's rate ($0.099/s at 720p silent,
+  $0.252/s at 1080p with audio). Draft on V6, render the keeper on Max; check a
+  product's shape through an animated start frame, since new details can appear.
 - **Kling 4.0** (`kling-4`) — text, start/end frames, or up to 10 image references,
   with integer durations of 3–30 s. Choose 720p at $0.157/s or 1080p at $0.235/s
   (the default). Audio is intrinsic; there is no audio toggle, seed, negative prompt,
