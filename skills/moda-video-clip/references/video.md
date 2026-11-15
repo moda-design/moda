@@ -277,6 +277,10 @@ to the registry when it disagrees):
   `@Image1`, `@Image2`, etc. in the prompt. Structured multi-shot prompts, video
   references/elements, and video editing use the fal provider proxy rather than
   the neutral video-generation tool.
+- **Seedance 2.5 Flash** (`seedance-2.5-flash`) — the lower-cost Seedance 2.5 tier for
+  drafts, previews and social clips: text, a start frame, or reference images, video
+  and audio, with built-in audio. Choose 480p or 720p; for higher resolutions use
+  `seedance-2.5`. Reference images are named `@Image1`, `@Image2`, etc. in the prompt.
 - **Kling 4.0 Flash** (`kling-4-flash`) — the fast, cheaper Kling 4.0 tier: text, a
   start frame, or up to 10 image references, 720p only, integer durations of 3–20 s,
   at $0.0799/s. Audio is intrinsic; no end frame, voices, seed, or negative prompt.
